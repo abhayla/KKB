@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary - Orange -->
+    <color name="primary_light">#FF6838</color>
+    <color name="primary_dark">#FFB59C</color>
+
+    <!-- Secondary - Green -->
+    <color name="secondary_light">#5A822B</color>
+    <color name="secondary_dark">#A8D475</color>
+
+    <!-- Background -->
+    <color name="background_light">#FDFAF4</color>
+    <color name="background_dark">#1C1B1F</color>
+
+    <!-- Surface -->
+    <color name="surface_light">#FFFFFF</color>
+    <color name="surface_dark">#2B2930</color>
+
+    <!-- On colors -->
+    <color name="on_primary_light">#FFFFFF</color>
+    <color name="on_background_light">#1C1B1F</color>
+</resources>

@@ -10,131 +10,189 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 |-----------|---------|
 | **Platform** | Android Native (Kotlin + Jetpack Compose) |
 | **Backend** | Python (FastAPI) |
-| **Languages** | English + Hindi |
+| **Language** | English only |
 | **Target Market** | Pan-India (Tier 1, 2, 3 cities) |
 
-## Project Status
+## Current Status
+
+**Android project structure is set up.** Ready for feature development.
 
 | Phase | Status | Document |
 |-------|--------|----------|
 | Requirements | ✅ Complete | `docs/requirements/RasoiAI Requirements.md` |
 | Technical Design | ✅ Complete | `docs/design/RasoiAI Technical Design.md` |
-| Development | ⏳ Pending | |
+| Architecture Decisions | ✅ Complete | `docs/design/Android Architecture Decisions.md` |
+| Design System | ✅ Complete | `docs/design/RasoiAI Design System.md` |
+| Screen Wireframes | ✅ Complete | `docs/design/RasoiAI Screen Wireframes.md` |
+| Android Project Setup | ✅ Complete | `android/` folder |
+| Feature Development | ⏳ Next Step | Auth, Onboarding, Home screens |
 
-## Architecture Overview
+## Key Architecture Decisions
 
-### Android App (Clean Architecture + MVVM)
+| Area | Decision |
+|------|----------|
+| Dependency Injection | Hilt |
+| Annotation Processing | KSP |
+| State Management | StateFlow + Single UiState Data Class |
+| Navigation | Navigation Compose |
+| Build Configuration | Kotlin DSL + Version Catalog (TOML) |
+| Minimum SDK | API 24 (Android 7.0) |
+| Testing Strategy | 70% Unit / 20% Integration / 10% UI |
+| Modularization | By-Layer (app, core, data, domain) → Hybrid later |
+
+## Design System
+
+| Element | Light | Dark |
+|---------|-------|------|
+| Primary | `#FF6838` (Orange) | `#FFB59C` |
+| Secondary | `#5A822B` (Green) | `#A8D475` |
+| Background | `#FDFAF4` (Cream) | `#1C1B1F` |
+| Surface | `#FFFFFF` | `#2B2930` |
+
+| Token | Value |
+|-------|-------|
+| Typography | Roboto (System Default) |
+| Spacing | 8dp grid (4, 8, 16, 24, 32, 48dp) |
+| Shapes | Rounded corners (8dp small, 16dp medium, 24dp large) |
+| Dark Mode | System-follow (auto-switch) |
+
+## Module Structure
 
 ```
-com.rasoiai.app/
-├── di/                    # Hilt dependency injection
-├── data/
-│   ├── local/             # Room DB, DAOs, Entities
-│   ├── remote/            # Retrofit API, DTOs
-│   ├── repository/        # Repository implementations
-│   └── sync/              # SyncManager, OfflineQueueManager
-├── domain/
-│   ├── model/             # Domain models (User, MealPlan, Recipe, etc.)
-│   ├── repository/        # Repository interfaces (IUserRepository, etc.)
-│   └── usecase/           # Business logic (GenerateMealPlanUseCase, etc.)
-├── presentation/
-│   ├── navigation/        # Compose navigation
-│   ├── theme/             # Colors, Typography, Theme
-│   ├── common/components/ # Shared composables
-│   └── [feature]/         # Screen + ViewModel per feature
-└── util/                  # Constants, extensions, helpers
+RasoiAI/
+├── app/                          # Main application module
+│   └── presentation/             # All screens & ViewModels
+│       ├── navigation/
+│       ├── theme/
+│       ├── common/
+│       └── [feature]/            # splash, auth, onboarding, home, recipe, etc.
+├── core/                         # Shared utilities & UI components
+│   ├── ui/                       # Theme, shared composables
+│   ├── util/                     # Extensions, constants
+│   └── network/                  # NetworkMonitor
+├── data/                         # Data layer module
+│   ├── local/                    # Room DB, DAOs, Entities
+│   ├── remote/                   # Retrofit API, DTOs
+│   ├── repository/               # Repository implementations
+│   └── sync/                     # SyncManager, OfflineQueueManager
+├── domain/                       # Domain layer module (pure Kotlin)
+│   ├── model/                    # Domain models
+│   ├── repository/               # Repository interfaces
+│   └── usecase/                  # Business logic use cases
+└── gradle/
+    └── libs.versions.toml        # Centralized dependency versions
 ```
 
-### Backend (Python FastAPI)
-
-```
-rasoiai-backend/
-├── app/
-│   ├── api/v1/            # Endpoints: auth, users, meal_plans, recipes, grocery, festivals, chat, pantry, gamification
-│   ├── core/              # Security, Firebase auth, exceptions
-│   ├── db/                # Database connection, Redis, Alembic migrations
-│   ├── models/            # SQLAlchemy models
-│   ├── schemas/           # Pydantic request/response schemas
-│   ├── services/          # Business logic services
-│   └── ai/
-│       ├── llm_client.py  # Claude API integration
-│       ├── meal_planner.py
-│       ├── chat_assistant.py  # Chat/conversation handler
-│       ├── vision_client.py   # Vision AI for pantry scanning
-│       ├── prompts/       # LLM prompt templates
-│       └── cache.py       # LLM response caching
-├── tests/
-├── alembic/               # DB migrations
-└── requirements.txt
-```
+**Module Dependencies:** `app → core, data, domain` | `data → core, domain` | `domain → (none)` | `core → (none)`
 
 ## Technical Stack
 
-| Layer | Technology |
-|-------|------------|
-| Android | Kotlin, Jetpack Compose, Hilt, Room, Retrofit, Coil |
+| Component | Technology |
+|-----------|------------|
+| Android | Kotlin 1.9.22, Jetpack Compose (BOM 2024.02), Min SDK 24, Target SDK 34 |
+| DI & Processing | Hilt 2.50, KSP 1.9.22 |
+| Android Libraries | Room 2.6.1, Retrofit 2.9.0, Coil 2.5.0, Navigation Compose 2.7.7, DataStore 1.0.0 |
 | Backend | Python, FastAPI, SQLAlchemy, Pydantic |
 | Database | PostgreSQL, Redis (cache) |
-| Auth | Firebase Auth (Phone OTP + Google OAuth) |
+| Auth | Firebase Auth (Google OAuth only) |
 | LLM | Claude API (claude-3-sonnet) |
-| Storage | AWS S3 (images) |
-| Push | Firebase Cloud Messaging |
+| Testing | JUnit5, MockK, Turbine, Compose Testing |
 
 ## Key Design Decisions
 
 1. **Offline-First**: Room DB caches meal plans, recipes, grocery lists. SyncManager handles queued offline actions.
 2. **LLM Cost Optimization**: Cache meal plans by preference hash (60-70% savings), store generated recipes for reuse.
-3. **Bilingual Content**: All recipes, ingredients, instructions in both English and Hindi.
+3. **Auth**: Google OAuth only (Phone OTP removed for MVP simplicity).
 4. **Festival Intelligence**: 30+ festivals with fasting modes and auto-suggested menus.
-
-## API Structure
-
-Base URL: `/api/v1/`
-
-| Endpoint Group | Key Endpoints |
-|----------------|---------------|
-| Auth | `POST /auth/firebase` - Firebase token verification |
-| Users | `GET/PUT /users/me`, `PUT /users/preferences`, `POST /users/family` |
-| Meal Plans | `POST /meal-plans/generate`, `POST /meal-plans/{id}/items/{id}/swap` |
-| Recipes | `GET /recipes/{id}`, `GET /recipes/{id}/scale`, `POST /recipes/import` |
-| Grocery | `GET /grocery`, `GET /grocery/whatsapp` |
-| Festivals | `GET /festivals/upcoming`, `POST /fasting/activate` |
-| Chat | `POST /chat/message`, `GET /chat/history` |
-| Pantry | `POST /pantry/scan`, `GET /pantry/items`, `GET /pantry/recipes` |
-| Gamification | `GET /stats/streak`, `POST /meals/{id}/rate`, `GET /stats/monthly` |
-
-## Database Schema (Key Tables)
-
-- `users` - User profiles with auth provider, preferred language
-- `user_preferences` - Dietary preferences, cuisine zones, cooking times
-- `family_members` - Up to 8 members with individual dietary restrictions
-- `recipes` - Bilingual name/description, dietary tags, cuisine zone
-- `meal_plans` / `meal_plan_items` - Weekly plans with swap/skip/lock support
-- `grocery_lists` / `grocery_list_items` - Auto-generated, categorized
-- `festivals` - 30+ festivals with fasting types and recipe tags
-- `chat_messages` - AI chat history with context and actions
-- `pantry_items` / `pantry_scans` - Ingredient tracking and vision scan results
-- `meal_ratings` / `cooking_streaks` - Gamification data
 
 ## India-Specific Considerations
 
-When working on this project:
 - **Dietary patterns**: Vegetarian majority, Jain (no root vegetables), Sattvic (no onion/garlic), fasting days, Halal
 - **Regional cuisines**: North, South, East, West (4 zones) with distinct ingredients and styles
 - **Family structures**: Nuclear + joint families (3-8 members), multi-generational support
 - **Measurements**: Support katori (bowl), chammach (spoon) alongside metric
-- **Grocery**: WhatsApp sharing to kirana stores (no platform APIs in MVP)
+- **Grocery**: WhatsApp sharing to kirana stores
 - **Offline**: Essential for tier 2-3 cities with connectivity issues
 
-## Key Documentation
+## App Screens (12 Total)
 
-| Document | Path |
-|----------|------|
-| Product Requirements | `docs/requirements/RasoiAI Requirements.md` |
-| Technical Design | `docs/design/RasoiAI Technical Design.md` |
-| Feature Comparison | `docs/claude-docs/Feature Comparison - Ollie vs RasoiAI.md` |
-| Ollie.ai Research | `docs/research/Ollie App Research.md` |
+| # | Screen | Key Features |
+|---|--------|--------------|
+| 1 | Splash | Logo, loading state |
+| 2 | Auth | Google OAuth only |
+| 3 | Onboarding | 5 steps with dropdowns |
+| 4 | Home | 4 meal types (Breakfast/Lunch/Dinner/Snacks), multiple recipes per meal, individual lock/swap |
+| 5 | Recipe Detail | Tabs (Ingredients/Instructions) |
+| 6 | Cooking Mode | Full-screen steps, timer, keep-awake |
+| 7 | Grocery List | Categorized items, WhatsApp share |
+| 8 | Favorites | 2-column grid, reorder, Recently Viewed |
+| 9 | Chat | AI assistant, history, clear chat, time-based actions |
+| 10 | Pantry Scan | Camera, expiry tracking, grocery integration |
+| 11 | Stats | Cooking streak, leaderboards, challenges, shareable achievements |
+| 12 | Settings | Profile, family, preferences |
+
+## Development Commands
+
+### Android App (Windows - run from `android/` folder)
+```bash
+# Build
+gradlew build
+
+# Run unit tests
+gradlew test
+
+# Run single test class
+gradlew test --tests "com.rasoiai.app.ClassName"
+
+# Run instrumented tests
+gradlew connectedAndroidTest
+
+# Lint
+gradlew lint
+```
+
+### Backend (Python)
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run server
+uvicorn app.main:app --reload
+
+# Run tests
+pytest
+
+# Run single test file
+pytest tests/test_meal_plans.py -v
+
+# Database migrations
+alembic upgrade head
+alembic revision --autogenerate -m "description"
+
+# Lint
+ruff check .
+```
 
 ## Rules for Claude
 
 1. **Document Output Location**: All documents generated by Claude must be saved in `docs/claude-docs/` folder by default, until manually moved by the user.
+
+2. **Dietary Tags**: Use these standard tags: `vegetarian`, `vegan`, `jain`, `sattvic`, `halal`, `eggetarian`. Recipes can have multiple tags.
+
+3. **Cuisine Zones**: Use `north`, `south`, `east`, `west` for regional classification.
+
+4. **Measurements**: Support both metric and Indian traditional units (katori, chammach, glass).
+
+5. **Offline Consideration**: Any feature design must account for offline-first behavior.
+
+## Key Documentation
+
+| Document | Path | Priority |
+|----------|------|----------|
+| Project Guide | `CLAUDE.md` | HIGH |
+| Screen Wireframes | `docs/design/RasoiAI Screen Wireframes.md` | HIGH |
+| Architecture Decisions | `docs/design/Android Architecture Decisions.md` | HIGH |
+| Design System | `docs/design/RasoiAI Design System.md` | MEDIUM |
+| Technical Design | `docs/design/RasoiAI Technical Design.md` | MEDIUM |
+| Requirements | `docs/requirements/RasoiAI Requirements.md` | LOW |
+| Continue Prompt | `docs/CONTINUE_PROMPT.md` | Reference |
