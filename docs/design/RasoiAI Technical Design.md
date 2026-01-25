@@ -93,6 +93,14 @@ This document provides the technical blueprint for building RasoiAI, an AI-power
 │                           │ │Grocry│      │Festvl│         │Notif │   │   │
 │                           │ │ Svc  │      │ Svc  │         │ Svc  │   │   │
 │                           │ └──────┘      └──────┘         └──────┘   │   │
+│                           │                    │                        │   │
+│                           │  ┌─────────────────┼─────────────────┐     │   │
+│                           │  │                 │                 │     │   │
+│                           │  ▼                 ▼                 ▼     │   │
+│                           │ ┌──────┐      ┌──────┐         ┌──────┐   │   │
+│                           │ │ Chat │      │Vision│         │Gamify│   │   │
+│                           │ │ Svc  │      │ Svc  │         │ Svc  │   │   │
+│                           │ └──────┘      └──────┘         └──────┘   │   │
 │                           └─────────────────────────────────────────────┘   │
 │                                          │                                   │
 │                    ┌─────────────────────┼─────────────────────┐            │
@@ -109,6 +117,10 @@ This document provides the technical blueprint for building RasoiAI, an AI-power
 │                    │  │ Claude API │    │ Firebase FCM   │  │              │
 │                    │  │   (LLM)    │    │ (Push Notifs)  │  │              │
 │                    │  └────────────┘    └────────────────┘  │              │
+│                    │  ┌────────────┐                        │              │
+│                    │  │ Vision AI  │                        │              │
+│                    │  │ (Pantry)   │                        │              │
+│                    │  └────────────┘                        │              │
 │                    └─────────────────────────────────────────┘              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -121,10 +133,13 @@ This document provides the technical blueprint for building RasoiAI, an AI-power
 | API Gateway | Rate limiting, auth validation, routing | FastAPI middleware |
 | User Service | User management, preferences, family profiles | FastAPI + PostgreSQL |
 | Meal Service | Meal plan generation, CRUD, swapping | FastAPI + Claude API |
-| Recipe Service | Recipe storage, search, favorites | FastAPI + PostgreSQL |
+| Recipe Service | Recipe storage, search, favorites, import | FastAPI + PostgreSQL |
 | Grocery Service | List generation, WhatsApp formatting | FastAPI |
 | Festival Service | Festival calendar, fasting logic | FastAPI + PostgreSQL |
 | Notification Service | Push notifications scheduling | FastAPI + FCM |
+| Chat Service | Natural language recipe modifications, Q&A | FastAPI + Claude API |
+| Vision Service | Pantry scanning, ingredient recognition | FastAPI + Vision AI |
+| Gamification Service | Cooking streaks, meal ratings, stats | FastAPI + PostgreSQL |
 
 ### 2.3 Technology Decisions
 
@@ -135,6 +150,7 @@ This document provides the technical blueprint for building RasoiAI, an AI-power
 | Database | PostgreSQL | Relational data, JSONB for flexibility, reliable |
 | Cache | Redis | Fast, session management, rate limiting |
 | LLM Provider | Claude API | Better reasoning, cost-effective, reliable |
+| Vision AI | Google Cloud Vision / Claude Vision | Ingredient recognition, pantry scanning |
 | Auth | Firebase Auth | Phone OTP support, Google OAuth, easy integration |
 | Image Storage | AWS S3 | Scalable, CDN integration, cost-effective |
 
@@ -266,14 +282,21 @@ com.rasoiai.app/
 │   │   ├── Ingredient.kt
 │   │   ├── GroceryList.kt
 │   │   ├── GroceryItem.kt
-│   │   └── Festival.kt
+│   │   ├── Festival.kt
+│   │   ├── ChatMessage.kt
+│   │   ├── PantryItem.kt
+│   │   ├── MealRating.kt
+│   │   └── CookingStreak.kt
 │   │
 │   ├── repository/
 │   │   ├── IUserRepository.kt
 │   │   ├── IMealPlanRepository.kt
 │   │   ├── IRecipeRepository.kt
 │   │   ├── IGroceryRepository.kt
-│   │   └── IFestivalRepository.kt
+│   │   ├── IFestivalRepository.kt
+│   │   ├── IChatRepository.kt
+│   │   ├── IPantryRepository.kt
+│   │   └── IGamificationRepository.kt
 │   │
 │   └── usecase/
 │       ├── auth/
@@ -291,14 +314,25 @@ com.rasoiai.app/
 │       ├── recipe/
 │       │   ├── GetRecipeDetailUseCase.kt
 │       │   ├── AddToFavoritesUseCase.kt
-│       │   └── ScaleRecipeUseCase.kt
+│       │   ├── ScaleRecipeUseCase.kt
+│       │   └── ImportRecipeUseCase.kt
 │       ├── grocery/
 │       │   ├── GetGroceryListUseCase.kt
 │       │   ├── ToggleGroceryItemUseCase.kt
 │       │   └── FormatForWhatsAppUseCase.kt
-│       └── festival/
-│           ├── GetUpcomingFestivalsUseCase.kt
-│           └── ActivateFastingModeUseCase.kt
+│       ├── festival/
+│       │   ├── GetUpcomingFestivalsUseCase.kt
+│       │   └── ActivateFastingModeUseCase.kt
+│       ├── chat/
+│       │   ├── SendChatMessageUseCase.kt
+│       │   └── ModifyRecipeViaChatUseCase.kt
+│       ├── pantry/
+│       │   ├── ScanPantryUseCase.kt
+│       │   └── GetPantryItemsUseCase.kt
+│       └── gamification/
+│           ├── GetCookingStreakUseCase.kt
+│           ├── RateMealUseCase.kt
+│           └── GetCookingStatsUseCase.kt
 │
 ├── presentation/
 │   ├── navigation/
@@ -370,6 +404,28 @@ com.rasoiai.app/
 │   ├── favorites/
 │   │   ├── FavoritesScreen.kt
 │   │   └── FavoritesViewModel.kt
+│   │
+│   ├── chat/
+│   │   ├── ChatScreen.kt
+│   │   ├── ChatViewModel.kt
+│   │   └── components/
+│   │       ├── ChatBubble.kt
+│   │       └── ChatInput.kt
+│   │
+│   ├── pantry/
+│   │   ├── PantryScanScreen.kt
+│   │   ├── PantryViewModel.kt
+│   │   └── components/
+│   │       ├── CameraPreview.kt
+│   │       └── DetectedIngredients.kt
+│   │
+│   ├── stats/
+│   │   ├── StatsScreen.kt
+│   │   ├── StatsViewModel.kt
+│   │   └── components/
+│   │       ├── StreakCard.kt
+│   │       ├── CookingCalendar.kt
+│   │       └── MonthlyStats.kt
 │   │
 │   └── settings/
 │       ├── SettingsScreen.kt
@@ -458,7 +514,12 @@ dependencies {
         GroceryItemEntity::class,
         FavoriteEntity::class,
         FestivalEntity::class,
-        SyncQueueEntity::class
+        SyncQueueEntity::class,
+        ChatMessageEntity::class,
+        PantryItemEntity::class,
+        PantryScanEntity::class,
+        MealRatingEntity::class,
+        CookingStreakEntity::class
     ],
     version = 1,
     exportSchema = true
@@ -471,6 +532,9 @@ abstract class RasoiDatabase : RoomDatabase() {
     abstract fun groceryDao(): GroceryDao
     abstract fun festivalDao(): FestivalDao
     abstract fun syncQueueDao(): SyncQueueDao
+    abstract fun chatDao(): ChatDao
+    abstract fun pantryDao(): PantryDao
+    abstract fun gamificationDao(): GamificationDao
 }
 ```
 
@@ -498,7 +562,10 @@ rasoiai-backend/
 │   │   │   ├── meal_plans.py      # Meal plan endpoints
 │   │   │   ├── recipes.py         # Recipe endpoints
 │   │   │   ├── grocery.py         # Grocery endpoints
-│   │   │   └── festivals.py       # Festival endpoints
+│   │   │   ├── festivals.py       # Festival endpoints
+│   │   │   ├── chat.py            # Chat/AI assistant endpoints
+│   │   │   ├── pantry.py          # Pantry scanning endpoints
+│   │   │   └── gamification.py    # Streaks, ratings, stats endpoints
 │   │   └── middleware/
 │   │       ├── auth_middleware.py
 │   │       ├── rate_limiter.py
@@ -524,7 +591,10 @@ rasoiai-backend/
 │   │   ├── meal_plan.py
 │   │   ├── recipe.py
 │   │   ├── grocery.py
-│   │   └── festival.py
+│   │   ├── festival.py
+│   │   ├── chat.py
+│   │   ├── pantry.py
+│   │   └── gamification.py
 │   │
 │   ├── schemas/
 │   │   ├── __init__.py
@@ -532,7 +602,10 @@ rasoiai-backend/
 │   │   ├── meal_plan.py
 │   │   ├── recipe.py
 │   │   ├── grocery.py
-│   │   └── festival.py
+│   │   ├── festival.py
+│   │   ├── chat.py
+│   │   ├── pantry.py
+│   │   └── gamification.py
 │   │
 │   ├── services/
 │   │   ├── __init__.py
@@ -541,16 +614,23 @@ rasoiai-backend/
 │   │   ├── recipe_service.py
 │   │   ├── grocery_service.py
 │   │   ├── festival_service.py
-│   │   └── notification_service.py
+│   │   ├── notification_service.py
+│   │   ├── chat_service.py
+│   │   ├── pantry_service.py
+│   │   └── gamification_service.py
 │   │
 │   ├── ai/
 │   │   ├── __init__.py
 │   │   ├── llm_client.py          # Claude API client
 │   │   ├── meal_planner.py        # AI meal planning logic
+│   │   ├── chat_assistant.py      # Chat/conversation handler
+│   │   ├── vision_client.py       # Vision AI for pantry scanning
+│   │   ├── ingredient_detector.py # Ingredient recognition
 │   │   ├── prompts/
 │   │   │   ├── meal_plan_prompt.py
 │   │   │   ├── recipe_prompt.py
-│   │   │   └── swap_prompt.py
+│   │   │   ├── swap_prompt.py
+│   │   │   └── chat_prompt.py
 │   │   └── cache.py               # LLM response caching
 │   │
 │   └── utils/
@@ -771,6 +851,44 @@ settings = Settings()
 │    fasting_type     │
 │    food_focus       │
 │    recipe_tags[]    │
+└─────────────────────┘
+
+┌─────────────────────┐       ┌─────────────────────┐
+│   CHAT_MESSAGES     │       │    PANTRY_ITEMS     │
+├─────────────────────┤       ├─────────────────────┤
+│ PK message_id (UUID)│       │ PK item_id (UUID)   │
+│ FK user_id          │       │ FK user_id          │
+│    role (user/asst) │       │    ingredient_en    │
+│    content          │       │    ingredient_hi    │
+│    context_json     │       │    quantity         │
+│    actions_json     │       │    added_date       │
+│    created_at       │       │    expiry_estimate  │
+└─────────────────────┘       │    source (scan/    │
+                              │            manual)  │
+                              └─────────────────────┘
+
+┌─────────────────────┐       ┌─────────────────────┐
+│    MEAL_RATINGS     │       │   COOKING_STREAKS   │
+├─────────────────────┤       ├─────────────────────┤
+│ PK rating_id (UUID) │       │ PK streak_id (UUID) │
+│ FK user_id          │       │ FK user_id          │
+│ FK recipe_id        │       │    current_streak   │
+│ FK meal_plan_item_id│       │    longest_streak   │
+│    rating (1-5)     │       │    last_cooked_date │
+│    feedback         │       │    updated_at       │
+│    cooked_date      │       └─────────────────────┘
+│    created_at       │
+└─────────────────────┘
+
+┌─────────────────────┐
+│   PANTRY_SCANS      │
+├─────────────────────┤
+│ PK scan_id (UUID)   │
+│ FK user_id          │
+│    image_url        │
+│    detected_items[] │
+│    confidence_scores│
+│    created_at       │
 └─────────────────────┘
 ```
 
@@ -1224,6 +1342,225 @@ Activate fasting mode.
   "fasting_type": "navratri",
   "start_date": "2025-10-03",
   "end_date": "2025-10-11"
+}
+```
+
+### 6.7 Chat APIs
+
+#### POST /api/v1/chat/message
+Send a message to the AI assistant.
+
+**Request:**
+```json
+{
+  "message": "Make today's dinner less spicy",
+  "context": {
+    "meal_plan_id": "uuid",
+    "recipe_id": "uuid"
+  }
+}
+```
+
+**Response (200):**
+```json
+{
+  "message_id": "uuid",
+  "response": "I've updated today's dinner to use less chili. The new version uses mild spices and yogurt to balance the flavors.",
+  "actions_taken": [
+    {
+      "action": "recipe_modified",
+      "recipe_id": "uuid",
+      "changes": ["Reduced chili from 2 tsp to 1/2 tsp", "Added 1/4 cup yogurt"]
+    }
+  ],
+  "suggestions": [
+    "Would you like me to update the grocery list?",
+    "Should I make this a preference for future meals?"
+  ]
+}
+```
+
+#### GET /api/v1/chat/history
+Get chat history.
+
+**Response (200):**
+```json
+{
+  "messages": [
+    {
+      "message_id": "uuid",
+      "role": "user",
+      "content": "Make today's dinner less spicy",
+      "timestamp": "2025-01-20T18:30:00Z"
+    },
+    {
+      "message_id": "uuid",
+      "role": "assistant",
+      "content": "I've updated today's dinner...",
+      "timestamp": "2025-01-20T18:30:02Z"
+    }
+  ]
+}
+```
+
+### 6.8 Pantry APIs
+
+#### POST /api/v1/pantry/scan
+Scan pantry image and detect ingredients.
+
+**Request:**
+```
+Content-Type: multipart/form-data
+image: <binary image data>
+```
+
+**Response (200):**
+```json
+{
+  "scan_id": "uuid",
+  "detected_ingredients": [
+    {
+      "ingredient_id": "uuid",
+      "name_en": "Tomatoes",
+      "name_hi": "टमाटर",
+      "confidence": 0.95,
+      "quantity_estimate": "4-5 pieces"
+    },
+    {
+      "ingredient_id": "uuid",
+      "name_en": "Onions",
+      "name_hi": "प्याज",
+      "confidence": 0.92,
+      "quantity_estimate": "3 pieces"
+    },
+    {
+      "ingredient_id": "uuid",
+      "name_en": "Coriander",
+      "name_hi": "धनिया",
+      "confidence": 0.88,
+      "quantity_estimate": "1 bunch"
+    }
+  ],
+  "suggested_recipes_count": 8
+}
+```
+
+#### GET /api/v1/pantry/items
+Get saved pantry items.
+
+**Response (200):**
+```json
+{
+  "pantry_items": [
+    {
+      "item_id": "uuid",
+      "ingredient_id": "uuid",
+      "name_en": "Rice",
+      "name_hi": "चावल",
+      "added_date": "2025-01-18",
+      "expiry_estimate": "2025-03-18"
+    }
+  ]
+}
+```
+
+#### GET /api/v1/pantry/recipes
+Get recipes using pantry ingredients.
+
+**Response (200):**
+```json
+{
+  "recipes": [
+    {
+      "recipe_id": "uuid",
+      "name_en": "Tomato Rice",
+      "name_hi": "टमाटर चावल",
+      "pantry_match_percentage": 85,
+      "missing_ingredients": ["curry_leaves"],
+      "total_time": 25
+    }
+  ]
+}
+```
+
+### 6.9 Gamification APIs
+
+#### GET /api/v1/stats/streak
+Get current cooking streak.
+
+**Response (200):**
+```json
+{
+  "current_streak": 12,
+  "longest_streak": 23,
+  "last_cooked_date": "2025-01-20",
+  "streak_status": "active"
+}
+```
+
+#### POST /api/v1/meals/{meal_id}/rate
+Rate a cooked meal.
+
+**Request:**
+```json
+{
+  "rating": 4,
+  "feedback": "Loved it, but slightly too salty",
+  "cooked_date": "2025-01-20"
+}
+```
+
+**Response (200):**
+```json
+{
+  "rating_id": "uuid",
+  "streak_updated": true,
+  "new_streak": 13,
+  "message": "Great! Your streak is now 13 days!"
+}
+```
+
+#### GET /api/v1/stats/monthly
+Get monthly cooking stats.
+
+**Response (200):**
+```json
+{
+  "month": "2025-01",
+  "meals_cooked": 45,
+  "new_recipes_tried": 12,
+  "favorite_cuisine": "north",
+  "average_rating": 4.2,
+  "cooking_calendar": [
+    {
+      "date": "2025-01-01",
+      "meals_cooked": ["breakfast", "dinner"],
+      "rating_avg": 4.5
+    }
+  ]
+}
+```
+
+#### GET /api/v1/recipes/{recipe_id}/import
+Import recipe from URL.
+
+**Request:**
+```json
+{
+  "url": "https://example.com/recipe/dal-makhani"
+}
+```
+
+**Response (200):**
+```json
+{
+  "recipe_id": "uuid",
+  "name_en": "Dal Makhani",
+  "name_hi": "दाल मखनी",
+  "source_url": "https://example.com/recipe/dal-makhani",
+  "status": "imported",
+  "ingredients_parsed": 12,
+  "instructions_parsed": 8
 }
 ```
 
