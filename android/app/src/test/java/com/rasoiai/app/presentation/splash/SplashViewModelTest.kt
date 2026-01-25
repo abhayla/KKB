@@ -1,8 +1,11 @@
 package com.rasoiai.app.presentation.splash
 
 import app.cash.turbine.test
+import com.rasoiai.core.network.NetworkMonitor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -20,10 +23,12 @@ import org.junit.jupiter.api.Test
 class SplashViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
+    private lateinit var fakeNetworkMonitor: FakeNetworkMonitor
 
     @BeforeEach
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+        fakeNetworkMonitor = FakeNetworkMonitor()
     }
 
     @AfterEach
@@ -34,7 +39,7 @@ class SplashViewModelTest {
     @Test
     @DisplayName("Initial state should be loading")
     fun `initial state should be loading`() = runTest {
-        val viewModel = SplashViewModel()
+        val viewModel = SplashViewModel(fakeNetworkMonitor)
 
         viewModel.uiState.test {
             val initialState = awaitItem()
@@ -46,7 +51,7 @@ class SplashViewModelTest {
     @Test
     @DisplayName("After delay, should navigate to auth when not logged in")
     fun `after delay should navigate to auth when not logged in`() = runTest {
-        val viewModel = SplashViewModel()
+        val viewModel = SplashViewModel(fakeNetworkMonitor)
 
         viewModel.uiState.test {
             // Skip initial state
@@ -63,5 +68,61 @@ class SplashViewModelTest {
                 finalState.navigationEvent
             )
         }
+    }
+
+    @Test
+    @DisplayName("isOnline should reflect network state")
+    fun `isOnline should reflect network state`() = runTest {
+        val viewModel = SplashViewModel(fakeNetworkMonitor)
+
+        viewModel.isOnline.test {
+            // Initial state is online
+            assertTrue(awaitItem())
+
+            // Simulate going offline
+            fakeNetworkMonitor.setOnline(false)
+            assertFalse(awaitItem())
+
+            // Simulate going back online
+            fakeNetworkMonitor.setOnline(true)
+            assertTrue(awaitItem())
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    @DisplayName("onNavigationHandled should clear navigation event")
+    fun `onNavigationHandled should clear navigation event`() = runTest {
+        val viewModel = SplashViewModel(fakeNetworkMonitor)
+
+        viewModel.uiState.test {
+            // Skip initial state
+            awaitItem()
+
+            // Advance time to trigger navigation
+            testDispatcher.scheduler.advanceTimeBy(2000)
+
+            val stateWithNavigation = awaitItem()
+            assertNotNull(stateWithNavigation.navigationEvent)
+
+            // Clear navigation event
+            viewModel.onNavigationHandled()
+
+            val stateAfterHandled = awaitItem()
+            assertEquals(null, stateAfterHandled.navigationEvent)
+        }
+    }
+}
+
+/**
+ * Fake NetworkMonitor for testing
+ */
+class FakeNetworkMonitor : NetworkMonitor {
+    private val _isOnline = MutableStateFlow(true)
+    override val isOnline: Flow<Boolean> = _isOnline
+
+    fun setOnline(online: Boolean) {
+        _isOnline.value = online
     }
 }

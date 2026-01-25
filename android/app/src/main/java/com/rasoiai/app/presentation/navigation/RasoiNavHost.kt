@@ -30,6 +30,11 @@ fun RasoiNavHost(
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
+                },
+                onNavigateToOnboarding = {
+                    navController.navigate(Screen.Onboarding.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
                 }
             )
         }
