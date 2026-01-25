@@ -53,6 +53,9 @@ dependencies {
     // Coroutines
     implementation(libs.bundles.coroutines)
 
+    // Logging
+    api(libs.timber)
+
     // Testing
     testImplementation(libs.junit5)
     testImplementation(libs.coroutines.test)

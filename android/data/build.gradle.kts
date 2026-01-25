@@ -49,6 +49,14 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+    implementation(libs.hilt.work)
+    ksp(libs.hilt.work.compiler)
+
+    // WorkManager
+    implementation(libs.work.runtime)
+
+    // Logging
+    implementation(libs.timber)
 
     // Room
     implementation(libs.bundles.room)

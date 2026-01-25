@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
@@ -22,6 +24,16 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            // TODO: Configure release signing
+            // storeFile = file("../keystore/release.keystore")
+            // storePassword = System.getenv("KEYSTORE_PASSWORD")
+            // keyAlias = System.getenv("KEY_ALIAS")
+            // keyPassword = System.getenv("KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -30,6 +42,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // signingConfig = signingConfigs.getByName("release")
         }
         debug {
             isMinifyEnabled = false
@@ -61,6 +74,12 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    lint {
+        abortOnError = false
+        warningsAsErrors = false
+        checkDependencies = true
+    }
 }
 
 dependencies {
@@ -79,6 +98,9 @@ dependencies {
     implementation(libs.bundles.lifecycle)
     implementation(libs.androidx.activity.compose)
 
+    // Splash Screen (Android 12+)
+    implementation(libs.splashscreen)
+
     // Navigation
     implementation(libs.navigation.compose)
 
@@ -86,17 +108,27 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
+    implementation(libs.hilt.work)
+    ksp(libs.hilt.work.compiler)
 
     // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.firebase.messaging)
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
+
+    // WorkManager
+    implementation(libs.work.runtime)
 
     // Image Loading
     implementation(libs.coil.compose)
 
     // DataStore
     implementation(libs.datastore.preferences)
+
+    // Logging
+    implementation(libs.timber)
 
     // Coroutines
     implementation(libs.bundles.coroutines)
@@ -106,6 +138,7 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.turbine)
     testImplementation(libs.coroutines.test)
+    testImplementation(libs.work.testing)
     androidTestImplementation(libs.androidx.test.ext)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(platform(libs.compose.bom))
