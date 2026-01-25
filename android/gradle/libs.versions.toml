@@ -1,7 +1,7 @@
 [versions]
 # Kotlin & Android
 kotlin = "1.9.22"
-agp = "8.2.2"
+agp = "8.13.2"
 ksp = "1.9.22-1.0.17"
 google-services = "4.4.0"
 

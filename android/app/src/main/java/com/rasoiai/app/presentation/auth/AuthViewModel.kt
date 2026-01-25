@@ -118,13 +118,8 @@ class AuthViewModel @Inject constructor(
     }
 
     private fun getWebClientId(): String {
-        // In a real app, this would come from:
-        // 1. BuildConfig field set in build.gradle from google-services.json
-        // 2. Or directly from strings.xml / remote config
-        //
-        // For now, return a placeholder. Replace with your actual web client ID
-        // from Firebase Console > Project Settings > General > Web API Key
-        // Or from google-services.json: client > oauth_client > client_id (type 3)
-        return BuildConfig.APPLICATION_ID + ".placeholder"
+        // Web Client ID from google-services.json (oauth_client with client_type: 3)
+        // Set via buildConfigField in app/build.gradle.kts
+        return BuildConfig.WEB_CLIENT_ID
     }
 }

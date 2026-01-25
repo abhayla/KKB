@@ -22,6 +22,9 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        // Web Client ID for Google Sign-In (from google-services.json oauth_client with client_type: 3)
+        buildConfigField("String", "WEB_CLIENT_ID", "\"1016523916534-tiop62vjrd3ak3sh91ru76bj8p04v49f.apps.googleusercontent.com\"")
     }
 
     signingConfigs {

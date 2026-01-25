@@ -11,7 +11,7 @@ I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 
 ## Project Status
 
-Android project is FULLY SET UP with infrastructure. Ready for feature development.
+Splash and Auth screens are IMPLEMENTED. Firebase is configured. Ready for Onboarding.
 
 | Phase | Status | Document |
 |-------|--------|----------|
@@ -22,84 +22,66 @@ Android project is FULLY SET UP with infrastructure. Ready for feature developme
 | Screen Wireframes | ✅ Complete | `docs/design/RasoiAI Screen Wireframes.md` |
 | Android Project Setup | ✅ Complete | `android/` folder |
 | Pre-Dev Infrastructure | ✅ Complete | CI/CD, Testing, Firebase, Logging |
-| Feature Development | ⏳ Next Step | Auth, Onboarding, Home screens |
+| Splash Screen | ✅ Complete | `presentation/splash/` |
+| Auth Screen | ✅ Complete | `presentation/auth/` |
+| Firebase Setup | ✅ Complete | `google-services.json` added |
+| **Onboarding** | ⏳ **Next Step** | 5-step flow |
 
-## Infrastructure Already Set Up
+## Screens Implemented
 
-| Category | Status | Details |
-|----------|--------|---------|
-| CI/CD | ✅ | GitHub Actions (`android-ci.yml`) |
-| Firebase | ✅ | Plugins configured (google-services, crashlytics) |
-| Logging | ✅ | Timber in `RasoiAIApplication` |
-| Background Sync | ✅ | WorkManager + `SyncWorker` |
-| Network Security | ✅ | `network_security_config.xml` |
-| Gradle Wrapper | ✅ | `gradlew` / `gradlew.bat` |
-| Test Infrastructure | ✅ | Sample tests in app, domain, data modules |
+| Screen | Files | Status |
+|--------|-------|--------|
+| Splash | `SplashScreen.kt`, `SplashViewModel.kt`, `AppLogo.kt` | ✅ Complete |
+| Auth | `AuthScreen.kt`, `AuthViewModel.kt`, `GoogleAuthClient.kt` | ✅ Complete |
+| Onboarding | - | ⏳ Next |
+
+## Firebase Configuration (Complete)
+
+| Item | Status | Details |
+|------|--------|---------|
+| Firebase Project | ✅ | `rasoiai-6dcdd` |
+| google-services.json | ✅ | In `android/app/` |
+| Web Client ID | ✅ | In `BuildConfig.WEB_CLIENT_ID` |
+| Google Sign-In | ✅ | Enabled in Firebase Console |
+| SHA-1 Fingerprint | ⚠️ **PENDING** | Need to add for Google Sign-In to work |
+
+## IMPORTANT: Add SHA-1 Before Testing Auth
+
+Run this command to get your SHA-1:
+```powershell
+& "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -list -v -keystore "$env:USERPROFILE\.android\debug.keystore" -alias androiddebugkey -storepass android
+```
+
+Then add it in Firebase Console:
+1. Go to Project Settings → Your apps → Android app
+2. Click "Add fingerprint"
+3. Paste the SHA1 value
 
 ## Key Documents to Read
 
-Please read these documents in order:
-
-1. **CLAUDE.md** (root) - Project overview, architecture summary, all key decisions
-2. **Screen Wireframes** - All 12 approved screens with navigation flow
-3. **Architecture Decisions** - Kotlin/Compose setup, dependencies, patterns
-
-## Key Decisions Made
-
-| Decision | Choice |
-|----------|--------|
-| Language | English only (no Hindi) |
-| Auth | Google OAuth only (no Phone OTP) |
-| Meal Types | 4 types: Breakfast, Lunch, Dinner, Snacks |
-| Recipes per Meal | Multiple recipes allowed |
-| Recipe Actions | Individual swap/lock per recipe |
-| Recipe Detail | Tabs for Ingredients/Instructions |
-| Favorites Layout | 2-column grid with reorder |
-| Pantry | Expiry tracking with category-based shelf life |
-| Gamification | Leaderboards, shareable achievements, challenges |
-
-## Technology Stack
-
-| Layer | Technology |
-|-------|------------|
-| Platform | Android Native (Kotlin + Jetpack Compose) |
-| Min SDK | API 24 (Android 7.0) |
-| DI | Hilt + KSP |
-| Navigation | Navigation Compose |
-| State | StateFlow + Single UiState pattern |
-| Database | Room |
-| Network | Retrofit |
-| Build | Kotlin DSL + Version Catalog (TOML) |
-| Modularization | By-Layer (app, core, data, domain) |
-
-## Design System
-
-| Element | Value |
-|---------|-------|
-| Primary Color | Orange `#FF6838` |
-| Secondary Color | Green `#5A822B` |
-| Background | Cream `#FDFAF4` |
-| Typography | System Default (Roboto) |
-| Dark Mode | System-follow (auto-switch) |
-| Shapes | Rounded (8dp / 16dp / 24dp) |
+1. **CLAUDE.md** (root) - Project overview, architecture summary
+2. **Screen Wireframes** (`docs/design/RasoiAI Screen Wireframes.md`) - Onboarding design (5 steps)
+3. **Architecture Decisions** - Tech stack & patterns
 
 ## Your Task
 
-**Start feature development** - implement screens in this order:
-1. Splash Screen (with SplashScreen API for Android 12+)
-2. Auth Screen (Google OAuth)
-3. Onboarding Flow (5 steps)
-4. Home Screen (meal calendar, recipe cards)
+**Implement the Onboarding Screen** (5 steps):
+1. Family Size - How many people in family
+2. Dietary Preferences - Veg/Non-veg/Vegan/Jain etc.
+3. Cuisine Preferences - North/South/East/West Indian
+4. Allergies & Restrictions - Common allergens
+5. Cooking Skill Level - Beginner/Intermediate/Expert
 
-## Before You Start
-
-1. **Firebase Setup** - User needs to create Firebase project and add `google-services.json` to `android/app/`
-2. **Release Signing** - Configure keystore when ready for release builds
+Requirements:
+- Use dropdowns for selections (as per wireframe)
+- Store preferences in DataStore
+- Navigate to Home after completion
+- Support back navigation between steps
 
 ## Working Directory
 Project root: `D:/Abhay/VibeCoding/KKB`
 
-Start by reading CLAUDE.md and the Screen Wireframes doc, then implement the first feature.
+Start by reading the Screen Wireframes for Onboarding design, then implement it.
 ```
 
 ---
@@ -109,25 +91,28 @@ Start by reading CLAUDE.md and the Screen Wireframes doc, then implement the fir
 ```
 I'm building **RasoiAI** - an AI meal planning app for Indian families.
 
-**Android project is FULLY SET UP** with:
-- Multi-module architecture (app, core, data, domain)
-- Hilt DI, Room, Retrofit, Navigation Compose
-- CI/CD (GitHub Actions), Timber logging, WorkManager
-- Test infrastructure with sample tests
-- Firebase plugins configured
+**COMPLETED:**
+- ✅ Splash Screen (logo, tagline, offline banner, navigation)
+- ✅ Auth Screen (Google Sign-In with Credential Manager + Firebase)
+- ✅ Firebase configured (google-services.json, Web Client ID)
 
-**Read these docs**:
-- `CLAUDE.md` - Project overview & all key decisions
-- `docs/design/RasoiAI Screen Wireframes.md` - All 12 approved screens
-- `docs/design/Android Architecture Decisions.md` - Tech stack & patterns
+**Auth Implementation Details:**
+- `GoogleAuthClient.kt` - Handles Credential Manager + Firebase Auth
+- `AuthViewModel.kt` - Manages sign-in state, uses `BuildConfig.WEB_CLIENT_ID`
+- `AuthScreen.kt` - UI with Google button, terms/privacy links
+- `FirebaseModule.kt` - Hilt module providing FirebaseAuth
 
-**Key Decisions**: English only, Google OAuth only, 4 meal types with multiple recipes, individual swap/lock, tabs in recipe detail, 2-column favorites, expiry tracking in pantry, leaderboards & challenges.
+**PENDING:** Add SHA-1 fingerprint in Firebase Console for Google Sign-In to work on device.
 
-**Next Step**: Start feature development - Splash, Auth, Onboarding, then Home screen.
+**NEXT STEP:** Implement Onboarding (5 steps)
 
-**Note**: Firebase project needs to be created and `google-services.json` added before running the app.
+**Read:** `docs/design/RasoiAI Screen Wireframes.md` for Onboarding design
 
-Start by reading the docs, then help me implement the first feature.
+**Key Files:**
+- `android/app/src/main/java/com/rasoiai/app/presentation/auth/` - Auth implementation
+- `android/app/src/main/java/com/rasoiai/app/presentation/splash/` - Splash implementation
+
+Implement the 5-step Onboarding flow with DataStore persistence.
 ```
 
 ---
@@ -137,12 +122,11 @@ Start by reading the docs, then help me implement the first feature.
 | File | Path | Priority | Description |
 |------|------|----------|-------------|
 | Project Guide | `CLAUDE.md` | **HIGH** | Project overview, all summaries & decisions |
-| Screen Wireframes | `docs/design/RasoiAI Screen Wireframes.md` | **HIGH** | All 12 approved screens + navigation flow |
+| Screen Wireframes | `docs/design/RasoiAI Screen Wireframes.md` | **HIGH** | Onboarding design (5 steps) |
 | Architecture Decisions | `docs/design/Android Architecture Decisions.md` | **HIGH** | Tech stack, code patterns |
+| Auth Implementation | `app/presentation/auth/` | **HIGH** | Reference for screen patterns |
+| Splash Implementation | `app/presentation/splash/` | MEDIUM | Reference for ViewModel patterns |
 | Design System | `docs/design/RasoiAI Design System.md` | MEDIUM | Colors, typography, Theme.kt code |
-| Technical Design | `docs/design/RasoiAI Technical Design.md` | MEDIUM | Database schema, APIs (~2100 lines) |
-| Requirements | `docs/requirements/RasoiAI Requirements.md` | LOW | Full PRD with features |
-| Ollie Research | `docs/research/Ollie App Research.md` | LOW | Reference only (~1900 lines) |
 
 ---
 
@@ -158,90 +142,117 @@ Start by reading the docs, then help me implement the first feature.
 | Screen Wireframes | ✅ Complete | 12 screens approved (v2.0) |
 | Android Project Setup | ✅ Complete | Multi-module, Gradle, Hilt, Theme |
 | Pre-Dev Infrastructure | ✅ Complete | CI/CD, Testing, Firebase, Logging |
-| **Feature Development** | ⏳ **Next Step** | Splash, Auth, Onboarding, Home |
-
-## INFRASTRUCTURE SETUP (Complete):
-
-| Category | File/Location | Description |
-|----------|---------------|-------------|
-| CI/CD | `.github/workflows/android-ci.yml` | Build, test, lint on push/PR |
-| Firebase | `android/app/build.gradle.kts` | google-services & crashlytics plugins |
-| Logging | `RasoiAIApplication.kt` | Timber initialized |
-| Background Sync | `data/sync/SyncWorker.kt` | WorkManager periodic sync |
-| Network Security | `res/xml/network_security_config.xml` | Cleartext blocked |
-| Gradle Wrapper | `android/gradlew`, `gradlew.bat` | Build scripts |
-| Tests - App | `app/src/test/.../SplashViewModelTest.kt` | ViewModel test example |
-| Tests - Domain | `domain/src/test/.../GetCurrentMealPlanUseCaseTest.kt` | UseCase test example |
-| Tests - Data | `data/src/test/.../ConvertersTest.kt` | Room converter test |
-
-## BEFORE FEATURE DEVELOPMENT:
-
-1. **Firebase Setup** - Create Firebase project, download `google-services.json` to `android/app/`
-2. **Release Signing** - Configure keystore in `android/app/build.gradle.kts` (placeholder exists)
+| **Splash Screen** | ✅ **Complete** | Logo, tagline, offline banner |
+| **Auth Screen** | ✅ **Complete** | Google Sign-In with Credential Manager |
+| **Firebase Setup** | ✅ **Complete** | google-services.json, Web Client ID |
+| **Onboarding** | ⏳ **Next Step** | 5-step preference collection |
 
 ---
 
-## APPROVED SCREEN CHANGES SUMMARY:
+## IMPLEMENTED SCREENS:
 
-| Screen | Key Changes from Original Design |
-|--------|----------------------------------|
-| All Screens | English only (Hindi removed) |
-| 2. Auth | Google OAuth only (Phone OTP removed) |
-| 3. Onboarding | Dropdowns for selections, dietary needs for all member types |
-| 4. Home | 4 meal types (Breakfast/Lunch/Dinner/Snacks), multiple recipes per meal, individual swap/lock, refresh for selected date |
-| 5. Recipe Detail | Tabs for Ingredients/Instructions |
-| 8. Favorites | 2-column grid, reorder within collections, cover images, "Recently Viewed" collection |
-| 9. Chat | Chat history persisted, Clear Chat option, time-based quick actions |
-| 10. Pantry | Expiry tracking (category-based), grocery integration, auto-remove confirmation |
-| 11. Stats | Leaderboards, shareable achievements, weekly/monthly challenges |
+### 1. Splash Screen (`presentation/splash/`)
+
+| File | Description |
+|------|-------------|
+| `SplashScreen.kt` | Main composable with logo, tagline, loading indicator, offline banner |
+| `SplashViewModel.kt` | Handles 2s delay, auth check, navigation events, network monitoring |
+| `components/AppLogo.kt` | Custom cooking pot logo drawn with Canvas |
+
+Features:
+- Custom cooking pot logo with steam animation
+- "RasoiAI" branding + tagline
+- Circular loading indicator
+- Offline banner (shows when no network)
+- Navigation: Auth (not logged in) → Onboarding (logged in, not onboarded) → Home
+
+### 2. Auth Screen (`presentation/auth/`)
+
+| File | Description |
+|------|-------------|
+| `AuthScreen.kt` | UI with logo, welcome text, Google button, terms/privacy |
+| `AuthViewModel.kt` | Manages sign-in flow, error handling, navigation |
+| `GoogleAuthClient.kt` | Credential Manager + Firebase Auth integration |
+
+Features:
+- Google Sign-In button with loading state
+- Error handling with Snackbar
+- Terms of Service / Privacy Policy links
+- Navigation: → Onboarding (new user) or → Home (returning user)
+
+### 3. DI Module (`di/`)
+
+| File | Description |
+|------|-------------|
+| `FirebaseModule.kt` | Provides FirebaseAuth instance via Hilt |
 
 ---
 
-## ARCHITECTURE DECISIONS SUMMARY:
+## FIREBASE SETUP (Complete):
 
-| Decision | Choice |
-|----------|--------|
-| Dependency Injection | Hilt |
-| Annotation Processing | KSP |
-| State Management | StateFlow + Single UiState Data Class |
-| Navigation | Navigation Compose |
-| Build Configuration | Kotlin DSL + Version Catalog (TOML) |
-| Minimum SDK | API 24 (Android 7.0) |
-| Testing Strategy | 70% Unit / 20% Integration / 10% UI |
-| Modularization | By-Layer (app, core, data, domain) |
+| Item | Value/Status |
+|------|--------------|
+| Project ID | `rasoiai-6dcdd` |
+| Project Number | `1016523916534` |
+| Package Name | `com.rasoiai.app` |
+| App ID | `1:1016523916534:android:0de2c6d0930c38508c58d7` |
+| Web Client ID | `1016523916534-tiop62vjrd3ak3sh91ru76bj8p04v49f.apps.googleusercontent.com` |
+| google-services.json | ✅ In `android/app/` |
+| Google Sign-In Provider | ✅ Enabled |
+| SHA-1 Fingerprint | ⚠️ **NOT ADDED** - Required for sign-in to work |
 
----
+### To Add SHA-1:
 
-## MODULE STRUCTURE TO CREATE:
-
+1. Get SHA-1 from debug keystore:
+```powershell
+& "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -list -v -keystore "$env:USERPROFILE\.android\debug.keystore" -alias androiddebugkey -storepass android
 ```
-RasoiAI/
-├── app/                          # Main application module
-│   └── presentation/             # All screens & ViewModels
-│       ├── navigation/
-│       ├── theme/
-│       ├── common/
-│       └── [feature]/            # splash, auth, onboarding, home, etc.
-│
-├── core/                         # Shared utilities & UI components
-│   ├── ui/                       # Theme, shared composables
-│   ├── util/                     # Extensions, constants
-│   └── network/                  # NetworkMonitor
-│
-├── data/                         # Data layer module
-│   ├── local/                    # Room DB, DAOs, Entities
-│   ├── remote/                   # Retrofit API, DTOs
-│   ├── repository/               # Repository implementations
-│   └── sync/                     # SyncManager, OfflineQueueManager
-│
-├── domain/                       # Domain layer module (pure Kotlin)
-│   ├── model/                    # Domain models
-│   ├── repository/               # Repository interfaces
-│   └── usecase/                  # Business logic use cases
-│
-└── gradle/
-    └── libs.versions.toml        # Centralized dependency versions
-```
+
+2. In Firebase Console → Project Settings → Your apps → Android
+3. Click "Add fingerprint" → Paste SHA1 value
+
+---
+
+## ONBOARDING DESIGN (From Wireframes):
+
+### 5-Step Flow:
+
+| Step | Title | Input Type | Options |
+|------|-------|------------|---------|
+| 1 | Family Size | Dropdown | 1-8+ members |
+| 2 | Dietary Preferences | Multi-select | Vegetarian, Non-veg, Vegan, Jain, Sattvic, Eggetarian |
+| 3 | Cuisine Preferences | Multi-select | North Indian, South Indian, East Indian, West Indian |
+| 4 | Allergies | Multi-select | Nuts, Dairy, Gluten, Shellfish, None |
+| 5 | Cooking Skill | Single select | Beginner, Intermediate, Expert |
+
+### UI Elements:
+- Progress indicator (step X of 5)
+- Back button (except step 1)
+- Next/Finish button
+- Skip option (optional)
+
+### Data Storage:
+- Use DataStore Preferences
+- Create `UserPreferencesRepository` in data layer
+
+---
+
+## APP SCREENS (12 Total):
+
+| # | Screen | Implementation | Key Features |
+|---|--------|----------------|--------------|
+| 1 | Splash | ✅ **DONE** | Logo, loading, offline banner |
+| 2 | Auth | ✅ **DONE** | Google OAuth |
+| 3 | Onboarding | ⏳ **NEXT** | 5 steps with dropdowns |
+| 4 | Home | ⏳ Pending | 4 meal types, recipes, lock/swap |
+| 5 | Recipe Detail | ⏳ Pending | Tabs (Ingredients/Instructions) |
+| 6 | Cooking Mode | ⏳ Pending | Full-screen steps, timer |
+| 7 | Grocery List | ⏳ Pending | Categorized, WhatsApp share |
+| 8 | Favorites | ⏳ Pending | 2-column grid, reorder |
+| 9 | Chat | ⏳ Pending | History, time-based actions |
+| 10 | Pantry Scan | ⏳ Pending | Expiry tracking |
+| 11 | Stats | ⏳ Pending | Leaderboards, challenges |
+| 12 | Settings | ⏳ Pending | Profile, family, preferences |
 
 ---
 
@@ -262,25 +273,6 @@ RasoiAI/
 
 ---
 
-## APP SCREENS (12 Total - All Approved):
-
-| # | Screen | Status | Key Features |
-|---|--------|--------|--------------|
-| 1 | Splash | ✅ | Logo, loading state |
-| 2 | Auth | ✅ | Google OAuth only |
-| 3 | Onboarding | ✅ | 5 steps with dropdowns |
-| 4 | Home | ✅ | 4 meal types, multiple recipes, individual lock/swap |
-| 5 | Recipe Detail | ✅ | Tabs (Ingredients/Instructions) |
-| 6 | Cooking Mode | ✅ | Full-screen steps, timer |
-| 7 | Grocery List | ✅ | Categorized, WhatsApp share |
-| 8 | Favorites | ✅ | 2-column grid, reorder, Recently Viewed |
-| 9 | Chat | ✅ | History, clear chat, time-based actions |
-| 10 | Pantry Scan | ✅ | Expiry tracking, grocery integration |
-| 11 | Stats | ✅ | Leaderboards, challenges, shareable |
-| 12 | Settings | ✅ | Profile, family, preferences |
-
----
-
 *Last Updated: January 2025*
 *Project: RasoiAI - AI Meal Planning for Indian Families*
-*Next Step: Feature Development (Splash → Auth → Onboarding → Home)*
+*Next Step: Onboarding Screen (5 steps)*
