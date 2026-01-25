@@ -30,9 +30,16 @@
     <string name="nav_settings">Settings</string>
 
     <!-- Auth -->
-    <string name="sign_in_with_google">Sign in with Google</string>
-    <string name="welcome_title">Welcome to RasoiAI</string>
+    <string name="sign_in_with_google">Continue with Google</string>
+    <string name="welcome_title">Welcome!</string>
     <string name="welcome_subtitle">Your AI-powered meal planning assistant</string>
+    <string name="auth_terms_prefix">By continuing, you agree to our</string>
+    <string name="auth_terms_of_service">Terms of Service</string>
+    <string name="auth_privacy_policy">Privacy Policy</string>
+    <string name="auth_error_generic">Sign in failed. Please try again.</string>
+    <string name="auth_error_cancelled">Sign in was cancelled.</string>
+    <string name="auth_error_no_credentials">No Google account found.</string>
+    <string name="signing_in">Signing in…</string>
 
     <!-- Home -->
     <string name="this_weeks_meals">This Week\'s Meals</string>

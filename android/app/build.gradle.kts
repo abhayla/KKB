@@ -118,6 +118,12 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
 
+    // Google Sign-In / Credentials
+    implementation(libs.play.services.auth)
+    implementation(libs.credentials)
+    implementation(libs.credentials.play.services)
+    implementation(libs.googleid)
+
     // WorkManager
     implementation(libs.work.runtime)
 

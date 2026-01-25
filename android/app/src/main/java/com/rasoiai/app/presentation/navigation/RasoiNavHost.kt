@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
+import com.rasoiai.app.presentation.auth.AuthScreen
 import com.rasoiai.app.presentation.splash.SplashScreen
 
 @Composable
@@ -41,11 +42,14 @@ fun RasoiNavHost(
 
         // Auth
         composable(route = Screen.Auth.route) {
-            // TODO: AuthScreen
-            PlaceholderScreen(
-                title = "Auth",
-                onNavigate = {
+            AuthScreen(
+                onNavigateToOnboarding = {
                     navController.navigate(Screen.Onboarding.route) {
+                        popUpTo(Screen.Auth.route) { inclusive = true }
+                    }
+                },
+                onNavigateToHome = {
+                    navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Auth.route) { inclusive = true }
                     }
                 }
