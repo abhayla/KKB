@@ -11,7 +11,7 @@ I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 
 ## Project Status
 
-Splash and Auth screens are IMPLEMENTED. Firebase is configured. Ready for Onboarding.
+Splash, Auth, and Onboarding screens are COMPLETE. Ready for Home screen.
 
 | Phase | Status | Document |
 |-------|--------|----------|
@@ -21,98 +21,117 @@ Splash and Auth screens are IMPLEMENTED. Firebase is configured. Ready for Onboa
 | Design System | ✅ Complete | `docs/design/RasoiAI Design System.md` |
 | Screen Wireframes | ✅ Complete | `docs/design/RasoiAI Screen Wireframes.md` |
 | Android Project Setup | ✅ Complete | `android/` folder |
-| Pre-Dev Infrastructure | ✅ Complete | CI/CD, Testing, Firebase, Logging |
 | Splash Screen | ✅ Complete | `presentation/splash/` |
 | Auth Screen | ✅ Complete | `presentation/auth/` |
-| Firebase Setup | ✅ Complete | `google-services.json` added |
-| **Onboarding** | ⏳ **Next Step** | 5-step flow |
+| Onboarding Screen | ✅ Complete | `presentation/onboarding/` |
+| **Home Screen** | ⏳ **Next Step** | Weekly meal plan view |
 
 ## Screens Implemented
 
-| Screen | Files | Status |
-|--------|-------|--------|
-| Splash | `SplashScreen.kt`, `SplashViewModel.kt`, `AppLogo.kt` | ✅ Complete |
+| Screen | Key Files | Status |
+|--------|-----------|--------|
+| Splash | `SplashScreen.kt`, `SplashViewModel.kt` | ✅ Complete |
 | Auth | `AuthScreen.kt`, `AuthViewModel.kt`, `GoogleAuthClient.kt` | ✅ Complete |
-| Onboarding | - | ⏳ Next |
+| Onboarding | `OnboardingScreen.kt`, `OnboardingViewModel.kt`, `UserPreferencesDataStore.kt` | ✅ Complete |
+| Home | - | ⏳ Next |
 
-## Firebase Configuration (Complete)
+## Architecture Patterns Established
 
-| Item | Status | Details |
-|------|--------|---------|
-| Firebase Project | ✅ | `rasoiai-6dcdd` |
-| google-services.json | ✅ | In `android/app/` |
-| Web Client ID | ✅ | In `BuildConfig.WEB_CLIENT_ID` |
-| Google Sign-In | ✅ | Enabled in Firebase Console |
-| SHA-1 Fingerprint | ⚠️ **PENDING** | Need to add for Google Sign-In to work |
-
-## IMPORTANT: Add SHA-1 Before Testing Auth
-
-Run this command to get your SHA-1:
-```powershell
-& "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -list -v -keystore "$env:USERPROFILE\.android\debug.keystore" -alias androiddebugkey -storepass android
-```
-
-Then add it in Firebase Console:
-1. Go to Project Settings → Your apps → Android app
-2. Click "Add fingerprint"
-3. Paste the SHA1 value
+- **ViewModel**: StateFlow + UiState data class + NavigationEvent sealed class
+- **DI**: Hilt with @HiltViewModel, @Inject constructor
+- **Persistence**: DataStore for preferences, Room for data
+- **Navigation**: Navigation Compose with Screen sealed class
+- **Theme**: MaterialTheme with custom spacing via CompositionLocal
 
 ## Key Documents to Read
 
-1. **CLAUDE.md** (root) - Project overview, architecture summary
-2. **Screen Wireframes** (`docs/design/RasoiAI Screen Wireframes.md`) - Onboarding design (5 steps)
-3. **Architecture Decisions** - Tech stack & patterns
+1. **Screen Wireframes** (`docs/design/RasoiAI Screen Wireframes.md`) - **Screen 4: Home** design
+2. **Domain Models** (`domain/model/`) - `MealPlan.kt`, `Recipe.kt` for data structures
+3. **Onboarding** (`app/presentation/onboarding/`) - Reference for patterns
 
 ## Your Task
 
-**Implement the Onboarding Screen** (5 steps):
-1. Family Size - How many people in family
-2. Dietary Preferences - Veg/Non-veg/Vegan/Jain etc.
-3. Cuisine Preferences - North/South/East/West Indian
-4. Allergies & Restrictions - Common allergens
-5. Cooking Skill Level - Beginner/Intermediate/Expert
+**Implement the Home Screen** (Screen 4 - Weekly Meal Plan):
 
-Requirements:
-- Use dropdowns for selections (as per wireframe)
-- Store preferences in DataStore
-- Navigate to Home after completion
-- Support back navigation between steps
+### UI Components:
+- Top app bar (hamburger, "RasoiAI", notifications, profile icons)
+- Festival banner (conditional, when festival is near)
+- Week date selector (Mon-Sun with dates)
+- 4 meal sections: Breakfast, Lunch, Dinner, Snacks
+- Recipe cards with: name, time, calories, swap/lock icons
+- Bottom navigation bar (Home, Grocery, Chat, Favorites, Stats)
+
+### Features:
+- Multiple recipes per meal type
+- Individual recipe swap (replace with similar)
+- Individual recipe lock (protect from regenerate)
+- Refresh button → Bottom sheet (regenerate day/week)
+- Tap recipe → Navigate to Recipe Detail
+
+### Data:
+- Use placeholder/mock data for now (backend not ready)
+- Create `MealPlanRepository` with fake data
+- Display current week's meals
+
+### Bottom Navigation:
+Create reusable `RasoiBottomNavigation` composable:
+- Home (filled home icon)
+- Grocery (list icon)
+- Chat (chat bubble icon)
+- Favorites (heart icon)
+- Stats (chart icon)
+
+## Reference Files
+
+```
+android/app/src/main/java/com/rasoiai/app/presentation/
+├── onboarding/          # Reference for ViewModel/Screen patterns
+├── navigation/
+│   ├── Screen.kt        # All screen routes defined
+│   └── RasoiNavHost.kt  # Navigation setup
+└── theme/               # Colors, spacing, typography
+
+android/domain/src/main/java/com/rasoiai/domain/model/
+├── MealPlan.kt          # MealPlan, MealPlanDay, MealItem models
+├── Recipe.kt            # Recipe, CuisineType, DietaryTag models
+└── User.kt              # UserPreferences for filtering
+```
 
 ## Working Directory
 Project root: `D:/Abhay/VibeCoding/KKB`
 
-Start by reading the Screen Wireframes for Onboarding design, then implement it.
+Start by reading Screen Wireframes (Screen 4: Home), then implement HomeScreen with HomeViewModel.
 ```
 
 ---
 
-## QUICK START PROMPT (Shorter Version):
+## QUICK START PROMPT (Shorter):
 
 ```
 I'm building **RasoiAI** - an AI meal planning app for Indian families.
 
-**COMPLETED:**
-- ✅ Splash Screen (logo, tagline, offline banner, navigation)
-- ✅ Auth Screen (Google Sign-In with Credential Manager + Firebase)
-- ✅ Firebase configured (google-services.json, Web Client ID)
+**COMPLETED:** Splash, Auth, Onboarding screens with DataStore persistence.
 
-**Auth Implementation Details:**
-- `GoogleAuthClient.kt` - Handles Credential Manager + Firebase Auth
-- `AuthViewModel.kt` - Manages sign-in state, uses `BuildConfig.WEB_CLIENT_ID`
-- `AuthScreen.kt` - UI with Google button, terms/privacy links
-- `FirebaseModule.kt` - Hilt module providing FirebaseAuth
+**NEXT:** Implement Home Screen (Weekly Meal Plan)
 
-**PENDING:** Add SHA-1 fingerprint in Firebase Console for Google Sign-In to work on device.
+**Read:** `docs/design/RasoiAI Screen Wireframes.md` - Screen 4: Home
 
-**NEXT STEP:** Implement Onboarding (5 steps)
+**Home Screen Features:**
+- Week selector (Mon-Sun)
+- 4 meal sections (Breakfast/Lunch/Dinner/Snacks)
+- Recipe cards with swap/lock icons
+- Festival banner
+- Bottom navigation (Home, Grocery, Chat, Favorites, Stats)
+- Refresh → regenerate day/week
 
-**Read:** `docs/design/RasoiAI Screen Wireframes.md` for Onboarding design
+**Reference:** `app/presentation/onboarding/` for patterns
 
-**Key Files:**
-- `android/app/src/main/java/com/rasoiai/app/presentation/auth/` - Auth implementation
-- `android/app/src/main/java/com/rasoiai/app/presentation/splash/` - Splash implementation
+**Create:**
+1. `HomeScreen.kt` + `HomeViewModel.kt`
+2. `RasoiBottomNavigation.kt` (reusable)
+3. Mock data repository for meal plans
 
-Implement the 5-step Onboarding flow with DataStore persistence.
+Project root: `D:/Abhay/VibeCoding/KKB`
 ```
 
 ---
@@ -121,158 +140,132 @@ Implement the 5-step Onboarding flow with DataStore persistence.
 
 | File | Path | Priority | Description |
 |------|------|----------|-------------|
-| Project Guide | `CLAUDE.md` | **HIGH** | Project overview, all summaries & decisions |
-| Screen Wireframes | `docs/design/RasoiAI Screen Wireframes.md` | **HIGH** | Onboarding design (5 steps) |
-| Architecture Decisions | `docs/design/Android Architecture Decisions.md` | **HIGH** | Tech stack, code patterns |
-| Auth Implementation | `app/presentation/auth/` | **HIGH** | Reference for screen patterns |
-| Splash Implementation | `app/presentation/splash/` | MEDIUM | Reference for ViewModel patterns |
-| Design System | `docs/design/RasoiAI Design System.md` | MEDIUM | Colors, typography, Theme.kt code |
+| Screen Wireframes | `docs/design/RasoiAI Screen Wireframes.md` | **HIGH** | Home screen design (Screen 4) |
+| MealPlan Model | `domain/model/MealPlan.kt` | **HIGH** | Data structures for meals |
+| Recipe Model | `domain/model/Recipe.kt` | **HIGH** | Recipe data structure |
+| Onboarding Screen | `app/presentation/onboarding/OnboardingScreen.kt` | **HIGH** | Pattern reference |
+| Onboarding ViewModel | `app/presentation/onboarding/OnboardingViewModel.kt` | **HIGH** | State management pattern |
+| Navigation | `app/presentation/navigation/` | MEDIUM | Screen routes, NavHost |
+| Theme | `app/presentation/theme/` | MEDIUM | Colors, spacing |
+| CLAUDE.md | Root | MEDIUM | Project overview |
+
+---
+
+## HOME SCREEN WIREFRAME SUMMARY:
+
+```
+┌─────────────────────────────────────┐
+│  ☰  RasoiAI                 🔔  👤  │  ← Top bar
+│─────────────────────────────────────│
+│  ┌─────────────────────────────────┐│
+│  │ 🎉 Festival Banner (optional)  ││  ← Conditional
+│  └─────────────────────────────────┘│
+│  This Week's Menu                   │
+│  Jan 20 - 26                        │
+│  ┌─Mo─┬─Tu─┬─We─┬─Th─┬─Fr─┬─Sa─┬─Su┐│  ← Week selector
+│  │[●] │ ○  │ ○  │ ○  │ ○  │ ○  │ ○ ││
+│  └────┴────┴────┴────┴────┴────┴───┘│
+│  Monday, Jan 20          [🔄 Refresh]│
+│                                     │
+│  ┌─────────────────────────────────┐│
+│  │ 🌅 BREAKFAST            [+ Add] ││  ← Meal section
+│  │ ● Poha         20 min  280cal [⟲]││  ← Recipe with swap
+│  │ ● Chai          5 min   80cal [⟲]││
+│  └─────────────────────────────────┘│
+│                                     │
+│  ┌─────────────────────────────────┐│
+│  │ ☀️ LUNCH                [+ Add] ││
+│  │ ● Dal Tadka    25 min  180cal [⟲]││
+│  │ ● Jeera Rice   15 min  220cal [⟲]││
+│  │ ● Roti (4)     20 min  320cal [⟲]││
+│  └─────────────────────────────────┘│
+│  ... (Dinner, Snacks similar)       │
+│─────────────────────────────────────│
+│  🏠     📋     💬     ❤️     📊    │  ← Bottom nav
+│ Home  Grocery  Chat  Favs  Stats    │
+└─────────────────────────────────────┘
+```
+
+### Recipe Card Actions:
+- **Tap recipe** → View Recipe Detail
+- **[⟲] Swap** → Bottom sheet with alternatives
+- **🔒 Lock** → Protect from regeneration
+- **[+ Add]** → Add recipe to meal
+
+### Refresh Options (Bottom Sheet):
+- Regenerate this day only
+- Regenerate entire week
+- Note: Locked recipes preserved
+
+---
+
+## IMPLEMENTATION CHECKLIST:
+
+### 1. Create Home Screen Files
+```
+app/presentation/home/
+├── HomeScreen.kt           # Main composable
+├── HomeViewModel.kt        # State management
+└── components/
+    ├── MealSection.kt      # Breakfast/Lunch/Dinner/Snacks
+    ├── RecipeCard.kt       # Individual recipe item
+    ├── WeekSelector.kt     # Day picker
+    └── FestivalBanner.kt   # Optional banner
+```
+
+### 2. Create Bottom Navigation
+```
+app/presentation/common/
+└── RasoiBottomNavigation.kt  # Reusable bottom nav
+```
+
+### 3. Create Mock Repository
+```
+data/repository/
+└── FakeMealPlanRepository.kt  # Mock data for testing
+```
+
+### 4. Update Navigation
+- Add HomeScreen to RasoiNavHost
+- Integrate bottom navigation
 
 ---
 
 ## PROJECT STATUS:
 
-| Phase | Status | Notes |
-|-------|--------|-------|
-| Ollie.ai Research | ✅ Complete | Reference material |
-| RasoiAI Requirements | ✅ Complete | India-specific PRD |
-| Technical Design | ✅ Complete | Architecture, DB, APIs |
-| Architecture Decisions | ✅ Complete | Kotlin, Hilt, KSP, Compose |
-| Design System | ✅ Complete | Colors, typography, theme code |
-| Screen Wireframes | ✅ Complete | 12 screens approved (v2.0) |
-| Android Project Setup | ✅ Complete | Multi-module, Gradle, Hilt, Theme |
-| Pre-Dev Infrastructure | ✅ Complete | CI/CD, Testing, Firebase, Logging |
-| **Splash Screen** | ✅ **Complete** | Logo, tagline, offline banner |
-| **Auth Screen** | ✅ **Complete** | Google Sign-In with Credential Manager |
-| **Firebase Setup** | ✅ **Complete** | google-services.json, Web Client ID |
-| **Onboarding** | ⏳ **Next Step** | 5-step preference collection |
+| # | Screen | Status | Notes |
+|---|--------|--------|-------|
+| 1 | Splash | ✅ Done | Logo, offline banner |
+| 2 | Auth | ✅ Done | Google Sign-In |
+| 3 | Onboarding | ✅ Done | 5-step DataStore |
+| 4 | **Home** | ⏳ **Next** | Weekly meal plan |
+| 5 | Recipe Detail | Pending | - |
+| 6 | Cooking Mode | Pending | - |
+| 7 | Grocery List | Pending | - |
+| 8 | Favorites | Pending | - |
+| 9 | Chat | Pending | - |
+| 10 | Pantry Scan | Pending | - |
+| 11 | Stats | Pending | - |
+| 12 | Settings | Pending | - |
 
 ---
 
-## IMPLEMENTED SCREENS:
+## DESIGN SYSTEM QUICK REF:
 
-### 1. Splash Screen (`presentation/splash/`)
-
-| File | Description |
-|------|-------------|
-| `SplashScreen.kt` | Main composable with logo, tagline, loading indicator, offline banner |
-| `SplashViewModel.kt` | Handles 2s delay, auth check, navigation events, network monitoring |
-| `components/AppLogo.kt` | Custom cooking pot logo drawn with Canvas |
-
-Features:
-- Custom cooking pot logo with steam animation
-- "RasoiAI" branding + tagline
-- Circular loading indicator
-- Offline banner (shows when no network)
-- Navigation: Auth (not logged in) → Onboarding (logged in, not onboarded) → Home
-
-### 2. Auth Screen (`presentation/auth/`)
-
-| File | Description |
-|------|-------------|
-| `AuthScreen.kt` | UI with logo, welcome text, Google button, terms/privacy |
-| `AuthViewModel.kt` | Manages sign-in flow, error handling, navigation |
-| `GoogleAuthClient.kt` | Credential Manager + Firebase Auth integration |
-
-Features:
-- Google Sign-In button with loading state
-- Error handling with Snackbar
-- Terms of Service / Privacy Policy links
-- Navigation: → Onboarding (new user) or → Home (returning user)
-
-### 3. DI Module (`di/`)
-
-| File | Description |
-|------|-------------|
-| `FirebaseModule.kt` | Provides FirebaseAuth instance via Hilt |
-
----
-
-## FIREBASE SETUP (Complete):
-
-| Item | Value/Status |
-|------|--------------|
-| Project ID | `rasoiai-6dcdd` |
-| Project Number | `1016523916534` |
-| Package Name | `com.rasoiai.app` |
-| App ID | `1:1016523916534:android:0de2c6d0930c38508c58d7` |
-| Web Client ID | `1016523916534-tiop62vjrd3ak3sh91ru76bj8p04v49f.apps.googleusercontent.com` |
-| google-services.json | ✅ In `android/app/` |
-| Google Sign-In Provider | ✅ Enabled |
-| SHA-1 Fingerprint | ⚠️ **NOT ADDED** - Required for sign-in to work |
-
-### To Add SHA-1:
-
-1. Get SHA-1 from debug keystore:
-```powershell
-& "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -list -v -keystore "$env:USERPROFILE\.android\debug.keystore" -alias androiddebugkey -storepass android
-```
-
-2. In Firebase Console → Project Settings → Your apps → Android
-3. Click "Add fingerprint" → Paste SHA1 value
-
----
-
-## ONBOARDING DESIGN (From Wireframes):
-
-### 5-Step Flow:
-
-| Step | Title | Input Type | Options |
-|------|-------|------------|---------|
-| 1 | Family Size | Dropdown | 1-8+ members |
-| 2 | Dietary Preferences | Multi-select | Vegetarian, Non-veg, Vegan, Jain, Sattvic, Eggetarian |
-| 3 | Cuisine Preferences | Multi-select | North Indian, South Indian, East Indian, West Indian |
-| 4 | Allergies | Multi-select | Nuts, Dairy, Gluten, Shellfish, None |
-| 5 | Cooking Skill | Single select | Beginner, Intermediate, Expert |
-
-### UI Elements:
-- Progress indicator (step X of 5)
-- Back button (except step 1)
-- Next/Finish button
-- Skip option (optional)
-
-### Data Storage:
-- Use DataStore Preferences
-- Create `UserPreferencesRepository` in data layer
-
----
-
-## APP SCREENS (12 Total):
-
-| # | Screen | Implementation | Key Features |
-|---|--------|----------------|--------------|
-| 1 | Splash | ✅ **DONE** | Logo, loading, offline banner |
-| 2 | Auth | ✅ **DONE** | Google OAuth |
-| 3 | Onboarding | ⏳ **NEXT** | 5 steps with dropdowns |
-| 4 | Home | ⏳ Pending | 4 meal types, recipes, lock/swap |
-| 5 | Recipe Detail | ⏳ Pending | Tabs (Ingredients/Instructions) |
-| 6 | Cooking Mode | ⏳ Pending | Full-screen steps, timer |
-| 7 | Grocery List | ⏳ Pending | Categorized, WhatsApp share |
-| 8 | Favorites | ⏳ Pending | 2-column grid, reorder |
-| 9 | Chat | ⏳ Pending | History, time-based actions |
-| 10 | Pantry Scan | ⏳ Pending | Expiry tracking |
-| 11 | Stats | ⏳ Pending | Leaderboards, challenges |
-| 12 | Settings | ⏳ Pending | Profile, family, preferences |
-
----
-
-## DESIGN SYSTEM QUICK REFERENCE:
-
-| Element | Light Mode | Dark Mode |
-|---------|------------|-----------|
+| Element | Light | Dark |
+|---------|-------|------|
 | Primary | `#FF6838` | `#FFB59C` |
 | Secondary | `#5A822B` | `#A8D475` |
 | Background | `#FDFAF4` | `#1C1B1F` |
-| Surface | `#FFFFFF` | `#2B2930` |
+| Vegetarian | Green dot | - |
+| Non-Veg | Red dot | - |
 
 | Token | Value |
 |-------|-------|
-| Typography | Roboto (System Default) |
-| Spacing | 8dp grid (4, 8, 16, 24, 32, 48dp) |
-| Shapes | Rounded (8dp small, 16dp medium, 24dp large) |
+| Spacing | 4, 8, 16, 24, 32, 48dp |
+| Corners | 8dp (small), 16dp (medium), 24dp (large) |
 
 ---
 
 *Last Updated: January 2025*
-*Project: RasoiAI - AI Meal Planning for Indian Families*
-*Next Step: Onboarding Screen (5 steps)*
+*Next Step: Home Screen (Weekly Meal Plan)*

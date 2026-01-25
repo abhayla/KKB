@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.rasoiai.app.presentation.auth.AuthScreen
+import com.rasoiai.app.presentation.onboarding.OnboardingScreen
 import com.rasoiai.app.presentation.splash.SplashScreen
 
 @Composable
@@ -58,10 +59,8 @@ fun RasoiNavHost(
 
         // Onboarding
         composable(route = Screen.Onboarding.route) {
-            // TODO: OnboardingScreen
-            PlaceholderScreen(
-                title = "Onboarding",
-                onNavigate = {
+            OnboardingScreen(
+                onNavigateToHome = {
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Onboarding.route) { inclusive = true }
                     }

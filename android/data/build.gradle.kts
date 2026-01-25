@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -68,6 +69,9 @@ dependencies {
 
     // DataStore
     implementation(libs.datastore.preferences)
+
+    // Serialization
+    implementation(libs.kotlinx.serialization.json)
 
     // Coroutines
     implementation(libs.bundles.coroutines)

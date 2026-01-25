@@ -4,10 +4,12 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rasoiai.app.BuildConfig
+import com.rasoiai.data.local.datastore.UserPreferencesDataStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -32,9 +34,8 @@ sealed class AuthNavigationEvent {
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val googleAuthClient: GoogleAuthClient
-    // TODO: Inject use case for checking onboarding status
-    // private val checkOnboardingCompleteUseCase: CheckOnboardingCompleteUseCase
+    private val googleAuthClient: GoogleAuthClient,
+    private val userPreferencesDataStore: UserPreferencesDataStore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -105,9 +106,8 @@ class AuthViewModel @Inject constructor(
 
     private fun navigateAfterSignIn() {
         viewModelScope.launch {
-            // TODO: Check if onboarding is complete
-            // val isOnboarded = checkOnboardingCompleteUseCase()
-            val isOnboarded = false // Placeholder - always go to onboarding for now
+            // Check if onboarding is complete from DataStore
+            val isOnboarded = userPreferencesDataStore.isOnboarded.first()
 
             _navigationEvent.value = if (isOnboarded) {
                 AuthNavigationEvent.NavigateToHome

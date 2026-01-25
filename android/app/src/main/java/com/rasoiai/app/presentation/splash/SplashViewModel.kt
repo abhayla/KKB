@@ -2,13 +2,16 @@ package com.rasoiai.app.presentation.splash
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
 import com.rasoiai.core.network.NetworkMonitor
+import com.rasoiai.data.local.datastore.UserPreferencesDataStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -27,10 +30,8 @@ sealed class SplashNavigationEvent {
 
 @HiltViewModel
 class SplashViewModel @Inject constructor(
-    networkMonitor: NetworkMonitor
-    // TODO: Inject use cases for checking auth state and onboarding status
-    // private val checkAuthStateUseCase: CheckAuthStateUseCase,
-    // private val checkOnboardingCompleteUseCase: CheckOnboardingCompleteUseCase
+    networkMonitor: NetworkMonitor,
+    private val userPreferencesDataStore: UserPreferencesDataStore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SplashUiState())
@@ -52,11 +53,11 @@ class SplashViewModel @Inject constructor(
             // Splash delay for branding (2 seconds as per wireframe spec)
             delay(2000)
 
-            // TODO: Replace with actual auth check
-            // val isLoggedIn = checkAuthStateUseCase()
-            // val isOnboarded = checkOnboardingCompleteUseCase()
-            val isLoggedIn = false // Placeholder
-            val isOnboarded = false // Placeholder
+            // Check if user is logged in via Firebase Auth
+            val isLoggedIn = FirebaseAuth.getInstance().currentUser != null
+
+            // Check if onboarding is complete from DataStore
+            val isOnboarded = userPreferencesDataStore.isOnboarded.first()
 
             val navigationEvent = when {
                 !isLoggedIn -> SplashNavigationEvent.NavigateToAuth

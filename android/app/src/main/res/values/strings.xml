@@ -29,6 +29,30 @@
     <string name="nav_chat">Chat</string>
     <string name="nav_settings">Settings</string>
 
+    <!-- Onboarding -->
+    <string name="onboarding_step_of">%1$d of %2$d</string>
+    <string name="onboarding_household_title">How many people are you cooking for?</string>
+    <string name="onboarding_family_members">Family members:</string>
+    <string name="onboarding_add_family_member">Add family member</string>
+    <string name="onboarding_dietary_title">What\'s your primary diet?</string>
+    <string name="onboarding_dietary_restrictions">Special dietary restrictions:</string>
+    <string name="onboarding_cuisine_title">Which cuisines do you like?</string>
+    <string name="onboarding_cuisine_subtitle">(Select all that apply)</string>
+    <string name="onboarding_spice_level">Spice level:</string>
+    <string name="onboarding_ingredients_title">Any ingredients you dislike?</string>
+    <string name="onboarding_search_ingredients">Search ingredients…</string>
+    <string name="onboarding_common_dislikes">Common dislikes:</string>
+    <string name="onboarding_cooking_time_title">How much time do you have for cooking?</string>
+    <string name="onboarding_weekdays">Weekdays:</string>
+    <string name="onboarding_weekends">Weekends:</string>
+    <string name="onboarding_busy_days">Busy days (quick meals only):</string>
+    <string name="onboarding_create_meal_plan">Create My Meal Plan</string>
+    <string name="onboarding_generating_title">Creating your perfect meal plan…</string>
+    <string name="onboarding_analyzing_preferences">Analyzing preferences</string>
+    <string name="onboarding_checking_festivals">Checking festivals</string>
+    <string name="onboarding_generating_recipes">Generating recipes</string>
+    <string name="onboarding_building_grocery_list">Building grocery list</string>
+
     <!-- Auth -->
     <string name="sign_in_with_google">Continue with Google</string>
     <string name="welcome_title">Welcome!</string>

@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current Status
 
-**Android project fully set up with infrastructure.** Ready for feature development.
+**Core screens implemented.** Ready for Home screen development.
 
 | Phase | Status | Document |
 |-------|--------|----------|
@@ -26,7 +26,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Screen Wireframes | ✅ Complete | `docs/design/RasoiAI Screen Wireframes.md` |
 | Android Project Setup | ✅ Complete | `android/` folder |
 | Pre-Dev Infrastructure | ✅ Complete | CI/CD, Testing, Firebase, Logging |
-| Feature Development | ⏳ Next Step | Auth, Onboarding, Home screens |
+| Splash Screen | ✅ Complete | `presentation/splash/` |
+| Auth Screen | ✅ Complete | `presentation/auth/` |
+| Onboarding Screen | ✅ Complete | `presentation/onboarding/` |
+| **Home Screen** | ⏳ **Next Step** | Weekly meal plan view |
 
 ## Infrastructure Setup (Complete)
 
