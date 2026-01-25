@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current Status
 
-**Android project structure is set up.** Ready for feature development.
+**Android project fully set up with infrastructure.** Ready for feature development.
 
 | Phase | Status | Document |
 |-------|--------|----------|
@@ -25,7 +25,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Design System | ✅ Complete | `docs/design/RasoiAI Design System.md` |
 | Screen Wireframes | ✅ Complete | `docs/design/RasoiAI Screen Wireframes.md` |
 | Android Project Setup | ✅ Complete | `android/` folder |
+| Pre-Dev Infrastructure | ✅ Complete | CI/CD, Testing, Firebase, Logging |
 | Feature Development | ⏳ Next Step | Auth, Onboarding, Home screens |
+
+## Infrastructure Setup (Complete)
+
+| Category | Status | Details |
+|----------|--------|---------|
+| CI/CD | ✅ | GitHub Actions (`android-ci.yml`) - build, test, lint on push/PR |
+| Firebase | ✅ | Plugins configured (google-services, crashlytics), Analytics & Crashlytics deps |
+| Logging | ✅ | Timber integrated in `RasoiAIApplication` |
+| Background Sync | ✅ | WorkManager + `SyncWorker` for offline data sync |
+| Network Security | ✅ | `network_security_config.xml` (cleartext blocked except localhost) |
+| Gradle Wrapper | ✅ | `gradlew` / `gradlew.bat` scripts |
+| Test Infrastructure | ✅ | Sample tests in app, domain, data modules |
+
+### Before Starting Feature Development
+
+1. **Firebase Setup** - Create Firebase project and download `google-services.json` to `android/app/`
+2. **Release Signing** - Configure keystore in `android/app/build.gradle.kts` (placeholder exists)
 
 ## Key Architecture Decisions
 
