@@ -7,12 +7,18 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}
+
 dependencies {
     // Coroutines (core only, no Android)
     implementation(libs.coroutines.core)
 
-    // Hilt annotations (for @Inject on use cases)
-    implementation(libs.hilt.android)
+    // Javax Inject annotations (for @Inject on use cases - no Android dependencies)
+    implementation(libs.javax.inject)
 
     // Testing
     testImplementation(libs.junit5)

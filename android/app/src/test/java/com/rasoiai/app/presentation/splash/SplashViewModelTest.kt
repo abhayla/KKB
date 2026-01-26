@@ -2,10 +2,14 @@ package com.rasoiai.app.presentation.splash
 
 import app.cash.turbine.test
 import com.rasoiai.core.network.NetworkMonitor
+import com.rasoiai.data.local.datastore.UserPreferencesDataStore
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -24,11 +28,14 @@ class SplashViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var fakeNetworkMonitor: FakeNetworkMonitor
+    private lateinit var mockUserPreferencesDataStore: UserPreferencesDataStore
 
     @BeforeEach
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         fakeNetworkMonitor = FakeNetworkMonitor()
+        mockUserPreferencesDataStore = mockk(relaxed = true)
+        every { mockUserPreferencesDataStore.isOnboarded } returns flowOf(false)
     }
 
     @AfterEach
@@ -39,7 +46,7 @@ class SplashViewModelTest {
     @Test
     @DisplayName("Initial state should be loading")
     fun `initial state should be loading`() = runTest {
-        val viewModel = SplashViewModel(fakeNetworkMonitor)
+        val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore)
 
         viewModel.uiState.test {
             val initialState = awaitItem()
@@ -51,7 +58,7 @@ class SplashViewModelTest {
     @Test
     @DisplayName("After delay, should navigate to auth when not logged in")
     fun `after delay should navigate to auth when not logged in`() = runTest {
-        val viewModel = SplashViewModel(fakeNetworkMonitor)
+        val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore)
 
         viewModel.uiState.test {
             // Skip initial state
@@ -73,7 +80,7 @@ class SplashViewModelTest {
     @Test
     @DisplayName("isOnline should reflect network state")
     fun `isOnline should reflect network state`() = runTest {
-        val viewModel = SplashViewModel(fakeNetworkMonitor)
+        val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore)
 
         viewModel.isOnline.test {
             // Initial state is online
@@ -94,7 +101,7 @@ class SplashViewModelTest {
     @Test
     @DisplayName("onNavigationHandled should clear navigation event")
     fun `onNavigationHandled should clear navigation event`() = runTest {
-        val viewModel = SplashViewModel(fakeNetworkMonitor)
+        val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore)
 
         viewModel.uiState.test {
             // Skip initial state

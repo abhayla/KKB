@@ -59,11 +59,13 @@ class SplashViewModel @Inject constructor(
             // Check if onboarding is complete from DataStore
             val isOnboarded = userPreferencesDataStore.isOnboarded.first()
 
-            val navigationEvent = when {
-                !isLoggedIn -> SplashNavigationEvent.NavigateToAuth
-                !isOnboarded -> SplashNavigationEvent.NavigateToOnboarding
-                else -> SplashNavigationEvent.NavigateToHome
-            }
+            // TODO: Remove this bypass after testing
+            val navigationEvent = SplashNavigationEvent.NavigateToHome
+            // val navigationEvent = when {
+            //     !isLoggedIn -> SplashNavigationEvent.NavigateToAuth
+            //     !isOnboarded -> SplashNavigationEvent.NavigateToOnboarding
+            //     else -> SplashNavigationEvent.NavigateToHome
+            // }
 
             _uiState.update {
                 it.copy(

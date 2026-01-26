@@ -49,7 +49,8 @@ android {
         }
         debug {
             isMinifyEnabled = false
-            applicationIdSuffix = ".debug"
+            // Removed applicationIdSuffix to match Firebase config
+            // Add com.rasoiai.app.debug to Firebase Console for production
             versionNameSuffix = "-debug"
         }
     }

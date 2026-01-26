@@ -8,7 +8,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.rasoiai.app.presentation.auth.AuthScreen
+import com.rasoiai.app.presentation.cookingmode.CookingModeScreen
+import com.rasoiai.app.presentation.home.HomeScreen
 import com.rasoiai.app.presentation.onboarding.OnboardingScreen
+import com.rasoiai.app.presentation.recipedetail.RecipeDetailScreen
 import com.rasoiai.app.presentation.splash.SplashScreen
 
 @Composable
@@ -70,10 +73,25 @@ fun RasoiNavHost(
 
         // Home
         composable(route = Screen.Home.route) {
-            // TODO: HomeScreen
-            PlaceholderScreen(
-                title = "Home",
-                onNavigate = { navController.navigate(Screen.RecipeDetail.createRoute("sample-recipe")) }
+            HomeScreen(
+                onNavigateToRecipeDetail = { recipeId ->
+                    navController.navigate(Screen.RecipeDetail.createRoute(recipeId))
+                },
+                onNavigateToSettings = {
+                    navController.navigate(Screen.Settings.route)
+                },
+                onNavigateToGrocery = {
+                    navController.navigate(Screen.Grocery.route)
+                },
+                onNavigateToChat = {
+                    navController.navigate(Screen.Chat.route)
+                },
+                onNavigateToFavorites = {
+                    navController.navigate(Screen.Favorites.route)
+                },
+                onNavigateToStats = {
+                    navController.navigate(Screen.Stats.route)
+                }
             )
         }
 
@@ -91,10 +109,15 @@ fun RasoiNavHost(
             )
         ) { backStackEntry ->
             val recipeId = backStackEntry.arguments?.getString(Screen.RecipeDetail.ARG_RECIPE_ID) ?: return@composable
-            // TODO: RecipeDetailScreen
-            PlaceholderScreen(
-                title = "Recipe: $recipeId",
-                onNavigate = { navController.navigate(Screen.CookingMode.createRoute(recipeId)) }
+            RecipeDetailScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToCookingMode = { id ->
+                    navController.navigate(Screen.CookingMode.createRoute(id))
+                },
+                onNavigateToChat = { context ->
+                    navController.navigate(Screen.Chat.route)
+                    // TODO: Pass context to chat screen
+                }
             )
         }
 
@@ -108,10 +131,13 @@ fun RasoiNavHost(
             )
         ) { backStackEntry ->
             val recipeId = backStackEntry.arguments?.getString(Screen.CookingMode.ARG_RECIPE_ID) ?: return@composable
-            // TODO: CookingModeScreen
-            PlaceholderScreen(
-                title = "Cooking: $recipeId",
-                onNavigate = { navController.popBackStack() }
+            CookingModeScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                }
             )
         }
 

@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current Status
 
-**Core screens implemented.** Ready for Home screen development.
+**Core screens implemented.** Ready for Grocery List screen development.
 
 | Phase | Status | Document |
 |-------|--------|----------|
@@ -29,7 +29,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Splash Screen | ✅ Complete | `presentation/splash/` |
 | Auth Screen | ✅ Complete | `presentation/auth/` |
 | Onboarding Screen | ✅ Complete | `presentation/onboarding/` |
-| **Home Screen** | ⏳ **Next Step** | Weekly meal plan view |
+| Home Screen | ✅ Complete | `presentation/home/` |
+| Recipe Detail | ✅ Complete | `presentation/recipedetail/` |
+| Cooking Mode | ✅ Complete | `presentation/cookingmode/` |
+| **Grocery List** | ⏳ **Next Step** | Categorized items, WhatsApp share |
 
 ## Infrastructure Setup (Complete)
 
@@ -60,6 +63,73 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Minimum SDK | API 24 (Android 7.0) |
 | Testing Strategy | 70% Unit / 20% Integration / 10% UI |
 | Modularization | By-Layer (app, core, data, domain) → Hybrid later |
+
+## ViewModel Pattern
+
+All ViewModels follow this structure:
+
+```kotlin
+// 1. UiState data class - all screen state in one place
+data class FeatureUiState(
+    val isLoading: Boolean = true,
+    val errorMessage: String? = null,
+    // ... computed properties via get() for derived state
+)
+
+// 2. NavigationEvent sealed class - one-time navigation events
+sealed class FeatureNavigationEvent {
+    data class NavigateToDetail(val id: String) : FeatureNavigationEvent()
+    data object NavigateToSettings : FeatureNavigationEvent()
+}
+
+// 3. ViewModel with Hilt injection
+@HiltViewModel
+class FeatureViewModel @Inject constructor(
+    private val repository: Repository
+) : ViewModel() {
+    private val _uiState = MutableStateFlow(FeatureUiState())
+    val uiState: StateFlow<FeatureUiState> = _uiState.asStateFlow()
+
+    private val _navigationEvent = MutableStateFlow<FeatureNavigationEvent?>(null)
+    val navigationEvent: StateFlow<FeatureNavigationEvent?> = _navigationEvent.asStateFlow()
+
+    // Update state with copy()
+    fun doSomething() {
+        _uiState.update { it.copy(isLoading = true) }
+    }
+
+    // Clear navigation after handling
+    fun onNavigationHandled() {
+        _navigationEvent.value = null
+    }
+}
+```
+
+## Navigation Routes
+
+Routes with arguments use `createRoute()` helper pattern:
+
+```kotlin
+// In Screen.kt
+data object RecipeDetail : Screen("recipe/{recipeId}") {
+    fun createRoute(recipeId: String) = "recipe/$recipeId"
+    const val ARG_RECIPE_ID = "recipeId"
+}
+
+// Usage in navigation
+navController.navigate(Screen.RecipeDetail.createRoute(recipeId))
+```
+
+## Key Domain Models
+
+| Model | Key Fields |
+|-------|-----------|
+| `Recipe` | id, name, cuisine, region, dietaryTags, prepTime, cookTime, ingredients, steps, nutritionInfo |
+| `Ingredient` | name, quantity, unit, isOptional |
+| `CookingStep` | stepNumber, instruction, durationMinutes, imageUrl |
+| `MealItem` | recipeId, recipeName, isLocked, servings |
+| `MealPlanDay` | date, breakfast, lunch, dinner, snacks, festival |
+| `NutritionInfo` | calories, protein, carbs, fat, fiber |
 
 ## Design System
 
@@ -157,19 +227,22 @@ RasoiAI/
 ### Android App (Windows - run from `android/` folder)
 ```bash
 # Build
-gradlew build
+.\gradlew build
 
 # Run unit tests
-gradlew test
+.\gradlew test
 
 # Run single test class
-gradlew test --tests "com.rasoiai.app.ClassName"
+.\gradlew test --tests "com.rasoiai.app.ClassName"
 
 # Run instrumented tests
-gradlew connectedAndroidTest
+.\gradlew connectedAndroidTest
 
 # Lint
-gradlew lint
+.\gradlew lint
+
+# Clean build
+.\gradlew clean build
 ```
 
 ### Backend (Python)
