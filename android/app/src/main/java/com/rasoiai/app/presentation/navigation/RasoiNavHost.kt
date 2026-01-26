@@ -9,6 +9,7 @@ import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.rasoiai.app.presentation.auth.AuthScreen
 import com.rasoiai.app.presentation.cookingmode.CookingModeScreen
+import com.rasoiai.app.presentation.favorites.FavoritesScreen
 import com.rasoiai.app.presentation.grocery.GroceryScreen
 import com.rasoiai.app.presentation.home.HomeScreen
 import com.rasoiai.app.presentation.onboarding.OnboardingScreen
@@ -165,8 +166,25 @@ fun RasoiNavHost(
 
         // Favorites
         composable(route = Screen.Favorites.route) {
-            // TODO: FavoritesScreen
-            PlaceholderScreen(title = "Favorites")
+            FavoritesScreen(
+                onNavigateToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                },
+                onNavigateToGrocery = {
+                    navController.navigate(Screen.Grocery.route)
+                },
+                onNavigateToChat = {
+                    navController.navigate(Screen.Chat.route)
+                },
+                onNavigateToStats = {
+                    navController.navigate(Screen.Stats.route)
+                },
+                onNavigateToRecipeDetail = { recipeId ->
+                    navController.navigate(Screen.RecipeDetail.createRoute(recipeId))
+                }
+            )
         }
 
         // Chat

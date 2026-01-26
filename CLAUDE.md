@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current Status
 
-**Core screens implemented.** Ready for Favorites screen development.
+**Core screens implemented.** Ready for Chat screen development.
 
 | Phase | Status | Document |
 |-------|--------|----------|
@@ -33,7 +33,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Recipe Detail | ✅ Complete | `presentation/recipedetail/` |
 | Cooking Mode | ✅ Complete | `presentation/cookingmode/` |
 | Grocery List | ✅ Complete | `presentation/grocery/` |
-| **Favorites** | ⏳ **Next Step** | Collections, 2-column grid, Recently Viewed |
+| Favorites | ✅ Complete | `presentation/favorites/` |
+| **Chat** | ⏳ **Next Step** | AI assistant, chat history, recipe suggestions |
 
 ## Infrastructure Setup (Complete)
 

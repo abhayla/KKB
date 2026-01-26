@@ -122,16 +122,16 @@ class FakeRecipeRepository @Inject constructor() : RecipeRepository {
 
     private fun createSampleRecipes(): List<Recipe> {
         return listOf(
-            createDalTadka(),
-            createPalakPaneer(),
-            createAlooParatha(),
-            createMasalaDosa(),
+            createDalTadka().copy(isFavorite = true),
+            createPalakPaneer().copy(isFavorite = true),
+            createAlooParatha().copy(isFavorite = true),
+            createMasalaDosa().copy(isFavorite = true),
             createRajmaMasala(),
-            createPaneerButterMasala(),
-            createVegBiryani(),
+            createPaneerButterMasala().copy(isFavorite = true),
+            createVegBiryani().copy(isFavorite = true),
             createCholeBhature(),
-            createIdliSambar(),
-            createMalaiKofta()
+            createIdliSambar().copy(isFavorite = true),
+            createMalaiKofta().copy(isFavorite = true)
         )
     }
 
