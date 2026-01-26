@@ -11,7 +11,7 @@ I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 
 ## Project Status
 
-12 screens implemented (Splash → Auth → Onboarding → Home → Recipe Detail → Cooking Mode → Grocery List → Favorites → Chat → Pantry Scan → Stats → Settings). All wireframes complete (13 screens). Ready to implement Recipe Rules screen.
+All 13 screens implemented and working. Wireframes split into individual files. UI aligned with wireframe specifications including lock icon updates and 2-column grid sheets.
 
 | Phase | Status | Document |
 |-------|--------|----------|
@@ -19,22 +19,53 @@ I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 | Technical Design | ✅ Complete | `docs/design/RasoiAI Technical Design.md` |
 | Architecture Decisions | ✅ Complete | `docs/design/Android Architecture Decisions.md` |
 | Design System | ✅ Complete | `docs/design/RasoiAI Design System.md` |
-| Screen Wireframes | ✅ Complete | `docs/design/RasoiAI Screen Wireframes.md` (v3.1, 13 screens) |
+| Screen Wireframes | ✅ Complete | `docs/design/wireframes/` (16 files, v3.1) |
 | Android Project Setup | ✅ Complete | `android/` folder |
-| Splash Screen | ✅ Complete | `presentation/splash/` |
-| Auth Screen | ✅ Complete | `presentation/auth/` |
-| Onboarding Screen | ✅ Complete | `presentation/onboarding/` |
-| Home Screen | ✅ Complete | `presentation/home/` |
-| Recipe Detail | ✅ Complete | `presentation/recipedetail/` |
-| Cooking Mode | ✅ Complete | `presentation/cookingmode/` |
-| Grocery List | ✅ Complete | `presentation/grocery/` |
-| Favorites | ✅ Complete | `presentation/favorites/` |
-| Chat | ✅ Complete | `presentation/chat/` |
-| Pantry Scan | ✅ Complete | `presentation/pantry/` |
-| Stats | ✅ Complete | `presentation/stats/` |
-| Settings | ✅ Complete | `presentation/settings/` |
-| Recipe Rules Reqs | ✅ Complete | `docs/requirements/Recipe Rules Screen Requirements.md` |
-| **Recipe Rules** | ⏳ **Next Step** | 4 tabs, rule management, nutrition goals |
+| All 13 Screens | ✅ Complete | See list below |
+| **Backend Integration** | ⏳ **Next Step** | API connections, Firebase Auth |
+
+### Implemented Screens (all complete):
+1. Splash (`presentation/splash/`)
+2. Auth (`presentation/auth/`)
+3. Onboarding (`presentation/onboarding/`)
+4. Home (`presentation/home/`)
+5. Recipe Detail (`presentation/recipedetail/`)
+6. Cooking Mode (`presentation/cookingmode/`)
+7. Grocery List (`presentation/grocery/`)
+8. Favorites (`presentation/favorites/`)
+9. Chat (`presentation/chat/`)
+10. Pantry Scan (`presentation/pantry/`)
+11. Stats (`presentation/stats/`)
+12. Settings (`presentation/settings/`)
+13. Recipe Rules (`presentation/reciperules/`)
+
+## Recent Updates (Last Session)
+
+### Wireframe Changes Applied to Code:
+1. **Lock icons show current state** (not action):
+   - 🔒 = item IS locked
+   - 🔓 = item IS unlocked
+   - Removed "Locked" text labels
+
+2. **AddRecipeSheet** - New component with 2-column grid layout:
+   - `home/components/AddRecipeSheet.kt`
+   - `home/components/RecipeSelectionGridItem.kt`
+   - Search bar, Suggestions/Favorites tabs
+
+3. **SwapRecipeSheet** - Updated with 2-column grid layout:
+   - Search functionality
+   - Similar recipes grid display
+
+4. **RecipeHeader tri-state lock indicator**:
+   - `RecipeLockState` enum: LOCKED, UNLOCKED, NO_CONTEXT
+   - Shows 🔒 when locked from meal plan
+   - Shows 🔓 when unlocked from meal plan
+   - No icon when not from meal plan context (favorites, search, chat)
+   - Added `fromMealPlan` navigation parameter
+
+5. **Wireframes split into 16 files**:
+   - `docs/design/wireframes/00-overview.md` through `13-recipe-rules.md`
+   - `docs/design/wireframes/99-common-components.md`
 
 ## App Verified Working
 
@@ -42,175 +73,94 @@ I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 - ✅ All tests pass (`./gradlew test`)
 - ✅ Full navigation flow works
 - ✅ Bottom navigation working (Home, Grocery, Chat, Favs, Stats)
-- ✅ All 12 screens implemented and working
+- ✅ All 13 screens implemented and working
+- ✅ Lock icons display correctly at all levels (day/meal/recipe)
+- ✅ 2-column grid sheets working
 
 ## Your Task
 
-**Implement the Recipe Rules Screen** (Screen 13 in wireframes):
+**Begin Backend Integration Phase**:
+
+### Priority Tasks:
+1. **Firebase Auth Setup**
+   - Add real `google-services.json` from Firebase Console
+   - Implement actual Google Sign-In flow in `AuthViewModel`
+   - Store user session in DataStore
+
+2. **API Layer Setup**
+   - Create Retrofit service interfaces
+   - Add API DTOs in `data/remote/dto/`
+   - Implement network interceptors for auth tokens
+
+3. **Repository Implementation**
+   - Replace Fake repositories with real implementations
+   - Add Room database for offline caching
+   - Implement sync logic between local and remote
+
+4. **Key API Endpoints to Implement**:
+   - `POST /auth/google` - Google OAuth
+   - `GET /meal-plans/{date}` - Get meal plan for date
+   - `POST /meal-plans/generate` - Generate new meal plan
+   - `GET /recipes/{id}` - Get recipe details
+   - `POST /recipes/{id}/favorite` - Toggle favorite
+   - `GET /grocery-list` - Get grocery list
+   - `POST /chat/message` - Send chat message
 
 ### Files to Create:
 ```
-app/presentation/reciperules/
-├── RecipeRulesScreen.kt           # Main composable with 4 tabs
-├── RecipeRulesViewModel.kt        # State management, CRUD operations
-└── components/
-    ├── RulesTabBar.kt             # 4-tab bar (Recipe/Ingredient/Meal-Slot/Nutrition)
-    ├── RecipeRulesList.kt         # List of recipe-based rules
-    ├── IngredientRulesList.kt     # List of ingredient-based rules
-    ├── MealSlotRulesList.kt       # List of meal-slot rules
-    ├── NutritionGoalsList.kt      # List with progress bars
-    ├── RuleCard.kt                # Reusable card for displaying rules
-    ├── AddRuleBottomSheet.kt      # Bottom sheet for adding rules
-    └── AddNutritionGoalSheet.kt   # Bottom sheet for nutrition goals
+data/remote/
+├── api/
+│   ├── RasoiAIApi.kt           # Retrofit interface
+│   ├── AuthApi.kt              # Auth endpoints
+│   └── interceptors/
+│       └── AuthInterceptor.kt  # Add auth token to requests
+├── dto/
+│   ├── MealPlanDto.kt
+│   ├── RecipeDto.kt
+│   └── UserDto.kt
+└── mapper/
+    └── DtoMappers.kt           # DTO to domain model mappers
 
-domain/model/
-└── RecipeRule.kt                  # Domain models (RecipeRule, RuleType, etc.)
-
-domain/repository/
-└── RecipeRulesRepository.kt       # Repository interface
-
-data/repository/
-└── FakeRecipeRulesRepository.kt   # Mock rules data
+data/local/
+├── database/
+│   ├── RasoiDatabase.kt        # Room database
+│   └── dao/
+│       ├── MealPlanDao.kt
+│       ├── RecipeDao.kt
+│       └── GroceryDao.kt
+└── entity/
+    ├── MealPlanEntity.kt
+    └── RecipeEntity.kt
 ```
 
 ### Update Files:
-- `RasoiNavHost.kt` - Add RecipeRulesScreen route
-- `Screen.kt` - Add RecipeRules route definition
-- `DataModule.kt` - Bind FakeRecipeRulesRepository
-- `SettingsScreen.kt` - Add navigation to Recipe Rules
-- `HomeScreen.kt` - Add gear icon for quick access (optional)
-
-### UI Components (from wireframes - Screen 13, line 1736):
-
-1. **Top App Bar**: "Recipe Rules" with ← back button
-
-2. **Tab Bar** (4 tabs):
-   - 📖 Recipe - Include/exclude specific recipes
-   - 🥕 Ingredient - Include/exclude ingredients
-   - 🍽️ Meal-Slot - Lock recipes to meal times
-   - 🥗 Nutrition - Weekly food-category goals
-
-3. **Recipe Rules Tab**:
-   - List of rules with: rule name, frequency, enforcement badge, edit button
-   - Example: "Include Rajma weekly" | "At least 1x per week" | [Required] ● Active
-   - "+ ADD RECIPE RULE" button at bottom
-
-4. **Ingredient Rules Tab**:
-   - Include rules (🥕) and Exclude rules (🚫)
-   - Same card layout as recipe rules
-
-5. **Meal-Slot Rules Tab**:
-   - Shows recipe → meal mapping
-   - Example: "Chai → Breakfast" | "Every day"
-
-6. **Nutrition Goals Tab**:
-   - Progress bars for weekly goals
-   - Food categories: Green leafy, Citrus/Vitamin C, Iron-rich, etc.
-   - Shows current progress (e.g., "4/7 days")
-
-7. **Add Rule Bottom Sheet**:
-   - Rule Type: Include/Exclude radio
-   - Recipe/Ingredient search with suggestions
-   - Frequency: "At least [X] times per [week]" OR specific days checkboxes
-   - Enforcement: Required/Preferred radio
-   - Save button
-
-8. **Nutrition Goal Bottom Sheet**:
-   - Food category dropdown
-   - Weekly target input
-   - Save button
-
-### Domain Models (from requirements doc):
-
-```kotlin
-// RecipeRule.kt
-enum class RuleType { RECIPE, INGREDIENT, MEAL_SLOT, NUTRITION }
-enum class RuleAction { INCLUDE, EXCLUDE }
-enum class RuleEnforcement { REQUIRED, PREFERRED }
-
-data class RuleFrequency(
-    val type: FrequencyType,
-    val count: Int? = null,
-    val specificDays: List<DayOfWeek>? = null
-)
-
-enum class FrequencyType { DAILY, TIMES_PER_WEEK, SPECIFIC_DAYS, NEVER }
-
-data class RecipeRule(
-    val id: String,
-    val type: RuleType,
-    val action: RuleAction,
-    val targetId: String,           // Recipe ID or Ingredient ID
-    val targetName: String,
-    val frequency: RuleFrequency,
-    val enforcement: RuleEnforcement,
-    val mealSlot: MealType? = null, // For MEAL_SLOT type
-    val isActive: Boolean = true,
-    val createdAt: LocalDateTime,
-    val updatedAt: LocalDateTime
-)
-
-data class NutritionGoal(
-    val id: String,
-    val foodCategory: FoodCategory,
-    val weeklyTarget: Int,
-    val currentProgress: Int = 0,
-    val isActive: Boolean = true
-)
-
-enum class FoodCategory(val displayName: String) {
-    GREEN_LEAFY("Green leafy vegetables"),
-    CITRUS_VITAMIN_C("Citrus/Vitamin C rich foods"),
-    IRON_RICH("Iron-rich foods"),
-    HIGH_PROTEIN("High protein foods"),
-    CALCIUM_RICH("Calcium-rich foods"),
-    FIBER_RICH("Fiber-rich foods"),
-    OMEGA_3("Omega-3 rich foods"),
-    ANTIOXIDANT("Antioxidant-rich foods")
-}
-```
-
-### Mock Data for FakeRecipeRulesRepository:
-- Recipe rules: Rajma (1x/week, Required), Moringa Curry (3x/week, Preferred), Chai (daily breakfast, Required)
-- Ingredient rules: Include Spinach (2x/week), Exclude Bitter Gourd (never)
-- Meal-slot rules: Chai → Breakfast (daily), Dosa → Weekend Breakfast
-- Nutrition goals: Green leafy (4/7), Citrus (2/5), Iron-rich (5/6)
-
-### Key Patterns (follow existing code):
-- ViewModel: `StateFlow<UiState>` + `StateFlow<NavigationEvent?>`
-- Screen receives callbacks, ViewModel handles logic
-- Use `MaterialTheme.colorScheme` and `spacing` from theme
-- Use `hiltViewModel()` for DI
-- Bottom sheets with `ModalBottomSheet` from Material 3
-
-### Access Points:
-1. Settings Screen → "Recipe Rules" menu item under MEAL PREFERENCES
-2. Home Screen → ⚙️ gear icon in header (optional quick access)
+- `data/di/DataModule.kt` - Add Retrofit, Room bindings
+- `data/repository/*` - Replace fake implementations
+- `app/presentation/auth/AuthViewModel.kt` - Real Google Sign-In
 
 ## Reference Files
 
 | File | Path | Why |
 |------|------|-----|
-| Wireframes | `docs/design/RasoiAI Screen Wireframes.md` | Screen 13 design (line 1736+) |
-| Requirements | `docs/requirements/Recipe Rules Screen Requirements.md` | Full spec with data models |
-| Settings Screen | `app/presentation/settings/SettingsScreen.kt` | Most recent implementation pattern |
-| Settings ViewModel | `app/presentation/settings/SettingsViewModel.kt` | State management pattern |
-| Favorites Screen | `app/presentation/favorites/FavoritesScreen.kt` | Tab/list pattern reference |
-| RasoiNavHost | `app/presentation/navigation/RasoiNavHost.kt` | Navigation setup |
-| Screen.kt | `app/presentation/navigation/Screen.kt` | Route definitions |
-| DataModule | `data/di/DataModule.kt` | DI bindings to update |
-| Recipe Model | `domain/model/Recipe.kt` | Domain model pattern with enums |
-| MealPlan Model | `domain/model/MealPlan.kt` | MealType enum reference |
+| Wireframes | `docs/design/wireframes/` | All 16 screen wireframes |
+| Home Wireframe | `docs/design/wireframes/04-home.md` | Lock icon specs, Add/Swap sheets |
+| Recipe Detail | `docs/design/wireframes/05-recipe-detail.md` | Lock indicator specs |
+| Technical Design | `docs/design/RasoiAI Technical Design.md` | API specs, data models |
+| CLAUDE.md | `CLAUDE.md` | Full project context and patterns |
+| Home Screen | `app/presentation/home/HomeScreen.kt` | Lock icons, sheets implementation |
+| RecipeHeader | `app/presentation/recipedetail/components/RecipeHeader.kt` | Tri-state lock |
+| Screen.kt | `app/presentation/navigation/Screen.kt` | Navigation with fromMealPlan param |
+| Fake Repos | `data/repository/Fake*.kt` | Current mock implementations |
 
 ## Working Directory
 Project root: `D:/Abhay/VibeCoding/KKB`
 
 Start by reading:
-1. Screen 13 wireframes in `docs/design/RasoiAI Screen Wireframes.md` (line 1736)
-2. Full requirements in `docs/requirements/Recipe Rules Screen Requirements.md`
-3. Settings screen patterns in `app/presentation/settings/`
+1. `CLAUDE.md` for full project context
+2. `docs/design/RasoiAI Technical Design.md` for API specs
+3. Current fake repository implementations in `data/repository/`
 
-Then implement the Recipe Rules screen following the established patterns.
+Then begin implementing the backend integration layer.
 ```
 
 ---
@@ -220,9 +170,20 @@ Then implement the Recipe Rules screen following the established patterns.
 ### Build Commands (use forward slashes `/` in bash):
 ```bash
 cd "D:/Abhay/VibeCoding/KKB/android"
-./gradlew build      # Build
-./gradlew test       # Run tests
-./gradlew installDebug  # Install on device
+./gradlew build           # Build
+./gradlew test            # Run tests
+./gradlew installDebug    # Install on device
+./gradlew assembleDebug   # Build APK only
+```
+
+### Run App:
+```bash
+# Check device
+"/c/Users/itsab/AppData/Local/Android/Sdk/platform-tools/adb" devices
+
+# Install and launch
+./gradlew installDebug
+"/c/Users/itsab/AppData/Local/Android/Sdk/platform-tools/adb" shell am start -n com.rasoiai.app/com.rasoiai.app.MainActivity
 ```
 
 ### Key Architecture:
@@ -230,7 +191,7 @@ cd "D:/Abhay/VibeCoding/KKB/android"
 - **DI**: Hilt with `@HiltViewModel` and `@Inject constructor`
 - **State**: `MutableStateFlow` with `.update { it.copy(...) }`
 - **Navigation**: Callbacks passed to Screen, ViewModel emits events
-- **Tabs**: Use `TabRow` + `HorizontalPager` for swipeable tabs
+- **Lock State**: `RecipeLockState` enum (LOCKED, UNLOCKED, NO_CONTEXT)
 
 ### Design System:
 | Element | Light | Dark |
@@ -244,17 +205,31 @@ cd "D:/Abhay/VibeCoding/KKB/android"
 | Spacing | `spacing.xs` (4dp), `spacing.sm` (8dp), `spacing.md` (16dp), `spacing.lg` (24dp) |
 | Corners | 8dp (small), 16dp (medium), 24dp (large) |
 
-### After Implementation:
-1. Build and test: `./gradlew build && ./gradlew test`
-2. Update CLAUDE.md status table (Recipe Rules → ✅ Complete)
-3. Update this file for next phase (Backend integration)
-4. Commit with message format: "Implement Recipe Rules screen with 4-tab rule management"
+### Wireframe Files:
+```
+docs/design/wireframes/
+├── 00-overview.md
+├── 01-splash.md
+├── 02-auth.md
+├── 03-onboarding.md
+├── 04-home.md              # Lock icons, Add/Swap sheets
+├── 05-recipe-detail.md     # Lock indicator specs
+├── 06-cooking-mode.md
+├── 07-grocery-list.md
+├── 08-favorites.md
+├── 09-chat.md
+├── 10-pantry-scan.md
+├── 11-stats.md
+├── 12-settings.md
+├── 13-recipe-rules.md
+└── 99-common-components.md
+```
 
 ---
 
 ## PREVIOUS SESSIONS SUMMARY
 
-### Session 1-10: Core UI Implementation
+### Sessions 1-10: Core UI Implementation
 - Implemented all 12 core screens
 - Established ViewModel pattern with StateFlow
 - Set up Hilt DI, Navigation Compose
@@ -264,14 +239,30 @@ cd "D:/Abhay/VibeCoding/KKB/android"
 - Reviewed all 12 wireframes with user approval
 - Redesigned Screen 4 (Home) with 3-level locking system
 - Added lock indicator to Screen 5 (Recipe Detail)
-- Created Screen 13 (Recipe Rules) wireframe with:
-  - 4 tabs: Recipe, Ingredient, Meal-Slot, Nutrition
-  - Required vs Preferred enforcement
-  - Food-category based nutrition goals
-  - Dual access points (Settings + Home)
-- Created comprehensive requirements document
+- Created Screen 13 (Recipe Rules) wireframe
 
-### Next Phase After Recipe Rules:
-- Backend API integration
-- Real data connections
-- Firebase Auth setup with `google-services.json`
+### Session 12: Recipe Rules Implementation
+- Implemented Recipe Rules screen with 4 tabs
+- Added domain models (RecipeRule, NutritionGoal, FoodCategory)
+- Created FakeRecipeRulesRepository with mock data
+- Full CRUD operations for rules
+
+### Session 13: Wireframe Updates & Lock Icon Fixes
+- Split large wireframes doc into 16 individual files
+- Updated lock icons to show current state (🔒/🔓) not action
+- Created AddRecipeSheet with 2-column grid layout
+- Updated SwapRecipeSheet with 2-column grid layout
+- Added RecipeLockState tri-state enum
+- Added fromMealPlan navigation parameter
+- Fixed duplicate lock icons at meal type level
+
+### Next Phase: Backend Integration
+- Firebase Auth with real Google Sign-In
+- Retrofit API layer
+- Room database for offline caching
+- Replace fake repositories with real implementations
+
+---
+
+*Last Updated: January 2025*
+*All 13 screens complete, ready for backend integration*
