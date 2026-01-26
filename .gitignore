@@ -78,7 +78,7 @@ service-account.json
 
 # Testing/Debug
 .playwright-mcp/
-*.png
+screenshots/
 screenshot*.png
 
 # Misc
