@@ -70,6 +70,7 @@ sealed class SettingsNavigationEvent {
     data object NavigateToCuisinePreferences : SettingsNavigationEvent()
     data object NavigateToCookingTime : SettingsNavigationEvent()
     data object NavigateToSpiceLevel : SettingsNavigationEvent()
+    data object NavigateToRecipeRules : SettingsNavigationEvent()
     data object NavigateToNotifications : SettingsNavigationEvent()
     data object NavigateToUnits : SettingsNavigationEvent()
     data object NavigateToFriendsLeaderboard : SettingsNavigationEvent()
@@ -219,6 +220,10 @@ class SettingsViewModel @Inject constructor(
 
     fun onSpiceLevelClick() {
         _navigationEvent.value = SettingsNavigationEvent.NavigateToSpiceLevel
+    }
+
+    fun onRecipeRulesClick() {
+        _navigationEvent.value = SettingsNavigationEvent.NavigateToRecipeRules
     }
 
     fun onNotificationsClick() {

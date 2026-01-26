@@ -11,6 +11,7 @@ import com.rasoiai.data.repository.FakeGroceryRepository
 import com.rasoiai.data.repository.FakeMealPlanRepository
 import com.rasoiai.data.repository.FakePantryRepository
 import com.rasoiai.data.repository.FakeRecipeRepository
+import com.rasoiai.data.repository.FakeRecipeRulesRepository
 import com.rasoiai.data.repository.FakeSettingsRepository
 import com.rasoiai.data.repository.FakeStatsRepository
 import com.rasoiai.domain.repository.ChatRepository
@@ -19,6 +20,7 @@ import com.rasoiai.domain.repository.GroceryRepository
 import com.rasoiai.domain.repository.MealPlanRepository
 import com.rasoiai.domain.repository.PantryRepository
 import com.rasoiai.domain.repository.RecipeRepository
+import com.rasoiai.domain.repository.RecipeRulesRepository
 import com.rasoiai.domain.repository.SettingsRepository
 import com.rasoiai.domain.repository.StatsRepository
 import dagger.Module
@@ -129,5 +131,11 @@ object DataModule {
     @Singleton
     fun provideSettingsRepository(fakeSettingsRepository: FakeSettingsRepository): SettingsRepository {
         return fakeSettingsRepository
+    }
+
+    @Provides
+    @Singleton
+    fun provideRecipeRulesRepository(fakeRecipeRulesRepository: FakeRecipeRulesRepository): RecipeRulesRepository {
+        return fakeRecipeRulesRepository
     }
 }

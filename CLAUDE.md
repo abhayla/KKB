@@ -16,8 +16,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Quick Start
 
 ```bash
-# 1. Clone and navigate to android folder
-cd "D:/Abhay/VibeCoding/KKB/android"
+# 1. Navigate to android folder
+cd android
 
 # 2. Build the project
 ./gradlew build
@@ -31,9 +31,23 @@ cd "D:/Abhay/VibeCoding/KKB/android"
 
 **Prerequisites:** Android Studio, JDK 17+, Android SDK 34
 
+**Android SDK Path:** Set `ANDROID_HOME` environment variable or use Android Studio's default location.
+
+**ADB Command:** Use full path if adb is not in PATH:
+```bash
+# Windows (Git Bash) - adjust path to your SDK location
+"$ANDROID_HOME/platform-tools/adb" devices
+
+# Or use Android Studio's terminal which has adb in PATH
+```
+
 ## Current Status
 
-**All 12 screens implemented.** Core UI complete, ready for backend integration.
+**13 screens implemented.** Core UI complete, ready for backend integration.
+
+**Wireframes:** All 13 screens reviewed and approved (v3.1). Key updates include 3-level locking system (day/meal/recipe) with soft inheritance on Home screen, and new Recipe Rules screen.
+
+**Next Phase:** Backend API integration, real data connections, Firebase Auth setup with `google-services.json`.
 
 | Phase | Status | Document |
 |-------|--------|----------|
@@ -56,6 +70,8 @@ cd "D:/Abhay/VibeCoding/KKB/android"
 | Pantry Scan | ✅ Complete | `presentation/pantry/` |
 | Stats | ✅ Complete | `presentation/stats/` |
 | Settings | ✅ Complete | `presentation/settings/` |
+| Recipe Rules | ✅ Complete | `presentation/reciperules/` |
+| Recipe Rules Reqs | ✅ Complete | `docs/requirements/Recipe Rules Screen Requirements.md` |
 
 ## Infrastructure Setup (Complete)
 
@@ -73,6 +89,15 @@ cd "D:/Abhay/VibeCoding/KKB/android"
 
 1. **Firebase Setup** - Create Firebase project and download `google-services.json` to `android/app/`
 2. **Release Signing** - Configure keystore in `android/app/build.gradle.kts` (placeholder exists)
+
+### CI/CD Notes
+
+The GitHub Actions workflow (`android-ci.yml`) automatically creates a placeholder `google-services.json` for CI builds. For local development without Firebase:
+```bash
+# Create placeholder for build-only testing (from android/ folder)
+mkdir -p app/src/debug
+echo '{"project_info":{"project_number":"000000000000","project_id":"rasoiai-debug","storage_bucket":"rasoiai-debug.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:000000000000:android:0000000000000000000000","android_client_info":{"package_name":"com.rasoiai.app.debug"}},"oauth_client":[],"api_key":[{"current_key":"fake-api-key-for-ci"}],"services":{}}],"configuration_version":"1"}' > app/google-services.json
+```
 
 ## Key Architecture Decisions
 
@@ -182,12 +207,21 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 | `MealPlanDay` | date, breakfast, lunch, dinner, snacks, festival |
 | `MealItem` | recipeId, recipeName, isLocked, servings |
 | `Nutrition` | calories, proteinGrams, carbohydratesGrams, fatGrams, fiberGrams |
+| `RecipeRule` | id, type, action, targetId, targetName, frequency, enforcement, mealSlot, isActive |
+| `NutritionGoal` | id, foodCategory, weeklyTarget, currentProgress, isActive |
 
 **Key Enums in Recipe.kt:**
 - `IngredientCategory`: VEGETABLES, FRUITS, DAIRY, GRAINS, PULSES, SPICES, OILS, MEAT, SEAFOOD, NUTS, SWEETENERS, OTHER
 - `DietaryTag`: VEGETARIAN, NON_VEGETARIAN, VEGAN, JAIN, SATTVIC, HALAL, EGGETARIAN
 - `CuisineType`: NORTH, SOUTH, EAST, WEST
 - `MealType`: BREAKFAST, LUNCH, DINNER, SNACKS (in MealPlan.kt)
+
+**Key Enums in RecipeRule.kt:**
+- `RuleType`: RECIPE, INGREDIENT, MEAL_SLOT, NUTRITION
+- `RuleAction`: INCLUDE, EXCLUDE
+- `RuleEnforcement`: REQUIRED, PREFERRED
+- `FrequencyType`: DAILY, TIMES_PER_WEEK, SPECIFIC_DAYS, NEVER
+- `FoodCategory`: GREEN_LEAFY, CITRUS_VITAMIN_C, IRON_RICH, HIGH_PROTEIN, CALCIUM_RICH, FIBER_RICH, OMEGA_3, ANTIOXIDANT
 
 ## Design System
 
@@ -225,7 +259,8 @@ android/
 │   │   ├── chat/                 # ChatScreen.kt, ChatViewModel.kt, components/
 │   │   ├── pantry/               # PantryScreen.kt, PantryViewModel.kt, components/
 │   │   ├── stats/                # StatsScreen.kt, StatsViewModel.kt, components/
-│   │   └── settings/             # SettingsScreen.kt, SettingsViewModel.kt, components/
+│   │   ├── settings/             # SettingsScreen.kt, SettingsViewModel.kt, components/
+│   │   └── reciperules/          # RecipeRulesScreen.kt, RecipeRulesViewModel.kt, components/
 │   └── di/                       # Hilt modules
 ├── domain/src/main/java/com/rasoiai/domain/
 │   ├── model/                    # Recipe.kt, MealPlan.kt, Festival.kt, User.kt
@@ -281,30 +316,13 @@ android/
 - **Grocery**: WhatsApp sharing to kirana stores
 - **Offline**: Essential for tier 2-3 cities with connectivity issues
 
-## App Screens (12 Total)
-
-| # | Screen | Key Features |
-|---|--------|--------------|
-| 1 | Splash | Logo, loading state |
-| 2 | Auth | Google OAuth only |
-| 3 | Onboarding | 5 steps with dropdowns |
-| 4 | Home | 4 meal types (Breakfast/Lunch/Dinner/Snacks), multiple recipes per meal, individual lock/swap |
-| 5 | Recipe Detail | Tabs (Ingredients/Instructions) |
-| 6 | Cooking Mode | Full-screen steps, timer, keep-awake |
-| 7 | Grocery List | Categorized items, WhatsApp share |
-| 8 | Favorites | 2-column grid, reorder, Recently Viewed |
-| 9 | Chat | AI assistant, history, clear chat, time-based actions |
-| 10 | Pantry Scan | Camera, expiry tracking, grocery integration |
-| 11 | Stats | Cooking streak, leaderboards, challenges, shareable achievements |
-| 12 | Settings | Profile, family, preferences |
-
 ## Development Commands
 
 **Important:** Use forward slashes `/` in bash commands (not backslashes `\`). The shell is Unix-style bash, not Windows CMD.
 
 ### Android App (run from `android/` folder)
 ```bash
-cd "D:/Abhay/VibeCoding/KKB/android"
+cd android
 
 # Build
 ./gradlew build
@@ -338,8 +356,8 @@ cd "D:/Abhay/VibeCoding/KKB/android"
 # Install on device/emulator
 ./gradlew installDebug
 
-# Launch app via adb
-adb shell am start -n com.rasoiai.app/com.rasoiai.app.MainActivity
+# Launch app via adb (use full path)
+"/c/Users/itsab/AppData/Local/Android/Sdk/platform-tools/adb" shell am start -n com.rasoiai.app/com.rasoiai.app.MainActivity
 ```
 
 ### Backend (Python)
@@ -364,6 +382,17 @@ alembic revision --autogenerate -m "description"
 ruff check .
 ```
 
+## Troubleshooting
+
+**Build fails with missing google-services.json:**
+Place a valid `google-services.json` in `android/app/` from Firebase Console, or create the placeholder shown in CI/CD Notes section for build-only testing.
+
+**Gradle sync fails with version mismatch:**
+Ensure JDK 17+ is installed and `JAVA_HOME` is set correctly. The project requires exact Kotlin/KSP version compatibility (1.9.22 / 1.9.22-1.0.17). Check `gradle/libs.versions.toml` for current versions.
+
+**Emulator not detected:**
+Ensure `ANDROID_HOME` is set and the emulator is running. Use `adb devices` to verify connection.
+
 ## Rules for Claude
 
 1. **Bash Path Syntax**: Always use forward slashes `/` in bash commands, not backslashes `\`. Use `./gradlew` not `.\gradlew`. Quote paths containing spaces (e.g., `cd "D:/My Projects/app"`). The shell is Unix-style bash, not Windows CMD.
@@ -385,7 +414,8 @@ ruff check .
 | Project Guide | `CLAUDE.md` | HIGH |
 | Screen Wireframes | `docs/design/RasoiAI Screen Wireframes.md` | HIGH |
 | Architecture Decisions | `docs/design/Android Architecture Decisions.md` | HIGH |
-| Pantry Screen (Reference) | `android/app/src/main/java/com/rasoiai/app/presentation/pantry/` | HIGH (most recent pattern) |
+| Recipe Rules Screen (Reference) | `android/app/src/main/java/com/rasoiai/app/presentation/reciperules/` | HIGH (most recent pattern) |
+| Settings Screen | `android/app/src/main/java/com/rasoiai/app/presentation/settings/` | HIGH |
 | Design System | `docs/design/RasoiAI Design System.md` | MEDIUM |
 | Technical Design | `docs/design/RasoiAI Technical Design.md` | MEDIUM |
 | Requirements | `docs/requirements/RasoiAI Requirements.md` | LOW |

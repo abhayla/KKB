@@ -51,6 +51,7 @@ import com.rasoiai.domain.model.DarkModePreference
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onNavigateToAuth: () -> Unit,
+    onNavigateToRecipeRules: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -66,6 +67,10 @@ fun SettingsScreen(
             }
             SettingsNavigationEvent.NavigateToAuth -> {
                 onNavigateToAuth()
+                viewModel.onNavigationHandled()
+            }
+            SettingsNavigationEvent.NavigateToRecipeRules -> {
+                onNavigateToRecipeRules()
                 viewModel.onNavigationHandled()
             }
             // Handle other navigation events - for now show snackbar as placeholder
@@ -114,6 +119,7 @@ fun SettingsScreen(
         onCuisinePreferencesClick = viewModel::onCuisinePreferencesClick,
         onCookingTimeClick = viewModel::onCookingTimeClick,
         onSpiceLevelClick = viewModel::onSpiceLevelClick,
+        onRecipeRulesClick = viewModel::onRecipeRulesClick,
         onNotificationsClick = viewModel::onNotificationsClick,
         onDarkModeClick = viewModel::showDarkModeDialog,
         onUnitsClick = viewModel::onUnitsClick,
@@ -159,6 +165,7 @@ private fun SettingsScreenContent(
     onCuisinePreferencesClick: () -> Unit,
     onCookingTimeClick: () -> Unit,
     onSpiceLevelClick: () -> Unit,
+    onRecipeRulesClick: () -> Unit,
     onNotificationsClick: () -> Unit,
     onDarkModeClick: () -> Unit,
     onUnitsClick: () -> Unit,
@@ -270,6 +277,10 @@ private fun SettingsScreenContent(
                                 SettingsItem(
                                     title = "Spice Level",
                                     onClick = onSpiceLevelClick
+                                ),
+                                SettingsItem(
+                                    title = "Recipe Rules",
+                                    onClick = onRecipeRulesClick
                                 )
                             ),
                             modifier = Modifier.padding(horizontal = spacing.md)
@@ -434,6 +445,7 @@ private fun SettingsScreenPreview() {
                 onCuisinePreferencesClick = {},
                 onCookingTimeClick = {},
                 onSpiceLevelClick = {},
+                onRecipeRulesClick = {},
                 onNotificationsClick = {},
                 onDarkModeClick = {},
                 onUnitsClick = {},

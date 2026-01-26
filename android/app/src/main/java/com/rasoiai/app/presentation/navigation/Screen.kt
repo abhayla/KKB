@@ -27,6 +27,7 @@ sealed class Screen(val route: String) {
     // Feature screens
     data object Pantry : Screen("pantry")
     data object Stats : Screen("stats")
+    data object RecipeRules : Screen("recipe-rules")
 
     companion object {
         val bottomNavScreens = listOf(Home, Grocery, Chat, Favorites, Stats)

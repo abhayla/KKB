@@ -16,6 +16,7 @@ import com.rasoiai.app.presentation.home.HomeScreen
 import com.rasoiai.app.presentation.onboarding.OnboardingScreen
 import com.rasoiai.app.presentation.pantry.PantryScreen
 import com.rasoiai.app.presentation.recipedetail.RecipeDetailScreen
+import com.rasoiai.app.presentation.reciperules.RecipeRulesScreen
 import com.rasoiai.app.presentation.settings.SettingsScreen
 import com.rasoiai.app.presentation.splash.SplashScreen
 import com.rasoiai.app.presentation.stats.StatsScreen
@@ -266,7 +267,17 @@ fun RasoiNavHost(
                     navController.navigate(Screen.Auth.route) {
                         popUpTo(0) { inclusive = true }
                     }
+                },
+                onNavigateToRecipeRules = {
+                    navController.navigate(Screen.RecipeRules.route)
                 }
+            )
+        }
+
+        // Recipe Rules
+        composable(route = Screen.RecipeRules.route) {
+            RecipeRulesScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }
