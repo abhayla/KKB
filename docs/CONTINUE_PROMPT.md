@@ -323,17 +323,19 @@ Project root: `D:/Abhay/VibeCoding/KKB`
 
 ## BUILD & RUN COMMANDS:
 
+**Note:** Use forward slashes `/` in bash (not backslashes `\`). The shell is Unix-style bash.
+
 ```bash
-cd D:\Abhay\VibeCoding\KKB\android
+cd "D:/Abhay/VibeCoding/KKB/android"
 
 # Build
-.\gradlew build
+./gradlew build
 
 # Run tests
-.\gradlew test
+./gradlew test
 
 # Install on device/emulator
-.\gradlew installDebug
+./gradlew installDebug
 ```
 
 ---
