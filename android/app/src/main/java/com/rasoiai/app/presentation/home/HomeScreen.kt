@@ -688,16 +688,6 @@ private fun MealSection(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
                     )
-                    // Show lock icon if day is locked (inherited lock)
-                    if (isDayLocked) {
-                        Spacer(modifier = Modifier.width(spacing.xs))
-                        Icon(
-                            imageVector = Icons.Default.Lock,
-                            contentDescription = "Locked by day",
-                            modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
-                        )
-                    }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     // Meal Lock Button - icon shows current state (🔒 locked, 🔓 unlocked)
