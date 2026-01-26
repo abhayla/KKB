@@ -11,7 +11,7 @@ I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 
 ## Project Status
 
-Core screens (Splash → Auth → Onboarding → Home → Recipe Detail → Cooking Mode) are COMPLETE. App builds and all tests pass. Ready for Grocery List screen implementation.
+Core screens (Splash → Auth → Onboarding → Home → Recipe Detail → Cooking Mode → Grocery List) are COMPLETE. App builds and all tests pass. Ready for Favorites screen implementation.
 
 | Phase | Status | Document |
 |-------|--------|----------|
@@ -27,108 +27,115 @@ Core screens (Splash → Auth → Onboarding → Home → Recipe Detail → Cook
 | Home Screen | ✅ Complete | `presentation/home/` |
 | Recipe Detail | ✅ Complete | `presentation/recipedetail/` |
 | Cooking Mode | ✅ Complete | `presentation/cookingmode/` |
-| **Grocery List** | ⏳ **Next Step** | Categorized items, WhatsApp share |
+| Grocery List | ✅ Complete | `presentation/grocery/` |
+| **Favorites** | ⏳ **Next Step** | Collections, 2-column grid, Recently Viewed |
 
 ## App Verified Working
 
 - ✅ App builds successfully (`.\gradlew build`)
 - ✅ All tests pass (`.\gradlew test`)
 - ✅ Full navigation flow works: Splash → Auth → Onboarding → Home → Recipe Detail → Cooking Mode
-- ✅ Timer functionality with vibration works in Cooking Mode
-- ✅ Rating dialog after cooking completion
+- ✅ Grocery List with categorized items, WhatsApp share, checkbox toggle
+- ✅ Bottom navigation working (Home, Grocery, Chat, Favs, Stats)
 
 ## Your Task
 
-**Implement the Grocery List Screen** (Screen 7 in wireframes):
+**Implement the Favorites Screen** (Screen 8 in wireframes):
 
 ### Files to Create:
 ```
-app/presentation/grocery/
-├── GroceryScreen.kt           # Main composable with categorized list
-├── GroceryViewModel.kt        # State management
+app/presentation/favorites/
+├── FavoritesScreen.kt         # Main composable with collections & grid
+├── FavoritesViewModel.kt      # State management
 └── components/
-    ├── GroceryCategory.kt     # Expandable category section
-    ├── GroceryItem.kt         # Checkbox item with quantity
-    └── WhatsAppShareDialog.kt # Share preview dialog
+    ├── CollectionCard.kt      # Collection thumbnail card
+    ├── RecipeGridItem.kt      # 2-column recipe card
+    ├── FilterChips.kt         # Filter dropdowns (All, Cuisine, Time)
+    └── CreateCollectionDialog.kt # New collection dialog
 
 domain/model/
-└── GroceryItem.kt             # Domain model (if not exists)
+└── FavoriteCollection.kt      # Collection domain model (if not exists)
 
 domain/repository/
-└── GroceryRepository.kt       # Repository interface (if not exists)
+└── FavoritesRepository.kt     # Repository interface (if not exists)
 
 data/repository/
-└── FakeGroceryRepository.kt   # Mock grocery data
+└── FakeFavoritesRepository.kt # Mock favorites data
 ```
 
 ### Update Files:
-- `RasoiNavHost.kt` - Replace placeholder with GroceryScreen
-- `DataModule.kt` - Bind FakeGroceryRepository
+- `RasoiNavHost.kt` - Replace placeholder with FavoritesScreen
+- `DataModule.kt` - Bind FakeFavoritesRepository
 
-### UI Components (from wireframes - Screen 7, line 934):
-1. Top app bar (← back, "Grocery List", ⋮ more)
-2. Week header ("Week of Jan 20-26", "32 items")
-3. WhatsApp share button (📱 Share via WhatsApp)
-4. Categorized sections (expandable):
-   - 🥬 VEGETABLES (10)
-   - 🥛 DAIRY (5)
-   - 🌾 PULSES & GRAINS (6)
-   - 🌶️ SPICES & MASALA (8)
-   - 🥫 OTHER (3)
-5. Each item: □ checkbox, name, quantity (e.g., "1 kg")
-6. Swipe actions: ✏️ Edit, 🗑️ Delete
-7. "+ Add custom item" button at bottom
-8. Bottom navigation bar
+### UI Components (from wireframes - Screen 8, line 1026):
+1. Top app bar ("Favorites", 🔍 search)
+2. Collections row (horizontal scroll):
+   - All (24) ✓
+   - Recently Viewed (12)
+   - Weekend Specials (8)
+   - Quick Meals (10)
+   - Kids Friendly (6)
+   - [+New] create collection
+3. Filter chips: [All ▼] [Cuisine ▼] [Time ▼]
+4. Recipe count with [Reorder] button
+5. 2-column recipe grid:
+   - Image, recipe name, cuisine, time, calories
+   - ● Green dot (veg) or 🔴 Red dot (non-veg)
+   - ♥ favorite button, ⋮ more menu
+6. Bottom navigation bar
 
-### WhatsApp Share Feature:
-- Preview dialog before sharing
-- Options: "Full list" or "Unpurchased only"
-- Formatted text with categories and items
-- Footer: "_Sent from RasoiAI_ 🍳"
+### Reorder Mode:
+- Drag handles (≡) appear on each card
+- Drag to reorder recipes within collection
+- [Done] button to exit reorder mode
 
 ### Key Patterns (follow existing code):
 - ViewModel: `StateFlow<UiState>` + `StateFlow<NavigationEvent?>`
 - Screen receives callbacks, ViewModel handles logic
 - Use `MaterialTheme.colorScheme` and `spacing` from theme
 - Use `hiltViewModel()` for DI
+- Use LazyVerticalGrid for 2-column layout
 
 ## Reference Files
 
 | File | Path | Why |
 |------|------|-----|
-| Wireframes | `docs/design/RasoiAI Screen Wireframes.md` | Screen 7 design (line 934+) |
-| Home Screen | `app/presentation/home/HomeScreen.kt` | Pattern reference |
-| Home ViewModel | `app/presentation/home/HomeViewModel.kt` | State management pattern |
-| Cooking Mode | `app/presentation/cookingmode/` | Recent implementation reference |
+| Wireframes | `docs/design/RasoiAI Screen Wireframes.md` | Screen 8 design (line 1026+) |
+| Grocery Screen | `app/presentation/grocery/GroceryScreen.kt` | Recent implementation reference |
+| Grocery ViewModel | `app/presentation/grocery/GroceryViewModel.kt` | State pattern reference |
+| Home Screen | `app/presentation/home/HomeScreen.kt` | Bottom nav pattern |
 | RasoiNavHost | `app/presentation/navigation/RasoiNavHost.kt` | Navigation setup |
-| FakeRecipeRepository | `data/repository/FakeRecipeRepository.kt` | Fake data pattern |
-| Ingredient Model | `domain/model/Recipe.kt` | IngredientCategory enum |
+| Recipe Model | `domain/model/Recipe.kt` | Recipe data structure |
+| FakeRecipeRepository | `data/repository/FakeRecipeRepository.kt` | Recipe data for favorites |
 
 ## Domain Models to Use/Create
 
 ```kotlin
-// GroceryItem.kt (create if not exists)
-data class GroceryItem(
+// FavoriteCollection.kt (create if not exists)
+data class FavoriteCollection(
     val id: String,
     val name: String,
-    val quantity: String,
-    val unit: String,
-    val category: IngredientCategory,  // From Recipe.kt
-    val isPurchased: Boolean = false,
-    val recipeIds: List<String> = emptyList()  // Which recipes need this
-)
-
-// Use existing IngredientCategory from Recipe.kt:
-enum class IngredientCategory {
-    VEGETABLES, FRUITS, DAIRY, GRAINS, PULSES,
-    SPICES, OILS, MEAT, SEAFOOD, NUTS, SWEETENERS, OTHER
+    val recipeIds: List<String>,
+    val coverImageUrl: String?,
+    val isDefault: Boolean = false,  // "All" and "Recently Viewed" are default
+    val createdAt: Long
+) {
+    val recipeCount: Int get() = recipeIds.size
 }
+
+// Use existing Recipe model from domain/model/Recipe.kt
+// FavoriteItem could wrap Recipe with additional favorite-specific data
+data class FavoriteItem(
+    val recipe: Recipe,
+    val addedAt: Long,
+    val collectionIds: List<String>
+)
 ```
 
 ## Working Directory
 Project root: `D:/Abhay/VibeCoding/KKB`
 
-Start by reading Screen 7 wireframes in `docs/design/RasoiAI Screen Wireframes.md` (line 934), then implement the Grocery List screen.
+Start by reading Screen 8 wireframes in `docs/design/RasoiAI Screen Wireframes.md` (line 1026), then implement the Favorites screen.
 ```
 
 ---
@@ -138,32 +145,31 @@ Start by reading Screen 7 wireframes in `docs/design/RasoiAI Screen Wireframes.m
 ```
 I'm building **RasoiAI** - an AI meal planning app for Indian families.
 
-**COMPLETED:** Splash, Auth, Onboarding, Home, Recipe Detail, Cooking Mode screens. All tests pass.
+**COMPLETED:** Splash, Auth, Onboarding, Home, Recipe Detail, Cooking Mode, Grocery List. All tests pass.
 
-**NEXT:** Implement Grocery List Screen (Screen 7)
+**NEXT:** Implement Favorites Screen (Screen 8)
 
-**Read first:** `docs/design/RasoiAI Screen Wireframes.md` - Search for "Screen 7: Grocery List" (line 934)
+**Read first:** `docs/design/RasoiAI Screen Wireframes.md` - Search for "Screen 8: Favorites" (line 1026)
 
 **Create these files:**
-1. `app/presentation/grocery/GroceryScreen.kt` - Categorized list UI
-2. `app/presentation/grocery/GroceryViewModel.kt` - State management
-3. `data/repository/FakeGroceryRepository.kt` - Mock grocery data
+1. `app/presentation/favorites/FavoritesScreen.kt` - Collections + 2-column grid
+2. `app/presentation/favorites/FavoritesViewModel.kt` - State management
+3. `app/presentation/favorites/components/` - CollectionCard, RecipeGridItem, FilterChips
+4. `data/repository/FakeFavoritesRepository.kt` - Mock favorites data
 
 **Update:**
-- `RasoiNavHost.kt` - Wire up GroceryScreen (replace placeholder)
-- `DataModule.kt` - Provide FakeGroceryRepository
+- `RasoiNavHost.kt` - Wire up FavoritesScreen (replace placeholder)
+- `DataModule.kt` - Provide FakeFavoritesRepository
 
-**Grocery List UI:**
-- Week header with item count
-- WhatsApp share button
-- Expandable categories (Vegetables, Dairy, Pulses, Spices, etc.)
-- Checkbox items with quantity
-- Swipe to edit/delete
-- Add custom item button
-- Bottom navigation
+**Favorites UI:**
+- Collections row (All, Recently Viewed, Weekend Specials, Quick Meals, Kids Friendly, +New)
+- Filter chips (All, Cuisine, Time dropdowns)
+- 2-column recipe grid with images
+- Recipe cards: name, cuisine, time, calories, veg/non-veg dot
+- Reorder mode with drag handles
 
-**Reference:** `app/presentation/cookingmode/` for recent ViewModel/Screen patterns
-**Domain models:** `domain/model/Recipe.kt` (IngredientCategory)
+**Reference:** `app/presentation/grocery/` for recent ViewModel/Screen patterns
+**Domain models:** `domain/model/Recipe.kt` (Recipe structure)
 
 Project root: `D:/Abhay/VibeCoding/KKB`
 ```
@@ -174,64 +180,66 @@ Project root: `D:/Abhay/VibeCoding/KKB`
 
 | File | Path | Priority | Description |
 |------|------|----------|-------------|
-| Screen Wireframes | `docs/design/RasoiAI Screen Wireframes.md` | **HIGH** | Grocery List design (Screen 7, line 934) |
-| Ingredient Model | `domain/model/Recipe.kt` | **HIGH** | IngredientCategory enum |
+| Screen Wireframes | `docs/design/RasoiAI Screen Wireframes.md` | **HIGH** | Favorites design (Screen 8, line 1026) |
+| Grocery Screen | `app/presentation/grocery/GroceryScreen.kt` | **HIGH** | Recent implementation pattern |
+| Grocery ViewModel | `app/presentation/grocery/GroceryViewModel.kt` | **HIGH** | State management pattern |
+| Recipe Model | `domain/model/Recipe.kt` | **HIGH** | Recipe data structure |
 | Home Screen | `app/presentation/home/HomeScreen.kt` | **HIGH** | Bottom nav pattern |
-| Cooking Mode | `app/presentation/cookingmode/` | **HIGH** | Recent implementation |
 | RasoiNavHost | `app/presentation/navigation/RasoiNavHost.kt` | **HIGH** | Navigation setup |
-| FakeRecipeRepository | `data/repository/FakeRecipeRepository.kt` | MEDIUM | Fake data pattern |
+| FakeRecipeRepository | `data/repository/FakeRecipeRepository.kt` | MEDIUM | Recipe data source |
 | DataModule | `data/di/DataModule.kt` | MEDIUM | DI bindings |
 | Theme | `app/presentation/theme/` | MEDIUM | Colors, spacing |
 | CLAUDE.md | Root | MEDIUM | Project overview |
 
 ---
 
-## GROCERY LIST WIREFRAME SUMMARY:
+## FAVORITES WIREFRAME SUMMARY:
 
 ```
 ┌─────────────────────────────────────┐
-│  ←  Grocery List                ⋮   │  ← Top bar
+│  Favorites                     🔍   │  ← Top bar with search
 │─────────────────────────────────────│
 │                                     │
-│  Week of Jan 20-26                  │
-│  32 items                           │
+│  Collections:                       │
+│  ┌─────────┐ ┌─────────┐ ┌────────┐ │
+│  │ [Image] │ │ [Image] │ │[Image] │ │  ← Horizontal scroll
+│  │   All   │ │Recently │ │Weekend │ │
+│  │   (24)  │ │ Viewed  │ │Specials│ │
+│  │    ✓    │ │  (12)   │ │  (8)   │ │
+│  └─────────┘ └─────────┘ └────────┘ │
 │                                     │
-│  ┌─────────────────────────────────┐│
-│  │  📱 Share via WhatsApp          ││  ← WhatsApp share
-│  └─────────────────────────────────┘│
+│  ┌─────────┐ ┌─────────┐ ┌────────┐ │
+│  │ [Image] │ │ [Image] │ │        │ │
+│  │  Quick  │ │  Kids   │ │ [+New] │ │  ← Create collection
+│  │  Meals  │ │Friendly │ │        │ │
+│  │  (10)   │ │  (6)    │ │        │ │
+│  └─────────┘ └─────────┘ └────────┘ │
 │                                     │
 │─────────────────────────────────────│
 │                                     │
-│  🥬 VEGETABLES (10)             ▼   │  ← Expandable category
-│  ┌─────────────────────────────────┐│
-│  │ □ Onion                   1 kg  ││
-│  │ □ Tomato                  500g  ││
-│  │ □ Potato                  1 kg  ││
-│  │ □ Palak (Spinach)      2 bunch  ││
-│  │ □ Capsicum                250g  ││
-│  │ □ Ginger                  100g  ││
-│  │ □ Garlic                  100g  ││
-│  │ □ Green Chili            10 pcs ││
-│  │ □ Coriander             1 bunch ││
-│  │ □ Lemon                   4 pcs ││
-│  └─────────────────────────────────┘│
+│  Filter:                            │
+│  [All ▼] [Cuisine ▼] [Time ▼]       │  ← Filter dropdowns
 │                                     │
-│  🥛 DAIRY (5)                   ▼   │
-│  ┌─────────────────────────────────┐│
-│  │ □ Paneer                  400g  ││
-│  │ □ Curd                    500g  ││
-│  │ □ Milk                      1 L ││
-│  │ □ Ghee                    200g  ││
-│  │ □ Butter                  100g  ││
-│  └─────────────────────────────────┘│
+│  All (24)                  [Reorder]│  ← Recipe count + reorder
+│─────────────────────────────────────│
 │                                     │
-│  🌾 PULSES & GRAINS (6)         ▼   │
-│  🌶️ SPICES & MASALA (8)         ▼   │
-│  🥫 OTHER (3)                   ▼   │
+│  ┌───────────────┐ ┌───────────────┐│
+│  │    [Image]    │ │    [Image]    ││  ← 2-column grid
+│  │               │ │               ││
+│  │ ● Dal Tadka   │ │ ● Palak Paneer││
+│  │   North       │ │   North       ││
+│  │   35m • 180cal│ │   40m • 320cal││
+│  │          ♥  ⋮ │ │          ♥  ⋮ ││
+│  └───────────────┘ └───────────────┘│
 │                                     │
-│  ┌─────────────────────────────────┐│
-│  │ + Add custom item               ││
-│  └─────────────────────────────────┘│
+│  ┌───────────────┐ ┌───────────────┐│
+│  │    [Image]    │ │    [Image]    ││
+│  │               │ │               ││
+│  │ ● Masala Dosa │ │🔴Butter Chicken│
+│  │   South       │ │   North       ││
+│  │   30m • 280cal│ │   45m • 480cal││
+│  │          ♥  ⋮ │ │          ♥  ⋮ ││
+│  └───────────────┘ └───────────────┘│
 │                                     │
 │─────────────────────────────────────│
 │  🏠     📋     💬     ❤️     📊    │
@@ -239,40 +247,45 @@ Project root: `D:/Abhay/VibeCoding/KKB`
 └─────────────────────────────────────┘
 ```
 
-### WhatsApp Share Preview:
+### Reorder Mode:
 ```
 ┌─────────────────────────────────────┐
-│  Share to WhatsApp                  │
+│  Favorites                   [Done] │
 │─────────────────────────────────────│
 │                                     │
-│   Preview:                          │
-│   ┌─────────────────────────────┐   │
-│   │ 🛒 *Grocery List*           │   │
-│   │ Week: Jan 20-26             │   │
-│   │                             │   │
-│   │ *🥬 Vegetables*             │   │
-│   │ • Onion - 1 kg              │   │
-│   │ • Tomato - 500g             │   │
-│   │ ...                         │   │
-│   │                             │   │
-│   │ _Sent from RasoiAI_ 🍳      │   │
-│   └─────────────────────────────┘   │
+│  Drag to reorder recipes            │
 │                                     │
-│   Share:                            │
-│   ○ Full list (32 items)            │
-│   ○ Unpurchased only (26 items)     │
-│                                     │
-│   [CANCEL]        [SHARE WHATSAPP]  │
+│  ┌───────────────┐ ┌───────────────┐│
+│  │ ≡  [Image]    │ │ ≡  [Image]    ││  ← Drag handles
+│  │ ● Dal Tadka   │ │ ● Palak Paneer││
+│  └───────────────┘ └───────────────┘│
+│         ↕                   ↕       │
+│  ┌───────────────┐ ┌───────────────┐│
+│  │ ≡  [Image]    │ │ ≡  [Image]    ││
+│  │ ● Masala Dosa │ │🔴Butter Chicken│
+│  └───────────────┘ └───────────────┘│
 │                                     │
 └─────────────────────────────────────┘
 ```
 
-### Item Swipe Actions:
+### Create Collection Dialog:
 ```
-┌───────────────────────────┬────┬────┐
-│ □ Onion            1 kg   │ ✏️ │ 🗑️ │
-└───────────────────────────┴────┴────┘
-✏️ = Edit quantity, 🗑️ = Remove
+┌─────────────────────────────────────┐
+│  Create Collection                  │
+│─────────────────────────────────────│
+│                                     │
+│  Collection name:                   │
+│  ┌─────────────────────────────────┐│
+│  │ Weekend Specials                ││
+│  └─────────────────────────────────┘│
+│                                     │
+│  Cover image:                       │
+│  ○ Use first recipe image           │
+│  ○ Choose from gallery              │
+│                                     │
+│   [CANCEL]              [CREATE]    │
+│                                     │
+└─────────────────────────────────────┘
 ```
 
 ---
@@ -287,8 +300,8 @@ Project root: `D:/Abhay/VibeCoding/KKB`
 | 4 | Home | ✅ Done | Weekly meal plan, bottom nav |
 | 5 | Recipe Detail | ✅ Done | Tabs: Ingredients/Instructions |
 | 6 | Cooking Mode | ✅ Done | Step-by-step with timer, rating |
-| 7 | **Grocery List** | ⏳ **Next** | Categorized, WhatsApp share |
-| 8 | Favorites | Pending | Collections, grid view |
+| 7 | Grocery List | ✅ Done | Categorized, WhatsApp share |
+| 8 | **Favorites** | ⏳ **Next** | Collections, 2-column grid |
 | 9 | Chat | Pending | AI assistant |
 | 10 | Pantry Scan | Pending | Camera, expiry tracking |
 | 11 | Stats | Pending | Streaks, achievements |
@@ -303,8 +316,8 @@ Project root: `D:/Abhay/VibeCoding/KKB`
 | Primary | `#FF6838` | `#FFB59C` |
 | Secondary | `#5A822B` | `#A8D475` |
 | Background | `#FDFAF4` | `#1C1B1F` |
-| Vegetarian | Green dot | - |
-| Non-Veg | Red dot | - |
+| Vegetarian | Green dot (●) | - |
+| Non-Veg | Red dot (🔴) | - |
 
 | Token | Value |
 |-------|-------|
@@ -335,43 +348,46 @@ cd D:\Abhay\VibeCoding\KKB\android
 
 ## IMPLEMENTATION CHECKLIST:
 
-### 1. Create Grocery Screen Files
+### 1. Create Favorites Screen Files
 ```
-app/presentation/grocery/
-├── GroceryScreen.kt           # Main composable
-├── GroceryViewModel.kt        # State management
+app/presentation/favorites/
+├── FavoritesScreen.kt         # Main composable
+├── FavoritesViewModel.kt      # State management
 └── components/
-    ├── GroceryCategory.kt     # Expandable section
-    ├── GroceryItem.kt         # Checkbox item
-    └── WhatsAppShareDialog.kt # Share dialog
+    ├── CollectionCard.kt      # Collection thumbnail
+    ├── RecipeGridItem.kt      # 2-column recipe card
+    ├── FilterChips.kt         # Filter dropdowns
+    └── CreateCollectionDialog.kt # New collection dialog
 ```
 
 ### 2. Create/Update Domain Models
-- Check if `GroceryItem` model exists in `domain/model/`
-- Create `GroceryRepository` interface in `domain/repository/`
+- Create `FavoriteCollection` model in `domain/model/`
+- Create `FavoritesRepository` interface in `domain/repository/`
 
 ### 3. Create Repository
 ```
 data/repository/
-└── FakeGroceryRepository.kt   # Mock data with categories
+└── FakeFavoritesRepository.kt   # Mock data with collections
 ```
 
 ### 4. Update Navigation
-- `RasoiNavHost.kt`: Replace PlaceholderScreen with GroceryScreen
-- Grocery is part of bottom navigation
+- `RasoiNavHost.kt`: Replace PlaceholderScreen with FavoritesScreen
+- Favorites is part of bottom navigation (4th tab)
 
 ### 5. Update DI
-- `DataModule.kt`: Bind FakeGroceryRepository
+- `DataModule.kt`: Bind FakeFavoritesRepository
 
 ### 6. Key Features to Implement
-- [ ] Categorized expandable sections
-- [ ] Checkbox to mark purchased
-- [ ] Swipe to edit/delete
-- [ ] Add custom item
-- [ ] WhatsApp share with preview
+- [ ] Collections row with horizontal scroll
+- [ ] Create new collection dialog
+- [ ] Filter chips (All, Cuisine, Time)
+- [ ] 2-column LazyVerticalGrid
+- [ ] Recipe cards with image, details, veg/non-veg indicator
+- [ ] Reorder mode with drag handles
+- [ ] Recently Viewed auto-populated collection
 - [ ] Bottom navigation integration
 
 ---
 
 *Last Updated: January 2025*
-*Next Step: Grocery List Screen (Categorized items, WhatsApp share)*
+*Next Step: Favorites Screen (Collections, 2-column grid, Recently Viewed)*
