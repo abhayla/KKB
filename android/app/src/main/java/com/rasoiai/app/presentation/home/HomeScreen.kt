@@ -4,8 +4,10 @@ import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +27,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Menu
@@ -51,8 +54,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -85,7 +91,7 @@ import java.time.LocalDate
 
 @Composable
 fun HomeScreen(
-    onNavigateToRecipeDetail: (String) -> Unit,
+    onNavigateToRecipeDetail: (recipeId: String, isLocked: Boolean) -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToGrocery: () -> Unit,
     onNavigateToChat: () -> Unit,
@@ -101,7 +107,7 @@ fun HomeScreen(
     LaunchedEffect(navigationEvent) {
         when (val event = navigationEvent) {
             is HomeNavigationEvent.NavigateToRecipeDetail -> {
-                onNavigateToRecipeDetail(event.recipeId)
+                onNavigateToRecipeDetail(event.recipeId, event.isLocked)
                 viewModel.onNavigationHandled()
             }
             HomeNavigationEvent.NavigateToSettings -> {
@@ -148,16 +154,21 @@ fun HomeScreen(
         onProfileClick = viewModel::navigateToSettings,
         onDateSelect = viewModel::selectDate,
         onRefreshClick = viewModel::showRefreshOptions,
+        onDayLockClick = viewModel::toggleDayLock,
+        onMealLockClick = viewModel::toggleMealLock,
         onRecipeClick = viewModel::onRecipeClick,
         onDismissRecipeSheet = viewModel::dismissRecipeActionSheet,
         onViewRecipe = viewModel::viewRecipe,
         onSwapRecipe = viewModel::showSwapOptions,
         onToggleLock = viewModel::toggleLockRecipe,
+        onRemoveRecipe = viewModel::removeRecipeFromMeal,
         onDismissRefreshSheet = viewModel::dismissRefreshSheet,
         onRegenerateDay = viewModel::regenerateDay,
         onRegenerateWeek = viewModel::regenerateWeek,
         onDismissSwapSheet = viewModel::dismissSwapSheet,
         onConfirmSwap = { viewModel.swapRecipe() },
+        onToggleRecipeLockDirect = viewModel::toggleRecipeLockDirect,
+        onRemoveRecipeDirect = viewModel::removeRecipeFromMealDirect,
         onBottomNavItemClick = { screen ->
             when (screen) {
                 Screen.Home -> { /* Already on Home */ }
@@ -181,16 +192,21 @@ private fun HomeScreenContent(
     onProfileClick: () -> Unit,
     onDateSelect: (LocalDate) -> Unit,
     onRefreshClick: () -> Unit,
+    onDayLockClick: () -> Unit,
+    onMealLockClick: (MealType) -> Unit,
     onRecipeClick: (MealItem, MealType) -> Unit,
     onDismissRecipeSheet: () -> Unit,
     onViewRecipe: () -> Unit,
     onSwapRecipe: () -> Unit,
     onToggleLock: () -> Unit,
+    onRemoveRecipe: () -> Unit,
     onDismissRefreshSheet: () -> Unit,
     onRegenerateDay: () -> Unit,
     onRegenerateWeek: () -> Unit,
     onDismissSwapSheet: () -> Unit,
     onConfirmSwap: () -> Unit,
+    onToggleRecipeLockDirect: (MealItem, MealType) -> Unit,
+    onRemoveRecipeDirect: (MealItem, MealType) -> Unit,
     onBottomNavItemClick: (Screen) -> Unit
 ) {
     Scaffold(
@@ -283,6 +299,8 @@ private fun HomeScreenContent(
                         SelectedDayHeader(
                             dayText = uiState.formattedSelectedDay,
                             isToday = uiState.isToday,
+                            isDayLocked = uiState.isSelectedDayLocked,
+                            onLockClick = onDayLockClick,
                             onRefreshClick = onRefreshClick
                         )
                     }
@@ -295,8 +313,13 @@ private fun HomeScreenContent(
                                 icon = "\uD83C\uDF05", // Sunrise emoji
                                 meals = dayMeals.breakfast,
                                 mealType = MealType.BREAKFAST,
+                                isMealLocked = uiState.isMealLocked(MealType.BREAKFAST),
+                                isDayLocked = uiState.isSelectedDayLocked,
                                 onRecipeClick = onRecipeClick,
-                                onAddClick = { /* TODO: Add recipe */ }
+                                onLockClick = { onMealLockClick(MealType.BREAKFAST) },
+                                onAddClick = { /* TODO: Add recipe */ },
+                                onToggleRecipeLockDirect = onToggleRecipeLockDirect,
+                                onRemoveRecipeDirect = onRemoveRecipeDirect
                             )
                         }
 
@@ -306,8 +329,13 @@ private fun HomeScreenContent(
                                 icon = "\u2600\uFE0F", // Sun emoji
                                 meals = dayMeals.lunch,
                                 mealType = MealType.LUNCH,
+                                isMealLocked = uiState.isMealLocked(MealType.LUNCH),
+                                isDayLocked = uiState.isSelectedDayLocked,
                                 onRecipeClick = onRecipeClick,
-                                onAddClick = { /* TODO: Add recipe */ }
+                                onLockClick = { onMealLockClick(MealType.LUNCH) },
+                                onAddClick = { /* TODO: Add recipe */ },
+                                onToggleRecipeLockDirect = onToggleRecipeLockDirect,
+                                onRemoveRecipeDirect = onRemoveRecipeDirect
                             )
                         }
 
@@ -317,8 +345,13 @@ private fun HomeScreenContent(
                                 icon = "\uD83C\uDF19", // Moon emoji
                                 meals = dayMeals.dinner,
                                 mealType = MealType.DINNER,
+                                isMealLocked = uiState.isMealLocked(MealType.DINNER),
+                                isDayLocked = uiState.isSelectedDayLocked,
                                 onRecipeClick = onRecipeClick,
-                                onAddClick = { /* TODO: Add recipe */ }
+                                onLockClick = { onMealLockClick(MealType.DINNER) },
+                                onAddClick = { /* TODO: Add recipe */ },
+                                onToggleRecipeLockDirect = onToggleRecipeLockDirect,
+                                onRemoveRecipeDirect = onRemoveRecipeDirect
                             )
                         }
 
@@ -328,8 +361,13 @@ private fun HomeScreenContent(
                                 icon = "\uD83C\uDF6A", // Cookie emoji
                                 meals = dayMeals.snacks,
                                 mealType = MealType.SNACKS,
+                                isMealLocked = uiState.isMealLocked(MealType.SNACKS),
+                                isDayLocked = uiState.isSelectedDayLocked,
                                 onRecipeClick = onRecipeClick,
-                                onAddClick = { /* TODO: Add recipe */ }
+                                onLockClick = { onMealLockClick(MealType.SNACKS) },
+                                onAddClick = { /* TODO: Add recipe */ },
+                                onToggleRecipeLockDirect = onToggleRecipeLockDirect,
+                                onRemoveRecipeDirect = onRemoveRecipeDirect
                             )
                         }
                     }
@@ -349,13 +387,21 @@ private fun HomeScreenContent(
     }
 
     // Recipe Action Sheet
-    if (uiState.showRecipeActionSheet && uiState.selectedMealItem != null) {
+    if (uiState.showRecipeActionSheet && uiState.selectedMealItem != null && uiState.selectedMealType != null) {
+        val isEffectivelyLocked = uiState.isRecipeEffectivelyLocked(
+            uiState.selectedMealItem,
+            uiState.selectedMealType
+        )
         RecipeActionSheet(
             mealItem = uiState.selectedMealItem,
+            isEffectivelyLocked = isEffectivelyLocked,
+            isDayLocked = uiState.isSelectedDayLocked,
+            isMealLocked = uiState.isMealLocked(uiState.selectedMealType),
             onDismiss = onDismissRecipeSheet,
             onViewRecipe = onViewRecipe,
             onSwapRecipe = onSwapRecipe,
-            onToggleLock = onToggleLock
+            onToggleLock = onToggleLock,
+            onRemove = onRemoveRecipe
         )
     }
 
@@ -523,6 +569,8 @@ private fun DateItem(
 private fun SelectedDayHeader(
     dayText: String,
     isToday: Boolean,
+    isDayLocked: Boolean,
+    onLockClick: () -> Unit,
     onRefreshClick: () -> Unit
 ) {
     Row(
@@ -532,19 +580,43 @@ private fun SelectedDayHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
-            Text(
-                text = dayText,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium
-            )
-            if (isToday) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column {
                 Text(
-                    text = "TODAY",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
+                    text = dayText,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium
                 )
+                if (isToday) {
+                    Text(
+                        text = "TODAY",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(spacing.sm))
+            // Day Lock Button with optional "Locked" text
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = onLockClick,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isDayLocked) Icons.Default.Lock else Icons.Default.LockOpen,
+                        contentDescription = if (isDayLocked) "Unlock day" else "Lock day",
+                        modifier = Modifier.size(18.dp),
+                        tint = if (isDayLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (isDayLocked) {
+                    Text(
+                        text = "Locked",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
         TextButton(
@@ -562,17 +634,25 @@ private fun SelectedDayHeader(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun MealSection(
     title: String,
     icon: String,
     meals: List<MealItem>,
     mealType: MealType,
+    isMealLocked: Boolean,
+    isDayLocked: Boolean,
     onRecipeClick: (MealItem, MealType) -> Unit,
-    onAddClick: () -> Unit
+    onLockClick: () -> Unit,
+    onAddClick: () -> Unit,
+    onToggleRecipeLockDirect: (MealItem, MealType) -> Unit,
+    onRemoveRecipeDirect: (MealItem, MealType) -> Unit
 ) {
     val totalTime = meals.sumOf { it.prepTimeMinutes }
     val totalCalories = meals.sumOf { it.calories }
+    // Meal is effectively locked if day is locked OR meal itself is locked
+    val isEffectivelyLocked = isDayLocked || isMealLocked
 
     Card(
         modifier = Modifier
@@ -584,10 +664,14 @@ private fun MealSection(
         shape = RoundedCornerShape(spacing.md)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // Header
+            // Header - long-press to toggle meal lock (only when day is NOT locked)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .combinedClickable(
+                        onClick = { /* no-op */ },
+                        onLongClick = { if (!isDayLocked) onLockClick() }
+                    )
                     .padding(spacing.md),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -604,26 +688,70 @@ private fun MealSection(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
                     )
+                    // Show lock icon if day is locked (inherited lock)
+                    if (isDayLocked) {
+                        Spacer(modifier = Modifier.width(spacing.xs))
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = "Locked by day",
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                        )
+                    }
                 }
-                TextButton(
-                    onClick = onAddClick,
-                    contentPadding = PaddingValues(horizontal = spacing.sm)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(spacing.xxs))
-                    Text("Add", style = MaterialTheme.typography.labelMedium)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Meal Lock "Locked" text label (when locked and day is NOT locked)
+                    if (isMealLocked && !isDayLocked) {
+                        Text(
+                            text = "Locked",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(spacing.xxs))
+                    }
+                    // Meal Lock Button (disabled if day is already locked)
+                    IconButton(
+                        onClick = onLockClick,
+                        modifier = Modifier.size(32.dp),
+                        enabled = !isDayLocked
+                    ) {
+                        Icon(
+                            imageVector = if (isMealLocked) Icons.Default.Lock else Icons.Default.LockOpen,
+                            contentDescription = if (isMealLocked) "Unlock meal" else "Lock meal",
+                            modifier = Modifier.size(16.dp),
+                            tint = when {
+                                isDayLocked -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+                                isMealLocked -> MaterialTheme.colorScheme.primary
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
+                    }
+                    TextButton(
+                        onClick = onAddClick,
+                        contentPadding = PaddingValues(horizontal = spacing.sm)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(spacing.xxs))
+                        Text("Add", style = MaterialTheme.typography.labelMedium)
+                    }
                 }
             }
 
-            // Meal items
+            // Meal items with swipe actions
             meals.forEach { meal ->
-                MealItemRow(
+                val itemIsLocked = isEffectivelyLocked || meal.isLocked
+                SwipeableMealItemRow(
                     mealItem = meal,
-                    onClick = { onRecipeClick(meal, mealType) }
+                    isEffectivelyLocked = itemIsLocked,
+                    onRecipeClick = { onRecipeClick(meal, mealType) },
+                    onLockToggle = { onToggleRecipeLockDirect(meal, mealType) },
+                    onDelete = if (!itemIsLocked) {
+                        { onRemoveRecipeDirect(meal, mealType) }
+                    } else null
                 )
             }
 
@@ -647,9 +775,82 @@ private fun MealSection(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SwipeableMealItemRow(
+    mealItem: MealItem,
+    isEffectivelyLocked: Boolean,
+    onRecipeClick: () -> Unit,
+    onLockToggle: () -> Unit,
+    onDelete: (() -> Unit)?
+) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = {
+            // Don't auto-dismiss, just reveal actions
+            false
+        }
+    )
+
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = false,
+        enableDismissFromEndToStart = true,
+        backgroundContent = {
+            SwipeActionBackground(
+                isLocked = isEffectivelyLocked,
+                onLockToggle = onLockToggle,
+                onDelete = onDelete
+            )
+        },
+        content = {
+            MealItemRow(
+                mealItem = mealItem,
+                isEffectivelyLocked = isEffectivelyLocked,
+                onClick = onRecipeClick
+            )
+        }
+    )
+}
+
+@Composable
+private fun SwipeActionBackground(
+    isLocked: Boolean,
+    onLockToggle: () -> Unit,
+    onDelete: (() -> Unit)?
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(horizontal = spacing.md),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Lock/Unlock button
+        IconButton(onClick = onLockToggle) {
+            Icon(
+                imageVector = if (isLocked) Icons.Default.LockOpen else Icons.Default.Lock,
+                contentDescription = if (isLocked) "Unlock" else "Lock",
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+        // Delete button (only when unlocked)
+        if (onDelete != null) {
+            IconButton(onClick = onDelete) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Remove",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun MealItemRow(
     mealItem: MealItem,
+    isEffectivelyLocked: Boolean,
     onClick: () -> Unit
 ) {
     val dietaryColor = when {
@@ -704,29 +905,30 @@ private fun MealItemRow(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Spacer(modifier = Modifier.width(spacing.md))
+        Spacer(modifier = Modifier.width(spacing.sm))
 
-        // Lock icon
-        if (mealItem.isLocked) {
-            Icon(
-                imageVector = Icons.Default.Lock,
-                contentDescription = "Locked",
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-        }
-
-        // Swap icon
+        // Show lock icon when locked (replaces swap icon per wireframe)
+        // When locked: show lock icon
+        // When unlocked: show swap icon
         IconButton(
             onClick = onClick,
             modifier = Modifier.size(32.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.SwapHoriz,
-                contentDescription = "Swap",
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            if (isEffectivelyLocked) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = "Locked",
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.SwapHoriz,
+                    contentDescription = "Swap",
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
@@ -735,12 +937,24 @@ private fun MealItemRow(
 @Composable
 private fun RecipeActionSheet(
     mealItem: MealItem,
+    isEffectivelyLocked: Boolean,
+    isDayLocked: Boolean,
+    isMealLocked: Boolean,
     onDismiss: () -> Unit,
     onViewRecipe: () -> Unit,
     onSwapRecipe: () -> Unit,
-    onToggleLock: () -> Unit
+    onToggleLock: () -> Unit,
+    onRemove: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()
+
+    // Determine lock context for display
+    val lockContextText = when {
+        isDayLocked -> "Day is locked"
+        isMealLocked -> "Meal is locked"
+        mealItem.isLocked -> "Recipe is locked"
+        else -> null
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -751,38 +965,77 @@ private fun RecipeActionSheet(
                 .fillMaxWidth()
                 .padding(spacing.md)
         ) {
-            Text(
-                text = mealItem.recipeName,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = spacing.md)
-            )
+            Row(
+                modifier = Modifier.padding(bottom = spacing.md),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = mealItem.recipeName,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f)
+                )
+                if (isEffectivelyLocked) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = "Locked",
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
 
+            // Show lock context if applicable
+            if (lockContextText != null && isEffectivelyLocked) {
+                Text(
+                    text = lockContextText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = spacing.sm)
+                )
+            }
+
+            // View Recipe - always enabled
             ActionSheetItem(
                 icon = Icons.Default.Visibility,
                 text = "View Recipe",
                 onClick = onViewRecipe
             )
 
+            // Swap Recipe - disabled when locked
             ActionSheetItem(
                 icon = Icons.Default.SwapHoriz,
                 text = "Swap Recipe",
-                subtitle = "Replace with similar",
+                subtitle = if (isEffectivelyLocked) "Unlock to swap" else "Replace with similar",
+                enabled = !isEffectivelyLocked,
                 onClick = onSwapRecipe
             )
 
+            // Lock/Unlock Recipe - shows different options based on lock level
             ActionSheetItem(
                 icon = if (mealItem.isLocked) Icons.Default.LockOpen else Icons.Default.Lock,
                 text = if (mealItem.isLocked) "Unlock Recipe" else "Lock Recipe",
-                subtitle = if (mealItem.isLocked) "Allow regenerate" else "Protect from regenerate",
+                subtitle = when {
+                    isDayLocked -> "Unlock day first"
+                    isMealLocked -> "Unlock meal first"
+                    mealItem.isLocked -> "Allow regenerate"
+                    else -> "Protect from regenerate"
+                },
+                enabled = !isDayLocked && !isMealLocked,
                 onClick = onToggleLock
             )
 
+            // Remove from Meal - disabled when locked
             ActionSheetItem(
                 icon = Icons.Default.Remove,
                 text = "Remove from Meal",
-                textColor = MaterialTheme.colorScheme.error,
-                onClick = onDismiss // TODO: Implement remove
+                subtitle = if (isEffectivelyLocked) "Unlock to remove" else null,
+                textColor = if (isEffectivelyLocked)
+                    MaterialTheme.colorScheme.error.copy(alpha = 0.38f)
+                else
+                    MaterialTheme.colorScheme.error,
+                enabled = !isEffectivelyLocked,
+                onClick = onRemove
             )
 
             Spacer(modifier = Modifier.height(spacing.lg))
@@ -806,19 +1059,23 @@ private fun ActionSheetItem(
     text: String,
     subtitle: String? = null,
     textColor: Color = MaterialTheme.colorScheme.onSurface,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
+    val alpha = if (enabled) 1f else 0.38f
+    val effectiveTextColor = textColor.copy(alpha = if (enabled) textColor.alpha else 0.38f)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(vertical = spacing.md),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = textColor,
+            tint = effectiveTextColor,
             modifier = Modifier.size(24.dp)
         )
         Spacer(modifier = Modifier.width(spacing.md))
@@ -826,13 +1083,13 @@ private fun ActionSheetItem(
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodyLarge,
-                color = textColor
+                color = effectiveTextColor
             )
             subtitle?.let {
                 Text(
                     text = it,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha)
                 )
             }
         }

@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -131,6 +131,7 @@ fun FavoritesScreen(
                 viewModel.enterReorderMode()
             }
         },
+        onMoveRecipe = viewModel::onReorderRecipes,
         onBottomNavItemClick = { screen ->
             when (screen) {
                 Screen.Home -> viewModel.navigateToHome()
@@ -167,6 +168,7 @@ private fun FavoritesScreenContent(
     onCuisineFilterChange: (com.rasoiai.domain.model.CuisineType?) -> Unit,
     onTimeFilterChange: (TimeFilter?) -> Unit,
     onReorderClick: () -> Unit,
+    onMoveRecipe: (fromIndex: Int, toIndex: Int) -> Unit,
     onBottomNavItemClick: (Screen) -> Unit
 ) {
     var showAddToCollectionDialog by remember { mutableStateOf<String?>(null) }
@@ -305,16 +307,28 @@ private fun FavoritesScreenContent(
                             verticalArrangement = Arrangement.spacedBy(spacing.sm),
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            items(
+                            itemsIndexed(
                                 items = uiState.filteredRecipes,
-                                key = { it.id }
-                            ) { recipe ->
+                                key = { _, recipe -> recipe.id }
+                            ) { index, recipe ->
                                 RecipeGridItem(
                                     recipe = recipe,
                                     onClick = { onRecipeClick(recipe.id) },
                                     onRemoveClick = { onRemoveRecipeClick(recipe.id) },
                                     onAddToCollectionClick = { showAddToCollectionDialog = recipe.id },
-                                    isReorderMode = uiState.isReorderMode
+                                    isReorderMode = uiState.isReorderMode,
+                                    canMoveUp = index > 0,
+                                    canMoveDown = index < uiState.filteredRecipes.size - 1,
+                                    onMoveUp = {
+                                        if (index > 0) {
+                                            onMoveRecipe(index, index - 1)
+                                        }
+                                    },
+                                    onMoveDown = {
+                                        if (index < uiState.filteredRecipes.size - 1) {
+                                            onMoveRecipe(index, index + 1)
+                                        }
+                                    }
                                 )
                             }
                         }

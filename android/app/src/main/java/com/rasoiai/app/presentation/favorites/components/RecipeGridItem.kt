@@ -19,13 +19,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,6 +57,10 @@ fun RecipeGridItem(
     onRemoveClick: () -> Unit,
     onAddToCollectionClick: () -> Unit,
     isReorderMode: Boolean,
+    canMoveUp: Boolean = true,
+    canMoveDown: Boolean = true,
+    onMoveUp: () -> Unit = {},
+    onMoveDown: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -97,20 +105,64 @@ fun RecipeGridItem(
                     }
                 }
 
-                // Drag handle in reorder mode
+                // Reorder controls
                 if (isReorderMode) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.3f)),
+                            .background(Color.Black.copy(alpha = 0.4f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.DragHandle,
-                            contentDescription = "Drag to reorder",
-                            tint = Color.White,
-                            modifier = Modifier.size(32.dp)
-                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Move up button
+                            FilledIconButton(
+                                onClick = onMoveUp,
+                                enabled = canMoveUp,
+                                colors = IconButtonDefaults.filledIconButtonColors(
+                                    containerColor = Color.White.copy(alpha = 0.9f),
+                                    contentColor = MaterialTheme.colorScheme.primary,
+                                    disabledContainerColor = Color.White.copy(alpha = 0.3f),
+                                    disabledContentColor = Color.Gray
+                                ),
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowUp,
+                                    contentDescription = "Move up",
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+
+                            // Drag indicator
+                            Icon(
+                                imageVector = Icons.Default.DragHandle,
+                                contentDescription = "Drag to reorder",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+
+                            // Move down button
+                            FilledIconButton(
+                                onClick = onMoveDown,
+                                enabled = canMoveDown,
+                                colors = IconButtonDefaults.filledIconButtonColors(
+                                    containerColor = Color.White.copy(alpha = 0.9f),
+                                    contentColor = MaterialTheme.colorScheme.primary,
+                                    disabledContainerColor = Color.White.copy(alpha = 0.3f),
+                                    disabledContentColor = Color.Gray
+                                ),
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                    contentDescription = "Move down",
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }

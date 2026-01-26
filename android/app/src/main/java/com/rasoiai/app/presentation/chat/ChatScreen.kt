@@ -109,6 +109,7 @@ fun ChatScreen(
         onSendClick = viewModel::sendMessage,
         onQuickActionClick = viewModel::onQuickActionClick,
         onRecipeClick = viewModel::navigateToRecipeDetail,
+        onAddToMealPlan = viewModel::addRecipeToMealPlan,
         onAttachmentClick = viewModel::onAttachmentButtonClick,
         onVoiceClick = viewModel::onVoiceButtonClick,
         onBottomNavItemClick = { screen ->
@@ -145,6 +146,7 @@ private fun ChatScreenContent(
     onSendClick: () -> Unit,
     onQuickActionClick: (String) -> Unit,
     onRecipeClick: (String) -> Unit,
+    onAddToMealPlan: (String) -> Unit,
     onAttachmentClick: () -> Unit,
     onVoiceClick: () -> Unit,
     onBottomNavItemClick: (Screen) -> Unit
@@ -254,7 +256,8 @@ private fun ChatScreenContent(
                         ChatMessageItem(
                             message = message,
                             onQuickActionClick = onQuickActionClick,
-                            onRecipeClick = onRecipeClick
+                            onRecipeClick = onRecipeClick,
+                            onAddToMealPlan = onAddToMealPlan
                         )
                     }
 

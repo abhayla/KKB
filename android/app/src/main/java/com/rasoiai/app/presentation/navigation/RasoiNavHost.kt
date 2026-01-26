@@ -81,8 +81,8 @@ fun RasoiNavHost(
         // Home
         composable(route = Screen.Home.route) {
             HomeScreen(
-                onNavigateToRecipeDetail = { recipeId ->
-                    navController.navigate(Screen.RecipeDetail.createRoute(recipeId))
+                onNavigateToRecipeDetail = { recipeId, isLocked ->
+                    navController.navigate(Screen.RecipeDetail.createRoute(recipeId, isLocked))
                 },
                 onNavigateToSettings = {
                     navController.navigate(Screen.Settings.route)
@@ -108,6 +108,10 @@ fun RasoiNavHost(
             arguments = listOf(
                 navArgument(Screen.RecipeDetail.ARG_RECIPE_ID) {
                     type = NavType.StringType
+                },
+                navArgument(Screen.RecipeDetail.ARG_IS_LOCKED) {
+                    type = NavType.BoolType
+                    defaultValue = false
                 }
             ),
             deepLinks = listOf(

@@ -147,6 +147,7 @@ data class NutritionGoal(
     val foodCategory: FoodCategory,
     val weeklyTarget: Int,
     val currentProgress: Int = 0,
+    val enforcement: RuleEnforcement = RuleEnforcement.PREFERRED,
     val isActive: Boolean = true,
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val updatedAt: LocalDateTime = LocalDateTime.now()

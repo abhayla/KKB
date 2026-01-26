@@ -37,7 +37,8 @@ data class Instruction(
     val instruction: String,
     val durationMinutes: Int?,
     val timerRequired: Boolean = false,
-    val tips: String?
+    val tips: String?,
+    val imageUrl: String? = null
 )
 
 data class Nutrition(

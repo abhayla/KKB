@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -17,12 +18,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.rasoiai.app.presentation.theme.RasoiAITheme
 import com.rasoiai.app.presentation.theme.spacing
 import com.rasoiai.domain.model.Instruction
@@ -39,6 +43,21 @@ fun StepContent(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Step image if available
+        instruction.imageUrl?.let { imageUrl ->
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = "Step ${instruction.stepNumber} illustration",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(16f / 9f)
+                    .clip(RoundedCornerShape(spacing.md))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentScale = ContentScale.Crop
+            )
+            Spacer(modifier = Modifier.height(spacing.lg))
+        }
+
         // Main instruction text
         Text(
             text = instruction.instruction,

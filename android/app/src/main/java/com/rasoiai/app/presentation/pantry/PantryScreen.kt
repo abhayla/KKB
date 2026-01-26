@@ -56,6 +56,8 @@ import com.rasoiai.app.presentation.pantry.components.CameraScanSection
 import com.rasoiai.app.presentation.pantry.components.PantryItemCard
 import com.rasoiai.app.presentation.pantry.components.PantryItemCardLarge
 import com.rasoiai.app.presentation.pantry.components.RemoveExpiredDialog
+import com.rasoiai.app.presentation.pantry.components.ScannedItem
+import com.rasoiai.app.presentation.pantry.components.ScanResultsSheet
 import com.rasoiai.app.presentation.theme.RasoiAITheme
 import com.rasoiai.app.presentation.theme.spacing
 
@@ -161,6 +163,33 @@ fun PantryScreen(
             items = uiState.pantryItems,
             onDismiss = viewModel::dismissAllItemsSheet,
             onRemoveItem = viewModel::removeItem
+        )
+    }
+
+    // Scan results sheet for review
+    if (uiState.showScanResultsSheet) {
+        ScanResultsSheet(
+            scannedItems = uiState.scannedItems.map { item ->
+                ScannedItem(
+                    name = item.name,
+                    category = item.category,
+                    quantity = item.quantity,
+                    unit = item.unit
+                )
+            },
+            onDismiss = viewModel::dismissScanResultsSheet,
+            onConfirm = { editedItems ->
+                viewModel.confirmScanResults(
+                    editedItems.map { item ->
+                        ScannedItemData(
+                            name = item.name,
+                            category = item.category,
+                            quantity = item.quantity,
+                            unit = item.unit
+                        )
+                    }
+                )
+            }
         )
     }
 }

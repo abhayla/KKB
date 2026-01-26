@@ -22,6 +22,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -121,6 +123,7 @@ fun CookingModeScreen(
     CookingModeContent(
         uiState = uiState,
         onCloseClick = viewModel::requestExit,
+        onVoiceGuidanceToggle = viewModel::toggleVoiceGuidance,
         onPreviousStep = viewModel::previousStep,
         onNextStep = viewModel::nextStep,
         onStartTimer = viewModel::startTimer,
@@ -155,6 +158,7 @@ private fun KeepScreenOn() {
 private fun CookingModeContent(
     uiState: CookingModeUiState,
     onCloseClick: () -> Unit,
+    onVoiceGuidanceToggle: () -> Unit,
     onPreviousStep: () -> Unit,
     onNextStep: () -> Unit,
     onStartTimer: () -> Unit,
@@ -198,6 +202,16 @@ private fun CookingModeContent(
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close cooking mode"
+                        )
+                    }
+                },
+                actions = {
+                    // Voice guidance toggle
+                    IconButton(onClick = onVoiceGuidanceToggle) {
+                        Icon(
+                            imageVector = if (uiState.voiceGuidanceEnabled) Icons.Default.VolumeUp else Icons.Default.VolumeOff,
+                            contentDescription = if (uiState.voiceGuidanceEnabled) "Disable voice guidance" else "Enable voice guidance",
+                            tint = if (uiState.voiceGuidanceEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 },

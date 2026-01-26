@@ -193,6 +193,19 @@ class ChatViewModel @Inject constructor(
 
     // endregion
 
+    // region Meal Plan Actions
+
+    fun addRecipeToMealPlan(recipeId: String) {
+        viewModelScope.launch {
+            // TODO: Implement actual meal plan integration via MealPlanRepository
+            // For now, show a confirmation message
+            Timber.i("Adding recipe $recipeId to meal plan")
+            _uiState.update { it.copy(errorMessage = "Recipe added to your meal plan!") }
+        }
+    }
+
+    // endregion
+
     // region Error Handling
 
     fun clearError() {

@@ -20,6 +20,15 @@ import java.time.YearMonth
 import javax.inject.Inject
 
 /**
+ * Cuisine breakdown data for pie chart
+ */
+data class CuisineBreakdown(
+    val cuisine: String,
+    val count: Int,
+    val percentage: Float
+)
+
+/**
  * UI state for the Stats screen.
  */
 data class StatsUiState(
@@ -32,7 +41,8 @@ data class StatsUiState(
     val weeklyChallenge: WeeklyChallenge? = null,
     val leaderboard: List<LeaderboardEntry> = emptyList(),
     val selectedYearMonth: YearMonth = YearMonth.now(),
-    val isJoiningChallenge: Boolean = false
+    val isJoiningChallenge: Boolean = false,
+    val cuisineBreakdown: List<CuisineBreakdown> = emptyList()
 ) {
     val unlockedAchievements: List<Achievement>
         get() = achievements.filter { it.isUnlocked }
@@ -85,8 +95,22 @@ class StatsViewModel @Inject constructor(
             // Load leaderboard
             loadLeaderboard()
 
+            // Load cuisine breakdown (mock data for now)
+            loadCuisineBreakdown()
+
             _uiState.update { it.copy(isLoading = false) }
         }
+    }
+
+    private fun loadCuisineBreakdown() {
+        // TODO: Load from repository - using mock data for now
+        val mockBreakdown = listOf(
+            CuisineBreakdown("North", 18, 40f),
+            CuisineBreakdown("South", 12, 27f),
+            CuisineBreakdown("East", 6, 13f),
+            CuisineBreakdown("West", 9, 20f)
+        )
+        _uiState.update { it.copy(cuisineBreakdown = mockBreakdown) }
     }
 
     private fun observeStreams() {
@@ -199,6 +223,17 @@ class StatsViewModel @Inject constructor(
 
             _uiState.update { it.copy(isJoiningChallenge = false) }
         }
+    }
+
+    // endregion
+
+    // region Share Actions
+
+    fun onShareAchievement(achievement: Achievement) {
+        // TODO: Implement actual sharing via Android share intent
+        // For now, show a snackbar message
+        Timber.i("Share achievement: ${achievement.name}")
+        _uiState.update { it.copy(errorMessage = "Share: ${achievement.emoji} ${achievement.name} - Unlocked on RasoiAI!") }
     }
 
     // endregion

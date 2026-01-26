@@ -492,6 +492,26 @@ class RecipeRulesViewModel @Inject constructor(
         }
     }
 
+    fun toggleNutritionGoalEnforcement(goal: NutritionGoal) {
+        viewModelScope.launch {
+            val newEnforcement = if (goal.enforcement == RuleEnforcement.REQUIRED) {
+                RuleEnforcement.PREFERRED
+            } else {
+                RuleEnforcement.REQUIRED
+            }
+
+            val updatedGoal = goal.copy(enforcement = newEnforcement)
+            repository.updateNutritionGoal(updatedGoal)
+                .onSuccess {
+                    Timber.i("Nutrition goal enforcement toggled: ${goal.foodCategory.displayName} -> ${newEnforcement.displayName}")
+                }
+                .onFailure { e ->
+                    Timber.e(e, "Failed to toggle nutrition goal enforcement")
+                    _uiState.update { it.copy(errorMessage = "Failed to update goal enforcement") }
+                }
+        }
+    }
+
     // endregion
 
     // region Delete Operations

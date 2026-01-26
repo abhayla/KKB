@@ -17,6 +17,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -26,6 +28,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import com.rasoiai.domain.model.RuleEnforcement
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +48,7 @@ fun NutritionGoalCard(
     goal: NutritionGoal,
     onEdit: () -> Unit,
     onToggleActive: () -> Unit,
+    onToggleEnforcement: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -126,6 +130,53 @@ fun NutritionGoalCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 28.dp)
                 )
+
+                // Enforcement badge
+                Spacer(modifier = Modifier.height(spacing.sm))
+
+                Row(
+                    modifier = Modifier.padding(start = 28.dp),
+                    horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AssistChip(
+                        onClick = onToggleEnforcement,
+                        label = {
+                            Text(
+                                text = goal.enforcement.displayName,
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        },
+                        colors = AssistChipDefaults.assistChipColors(
+                            containerColor = if (goal.enforcement == RuleEnforcement.REQUIRED) {
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.surfaceVariant
+                            },
+                            labelColor = if (goal.enforcement == RuleEnforcement.REQUIRED) {
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        ),
+                        border = null,
+                        modifier = Modifier.height(24.dp)
+                    )
+
+                    if (goal.isActive) {
+                        Text(
+                            text = "● Active",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    } else {
+                        Text(
+                            text = "● Paused",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
 
             // Menu Button
@@ -163,6 +214,20 @@ fun NutritionGoalCard(
                         onClick = {
                             showMenu = false
                             onToggleActive()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                if (goal.enforcement == RuleEnforcement.REQUIRED)
+                                    "Change to Preferred"
+                                else
+                                    "Change to Required"
+                            )
+                        },
+                        onClick = {
+                            showMenu = false
+                            onToggleEnforcement()
                         }
                     )
                     DropdownMenuItem(

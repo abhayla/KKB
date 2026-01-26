@@ -30,7 +30,9 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.TextSnippet
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -50,6 +52,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberSwipeToDismissBoxState
@@ -157,6 +161,10 @@ fun GroceryScreen(
         onEditItem = viewModel::showEditDialog,
         onDeleteItem = viewModel::deleteItem,
         onAddCustomItem = viewModel::showAddItemDialog,
+        onMoreOptionsClick = viewModel::showMoreOptionsMenu,
+        onDismissMoreOptions = viewModel::dismissMoreOptionsMenu,
+        onClearPurchasedClick = viewModel::clearPurchasedItems,
+        onShareAsTextClick = viewModel::shareAsText,
         onBottomNavItemClick = { screen ->
             when (screen) {
                 Screen.Home -> viewModel.navigateToHome()
@@ -214,6 +222,10 @@ private fun GroceryScreenContent(
     onEditItem: (GroceryItem) -> Unit,
     onDeleteItem: (GroceryItem) -> Unit,
     onAddCustomItem: () -> Unit,
+    onMoreOptionsClick: () -> Unit,
+    onDismissMoreOptions: () -> Unit,
+    onClearPurchasedClick: () -> Unit,
+    onShareAsTextClick: () -> Unit,
     onBottomNavItemClick: (Screen) -> Unit
 ) {
     Scaffold(
@@ -235,11 +247,38 @@ private fun GroceryScreenContent(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* TODO: More options */ }) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = "More options"
-                        )
+                    Box {
+                        IconButton(onClick = onMoreOptionsClick) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "More options"
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = uiState.showMoreOptionsMenu,
+                            onDismissRequest = onDismissMoreOptions
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Clear purchased items") },
+                                onClick = onClearPurchasedClick,
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.RemoveCircleOutline,
+                                        contentDescription = null
+                                    )
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Share as text") },
+                                onClick = onShareAsTextClick,
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.TextSnippet,
+                                        contentDescription = null
+                                    )
+                                }
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

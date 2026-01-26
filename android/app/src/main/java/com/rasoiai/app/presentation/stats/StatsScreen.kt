@@ -38,9 +38,11 @@ import com.rasoiai.app.presentation.navigation.Screen
 import com.rasoiai.app.presentation.stats.components.AchievementsSection
 import com.rasoiai.app.presentation.stats.components.ChallengeCard
 import com.rasoiai.app.presentation.stats.components.CookingCalendar
+import com.rasoiai.app.presentation.stats.components.CuisineBreakdownSection
 import com.rasoiai.app.presentation.stats.components.LeaderboardSection
 import com.rasoiai.app.presentation.stats.components.MonthlyStatsRow
 import com.rasoiai.app.presentation.stats.components.StreakCard
+import com.rasoiai.domain.model.Achievement
 import com.rasoiai.app.presentation.theme.RasoiAITheme
 import com.rasoiai.app.presentation.theme.spacing
 import com.rasoiai.domain.model.CookingStreak
@@ -112,6 +114,7 @@ fun StatsScreen(
         onNextMonth = viewModel::onNextMonth,
         onTodayClick = viewModel::onTodayClick,
         onViewAllAchievements = viewModel::onViewAllAchievements,
+        onShareAchievement = viewModel::onShareAchievement,
         onJoinChallenge = viewModel::onJoinChallenge,
         onViewFullLeaderboard = viewModel::onViewFullLeaderboard,
         onBottomNavItemClick = { screen ->
@@ -137,6 +140,7 @@ private fun StatsScreenContent(
     onNextMonth: () -> Unit,
     onTodayClick: () -> Unit,
     onViewAllAchievements: () -> Unit,
+    onShareAchievement: (Achievement) -> Unit,
     onJoinChallenge: () -> Unit,
     onViewFullLeaderboard: () -> Unit,
     onBottomNavItemClick: (Screen) -> Unit
@@ -242,8 +246,25 @@ private fun StatsScreenContent(
                         AchievementsSection(
                             achievements = uiState.achievements,
                             onViewAllClick = onViewAllAchievements,
+                            onShareAchievement = onShareAchievement,
                             modifier = Modifier.padding(horizontal = spacing.md)
                         )
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(spacing.lg))
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = spacing.md))
+                        Spacer(modifier = Modifier.height(spacing.md))
+                    }
+
+                    // Cuisine Breakdown
+                    item {
+                        if (uiState.cuisineBreakdown.isNotEmpty()) {
+                            CuisineBreakdownSection(
+                                breakdown = uiState.cuisineBreakdown,
+                                modifier = Modifier.padding(horizontal = spacing.md)
+                            )
+                        }
                     }
 
                     item {
@@ -314,7 +335,13 @@ private fun StatsScreenPreview() {
                         newRecipes = 12,
                         averageRating = 4.2f
                     ),
-                    selectedYearMonth = YearMonth.now()
+                    selectedYearMonth = YearMonth.now(),
+                    cuisineBreakdown = listOf(
+                        CuisineBreakdown("North", 18, 40f),
+                        CuisineBreakdown("South", 12, 27f),
+                        CuisineBreakdown("East", 6, 13f),
+                        CuisineBreakdown("West", 9, 20f)
+                    )
                 ),
                 snackbarHostState = SnackbarHostState(),
                 onBackClick = {},
@@ -322,6 +349,7 @@ private fun StatsScreenPreview() {
                 onNextMonth = {},
                 onTodayClick = {},
                 onViewAllAchievements = {},
+                onShareAchievement = {},
                 onJoinChallenge = {},
                 onViewFullLeaderboard = {},
                 onBottomNavItemClick = {}

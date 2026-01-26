@@ -117,6 +117,25 @@ class FakeGroceryRepository @Inject constructor() : GroceryRepository {
         return Result.success(groceryLists.value.first())
     }
 
+    override suspend fun clearPurchasedItems(): Result<Int> {
+        return try {
+            var clearedCount = 0
+            val currentWeekStart = LocalDate.now()
+                .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+
+            groceryLists.value = groceryLists.value.map { list ->
+                if (list.weekStartDate == currentWeekStart) {
+                    val purchasedItems = list.items.filter { it.isPurchased }
+                    clearedCount = purchasedItems.size
+                    list.copy(items = list.items.filter { !it.isPurchased })
+                } else list
+            }
+            Result.success(clearedCount)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     private fun createSampleGroceryLists(): List<GroceryList> {
         val weekStart = LocalDate.now()
             .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))

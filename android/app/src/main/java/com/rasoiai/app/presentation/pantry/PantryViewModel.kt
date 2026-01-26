@@ -17,6 +17,16 @@ import javax.inject.Inject
 /**
  * UI state for the Pantry screen.
  */
+/**
+ * Data class representing a scanned item before being added to the pantry
+ */
+data class ScannedItemData(
+    val name: String,
+    val category: PantryCategory,
+    var quantity: Int = 1,
+    var unit: String = "piece"
+)
+
 data class PantryUiState(
     val isLoading: Boolean = true,
     val errorMessage: String? = null,
@@ -26,6 +36,8 @@ data class PantryUiState(
     val showAddItemDialog: Boolean = false,
     val showRemoveExpiredDialog: Boolean = false,
     val showAllItemsSheet: Boolean = false,
+    val showScanResultsSheet: Boolean = false,
+    val scannedItems: List<ScannedItemData> = emptyList(),
     val isScanning: Boolean = false
 ) {
     val itemCount: Int get() = pantryItems.size
@@ -186,31 +198,56 @@ class PantryViewModel @Inject constructor(
             // Simulate delay
             kotlinx.coroutines.delay(1500)
 
-            // Add some mock scanned items
+            // Create mock scanned items for review
             val scannedItems = listOf(
-                "Carrot" to PantryCategory.VEGETABLES,
-                "Apple" to PantryCategory.FRUITS,
-                "Cucumber" to PantryCategory.VEGETABLES
+                ScannedItemData("Carrot", PantryCategory.VEGETABLES, 3, "piece"),
+                ScannedItemData("Apple", PantryCategory.FRUITS, 5, "piece"),
+                ScannedItemData("Cucumber", PantryCategory.VEGETABLES, 2, "piece"),
+                ScannedItemData("Milk", PantryCategory.DAIRY_MILK, 1, "liter"),
+                ScannedItemData("Onion", PantryCategory.VEGETABLES, 4, "piece")
             )
 
-            pantryRepository.addItemsFromScan(scannedItems)
-                .onSuccess { items ->
-                    Timber.i("Added ${items.size} items from scan")
+            // Show scan results sheet for review
+            _uiState.update {
+                it.copy(
+                    isScanning = false,
+                    scannedItems = scannedItems,
+                    showScanResultsSheet = true
+                )
+            }
+        }
+    }
+
+    fun dismissScanResultsSheet() {
+        _uiState.update {
+            it.copy(
+                showScanResultsSheet = false,
+                scannedItems = emptyList()
+            )
+        }
+    }
+
+    fun confirmScanResults(items: List<ScannedItemData>) {
+        viewModelScope.launch {
+            dismissScanResultsSheet()
+
+            // Convert to the format expected by repository
+            val itemsToAdd = items.map { item ->
+                item.name to item.category
+            }
+
+            pantryRepository.addItemsFromScan(itemsToAdd)
+                .onSuccess { addedItems ->
+                    Timber.i("Added ${addedItems.size} items from scan")
                     _uiState.update {
-                        it.copy(
-                            isScanning = false,
-                            errorMessage = "Added ${items.size} items from scan!"
-                        )
+                        it.copy(errorMessage = "Added ${addedItems.size} items to pantry!")
                     }
                     loadMatchingRecipeCount()
                 }
                 .onFailure { e ->
                     Timber.e(e, "Failed to add scanned items")
                     _uiState.update {
-                        it.copy(
-                            isScanning = false,
-                            errorMessage = "Failed to process scan"
-                        )
+                        it.copy(errorMessage = "Failed to add items")
                     }
                 }
         }

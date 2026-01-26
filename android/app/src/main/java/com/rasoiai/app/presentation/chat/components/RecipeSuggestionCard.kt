@@ -31,6 +31,7 @@ import com.rasoiai.domain.model.RecipeSuggestion
 fun RecipeSuggestionCard(
     suggestion: RecipeSuggestion,
     onClick: () -> Unit,
+    onAddToMealPlan: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -41,62 +42,82 @@ fun RecipeSuggestionCard(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(spacing.sm),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(spacing.sm)
         ) {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Recipe icon
-                Icon(
-                    imageVector = Icons.Default.Restaurant,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-
-                Spacer(modifier = Modifier.width(spacing.sm))
-
-                Column {
-                    Text(
-                        text = suggestion.recipeName,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    // Recipe icon
+                    Icon(
+                        imageVector = Icons.Default.Restaurant,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
                     )
 
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.width(spacing.sm))
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AccessTime,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
+                    Column {
                         Text(
-                            text = "${suggestion.cookTimeMinutes} min",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = suggestion.recipeName,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AccessTime,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "${suggestion.cookTimeMinutes} min",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
+                }
+
+                TextButton(onClick = onClick) {
+                    Text(
+                        text = "View",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
 
-            TextButton(onClick = onClick) {
-                Text(
-                    text = "View",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
+            // Add to Meal Plan button
+            onAddToMealPlan?.let { onAdd ->
+                Spacer(modifier = Modifier.height(spacing.xs))
+                TextButton(
+                    onClick = onAdd,
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text(
+                        text = "+ Add to Meal Plan",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
             }
         }
     }

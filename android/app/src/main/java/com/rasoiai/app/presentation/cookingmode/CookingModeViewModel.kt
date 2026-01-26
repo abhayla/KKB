@@ -45,7 +45,8 @@ data class CookingModeUiState(
     val showExitConfirmation: Boolean = false,
     val showCompletionDialog: Boolean = false,
     val rating: Int = 0,
-    val feedback: String = ""
+    val feedback: String = "",
+    val voiceGuidanceEnabled: Boolean = false
 ) {
     val totalSteps: Int
         get() = recipe?.instructions?.size ?: 0
@@ -280,6 +281,15 @@ class CookingModeViewModel @Inject constructor(
 
     fun dismissTimerComplete() {
         _uiState.update { it.copy(timerState = TimerState.IDLE) }
+    }
+
+    // endregion
+
+    // region Voice Guidance
+
+    fun toggleVoiceGuidance() {
+        _uiState.update { it.copy(voiceGuidanceEnabled = !it.voiceGuidanceEnabled) }
+        Timber.i("Voice guidance toggled: ${_uiState.value.voiceGuidanceEnabled}")
     }
 
     // endregion

@@ -30,6 +30,7 @@ data class GroceryUiState(
     val showWhatsAppDialog: Boolean = false,
     val showEditDialog: Boolean = false,
     val showAddItemDialog: Boolean = false,
+    val showMoreOptionsMenu: Boolean = false,
     val selectedItem: GroceryItem? = null,
     val shareOption: ShareOption = ShareOption.FULL_LIST
 ) {
@@ -286,6 +287,39 @@ class GroceryViewModel @Inject constructor(
     fun shareViaWhatsApp() {
         val text = _uiState.value.whatsAppShareText
         dismissWhatsAppDialog()
+        _navigationEvent.value = GroceryNavigationEvent.ShareViaWhatsApp(text)
+    }
+
+    // endregion
+
+    // region More Options Menu
+
+    fun showMoreOptionsMenu() {
+        _uiState.update { it.copy(showMoreOptionsMenu = true) }
+    }
+
+    fun dismissMoreOptionsMenu() {
+        _uiState.update { it.copy(showMoreOptionsMenu = false) }
+    }
+
+    fun clearPurchasedItems() {
+        viewModelScope.launch {
+            dismissMoreOptionsMenu()
+            groceryRepository.clearPurchasedItems()
+                .onSuccess { count ->
+                    Timber.i("Cleared $count purchased items")
+                    _uiState.update { it.copy(errorMessage = "Cleared $count purchased items") }
+                }
+                .onFailure { e ->
+                    Timber.e(e, "Failed to clear purchased items")
+                    _uiState.update { it.copy(errorMessage = "Failed to clear items") }
+                }
+        }
+    }
+
+    fun shareAsText() {
+        dismissMoreOptionsMenu()
+        val text = _uiState.value.whatsAppShareText
         _navigationEvent.value = GroceryNavigationEvent.ShareViaWhatsApp(text)
     }
 

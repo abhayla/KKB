@@ -162,12 +162,12 @@ class FakeRecipeRepository @Inject constructor() : RecipeRepository {
                 Ingredient("11", "Salt", "1", "tsp", IngredientCategory.SPICES)
             ),
             instructions = listOf(
-                Instruction(1, "Wash and soak toor dal for 30 minutes. Pressure cook with turmeric and salt for 3 whistles.", 35, false, "You can also cook in an Instant Pot for 15 minutes."),
-                Instruction(2, "Heat ghee in a pan. Add cumin seeds and let them splutter.", 2, false, null),
-                Instruction(3, "Add chopped onions and saute until golden brown (5-7 minutes).", 7, false, "Low heat gives better color and flavor."),
-                Instruction(4, "Add ginger-garlic and saute for 1 minute until fragrant.", 1, false, null),
-                Instruction(5, "Add tomato puree and cook until oil separates (5 minutes).", 5, false, null),
-                Instruction(6, "Add red chili powder and mix well. Add the cooked dal and simmer for 5 minutes.", 5, false, "Adjust consistency with water if needed.")
+                Instruction(1, "Wash and soak toor dal for 30 minutes. Pressure cook with turmeric and salt for 3 whistles.", 35, false, "You can also cook in an Instant Pot for 15 minutes.", "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800"),
+                Instruction(2, "Heat ghee in a pan. Add cumin seeds and let them splutter.", 2, false, null, "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800"),
+                Instruction(3, "Add chopped onions and saute until golden brown (5-7 minutes).", 7, false, "Low heat gives better color and flavor.", "https://images.unsplash.com/photo-1580959375944-abd7e991f971?w=800"),
+                Instruction(4, "Add ginger-garlic and saute for 1 minute until fragrant.", 1, false, null, "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=800"),
+                Instruction(5, "Add tomato puree and cook until oil separates (5 minutes).", 5, false, null, "https://images.unsplash.com/photo-1596560548464-f010549b84d7?w=800"),
+                Instruction(6, "Add red chili powder and mix well. Add the cooked dal and simmer for 5 minutes.", 5, false, "Adjust consistency with water if needed.", "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800")
             ),
             nutrition = Nutrition(
                 calories = 180,
@@ -208,13 +208,13 @@ class FakeRecipeRepository @Inject constructor() : RecipeRepository {
                 Ingredient("11", "Salt to taste", "1", "tsp", IngredientCategory.SPICES)
             ),
             instructions = listOf(
-                Instruction(1, "Blanch spinach in boiling water for 2 minutes. Drain and blend into a smooth puree.", 5, false, "Adding ice water after blanching keeps the green color bright."),
-                Instruction(2, "Heat oil and fry paneer cubes until golden. Set aside.", 5, false, "Don't over-fry; paneer should be soft inside."),
-                Instruction(3, "In the same oil, add cumin seeds. When they splutter, add onions and saute until golden.", 5, false, null),
-                Instruction(4, "Add ginger-garlic paste and green chilies. Cook for 1 minute.", 1, false, null),
-                Instruction(5, "Add tomatoes and cook until soft (3-4 minutes).", 4, false, null),
-                Instruction(6, "Add spinach puree, garam masala, and salt. Simmer for 5 minutes.", 5, false, null),
-                Instruction(7, "Add fried paneer and cream. Mix gently and cook for 2 more minutes.", 2, false, "Add cream off heat for better taste.")
+                Instruction(1, "Blanch spinach in boiling water for 2 minutes. Drain and blend into a smooth puree.", 5, false, "Adding ice water after blanching keeps the green color bright.", "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=800"),
+                Instruction(2, "Heat oil and fry paneer cubes until golden. Set aside.", 5, false, "Don't over-fry; paneer should be soft inside.", "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=800"),
+                Instruction(3, "In the same oil, add cumin seeds. When they splutter, add onions and saute until golden.", 5, false, null, "https://images.unsplash.com/photo-1580959375944-abd7e991f971?w=800"),
+                Instruction(4, "Add ginger-garlic paste and green chilies. Cook for 1 minute.", 1, false, null, "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=800"),
+                Instruction(5, "Add tomatoes and cook until soft (3-4 minutes).", 4, false, null, "https://images.unsplash.com/photo-1596560548464-f010549b84d7?w=800"),
+                Instruction(6, "Add spinach puree, garam masala, and salt. Simmer for 5 minutes.", 5, false, null, "https://images.unsplash.com/photo-1574653853027-5382a3d23a15?w=800"),
+                Instruction(7, "Add fried paneer and cream. Mix gently and cook for 2 more minutes.", 2, false, "Add cream off heat for better taste.", "https://images.unsplash.com/photo-1609502665737-4d9fd81a8e1c?w=800")
             ),
             nutrition = Nutrition(
                 calories = 320,

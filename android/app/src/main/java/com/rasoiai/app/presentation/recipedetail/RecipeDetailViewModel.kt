@@ -30,7 +30,8 @@ data class RecipeDetailUiState(
     val scaledIngredients: List<Ingredient> = emptyList(),
     val scaledNutrition: Nutrition? = null,
     val checkedIngredients: Set<String> = emptySet(),
-    val selectedTabIndex: Int = 0
+    val selectedTabIndex: Int = 0,
+    val isLocked: Boolean = false
 ) {
     val isVegetarian: Boolean
         get() = recipe?.dietaryTags?.any {
@@ -91,8 +92,9 @@ class RecipeDetailViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val recipeId: String = checkNotNull(savedStateHandle[Screen.RecipeDetail.ARG_RECIPE_ID])
+    private val isLocked: Boolean = savedStateHandle[Screen.RecipeDetail.ARG_IS_LOCKED] ?: false
 
-    private val _uiState = MutableStateFlow(RecipeDetailUiState())
+    private val _uiState = MutableStateFlow(RecipeDetailUiState(isLocked = isLocked))
     val uiState: StateFlow<RecipeDetailUiState> = _uiState.asStateFlow()
 
     private val _navigationEvent = MutableStateFlow<RecipeDetailNavigationEvent?>(null)

@@ -14,9 +14,10 @@ sealed class Screen(val route: String) {
     data object Settings : Screen("settings")
 
     // Detail screens
-    data object RecipeDetail : Screen("recipe/{recipeId}") {
-        fun createRoute(recipeId: String) = "recipe/$recipeId"
+    data object RecipeDetail : Screen("recipe/{recipeId}?isLocked={isLocked}") {
+        fun createRoute(recipeId: String, isLocked: Boolean = false) = "recipe/$recipeId?isLocked=$isLocked"
         const val ARG_RECIPE_ID = "recipeId"
+        const val ARG_IS_LOCKED = "isLocked"
     }
 
     data object CookingMode : Screen("cooking/{recipeId}") {

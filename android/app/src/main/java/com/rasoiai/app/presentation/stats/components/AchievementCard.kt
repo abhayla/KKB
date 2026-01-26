@@ -1,7 +1,9 @@
 package com.rasoiai.app.presentation.stats.components
 
 import android.content.res.Configuration
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -9,12 +11,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -37,6 +44,7 @@ import java.time.LocalDate
 fun AchievementsSection(
     achievements: List<Achievement>,
     onViewAllClick: () -> Unit,
+    onShareAchievement: ((Achievement) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -67,7 +75,10 @@ fun AchievementsSection(
                 items = achievements.filter { it.isUnlocked },
                 key = { it.id }
             ) { achievement ->
-                AchievementCard(achievement = achievement)
+                AchievementCard(
+                    achievement = achievement,
+                    onShareClick = onShareAchievement?.let { { it(achievement) } }
+                )
             }
         }
     }
@@ -76,10 +87,11 @@ fun AchievementsSection(
 @Composable
 fun AchievementCard(
     achievement: Achievement,
+    onShareClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.width(80.dp),
+        modifier = modifier.width(90.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (achievement.isUnlocked) {
@@ -89,34 +101,49 @@ fun AchievementCard(
             }
         )
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(spacing.sm),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Emoji
-            Text(
-                text = if (achievement.isUnlocked) achievement.emoji else "\uD83D\uDD12",
-                fontSize = 28.sp
-            )
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(spacing.sm),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Emoji
+                Text(
+                    text = if (achievement.isUnlocked) achievement.emoji else "\uD83D\uDD12",
+                    fontSize = 28.sp
+                )
 
-            Spacer(modifier = Modifier.height(spacing.xs))
+                Spacer(modifier = Modifier.height(spacing.xs))
 
-            // Name
-            Text(
-                text = achievement.displayText,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Medium,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                color = if (achievement.isUnlocked) {
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                // Name
+                Text(
+                    text = achievement.displayText,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Medium,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = if (achievement.isUnlocked) {
+                        MaterialTheme.colorScheme.onSecondaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    }
+                )
+
+                // Share button for unlocked achievements
+                if (achievement.isUnlocked && onShareClick != null) {
+                    Spacer(modifier = Modifier.height(spacing.xs))
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Share achievement",
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clickable { onShareClick() },
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                    )
                 }
-            )
+            }
         }
     }
 }

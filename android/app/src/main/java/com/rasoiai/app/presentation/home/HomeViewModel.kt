@@ -39,8 +39,33 @@ data class HomeUiState(
     val selectedMealType: MealType? = null,
     val showRefreshSheet: Boolean = false,
     val showSwapSheet: Boolean = false,
-    val swapSuggestions: List<MealItem> = emptyList()
+    val swapSuggestions: List<MealItem> = emptyList(),
+    // 3-level locking system state
+    val dayLockStates: Map<LocalDate, Boolean> = emptyMap(),
+    val mealLockStates: Map<Pair<LocalDate, MealType>, Boolean> = emptyMap()
 ) {
+    /** Check if the selected day is locked */
+    val isSelectedDayLocked: Boolean
+        get() = dayLockStates[selectedDate] == true
+
+    /** Check if a specific meal slot is locked (inherits from day lock) */
+    fun isMealLocked(mealType: MealType): Boolean {
+        // Day lock takes precedence
+        if (isSelectedDayLocked) return true
+        // Check meal-level lock
+        return mealLockStates[Pair(selectedDate, mealType)] == true
+    }
+
+    /** Check if a recipe is effectively locked (considers all lock levels) */
+    fun isRecipeEffectivelyLocked(mealItem: MealItem, mealType: MealType): Boolean {
+        // Day lock takes precedence
+        if (isSelectedDayLocked) return true
+        // Meal lock takes second precedence
+        if (isMealLocked(mealType)) return true
+        // Individual recipe lock
+        return mealItem.isLocked
+    }
+
     val formattedDateRange: String
         get() = mealPlan?.let {
             val formatter = DateTimeFormatter.ofPattern("MMM d")
@@ -81,7 +106,7 @@ data class FestivalInfo(
  * Navigation events from Home screen
  */
 sealed class HomeNavigationEvent {
-    data class NavigateToRecipeDetail(val recipeId: String) : HomeNavigationEvent()
+    data class NavigateToRecipeDetail(val recipeId: String, val isLocked: Boolean = false) : HomeNavigationEvent()
     data object NavigateToSettings : HomeNavigationEvent()
     data object NavigateToNotifications : HomeNavigationEvent()
     data object NavigateToGrocery : HomeNavigationEvent()
@@ -229,9 +254,12 @@ class HomeViewModel @Inject constructor(
     }
 
     fun viewRecipe() {
-        val recipeId = _uiState.value.selectedMealItem?.recipeId ?: return
+        val state = _uiState.value
+        val mealItem = state.selectedMealItem ?: return
+        val mealType = state.selectedMealType ?: return
+        val isLocked = state.isRecipeEffectivelyLocked(mealItem, mealType)
         dismissRecipeActionSheet()
-        _navigationEvent.value = HomeNavigationEvent.NavigateToRecipeDetail(recipeId)
+        _navigationEvent.value = HomeNavigationEvent.NavigateToRecipeDetail(mealItem.recipeId, isLocked)
     }
 
     fun showSwapOptions() {
@@ -297,6 +325,108 @@ class HomeViewModel @Inject constructor(
 
             dismissRecipeActionSheet()
         }
+    }
+
+    /**
+     * Toggle lock state for the entire selected day (Level 1 - Day Lock)
+     * When locked, all meals and recipes for that day are protected from regeneration
+     */
+    fun toggleDayLock() {
+        val state = _uiState.value
+        val selectedDate = state.selectedDate
+        val currentLockState = state.dayLockStates[selectedDate] == true
+
+        _uiState.update {
+            it.copy(
+                dayLockStates = it.dayLockStates + (selectedDate to !currentLockState)
+            )
+        }
+        Timber.i("Day lock toggled for $selectedDate: ${!currentLockState}")
+    }
+
+    /**
+     * Toggle lock state for a specific meal slot (Level 2 - Meal Lock)
+     * When locked, all recipes in that meal slot are protected from regeneration
+     */
+    fun toggleMealLock(mealType: MealType) {
+        val state = _uiState.value
+        val selectedDate = state.selectedDate
+        val key = Pair(selectedDate, mealType)
+        val currentLockState = state.mealLockStates[key] == true
+
+        _uiState.update {
+            it.copy(
+                mealLockStates = it.mealLockStates + (key to !currentLockState)
+            )
+        }
+        Timber.i("Meal lock toggled for $selectedDate $mealType: ${!currentLockState}")
+    }
+
+    /**
+     * Remove a recipe from a meal (only if not locked at any level)
+     */
+    fun removeRecipeFromMeal() {
+        val state = _uiState.value
+        val mealItem = state.selectedMealItem ?: return
+        val mealType = state.selectedMealType ?: return
+
+        // Check if removal is allowed (not locked at any level)
+        if (state.isRecipeEffectivelyLocked(mealItem, mealType)) {
+            _uiState.update { it.copy(errorMessage = "Cannot remove locked recipe") }
+            dismissRecipeActionSheet()
+            return
+        }
+
+        // TODO: Implement actual removal via repository
+        Timber.i("Remove recipe ${mealItem.recipeName} from $mealType")
+        dismissRecipeActionSheet()
+    }
+
+    /**
+     * Toggle lock state for a recipe directly (from swipe action)
+     * This doesn't go through the action sheet, so no need to dismiss it
+     */
+    fun toggleRecipeLockDirect(mealItem: MealItem, mealType: MealType) {
+        val state = _uiState.value
+        val mealPlan = state.mealPlan ?: return
+
+        // Check if day or meal is locked - can't toggle individual recipe lock
+        if (state.isSelectedDayLocked || state.isMealLocked(mealType)) {
+            _uiState.update { it.copy(errorMessage = "Unlock day/meal first to change recipe lock") }
+            return
+        }
+
+        viewModelScope.launch {
+            mealPlanRepository.setMealLockState(
+                mealPlanId = mealPlan.id,
+                date = state.selectedDate,
+                mealType = mealType,
+                recipeId = mealItem.recipeId,
+                isLocked = !mealItem.isLocked
+            ).onSuccess {
+                Timber.i("Recipe lock toggled directly: ${mealItem.recipeName}")
+            }.onFailure { e ->
+                Timber.e(e, "Failed to toggle recipe lock")
+                _uiState.update { it.copy(errorMessage = "Failed to update recipe") }
+            }
+        }
+    }
+
+    /**
+     * Remove a recipe from a meal directly (from swipe action)
+     * This doesn't go through the action sheet
+     */
+    fun removeRecipeFromMealDirect(mealItem: MealItem, mealType: MealType) {
+        val state = _uiState.value
+
+        // Check if removal is allowed (not locked at any level)
+        if (state.isRecipeEffectivelyLocked(mealItem, mealType)) {
+            _uiState.update { it.copy(errorMessage = "Cannot remove locked recipe") }
+            return
+        }
+
+        // TODO: Implement actual removal via repository
+        Timber.i("Remove recipe directly: ${mealItem.recipeName} from $mealType")
     }
 
     // endregion

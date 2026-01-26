@@ -199,7 +199,8 @@ private fun RecipeDetailContent(
                             servings = uiState.selectedServings,
                             calories = uiState.scaledNutrition?.calories,
                             isVegetarian = uiState.isVegetarian,
-                            tags = uiState.displayTags
+                            tags = uiState.displayTags,
+                            isLocked = uiState.isLocked
                         )
 
                         Spacer(modifier = Modifier.height(spacing.md))

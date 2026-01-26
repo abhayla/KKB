@@ -33,6 +33,7 @@ fun ChatMessageItem(
     message: ChatMessage,
     onQuickActionClick: (String) -> Unit,
     onRecipeClick: (String) -> Unit,
+    onAddToMealPlan: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val isUser = message.isFromUser
@@ -119,7 +120,8 @@ fun ChatMessageItem(
                         recipes.forEach { recipe ->
                             RecipeSuggestionCard(
                                 suggestion = recipe,
-                                onClick = { onRecipeClick(recipe.recipeId) }
+                                onClick = { onRecipeClick(recipe.recipeId) },
+                                onAddToMealPlan = onAddToMealPlan?.let { { it(recipe.recipeId) } }
                             )
                         }
                     }

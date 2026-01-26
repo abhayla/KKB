@@ -44,4 +44,10 @@ interface GroceryRepository {
      * Generate grocery list from meal plan.
      */
     suspend fun generateFromMealPlan(mealPlanId: String): Result<GroceryList>
+
+    /**
+     * Clear all purchased items from the current grocery list.
+     * Returns the count of items cleared.
+     */
+    suspend fun clearPurchasedItems(): Result<Int>
 }

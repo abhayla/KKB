@@ -92,6 +92,7 @@ fun RecipeRulesScreen(
         onDeleteRule = viewModel::showDeleteConfirmation,
         onEditNutritionGoal = viewModel::showEditNutritionGoalSheet,
         onToggleNutritionGoalActive = viewModel::toggleNutritionGoalActive,
+        onToggleNutritionGoalEnforcement = viewModel::toggleNutritionGoalEnforcement,
         onDeleteNutritionGoal = viewModel::showDeleteConfirmation
     )
 
@@ -149,6 +150,7 @@ private fun RecipeRulesScreenContent(
     onDeleteRule: (RecipeRule) -> Unit,
     onEditNutritionGoal: (NutritionGoal) -> Unit,
     onToggleNutritionGoalActive: (NutritionGoal) -> Unit,
+    onToggleNutritionGoalEnforcement: (NutritionGoal) -> Unit,
     onDeleteNutritionGoal: (NutritionGoal) -> Unit
 ) {
     Scaffold(
@@ -203,6 +205,7 @@ private fun RecipeRulesScreenContent(
                             goals = uiState.nutritionGoals,
                             onEditGoal = onEditNutritionGoal,
                             onToggleActive = onToggleNutritionGoalActive,
+                            onToggleEnforcement = onToggleNutritionGoalEnforcement,
                             onDeleteGoal = onDeleteNutritionGoal,
                             onAddGoal = onAddRuleClick,
                             modifier = Modifier.weight(1f)
@@ -288,6 +291,7 @@ private fun NutritionGoalsContent(
     goals: List<NutritionGoal>,
     onEditGoal: (NutritionGoal) -> Unit,
     onToggleActive: (NutritionGoal) -> Unit,
+    onToggleEnforcement: (NutritionGoal) -> Unit,
     onDeleteGoal: (NutritionGoal) -> Unit,
     onAddGoal: () -> Unit,
     modifier: Modifier = Modifier
@@ -312,6 +316,7 @@ private fun NutritionGoalsContent(
                     goal = goal,
                     onEdit = { onEditGoal(goal) },
                     onToggleActive = { onToggleActive(goal) },
+                    onToggleEnforcement = { onToggleEnforcement(goal) },
                     onDelete = { onDeleteGoal(goal) }
                 )
                 Spacer(modifier = Modifier.height(spacing.sm))
@@ -385,6 +390,7 @@ private fun RecipeRulesScreenPreview() {
                 onDeleteRule = {},
                 onEditNutritionGoal = {},
                 onToggleNutritionGoalActive = {},
+                onToggleNutritionGoalEnforcement = {},
                 onDeleteNutritionGoal = {}
             )
         }

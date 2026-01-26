@@ -8,9 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | Attribute | Details |
 |-----------|---------|
-| **Platform** | Android Native (Kotlin + Jetpack Compose) |
+| **Platform** | Android Native (Kotlin 1.9.22 + Jetpack Compose BOM 2024.02) |
 | **Backend** | Python (FastAPI) |
-| **Language** | English only |
+| **Target SDK** | 34 (Min SDK 24 / Android 7.0) |
 | **Target Market** | Pan-India (Tier 1, 2, 3 cities) |
 
 ## Quick Start
@@ -40,38 +40,6 @@ cd android
 
 # Or use Android Studio's terminal which has adb in PATH
 ```
-
-## Current Status
-
-**13 screens implemented.** Core UI complete, ready for backend integration.
-
-**Wireframes:** All 13 screens reviewed and approved (v3.1). Key updates include 3-level locking system (day/meal/recipe) with soft inheritance on Home screen, and new Recipe Rules screen.
-
-**Next Phase:** Backend API integration, real data connections, Firebase Auth setup with `google-services.json`.
-
-| Phase | Status | Document |
-|-------|--------|----------|
-| Requirements | ✅ Complete | `docs/requirements/RasoiAI Requirements.md` |
-| Technical Design | ✅ Complete | `docs/design/RasoiAI Technical Design.md` |
-| Architecture Decisions | ✅ Complete | `docs/design/Android Architecture Decisions.md` |
-| Design System | ✅ Complete | `docs/design/RasoiAI Design System.md` |
-| Screen Wireframes | ✅ Complete | `docs/design/RasoiAI Screen Wireframes.md` |
-| Android Project Setup | ✅ Complete | `android/` folder |
-| Pre-Dev Infrastructure | ✅ Complete | CI/CD, Testing, Firebase, Logging |
-| Splash Screen | ✅ Complete | `presentation/splash/` |
-| Auth Screen | ✅ Complete | `presentation/auth/` |
-| Onboarding Screen | ✅ Complete | `presentation/onboarding/` |
-| Home Screen | ✅ Complete | `presentation/home/` |
-| Recipe Detail | ✅ Complete | `presentation/recipedetail/` |
-| Cooking Mode | ✅ Complete | `presentation/cookingmode/` |
-| Grocery List | ✅ Complete | `presentation/grocery/` |
-| Favorites | ✅ Complete | `presentation/favorites/` |
-| Chat | ✅ Complete | `presentation/chat/` |
-| Pantry Scan | ✅ Complete | `presentation/pantry/` |
-| Stats | ✅ Complete | `presentation/stats/` |
-| Settings | ✅ Complete | `presentation/settings/` |
-| Recipe Rules | ✅ Complete | `presentation/reciperules/` |
-| Recipe Rules Reqs | ✅ Complete | `docs/requirements/Recipe Rules Screen Requirements.md` |
 
 ## Infrastructure Setup (Complete)
 
@@ -159,13 +127,15 @@ Routes with arguments use `createRoute()` helper pattern:
 
 ```kotlin
 // In Screen.kt
-data object RecipeDetail : Screen("recipe/{recipeId}") {
-    fun createRoute(recipeId: String) = "recipe/$recipeId"
+data object RecipeDetail : Screen("recipe/{recipeId}?isLocked={isLocked}") {
+    fun createRoute(recipeId: String, isLocked: Boolean = false) = "recipe/$recipeId?isLocked=$isLocked"
     const val ARG_RECIPE_ID = "recipeId"
+    const val ARG_IS_LOCKED = "isLocked"
 }
 
 // Usage in navigation
 navController.navigate(Screen.RecipeDetail.createRoute(recipeId))
+navController.navigate(Screen.RecipeDetail.createRoute(recipeId, isLocked = true))
 ```
 
 ## Bottom Navigation Integration
@@ -285,14 +255,21 @@ android/
 - Data module: `com.rasoiai.data.*`
 - Core module: `com.rasoiai.core.*`
 
-**Module Dependencies:** `app → core, data, domain` | `data → core, domain` | `domain → (none)` | `core → (none)`
+**Module Dependencies:**
+```
+app ─────┬──────> core
+         │
+         ├──────> domain  <────┐
+         │                     │
+         └──────> data ────────┴──────> core
+```
 
 ## Technical Stack
 
 | Component | Technology |
 |-----------|------------|
-| Android | Kotlin 1.9.22, Jetpack Compose (BOM 2024.02), Min SDK 24, Target SDK 34 |
-| DI & Processing | Hilt 2.50, KSP 1.9.22 |
+| Build Tools | AGP 8.13.2, Gradle Kotlin DSL |
+| DI & Processing | Hilt 2.50, KSP 1.9.22-1.0.17 |
 | Android Libraries | Room 2.6.1, Retrofit 2.9.0, Coil 2.5.0, Navigation Compose 2.7.7, DataStore 1.0.0 |
 | Backend | Python, FastAPI, SQLAlchemy, Pydantic |
 | Database | PostgreSQL, Redis (cache) |
@@ -347,8 +324,11 @@ cd android
 # Run instrumented tests (requires emulator/device)
 ./gradlew connectedAndroidTest
 
-# Lint
+# Lint (Android lint)
 ./gradlew lint
+
+# Lint report location
+# app/build/reports/lint-results-debug.html
 
 # Clean build
 ./gradlew clean build
@@ -382,6 +362,36 @@ alembic revision --autogenerate -m "description"
 ruff check .
 ```
 
+## Current Status
+
+**All 13 screens implemented.** Core UI complete, ready for backend integration.
+
+**Next Phase:** Backend API integration, real data connections, Firebase Auth setup.
+
+| Phase | Status | Location |
+|-------|--------|----------|
+| Requirements | ✅ | `docs/requirements/RasoiAI Requirements.md` |
+| Technical Design | ✅ | `docs/design/RasoiAI Technical Design.md` |
+| Architecture Decisions | ✅ | `docs/design/Android Architecture Decisions.md` |
+| Design System | ✅ | `docs/design/RasoiAI Design System.md` |
+| Screen Wireframes | ✅ | `docs/design/RasoiAI Screen Wireframes.md` |
+| All 13 Screens | ✅ | See Implemented Screens below |
+
+**Implemented Screens:**
+1. Splash (`presentation/splash/`)
+2. Auth (`presentation/auth/`)
+3. Onboarding (`presentation/onboarding/`)
+4. Home (`presentation/home/`)
+5. Recipe Detail (`presentation/recipedetail/`)
+6. Cooking Mode (`presentation/cookingmode/`)
+7. Grocery List (`presentation/grocery/`)
+8. Favorites (`presentation/favorites/`)
+9. Chat (`presentation/chat/`)
+10. Pantry Scan (`presentation/pantry/`)
+11. Stats (`presentation/stats/`)
+12. Settings (`presentation/settings/`)
+13. Recipe Rules (`presentation/reciperules/`)
+
 ## Troubleshooting
 
 **Build fails with missing google-services.json:**
@@ -409,14 +419,15 @@ Ensure `ANDROID_HOME` is set and the emulator is running. Use `adb devices` to v
 
 ## Key Documentation
 
-| Document | Path | Priority |
-|----------|------|----------|
-| Project Guide | `CLAUDE.md` | HIGH |
-| Screen Wireframes | `docs/design/RasoiAI Screen Wireframes.md` | HIGH |
-| Architecture Decisions | `docs/design/Android Architecture Decisions.md` | HIGH |
-| Recipe Rules Screen (Reference) | `android/app/src/main/java/com/rasoiai/app/presentation/reciperules/` | HIGH (most recent pattern) |
-| Settings Screen | `android/app/src/main/java/com/rasoiai/app/presentation/settings/` | HIGH |
-| Design System | `docs/design/RasoiAI Design System.md` | MEDIUM |
-| Technical Design | `docs/design/RasoiAI Technical Design.md` | MEDIUM |
-| Requirements | `docs/requirements/RasoiAI Requirements.md` | LOW |
-| Continue Prompt | `docs/CONTINUE_PROMPT.md` | Reference |
+**Reference implementations** (use as patterns for new screens):
+- Recipe Rules: `presentation/reciperules/` (most recent, 4-tab layout with bottom sheets)
+- Settings: `presentation/settings/` (form-based screen with sections)
+- Home: `presentation/home/` (bottom navigation integration)
+- Favorites: `presentation/favorites/` (tab/list pattern with filtering)
+- Pantry: `presentation/pantry/` (camera integration, `ScanResultsSheet` bottom sheet component)
+- Stats: `presentation/stats/` (gamification, charts, `CuisineBreakdownSection` component)
+
+**High priority docs:**
+- Screen Wireframes: `docs/design/RasoiAI Screen Wireframes.md`
+- Architecture Decisions: `docs/design/Android Architecture Decisions.md`
+- Recipe Rules Requirements: `docs/requirements/Recipe Rules Screen Requirements.md`

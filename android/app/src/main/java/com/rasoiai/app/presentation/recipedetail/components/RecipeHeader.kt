@@ -47,6 +47,7 @@ fun RecipeHeader(
     calories: Int?,
     isVegetarian: Boolean,
     tags: List<String>,
+    isLocked: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -59,7 +60,7 @@ fun RecipeHeader(
 
         Spacer(modifier = Modifier.height(spacing.md))
 
-        // Recipe Name with Dietary Indicator
+        // Recipe Name with Dietary Indicator and Lock Icon
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -77,8 +78,17 @@ fun RecipeHeader(
                 text = name,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.weight(1f, fill = false)
             )
+            // Lock icon when recipe is locked in meal plan
+            if (isLocked) {
+                Spacer(modifier = Modifier.width(spacing.sm))
+                Text(
+                    text = "\uD83D\uDD12", // 🔒
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
         }
 
         // Cuisine + Region
