@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -20,6 +21,7 @@ import com.rasoiai.domain.model.SpiceLevel
 import com.rasoiai.domain.model.UserPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -33,6 +35,13 @@ class UserPreferencesDataStore @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     private object PreferencesKeys {
+        // Auth tokens
+        val ACCESS_TOKEN = stringPreferencesKey("access_token")
+        val REFRESH_TOKEN = stringPreferencesKey("refresh_token")
+        val TOKEN_EXPIRY = longPreferencesKey("token_expiry")
+        val USER_ID = stringPreferencesKey("user_id")
+
+        // Onboarding and preferences
         val IS_ONBOARDED = booleanPreferencesKey("is_onboarded")
         val HOUSEHOLD_SIZE = intPreferencesKey("household_size")
         val FAMILY_MEMBERS_JSON = stringPreferencesKey("family_members_json")
@@ -47,6 +56,61 @@ class UserPreferencesDataStore @Inject constructor(
     }
 
     private val json = Json { ignoreUnknownKeys = true }
+
+    // Auth state flows
+    val isAuthenticated: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        val token = preferences[PreferencesKeys.ACCESS_TOKEN]
+        val expiry = preferences[PreferencesKeys.TOKEN_EXPIRY] ?: 0L
+        !token.isNullOrEmpty() && System.currentTimeMillis() < expiry
+    }
+
+    val accessToken: Flow<String?> = context.dataStore.data.map { preferences ->
+        preferences[PreferencesKeys.ACCESS_TOKEN]
+    }
+
+    val userId: Flow<String?> = context.dataStore.data.map { preferences ->
+        preferences[PreferencesKeys.USER_ID]
+    }
+
+    suspend fun saveAuthTokens(
+        accessToken: String,
+        refreshToken: String,
+        expiresInSeconds: Long,
+        userId: String
+    ) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.ACCESS_TOKEN] = accessToken
+            prefs[PreferencesKeys.REFRESH_TOKEN] = refreshToken
+            prefs[PreferencesKeys.TOKEN_EXPIRY] = System.currentTimeMillis() + (expiresInSeconds * 1000)
+            prefs[PreferencesKeys.USER_ID] = userId
+        }
+    }
+
+    suspend fun getAccessTokenSync(): String? {
+        return context.dataStore.data.map { preferences ->
+            val expiry = preferences[PreferencesKeys.TOKEN_EXPIRY] ?: 0L
+            if (System.currentTimeMillis() < expiry) {
+                preferences[PreferencesKeys.ACCESS_TOKEN]
+            } else {
+                null
+            }
+        }.first()
+    }
+
+    suspend fun getRefreshToken(): String? {
+        return context.dataStore.data.map { preferences ->
+            preferences[PreferencesKeys.REFRESH_TOKEN]
+        }.first()
+    }
+
+    suspend fun clearAuthTokens() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(PreferencesKeys.ACCESS_TOKEN)
+            prefs.remove(PreferencesKeys.REFRESH_TOKEN)
+            prefs.remove(PreferencesKeys.TOKEN_EXPIRY)
+            prefs.remove(PreferencesKeys.USER_ID)
+        }
+    }
 
     val isOnboarded: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[PreferencesKeys.IS_ONBOARDED] ?: false

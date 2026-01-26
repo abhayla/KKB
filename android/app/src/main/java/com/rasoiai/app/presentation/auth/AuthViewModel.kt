@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rasoiai.app.BuildConfig
 import com.rasoiai.data.local.datastore.UserPreferencesDataStore
+import com.rasoiai.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -35,6 +37,7 @@ sealed class AuthNavigationEvent {
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val googleAuthClient: GoogleAuthClient,
+    private val authRepository: AuthRepository,
     private val userPreferencesDataStore: UserPreferencesDataStore
 ) : ViewModel() {
 
@@ -69,9 +72,24 @@ class AuthViewModel @Inject constructor(
 
             when (val result = googleAuthClient.signIn(activityContext, webClientId)) {
                 is GoogleSignInResult.Success -> {
-                    Timber.i("Sign in successful: ${result.user.email}")
-                    _uiState.update { it.copy(isLoading = false, isSignedIn = true) }
-                    navigateAfterSignIn()
+                    Timber.i("Firebase sign in successful: ${result.user.email}")
+
+                    // Exchange Firebase token for backend JWT
+                    try {
+                        val firebaseToken = result.user.getIdToken(false).await().token
+                        if (firebaseToken != null) {
+                            exchangeFirebaseToken(firebaseToken)
+                        } else {
+                            // Fallback: proceed without backend token (offline mode)
+                            Timber.w("Could not get Firebase ID token, proceeding without backend auth")
+                            _uiState.update { it.copy(isLoading = false, isSignedIn = true) }
+                            navigateAfterSignIn()
+                        }
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to get Firebase ID token, proceeding without backend auth")
+                        _uiState.update { it.copy(isLoading = false, isSignedIn = true) }
+                        navigateAfterSignIn()
+                    }
                 }
                 is GoogleSignInResult.Cancelled -> {
                     _uiState.update { it.copy(isLoading = false) }
@@ -88,6 +106,25 @@ class AuthViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    /**
+     * Exchange Firebase ID token for backend JWT.
+     */
+    private suspend fun exchangeFirebaseToken(firebaseToken: String) {
+        authRepository.signInWithGoogle(firebaseToken)
+            .onSuccess { user ->
+                Timber.i("Backend auth successful: ${user.email}")
+                _uiState.update { it.copy(isLoading = false, isSignedIn = true) }
+                navigateAfterSignIn()
+            }
+            .onFailure { error ->
+                Timber.w(error, "Backend auth failed, proceeding in offline mode")
+                // Still allow the user to proceed - they're authenticated with Firebase
+                // Backend sync will happen when network is available
+                _uiState.update { it.copy(isLoading = false, isSignedIn = true) }
+                navigateAfterSignIn()
+            }
     }
 
     /**

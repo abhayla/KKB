@@ -121,21 +121,82 @@ class FeatureViewModel @Inject constructor(
 }
 ```
 
+## Repository Pattern (Offline-First)
+
+Real repository implementations follow this architecture:
+
+```kotlin
+@Singleton
+class FeatureRepositoryImpl @Inject constructor(
+    private val apiService: RasoiApiService,
+    private val featureDao: FeatureDao,
+    private val networkMonitor: NetworkMonitor
+) : FeatureRepository {
+
+    // Always return from local DB (single source of truth)
+    override fun getData(): Flow<Data?> {
+        return featureDao.getData().map { entity ->
+            if (entity != null) {
+                entity.toDomain()
+            } else {
+                // Fetch from API if online
+                if (networkMonitor.isOnline.first()) {
+                    fetchAndCache()
+                }
+                null
+            }
+        }
+    }
+
+    // Mutations: update local immediately, sync to server when online
+    override suspend fun updateData(data: Data): Result<Unit> {
+        featureDao.update(data.toEntity())
+        if (networkMonitor.isOnline.first()) {
+            apiService.update(data.toDto())
+        } else {
+            featureDao.markUnsynced(data.id)
+        }
+        return Result.success(Unit)
+    }
+}
+```
+
+**Data flow:**
+```
+UI → ViewModel → UseCase → Repository
+                              ↓
+                 ┌────────────┴────────────┐
+                 ↓                         ↓
+            Room (Local)            Retrofit (Remote)
+            Source of Truth
+                 ↓                         ↓
+            EntityMappers              DtoMappers
+                 └──────────┬──────────────┘
+                            ↓
+                      Domain Models
+```
+
+**Key mapper files:**
+- `data/local/mapper/EntityMappers.kt` - Room Entity ↔ Domain
+- `data/remote/mapper/DtoMappers.kt` - API DTO → Domain & Entity
+
 ## Navigation Routes
 
 Routes with arguments use `createRoute()` helper pattern:
 
 ```kotlin
 // In Screen.kt
-data object RecipeDetail : Screen("recipe/{recipeId}?isLocked={isLocked}") {
-    fun createRoute(recipeId: String, isLocked: Boolean = false) = "recipe/$recipeId?isLocked=$isLocked"
+data object RecipeDetail : Screen("recipe/{recipeId}?isLocked={isLocked}&fromMealPlan={fromMealPlan}") {
+    fun createRoute(recipeId: String, isLocked: Boolean = false, fromMealPlan: Boolean = false) =
+        "recipe/$recipeId?isLocked=$isLocked&fromMealPlan=$fromMealPlan"
     const val ARG_RECIPE_ID = "recipeId"
     const val ARG_IS_LOCKED = "isLocked"
+    const val ARG_FROM_MEAL_PLAN = "fromMealPlan"
 }
 
 // Usage in navigation
 navController.navigate(Screen.RecipeDetail.createRoute(recipeId))
-navController.navigate(Screen.RecipeDetail.createRoute(recipeId, isLocked = true))
+navController.navigate(Screen.RecipeDetail.createRoute(recipeId, isLocked = true, fromMealPlan = true))
 ```
 
 ## Bottom Navigation Integration
@@ -237,9 +298,18 @@ android/
 │   ├── repository/               # MealPlanRepository.kt, RecipeRepository.kt, AuthRepository.kt
 │   └── usecase/                  # GetCurrentMealPlanUseCase.kt, GenerateMealPlanUseCase.kt, etc.
 ├── data/src/main/java/com/rasoiai/data/
-│   ├── local/                    # Room DB, DAOs, Entities
-│   ├── remote/                   # Retrofit API, DTOs
-│   ├── repository/               # Repository implementations (FakeMealPlanRepository, FakeRecipeRepository)
+│   ├── local/
+│   │   ├── dao/                  # Room DAOs (MealPlanDao, etc.)
+│   │   ├── entity/               # Room Entities (MealPlanEntity, etc.)
+│   │   ├── datastore/            # DataStore (UserPreferencesDataStore - auth tokens)
+│   │   └── mapper/               # Entity ↔ Domain mappers (EntityMappers.kt)
+│   ├── remote/
+│   │   ├── api/                  # Retrofit service (RasoiApiService.kt)
+│   │   ├── dto/                  # API DTOs (MealPlanDto, etc.)
+│   │   ├── interceptor/          # AuthInterceptor (adds JWT to requests)
+│   │   └── mapper/               # DTO → Domain/Entity mappers (DtoMappers.kt)
+│   ├── repository/               # Real impls (AuthRepositoryImpl, MealPlanRepositoryImpl) + Fakes
+│   ├── di/                       # DataModule.kt (Hilt bindings)
 │   └── sync/                     # SyncManager, OfflineQueueManager
 ├── core/src/main/java/com/rasoiai/core/
 │   ├── ui/                       # Theme, shared composables
@@ -364,9 +434,24 @@ ruff check .
 
 ## Current Status
 
-**All 13 screens implemented.** Core UI complete, ready for backend integration.
+**All 13 screens implemented.** Backend integration complete for core repositories.
 
-**Next Phase:** Backend API integration, real data connections, Firebase Auth setup.
+| Component | Status |
+|-----------|--------|
+| UI Screens | ✅ Complete (13 screens) |
+| Auth Integration | ✅ Complete (Firebase + Backend JWT) |
+| API Layer | ✅ Complete (Retrofit + AuthInterceptor) |
+| DTO Mappers | ✅ Complete (API → Domain) |
+| Entity Mappers | ✅ Complete (Room ↔ Domain) |
+| MealPlan Repository | ✅ Complete (offline-first) |
+| Recipe Repository | ✅ Complete (offline-first) |
+| Grocery Repository | ✅ Complete (offline-first) |
+| Firebase Auth Flow | ✅ Verified (unit tests pass) |
+| Other Repositories | ⏳ Fake (Favorites, Chat, Stats, etc.) |
+
+**Debug SHA-1:** `0D:1C:9D:5D:36:70:91:06:7E:16:C8:D8:EC:5F:AF:C1:6C:39:1D:6E`
+
+**Immediate Next Step:** Complete Firebase Console setup (add SHA-1) or implement remaining repositories.
 
 | Phase | Status | Location |
 |-------|--------|----------|
@@ -431,3 +516,4 @@ Ensure `ANDROID_HOME` is set and the emulator is running. Use `adb devices` to v
 - Screen Wireframes: `docs/design/RasoiAI Screen Wireframes.md`
 - Architecture Decisions: `docs/design/Android Architecture Decisions.md`
 - Recipe Rules Requirements: `docs/requirements/Recipe Rules Screen Requirements.md`
+- Continuation Prompt: `docs/CONTINUE_PROMPT.md` (use to resume work in new context)

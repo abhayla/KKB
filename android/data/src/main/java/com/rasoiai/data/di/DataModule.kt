@@ -4,16 +4,28 @@ import android.content.Context
 import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.core.network.NetworkMonitorImpl
 import com.rasoiai.data.local.RasoiDatabase
+import com.rasoiai.data.local.dao.CollectionDao
+import com.rasoiai.data.local.dao.FavoriteDao
+import com.rasoiai.data.local.dao.GroceryDao
+import com.rasoiai.data.local.dao.MealPlanDao
+import com.rasoiai.data.local.dao.PantryDao
+import com.rasoiai.data.local.dao.RecipeDao
+import com.rasoiai.data.local.dao.StatsDao
+import com.rasoiai.data.local.dao.RecipeRulesDao
+import com.rasoiai.data.local.dao.ChatDao
 import com.rasoiai.data.remote.api.RasoiApiService
-import com.rasoiai.data.repository.FakeChatRepository
-import com.rasoiai.data.repository.FakeFavoritesRepository
-import com.rasoiai.data.repository.FakeGroceryRepository
-import com.rasoiai.data.repository.FakeMealPlanRepository
-import com.rasoiai.data.repository.FakePantryRepository
-import com.rasoiai.data.repository.FakeRecipeRepository
-import com.rasoiai.data.repository.FakeRecipeRulesRepository
-import com.rasoiai.data.repository.FakeSettingsRepository
-import com.rasoiai.data.repository.FakeStatsRepository
+import com.rasoiai.data.remote.interceptor.AuthInterceptor
+import com.rasoiai.data.repository.AuthRepositoryImpl
+import com.rasoiai.data.repository.MealPlanRepositoryImpl
+import com.rasoiai.data.repository.RecipeRepositoryImpl
+import com.rasoiai.data.repository.GroceryRepositoryImpl
+import com.rasoiai.data.repository.FavoritesRepositoryImpl
+import com.rasoiai.data.repository.PantryRepositoryImpl
+import com.rasoiai.data.repository.StatsRepositoryImpl
+import com.rasoiai.data.repository.SettingsRepositoryImpl
+import com.rasoiai.data.repository.RecipeRulesRepositoryImpl
+import com.rasoiai.data.repository.ChatRepositoryImpl
+import com.rasoiai.domain.repository.AuthRepository
 import com.rasoiai.domain.repository.ChatRepository
 import com.rasoiai.domain.repository.FavoritesRepository
 import com.rasoiai.domain.repository.GroceryRepository
@@ -44,12 +56,13 @@ object DataModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
 
         return OkHttpClient.Builder()
+            .addInterceptor(authInterceptor) // Add auth header to requests
             .addInterceptor(loggingInterceptor)
             .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -87,55 +100,115 @@ object DataModule {
 
     @Provides
     @Singleton
-    fun provideMealPlanRepository(fakeMealPlanRepository: FakeMealPlanRepository): MealPlanRepository {
-        return fakeMealPlanRepository
+    fun provideMealPlanDao(database: RasoiDatabase): MealPlanDao {
+        return database.mealPlanDao()
     }
 
     @Provides
     @Singleton
-    fun provideRecipeRepository(fakeRecipeRepository: FakeRecipeRepository): RecipeRepository {
-        return fakeRecipeRepository
+    fun provideRecipeDao(database: RasoiDatabase): RecipeDao {
+        return database.recipeDao()
     }
 
     @Provides
     @Singleton
-    fun provideGroceryRepository(fakeGroceryRepository: FakeGroceryRepository): GroceryRepository {
-        return fakeGroceryRepository
+    fun provideFavoriteDao(database: RasoiDatabase): FavoriteDao {
+        return database.favoriteDao()
     }
 
     @Provides
     @Singleton
-    fun provideFavoritesRepository(fakeFavoritesRepository: FakeFavoritesRepository): FavoritesRepository {
-        return fakeFavoritesRepository
+    fun provideGroceryDao(database: RasoiDatabase): GroceryDao {
+        return database.groceryDao()
     }
 
     @Provides
     @Singleton
-    fun provideChatRepository(fakeChatRepository: FakeChatRepository): ChatRepository {
-        return fakeChatRepository
+    fun provideCollectionDao(database: RasoiDatabase): CollectionDao {
+        return database.collectionDao()
     }
 
     @Provides
     @Singleton
-    fun providePantryRepository(fakePantryRepository: FakePantryRepository): PantryRepository {
-        return fakePantryRepository
+    fun providePantryDao(database: RasoiDatabase): PantryDao {
+        return database.pantryDao()
     }
 
     @Provides
     @Singleton
-    fun provideStatsRepository(fakeStatsRepository: FakeStatsRepository): StatsRepository {
-        return fakeStatsRepository
+    fun provideStatsDao(database: RasoiDatabase): StatsDao {
+        return database.statsDao()
     }
 
     @Provides
     @Singleton
-    fun provideSettingsRepository(fakeSettingsRepository: FakeSettingsRepository): SettingsRepository {
-        return fakeSettingsRepository
+    fun provideRecipeRulesDao(database: RasoiDatabase): RecipeRulesDao {
+        return database.recipeRulesDao()
     }
 
     @Provides
     @Singleton
-    fun provideRecipeRulesRepository(fakeRecipeRulesRepository: FakeRecipeRulesRepository): RecipeRulesRepository {
-        return fakeRecipeRulesRepository
+    fun provideChatDao(database: RasoiDatabase): ChatDao {
+        return database.chatDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideAuthRepository(authRepositoryImpl: AuthRepositoryImpl): AuthRepository {
+        return authRepositoryImpl
+    }
+
+    @Provides
+    @Singleton
+    fun provideMealPlanRepository(mealPlanRepositoryImpl: MealPlanRepositoryImpl): MealPlanRepository {
+        return mealPlanRepositoryImpl
+    }
+
+    @Provides
+    @Singleton
+    fun provideRecipeRepository(recipeRepositoryImpl: RecipeRepositoryImpl): RecipeRepository {
+        return recipeRepositoryImpl
+    }
+
+    @Provides
+    @Singleton
+    fun provideGroceryRepository(groceryRepositoryImpl: GroceryRepositoryImpl): GroceryRepository {
+        return groceryRepositoryImpl
+    }
+
+    @Provides
+    @Singleton
+    fun provideFavoritesRepository(favoritesRepositoryImpl: FavoritesRepositoryImpl): FavoritesRepository {
+        return favoritesRepositoryImpl
+    }
+
+    @Provides
+    @Singleton
+    fun provideChatRepository(chatRepositoryImpl: ChatRepositoryImpl): ChatRepository {
+        return chatRepositoryImpl
+    }
+
+    @Provides
+    @Singleton
+    fun providePantryRepository(pantryRepositoryImpl: PantryRepositoryImpl): PantryRepository {
+        return pantryRepositoryImpl
+    }
+
+    @Provides
+    @Singleton
+    fun provideStatsRepository(statsRepositoryImpl: StatsRepositoryImpl): StatsRepository {
+        return statsRepositoryImpl
+    }
+
+    @Provides
+    @Singleton
+    fun provideSettingsRepository(settingsRepositoryImpl: SettingsRepositoryImpl): SettingsRepository {
+        return settingsRepositoryImpl
+    }
+
+    @Provides
+    @Singleton
+    fun provideRecipeRulesRepository(recipeRulesRepositoryImpl: RecipeRulesRepositoryImpl): RecipeRulesRepository {
+        return recipeRulesRepositoryImpl
     }
 }

@@ -19,5 +19,13 @@ data class FavoriteCollectionEntity(
     val name: String,
     val coverImageUrl: String?,
     val order: Int = 0,
+    val isDefault: Boolean = false,
     val createdAt: Long = System.currentTimeMillis()
+)
+
+@Entity(tableName = "recently_viewed")
+data class RecentlyViewedEntity(
+    @PrimaryKey
+    val recipeId: String,
+    val viewedAt: Long = System.currentTimeMillis()
 )

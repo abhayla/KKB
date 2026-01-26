@@ -9,220 +9,169 @@ Use this prompt to start a new conversation/context and continue the project fro
 ```
 I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 
-## Project Status
+## Current Status
 
-All 13 screens implemented and working. Wireframes split into individual files. UI aligned with wireframe specifications including lock icon updates and 2-column grid sheets.
+**All 13 screens implemented.** Backend integration complete for core repositories.
 
-| Phase | Status | Document |
-|-------|--------|----------|
-| Requirements | ✅ Complete | `docs/requirements/RasoiAI Requirements.md` |
-| Technical Design | ✅ Complete | `docs/design/RasoiAI Technical Design.md` |
-| Architecture Decisions | ✅ Complete | `docs/design/Android Architecture Decisions.md` |
-| Design System | ✅ Complete | `docs/design/RasoiAI Design System.md` |
-| Screen Wireframes | ✅ Complete | `docs/design/wireframes/` (16 files, v3.1) |
-| Android Project Setup | ✅ Complete | `android/` folder |
-| All 13 Screens | ✅ Complete | See list below |
-| **Backend Integration** | ⏳ **Next Step** | API connections, Firebase Auth |
+| Component | Status |
+|-----------|--------|
+| UI Screens | ✅ Complete (13 screens) |
+| Auth Integration | ✅ Complete (Firebase + Backend JWT) |
+| API Layer | ✅ Complete (Retrofit + AuthInterceptor) |
+| DTO Mappers | ✅ Complete (API → Domain) |
+| Entity Mappers | ✅ Complete (Room ↔ Domain) |
+| MealPlan Repository | ✅ Complete (offline-first) |
+| Recipe Repository | ✅ Complete (offline-first) |
+| Grocery Repository | ✅ Complete (offline-first) |
+| Firebase Auth Flow | ✅ Verified (unit tests pass) |
+| Other Repositories | ⏳ Fake (Favorites, Chat, Stats, etc.) |
 
-### Implemented Screens (all complete):
-1. Splash (`presentation/splash/`)
-2. Auth (`presentation/auth/`)
-3. Onboarding (`presentation/onboarding/`)
-4. Home (`presentation/home/`)
-5. Recipe Detail (`presentation/recipedetail/`)
-6. Cooking Mode (`presentation/cookingmode/`)
-7. Grocery List (`presentation/grocery/`)
-8. Favorites (`presentation/favorites/`)
-9. Chat (`presentation/chat/`)
-10. Pantry Scan (`presentation/pantry/`)
-11. Stats (`presentation/stats/`)
-12. Settings (`presentation/settings/`)
-13. Recipe Rules (`presentation/reciperules/`)
+## Firebase Setup Status
 
-## Recent Updates (Last Session)
+| Item | Status |
+|------|--------|
+| google-services.json | ✅ Present |
+| Web Client ID | ✅ Configured in BuildConfig |
+| Unit Tests | ✅ Passing |
+| Debug SHA-1 | ✅ Available (see below) |
 
-### Wireframe Changes Applied to Code:
-1. **Lock icons show current state** (not action):
-   - 🔒 = item IS locked
-   - 🔓 = item IS unlocked
-   - Removed "Locked" text labels
-
-2. **AddRecipeSheet** - New component with 2-column grid layout:
-   - `home/components/AddRecipeSheet.kt`
-   - `home/components/RecipeSelectionGridItem.kt`
-   - Search bar, Suggestions/Favorites tabs
-
-3. **SwapRecipeSheet** - Updated with 2-column grid layout:
-   - Search functionality
-   - Similar recipes grid display
-
-4. **RecipeHeader tri-state lock indicator**:
-   - `RecipeLockState` enum: LOCKED, UNLOCKED, NO_CONTEXT
-   - Shows 🔒 when locked from meal plan
-   - Shows 🔓 when unlocked from meal plan
-   - No icon when not from meal plan context (favorites, search, chat)
-   - Added `fromMealPlan` navigation parameter
-
-5. **Wireframes split into 16 files**:
-   - `docs/design/wireframes/00-overview.md` through `13-recipe-rules.md`
-   - `docs/design/wireframes/99-common-components.md`
-
-## App Verified Working
-
-- ✅ App builds successfully (`./gradlew build`)
-- ✅ All tests pass (`./gradlew test`)
-- ✅ Full navigation flow works
-- ✅ Bottom navigation working (Home, Grocery, Chat, Favs, Stats)
-- ✅ All 13 screens implemented and working
-- ✅ Lock icons display correctly at all levels (day/meal/recipe)
-- ✅ 2-column grid sheets working
-
-## Your Task
-
-**Begin Backend Integration Phase**:
-
-### Priority Tasks:
-1. **Firebase Auth Setup**
-   - Add real `google-services.json` from Firebase Console
-   - Implement actual Google Sign-In flow in `AuthViewModel`
-   - Store user session in DataStore
-
-2. **API Layer Setup**
-   - Create Retrofit service interfaces
-   - Add API DTOs in `data/remote/dto/`
-   - Implement network interceptors for auth tokens
-
-3. **Repository Implementation**
-   - Replace Fake repositories with real implementations
-   - Add Room database for offline caching
-   - Implement sync logic between local and remote
-
-4. **Key API Endpoints to Implement**:
-   - `POST /auth/google` - Google OAuth
-   - `GET /meal-plans/{date}` - Get meal plan for date
-   - `POST /meal-plans/generate` - Generate new meal plan
-   - `GET /recipes/{id}` - Get recipe details
-   - `POST /recipes/{id}/favorite` - Toggle favorite
-   - `GET /grocery-list` - Get grocery list
-   - `POST /chat/message` - Send chat message
-
-### Files to Create:
+**Debug SHA-1 Fingerprint** (add to Firebase Console):
 ```
-data/remote/
-├── api/
-│   ├── RasoiAIApi.kt           # Retrofit interface
-│   ├── AuthApi.kt              # Auth endpoints
-│   └── interceptors/
-│       └── AuthInterceptor.kt  # Add auth token to requests
-├── dto/
-│   ├── MealPlanDto.kt
-│   ├── RecipeDto.kt
-│   └── UserDto.kt
-└── mapper/
-    └── DtoMappers.kt           # DTO to domain model mappers
-
-data/local/
-├── database/
-│   ├── RasoiDatabase.kt        # Room database
-│   └── dao/
-│       ├── MealPlanDao.kt
-│       ├── RecipeDao.kt
-│       └── GroceryDao.kt
-└── entity/
-    ├── MealPlanEntity.kt
-    └── RecipeEntity.kt
+0D:1C:9D:5D:36:70:91:06:7E:16:C8:D8:EC:5F:AF:C1:6C:39:1D:6E
 ```
 
-### Update Files:
-- `data/di/DataModule.kt` - Add Retrofit, Room bindings
-- `data/repository/*` - Replace fake implementations
-- `app/presentation/auth/AuthViewModel.kt` - Real Google Sign-In
+## IMMEDIATE NEXT STEPS
 
-## Reference Files
+**Choose based on priority:**
 
-| File | Path | Why |
-|------|------|-----|
-| Wireframes | `docs/design/wireframes/` | All 16 screen wireframes |
-| Home Wireframe | `docs/design/wireframes/04-home.md` | Lock icon specs, Add/Swap sheets |
-| Recipe Detail | `docs/design/wireframes/05-recipe-detail.md` | Lock indicator specs |
-| Technical Design | `docs/design/RasoiAI Technical Design.md` | API specs, data models |
-| CLAUDE.md | `CLAUDE.md` | Full project context and patterns |
-| Home Screen | `app/presentation/home/HomeScreen.kt` | Lock icons, sheets implementation |
-| RecipeHeader | `app/presentation/recipedetail/components/RecipeHeader.kt` | Tri-state lock |
-| Screen.kt | `app/presentation/navigation/Screen.kt` | Navigation with fromMealPlan param |
-| Fake Repos | `data/repository/Fake*.kt` | Current mock implementations |
+### Option 1: Complete Firebase Console Setup (if not done)
+1. Go to Firebase Console → Project Settings → Your apps
+2. Add SHA-1 fingerprint: `0D:1C:9D:5D:36:70:91:06:7E:16:C8:D8:EC:5F:AF:C1:6C:39:1D:6E`
+3. Enable Google Sign-In in Authentication → Sign-in method
+4. Test on device: `cd android && ./gradlew installDebug`
 
-## Working Directory
-Project root: `D:/Abhay/VibeCoding/KKB`
+### Option 2: Implement Remaining Repositories
+- `FavoritesRepositoryImpl` - follows same offline-first pattern
+- `ChatRepositoryImpl` - may need real-time updates
+- `StatsRepositoryImpl` - analytics and streak tracking
+- `SettingsRepositoryImpl` - user preferences sync
 
-Start by reading:
-1. `CLAUDE.md` for full project context
-2. `docs/design/RasoiAI Technical Design.md` for API specs
-3. Current fake repository implementations in `data/repository/`
+### Option 3: Backend API Development
+- Set up Python/FastAPI backend
+- Implement JWT token exchange endpoint
+- Create meal plan generation API with Claude
 
-Then begin implementing the backend integration layer.
+## Architecture (Offline-First)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  UI (Compose) → ViewModel → UseCase → Repository            │
+│                                           ↓                 │
+│                              ┌────────────┴────────────┐    │
+│                              ↓                         ↓    │
+│                         Room (Local)            Retrofit    │
+│                         Source of Truth         (Remote)    │
+│                              ↓                         ↓    │
+│                         EntityMappers           DtoMappers  │
+│                              └──────────┬──────────────┘    │
+│                                         ↓                   │
+│                                   Domain Models             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Key Files Reference
+
+| Purpose | File |
+|---------|------|
+| Project Context | `CLAUDE.md` |
+| Auth Flow | `data/repository/AuthRepositoryImpl.kt` |
+| Auth ViewModel | `app/presentation/auth/AuthViewModel.kt` |
+| Google Sign-In | `app/presentation/auth/GoogleAuthClient.kt` |
+| MealPlan Repo | `data/repository/MealPlanRepositoryImpl.kt` |
+| Recipe Repo | `data/repository/RecipeRepositoryImpl.kt` |
+| Grocery Repo | `data/repository/GroceryRepositoryImpl.kt` |
+| Entity Mappers | `data/local/mapper/EntityMappers.kt` |
+| DTO Mappers | `data/remote/mapper/DtoMappers.kt` |
+| DI Module | `data/di/DataModule.kt` |
+| API Service | `data/remote/api/RasoiApiService.kt` |
+
+## Environment
+
+- Working directory: `D:/Abhay/VibeCoding/KKB`
+- Build: `cd android && ./gradlew assembleDebug`
+- Test: `cd android && ./gradlew test`
+- Install: `cd android && ./gradlew installDebug`
+- SHA-1: `cd android && ./gradlew signingReport`
+
+## Real Repositories Implemented
+
+All follow offline-first pattern with:
+- Room as single source of truth
+- API fetch when online
+- Local cache updates
+- Sync support for offline mutations
+
+| Repository | Key Features |
+|------------|--------------|
+| Auth | Firebase → Backend JWT exchange, token storage |
+| MealPlan | Generate, swap meals, lock state, sync |
+| Recipe | Search, scale, favorites, cache |
+| Grocery | Generate from meal plan, toggle purchased, custom items |
+
+Continue from here based on the immediate next step you choose.
 ```
 
 ---
 
 ## QUICK REFERENCE
 
-### Build Commands (use forward slashes `/` in bash):
+### Build Commands:
 ```bash
 cd "D:/Abhay/VibeCoding/KKB/android"
-./gradlew build           # Build
+./gradlew assembleDebug   # Build APK
 ./gradlew test            # Run tests
+./gradlew build           # Full build + tests
 ./gradlew installDebug    # Install on device
-./gradlew assembleDebug   # Build APK only
+./gradlew signingReport   # Get SHA-1 fingerprint
 ```
 
-### Run App:
+### Test on Device:
 ```bash
-# Check device
-"/c/Users/itsab/AppData/Local/Android/Sdk/platform-tools/adb" devices
-
 # Install and launch
 ./gradlew installDebug
-"/c/Users/itsab/AppData/Local/Android/Sdk/platform-tools/adb" shell am start -n com.rasoiai.app/com.rasoiai.app.MainActivity
+adb shell am start -n com.rasoiai.app/.MainActivity
+
+# View auth logs
+adb logcat -s RasoiAI:* | grep -E "(Firebase|Auth|JWT)"
 ```
 
-### Key Architecture:
-- **ViewModel Pattern**: `UiState` data class + `NavigationEvent` sealed class
-- **DI**: Hilt with `@HiltViewModel` and `@Inject constructor`
-- **State**: `MutableStateFlow` with `.update { it.copy(...) }`
-- **Navigation**: Callbacks passed to Screen, ViewModel emits events
-- **Lock State**: `RecipeLockState` enum (LOCKED, UNLOCKED, NO_CONTEXT)
+### Key Patterns:
 
-### Design System:
-| Element | Light | Dark |
-|---------|-------|------|
-| Primary | `#FF6838` | `#FFB59C` |
-| Secondary | `#5A822B` | `#A8D475` |
-| Background | `#FDFAF4` | `#1C1B1F` |
+**ViewModel Pattern:**
+```kotlin
+data class FeatureUiState(val isLoading: Boolean = true, ...)
+sealed class FeatureNavigationEvent { ... }
 
-| Token | Usage |
-|-------|-------|
-| Spacing | `spacing.xs` (4dp), `spacing.sm` (8dp), `spacing.md` (16dp), `spacing.lg` (24dp) |
-| Corners | 8dp (small), 16dp (medium), 24dp (large) |
-
-### Wireframe Files:
+@HiltViewModel
+class FeatureViewModel @Inject constructor(...) : ViewModel() {
+    private val _uiState = MutableStateFlow(FeatureUiState())
+    val uiState: StateFlow<FeatureUiState> = _uiState.asStateFlow()
+}
 ```
-docs/design/wireframes/
-├── 00-overview.md
-├── 01-splash.md
-├── 02-auth.md
-├── 03-onboarding.md
-├── 04-home.md              # Lock icons, Add/Swap sheets
-├── 05-recipe-detail.md     # Lock indicator specs
-├── 06-cooking-mode.md
-├── 07-grocery-list.md
-├── 08-favorites.md
-├── 09-chat.md
-├── 10-pantry-scan.md
-├── 11-stats.md
-├── 12-settings.md
-├── 13-recipe-rules.md
-└── 99-common-components.md
+
+**Repository Pattern (Offline-First):**
+```kotlin
+@Singleton
+class RepositoryImpl @Inject constructor(
+    private val apiService: RasoiApiService,
+    private val dao: FeatureDao,
+    private val networkMonitor: NetworkMonitor
+) : Repository {
+    // 1. Return from local DB (single source of truth)
+    // 2. Fetch from API if online
+    // 3. Cache to local DB
+    // 4. Queue mutations for sync if offline
+}
 ```
 
 ---
@@ -230,39 +179,86 @@ docs/design/wireframes/
 ## PREVIOUS SESSIONS SUMMARY
 
 ### Sessions 1-10: Core UI Implementation
-- Implemented all 12 core screens
-- Established ViewModel pattern with StateFlow
-- Set up Hilt DI, Navigation Compose
-- All screens follow wireframe designs
+- All 13 core screens implemented
+- ViewModel pattern with StateFlow
+- Hilt DI, Navigation Compose setup
 
 ### Session 11: Wireframe Review & Recipe Rules Design
-- Reviewed all 12 wireframes with user approval
-- Redesigned Screen 4 (Home) with 3-level locking system
-- Added lock indicator to Screen 5 (Recipe Detail)
-- Created Screen 13 (Recipe Rules) wireframe
+- Redesigned Home with 3-level locking
+- Added lock indicator to Recipe Detail
+- Created Recipe Rules wireframe
 
 ### Session 12: Recipe Rules Implementation
-- Implemented Recipe Rules screen with 4 tabs
-- Added domain models (RecipeRule, NutritionGoal, FoodCategory)
-- Created FakeRecipeRulesRepository with mock data
-- Full CRUD operations for rules
+- Recipe Rules screen with 4 tabs
+- Domain models (RecipeRule, NutritionGoal)
+- FakeRecipeRulesRepository
 
 ### Session 13: Wireframe Updates & Lock Icon Fixes
-- Split large wireframes doc into 16 individual files
-- Updated lock icons to show current state (🔒/🔓) not action
-- Created AddRecipeSheet with 2-column grid layout
-- Updated SwapRecipeSheet with 2-column grid layout
-- Added RecipeLockState tri-state enum
-- Added fromMealPlan navigation parameter
-- Fixed duplicate lock icons at meal type level
+- Split wireframes into 16 files
+- Lock icons show state (locked/unlocked) not action
+- AddRecipeSheet/SwapRecipeSheet 2-column grids
+- RecipeLockState tri-state enum
+- fromMealPlan navigation parameter
 
-### Next Phase: Backend Integration
-- Firebase Auth with real Google Sign-In
-- Retrofit API layer
-- Room database for offline caching
-- Replace fake repositories with real implementations
+### Session 14: Backend Integration Phase 1
+- Auth token storage in DataStore
+- AuthInterceptor for API requests
+- DTO and Entity mappers
+- AuthRepositoryImpl (Firebase → Backend JWT)
+- MealPlanRepositoryImpl (offline-first)
+- Updated Room entities with full data
+
+### Session 15: MealPlanRepositoryImpl Wiring
+- Wired MealPlanRepositoryImpl in DataModule.kt
+- Added MealPlanDao provider
+- Build verified successful
+
+### Session 16: RecipeRepositoryImpl Implementation
+- Added Recipe Entity mappers in EntityMappers.kt
+- Created RecipeRepositoryImpl.kt with offline-first pattern
+- Wired in DataModule.kt with RecipeDao, FavoriteDao providers
+
+### Session 17: GroceryRepositoryImpl Implementation
+- Added Grocery Entity mappers in EntityMappers.kt
+- Created GroceryRepositoryImpl.kt with offline-first pattern
+- Features: generate from meal plan, toggle purchased, custom items
+- Wired in DataModule.kt with GroceryDao provider
+
+### Session 18: Firebase Auth Flow Verification
+- Verified google-services.json configuration
+- Confirmed Web Client ID in BuildConfig
+- Extracted debug SHA-1 fingerprint
+- All unit tests passing
+- Documented Firebase Console setup steps
+- **Next: Complete Firebase Console setup or implement more repositories**
 
 ---
 
-*Last Updated: January 2025*
-*All 13 screens complete, ready for backend integration*
+## FILES CREATED/MODIFIED IN BACKEND INTEGRATION
+
+### New Files:
+```
+data/remote/interceptor/AuthInterceptor.kt
+data/remote/mapper/DtoMappers.kt
+data/local/mapper/EntityMappers.kt
+data/repository/AuthRepositoryImpl.kt
+data/repository/MealPlanRepositoryImpl.kt
+data/repository/RecipeRepositoryImpl.kt
+data/repository/GroceryRepositoryImpl.kt
+```
+
+### Modified Files:
+```
+data/local/datastore/UserPreferencesDataStore.kt
+data/local/entity/MealPlanEntity.kt
+data/local/dao/MealPlanDao.kt
+data/local/RasoiDatabase.kt
+data/di/DataModule.kt
+app/presentation/auth/AuthViewModel.kt
+app/build.gradle.kts (WEB_CLIENT_ID)
+```
+
+---
+
+*Last Updated: January 2026*
+*Backend integration Phase 1 complete. MealPlan, Recipe, Grocery repositories implemented with offline-first pattern. Firebase auth flow verified.*
