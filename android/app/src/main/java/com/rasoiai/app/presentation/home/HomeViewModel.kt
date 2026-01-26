@@ -106,7 +106,11 @@ data class FestivalInfo(
  * Navigation events from Home screen
  */
 sealed class HomeNavigationEvent {
-    data class NavigateToRecipeDetail(val recipeId: String, val isLocked: Boolean = false) : HomeNavigationEvent()
+    data class NavigateToRecipeDetail(
+        val recipeId: String,
+        val isLocked: Boolean = false,
+        val fromMealPlan: Boolean = true  // Always true when navigating from Home
+    ) : HomeNavigationEvent()
     data object NavigateToSettings : HomeNavigationEvent()
     data object NavigateToNotifications : HomeNavigationEvent()
     data object NavigateToGrocery : HomeNavigationEvent()

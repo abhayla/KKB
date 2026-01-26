@@ -14,10 +14,18 @@ sealed class Screen(val route: String) {
     data object Settings : Screen("settings")
 
     // Detail screens
-    data object RecipeDetail : Screen("recipe/{recipeId}?isLocked={isLocked}") {
-        fun createRoute(recipeId: String, isLocked: Boolean = false) = "recipe/$recipeId?isLocked=$isLocked"
+    data object RecipeDetail : Screen("recipe/{recipeId}?isLocked={isLocked}&fromMealPlan={fromMealPlan}") {
+        /**
+         * Creates route for recipe detail screen.
+         * @param recipeId The recipe ID
+         * @param isLocked Whether the recipe is locked in the meal plan (only relevant when fromMealPlan=true)
+         * @param fromMealPlan Whether navigating from meal plan context (determines if lock icon is shown)
+         */
+        fun createRoute(recipeId: String, isLocked: Boolean = false, fromMealPlan: Boolean = false) =
+            "recipe/$recipeId?isLocked=$isLocked&fromMealPlan=$fromMealPlan"
         const val ARG_RECIPE_ID = "recipeId"
         const val ARG_IS_LOCKED = "isLocked"
+        const val ARG_FROM_MEAL_PLAN = "fromMealPlan"
     }
 
     data object CookingMode : Screen("cooking/{recipeId}") {

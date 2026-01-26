@@ -81,8 +81,8 @@ fun RasoiNavHost(
         // Home
         composable(route = Screen.Home.route) {
             HomeScreen(
-                onNavigateToRecipeDetail = { recipeId, isLocked ->
-                    navController.navigate(Screen.RecipeDetail.createRoute(recipeId, isLocked))
+                onNavigateToRecipeDetail = { recipeId, isLocked, fromMealPlan ->
+                    navController.navigate(Screen.RecipeDetail.createRoute(recipeId, isLocked, fromMealPlan))
                 },
                 onNavigateToSettings = {
                     navController.navigate(Screen.Settings.route)
@@ -110,6 +110,10 @@ fun RasoiNavHost(
                     type = NavType.StringType
                 },
                 navArgument(Screen.RecipeDetail.ARG_IS_LOCKED) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
+                navArgument(Screen.RecipeDetail.ARG_FROM_MEAL_PLAN) {
                     type = NavType.BoolType
                     defaultValue = false
                 }

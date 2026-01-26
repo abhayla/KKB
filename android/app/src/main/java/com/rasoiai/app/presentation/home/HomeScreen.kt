@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,6 +23,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,6 +39,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.outlined.CalendarToday
@@ -50,6 +55,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -65,7 +71,9 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -91,7 +99,7 @@ import java.time.LocalDate
 
 @Composable
 fun HomeScreen(
-    onNavigateToRecipeDetail: (recipeId: String, isLocked: Boolean) -> Unit,
+    onNavigateToRecipeDetail: (recipeId: String, isLocked: Boolean, fromMealPlan: Boolean) -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToGrocery: () -> Unit,
     onNavigateToChat: () -> Unit,
@@ -107,7 +115,7 @@ fun HomeScreen(
     LaunchedEffect(navigationEvent) {
         when (val event = navigationEvent) {
             is HomeNavigationEvent.NavigateToRecipeDetail -> {
-                onNavigateToRecipeDetail(event.recipeId, event.isLocked)
+                onNavigateToRecipeDetail(event.recipeId, event.isLocked, event.fromMealPlan)
                 viewModel.onNavigationHandled()
             }
             HomeNavigationEvent.NavigateToSettings -> {
@@ -420,8 +428,9 @@ private fun HomeScreenContent(
     if (uiState.showSwapSheet) {
         SwapRecipeSheet(
             recipeName = uiState.selectedMealItem?.recipeName ?: "",
+            swapSuggestions = uiState.swapSuggestions,
             onDismiss = onDismissSwapSheet,
-            onConfirmSwap = onConfirmSwap
+            onSelectRecipe = { selectedRecipe -> onConfirmSwap() }
         )
     }
 }
@@ -597,26 +606,17 @@ private fun SelectedDayHeader(
                 }
             }
             Spacer(modifier = Modifier.width(spacing.sm))
-            // Day Lock Button with optional "Locked" text
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(
-                    onClick = onLockClick,
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = if (isDayLocked) "Unlock day" else "Lock day",
-                        modifier = Modifier.size(18.dp),
-                        tint = if (isDayLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                if (isDayLocked) {
-                    Text(
-                        text = "Locked",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
+            // Day Lock Button - icon shows current state (🔒 locked, 🔓 unlocked)
+            IconButton(
+                onClick = onLockClick,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = if (isDayLocked) Icons.Default.Lock else Icons.Default.LockOpen,
+                    contentDescription = if (isDayLocked) "Day locked - tap to unlock" else "Day unlocked - tap to lock",
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
             }
         }
         TextButton(
@@ -700,29 +700,25 @@ private fun MealSection(
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Meal Lock "Locked" text label (when locked and day is NOT locked)
-                    if (isMealLocked && !isDayLocked) {
-                        Text(
-                            text = "Locked",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(spacing.xxs))
-                    }
-                    // Meal Lock Button (disabled if day is already locked)
+                    // Meal Lock Button - icon shows current state (🔒 locked, 🔓 unlocked)
+                    // Disabled if day is already locked (inherits day lock)
                     IconButton(
                         onClick = onLockClick,
                         modifier = Modifier.size(32.dp),
                         enabled = !isDayLocked
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Lock,
-                            contentDescription = if (isMealLocked) "Unlock meal" else "Lock meal",
+                            imageVector = if (isEffectivelyLocked) Icons.Default.Lock else Icons.Default.LockOpen,
+                            contentDescription = when {
+                                isDayLocked -> "Meal locked by day lock"
+                                isMealLocked -> "Meal locked - tap to unlock"
+                                else -> "Meal unlocked - tap to lock"
+                            },
                             modifier = Modifier.size(16.dp),
-                            tint = when {
-                                isDayLocked -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-                                isMealLocked -> MaterialTheme.colorScheme.primary
-                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = if (isDayLocked) {
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                            } else {
+                                MaterialTheme.colorScheme.primary
                             }
                         )
                     }
@@ -1166,10 +1162,23 @@ private fun RefreshOptionsSheet(
 @Composable
 private fun SwapRecipeSheet(
     recipeName: String,
+    swapSuggestions: List<MealItem>,
     onDismiss: () -> Unit,
-    onConfirmSwap: () -> Unit
+    onSelectRecipe: (MealItem) -> Unit
 ) {
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var searchQuery by remember { mutableStateOf("") }
+
+    // Filter suggestions based on search query
+    val filteredSuggestions = remember(searchQuery, swapSuggestions) {
+        if (searchQuery.isBlank()) {
+            swapSuggestions
+        } else {
+            swapSuggestions.filter {
+                it.recipeName.contains(searchQuery, ignoreCase = true)
+            }
+        }
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -1178,44 +1187,178 @@ private fun SwapRecipeSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(spacing.md)
+                .padding(horizontal = spacing.md)
         ) {
             Text(
                 text = "Swap $recipeName",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = spacing.md)
+                modifier = Modifier.padding(bottom = spacing.sm)
             )
 
             Text(
-                text = "Replace with a similar recipe?",
+                text = "Select a similar recipe to replace",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = spacing.md)
             )
 
-            Spacer(modifier = Modifier.height(spacing.lg))
-
-            Row(
+            // Search Bar
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(spacing.md)
-            ) {
-                OutlinedButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(spacing.sm)
+                placeholder = { Text("Search recipes...") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null
+                    )
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(spacing.sm)
+            )
+
+            Spacer(modifier = Modifier.height(spacing.md))
+
+            // Section title
+            Text(
+                text = "Similar Recipes",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = spacing.sm)
+            )
+
+            // Recipe Grid (2 columns)
+            if (filteredSuggestions.isEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = spacing.xl),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("Cancel")
+                    Text(
+                        text = if (searchQuery.isNotBlank()) "No recipes match your search" else "No similar recipes available",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-                Button(
-                    onClick = onConfirmSwap,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(spacing.sm)
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    contentPadding = PaddingValues(vertical = spacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(spacing.sm),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(400.dp) // Fixed height for the grid
                 ) {
-                    Text("Swap")
+                    items(
+                        items = filteredSuggestions,
+                        key = { it.recipeId }
+                    ) { suggestion ->
+                        SwapRecipeGridItem(
+                            mealItem = suggestion,
+                            onClick = { onSelectRecipe(suggestion) }
+                        )
+                    }
                 }
             }
 
+            Spacer(modifier = Modifier.height(spacing.md))
+
+            // Cancel Button
+            OutlinedButton(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(spacing.sm)
+            ) {
+                Text("Cancel")
+            }
+
             Spacer(modifier = Modifier.height(spacing.xl))
+        }
+    }
+}
+
+/**
+ * Grid item for swap recipe selection using MealItem data
+ */
+@Composable
+private fun SwapRecipeGridItem(
+    mealItem: MealItem,
+    onClick: () -> Unit
+) {
+    val isVegetarian = mealItem.dietaryTags.contains(DietaryTag.VEGETARIAN) ||
+                      mealItem.dietaryTags.contains(DietaryTag.VEGAN)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(spacing.md),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column {
+            // Image placeholder
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1.2f)
+                    .clip(RoundedCornerShape(topStart = spacing.md, topEnd = spacing.md))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = mealItem.recipeName.take(2).uppercase(),
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Content
+            Column(
+                modifier = Modifier.padding(spacing.sm)
+            ) {
+                // Name with dietary indicator
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Veg/Non-veg indicator
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (isVegetarian) DietaryColors.Vegetarian else DietaryColors.NonVegetarian
+                            )
+                    )
+
+                    Spacer(modifier = Modifier.width(spacing.xs))
+
+                    Text(
+                        text = mealItem.recipeName,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(spacing.xs))
+
+                // Time and calories
+                Text(
+                    text = "${mealItem.prepTimeMinutes}m${if (mealItem.calories > 0) " \u00B7 ${mealItem.calories}cal" else ""}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

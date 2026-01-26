@@ -20,6 +20,18 @@ import timber.log.Timber
 import javax.inject.Inject
 
 /**
+ * Lock state for recipe in meal plan context
+ */
+enum class RecipeLockState {
+    /** Recipe is locked in the meal plan (protected from regeneration) - shows 🔒 */
+    LOCKED,
+    /** Recipe is unlocked in the meal plan (can be swapped/regenerated) - shows 🔓 */
+    UNLOCKED,
+    /** Recipe not accessed from meal plan context (favorites, search, chat) - no icon */
+    NO_CONTEXT
+}
+
+/**
  * UI state for the Recipe Detail screen
  */
 data class RecipeDetailUiState(
@@ -31,8 +43,12 @@ data class RecipeDetailUiState(
     val scaledNutrition: Nutrition? = null,
     val checkedIngredients: Set<String> = emptySet(),
     val selectedTabIndex: Int = 0,
-    val isLocked: Boolean = false
+    /** Lock state in meal plan context - determines which lock icon to show (if any) */
+    val lockState: RecipeLockState = RecipeLockState.NO_CONTEXT
 ) {
+    /** For backwards compatibility */
+    val isLocked: Boolean
+        get() = lockState == RecipeLockState.LOCKED
     val isVegetarian: Boolean
         get() = recipe?.dietaryTags?.any {
             it == DietaryTag.VEGETARIAN || it == DietaryTag.VEGAN || it == DietaryTag.JAIN
@@ -93,8 +109,16 @@ class RecipeDetailViewModel @Inject constructor(
 
     private val recipeId: String = checkNotNull(savedStateHandle[Screen.RecipeDetail.ARG_RECIPE_ID])
     private val isLocked: Boolean = savedStateHandle[Screen.RecipeDetail.ARG_IS_LOCKED] ?: false
+    private val fromMealPlan: Boolean = savedStateHandle[Screen.RecipeDetail.ARG_FROM_MEAL_PLAN] ?: false
 
-    private val _uiState = MutableStateFlow(RecipeDetailUiState(isLocked = isLocked))
+    // Determine lock state based on navigation parameters
+    private val lockState: RecipeLockState = when {
+        !fromMealPlan -> RecipeLockState.NO_CONTEXT
+        isLocked -> RecipeLockState.LOCKED
+        else -> RecipeLockState.UNLOCKED
+    }
+
+    private val _uiState = MutableStateFlow(RecipeDetailUiState(lockState = lockState))
     val uiState: StateFlow<RecipeDetailUiState> = _uiState.asStateFlow()
 
     private val _navigationEvent = MutableStateFlow<RecipeDetailNavigationEvent?>(null)

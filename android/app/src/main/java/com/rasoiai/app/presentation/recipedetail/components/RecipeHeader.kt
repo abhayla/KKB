@@ -18,6 +18,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Icon
@@ -34,6 +36,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.rasoiai.app.presentation.recipedetail.RecipeLockState
 import com.rasoiai.app.presentation.theme.DietaryColors
 import com.rasoiai.app.presentation.theme.spacing
 
@@ -47,7 +50,7 @@ fun RecipeHeader(
     calories: Int?,
     isVegetarian: Boolean,
     tags: List<String>,
-    isLocked: Boolean = false,
+    lockState: RecipeLockState = RecipeLockState.NO_CONTEXT,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -81,13 +84,30 @@ fun RecipeHeader(
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.weight(1f, fill = false)
             )
-            // Lock icon when recipe is locked in meal plan
-            if (isLocked) {
-                Spacer(modifier = Modifier.width(spacing.sm))
-                Text(
-                    text = "\uD83D\uDD12", // 🔒
-                    style = MaterialTheme.typography.titleMedium
-                )
+            // Lock status indicator when viewed from meal plan context
+            // Shows 🔒 when locked, 🔓 when unlocked, no icon when not from meal plan
+            when (lockState) {
+                RecipeLockState.LOCKED -> {
+                    Spacer(modifier = Modifier.width(spacing.sm))
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = "Recipe is locked in meal plan",
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                RecipeLockState.UNLOCKED -> {
+                    Spacer(modifier = Modifier.width(spacing.sm))
+                    Icon(
+                        imageVector = Icons.Default.LockOpen,
+                        contentDescription = "Recipe is unlocked in meal plan",
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                RecipeLockState.NO_CONTEXT -> {
+                    // No icon when not accessed from meal plan context
+                }
             }
         }
 
