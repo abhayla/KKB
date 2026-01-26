@@ -13,9 +13,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **Language** | English only |
 | **Target Market** | Pan-India (Tier 1, 2, 3 cities) |
 
+## Quick Start
+
+```bash
+# 1. Clone and navigate to android folder
+cd "D:/Abhay/VibeCoding/KKB/android"
+
+# 2. Build the project
+./gradlew build
+
+# 3. Run tests
+./gradlew test
+
+# 4. Install on device/emulator
+./gradlew installDebug
+```
+
+**Prerequisites:** Android Studio, JDK 17+, Android SDK 34
+
 ## Current Status
 
-**10 screens implemented.** Ready for Stats screen development.
+**11 screens implemented.** Ready for Settings screen development.
 
 | Phase | Status | Document |
 |-------|--------|----------|
@@ -36,7 +54,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Favorites | ✅ Complete | `presentation/favorites/` |
 | Chat | ✅ Complete | `presentation/chat/` |
 | Pantry Scan | ✅ Complete | `presentation/pantry/` |
-| **Stats** | ⏳ **Next Step** | Cooking streak, leaderboards, achievements |
+| Stats | ✅ Complete | `presentation/stats/` |
+| **Settings** | ⏳ **Next Step** | Profile, family, preferences |
 
 ## Infrastructure Setup (Complete)
 
@@ -204,7 +223,8 @@ android/
 │   │   ├── grocery/              # GroceryScreen.kt, GroceryViewModel.kt, components/
 │   │   ├── favorites/            # FavoritesScreen.kt, FavoritesViewModel.kt, components/
 │   │   ├── chat/                 # ChatScreen.kt, ChatViewModel.kt, components/
-│   │   └── pantry/               # PantryScreen.kt, PantryViewModel.kt, components/
+│   │   ├── pantry/               # PantryScreen.kt, PantryViewModel.kt, components/
+│   │   └── stats/                # StatsScreen.kt, StatsViewModel.kt, components/
 │   └── di/                       # Hilt modules
 ├── domain/src/main/java/com/rasoiai/domain/
 │   ├── model/                    # Recipe.kt, MealPlan.kt, Festival.kt, User.kt
@@ -288,6 +308,9 @@ cd "D:/Abhay/VibeCoding/KKB/android"
 # Build
 ./gradlew build
 
+# Quick compilation check (no tests)
+./gradlew assembleDebug
+
 # Run all unit tests
 ./gradlew test
 
@@ -361,7 +384,7 @@ ruff check .
 | Project Guide | `CLAUDE.md` | HIGH |
 | Screen Wireframes | `docs/design/RasoiAI Screen Wireframes.md` | HIGH |
 | Architecture Decisions | `docs/design/Android Architecture Decisions.md` | HIGH |
-| Pantry Screen (Reference) | `app/presentation/pantry/` | HIGH (most recent pattern) |
+| Pantry Screen (Reference) | `android/app/src/main/java/com/rasoiai/app/presentation/pantry/` | HIGH (most recent pattern) |
 | Design System | `docs/design/RasoiAI Design System.md` | MEDIUM |
 | Technical Design | `docs/design/RasoiAI Technical Design.md` | MEDIUM |
 | Requirements | `docs/requirements/RasoiAI Requirements.md` | LOW |

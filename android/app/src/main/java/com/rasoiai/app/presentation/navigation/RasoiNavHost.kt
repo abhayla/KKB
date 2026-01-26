@@ -17,6 +17,7 @@ import com.rasoiai.app.presentation.onboarding.OnboardingScreen
 import com.rasoiai.app.presentation.pantry.PantryScreen
 import com.rasoiai.app.presentation.recipedetail.RecipeDetailScreen
 import com.rasoiai.app.presentation.splash.SplashScreen
+import com.rasoiai.app.presentation.stats.StatsScreen
 
 @Composable
 fun RasoiNavHost(
@@ -238,8 +239,22 @@ fun RasoiNavHost(
 
         // Stats
         composable(route = Screen.Stats.route) {
-            // TODO: StatsScreen
-            PlaceholderScreen(title = "Stats")
+            StatsScreen(
+                onNavigateToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                },
+                onNavigateToGrocery = {
+                    navController.navigate(Screen.Grocery.route)
+                },
+                onNavigateToChat = {
+                    navController.navigate(Screen.Chat.route)
+                },
+                onNavigateToFavorites = {
+                    navController.navigate(Screen.Favorites.route)
+                }
+            )
         }
 
         // Settings

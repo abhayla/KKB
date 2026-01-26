@@ -11,12 +11,14 @@ import com.rasoiai.data.repository.FakeGroceryRepository
 import com.rasoiai.data.repository.FakeMealPlanRepository
 import com.rasoiai.data.repository.FakePantryRepository
 import com.rasoiai.data.repository.FakeRecipeRepository
+import com.rasoiai.data.repository.FakeStatsRepository
 import com.rasoiai.domain.repository.ChatRepository
 import com.rasoiai.domain.repository.FavoritesRepository
 import com.rasoiai.domain.repository.GroceryRepository
 import com.rasoiai.domain.repository.MealPlanRepository
 import com.rasoiai.domain.repository.PantryRepository
 import com.rasoiai.domain.repository.RecipeRepository
+import com.rasoiai.domain.repository.StatsRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -113,5 +115,11 @@ object DataModule {
     @Singleton
     fun providePantryRepository(fakePantryRepository: FakePantryRepository): PantryRepository {
         return fakePantryRepository
+    }
+
+    @Provides
+    @Singleton
+    fun provideStatsRepository(fakeStatsRepository: FakeStatsRepository): StatsRepository {
+        return fakeStatsRepository
     }
 }
