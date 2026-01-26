@@ -604,7 +604,7 @@ private fun SelectedDayHeader(
                     modifier = Modifier.size(32.dp)
                 ) {
                     Icon(
-                        imageVector = if (isDayLocked) Icons.Default.Lock else Icons.Default.LockOpen,
+                        imageVector = Icons.Default.Lock,
                         contentDescription = if (isDayLocked) "Unlock day" else "Lock day",
                         modifier = Modifier.size(18.dp),
                         tint = if (isDayLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
@@ -716,7 +716,7 @@ private fun MealSection(
                         enabled = !isDayLocked
                     ) {
                         Icon(
-                            imageVector = if (isMealLocked) Icons.Default.Lock else Icons.Default.LockOpen,
+                            imageVector = Icons.Default.Lock,
                             contentDescription = if (isMealLocked) "Unlock meal" else "Lock meal",
                             modifier = Modifier.size(16.dp),
                             tint = when {
@@ -863,6 +863,7 @@ private fun MealItemRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
             .padding(horizontal = spacing.md, vertical = spacing.sm),
         verticalAlignment = Alignment.CenterVertically

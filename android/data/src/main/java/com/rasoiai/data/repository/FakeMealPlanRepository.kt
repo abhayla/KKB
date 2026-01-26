@@ -233,7 +233,7 @@ class FakeMealPlanRepository @Inject constructor() : MealPlanRepository {
     private fun getBreakfastMeals(dayOfWeek: DayOfWeek): List<MealItem> {
         val breakfasts = when (dayOfWeek) {
             DayOfWeek.MONDAY -> listOf(
-                createMealItem("poha", "Poha", 20, 280),
+                createMealItem("poha", "Poha", 20, 280, isLocked = true), // Pre-locked for testing
                 createMealItem("chai", "Masala Chai", 5, 80)
             )
             DayOfWeek.TUESDAY -> listOf(
@@ -267,7 +267,7 @@ class FakeMealPlanRepository @Inject constructor() : MealPlanRepository {
     private fun getLunchMeals(dayOfWeek: DayOfWeek): List<MealItem> {
         val lunches = when (dayOfWeek) {
             DayOfWeek.MONDAY -> listOf(
-                createMealItem("dal-tadka", "Dal Tadka", 25, 180),
+                createMealItem("dal-tadka", "Dal Tadka", 25, 180, isLocked = true), // Pre-locked for testing
                 createMealItem("jeera-rice", "Jeera Rice", 15, 220),
                 createMealItem("roti", "Roti (4)", 20, 320),
                 createMealItem("salad", "Mixed Salad", 5, 50)
@@ -386,7 +386,8 @@ class FakeMealPlanRepository @Inject constructor() : MealPlanRepository {
         name: String,
         prepTimeMinutes: Int,
         calories: Int,
-        isVeg: Boolean = true
+        isVeg: Boolean = true,
+        isLocked: Boolean = false
     ): MealItem {
         return MealItem(
             id = UUID.randomUUID().toString(),
@@ -395,7 +396,7 @@ class FakeMealPlanRepository @Inject constructor() : MealPlanRepository {
             recipeImageUrl = null,
             prepTimeMinutes = prepTimeMinutes,
             calories = calories,
-            isLocked = false,
+            isLocked = isLocked,
             order = 0,
             dietaryTags = if (isVeg) listOf(DietaryTag.VEGETARIAN) else listOf(DietaryTag.NON_VEGETARIAN)
         )
