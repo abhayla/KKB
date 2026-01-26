@@ -11,7 +11,7 @@ I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 
 ## Project Status
 
-Core screens (Splash → Auth → Onboarding → Home → Recipe Detail → Cooking Mode → Grocery List → Favorites) are COMPLETE. App builds and all tests pass. Ready for Chat screen implementation.
+8 screens complete (Splash → Auth → Onboarding → Home → Recipe Detail → Cooking Mode → Grocery List → Favorites). App builds and all tests pass. Ready for Chat screen implementation.
 
 | Phase | Status | Document |
 |-------|--------|----------|
@@ -35,11 +35,9 @@ Core screens (Splash → Auth → Onboarding → Home → Recipe Detail → Cook
 
 - ✅ App builds successfully (`.\gradlew build`)
 - ✅ All tests pass (`.\gradlew test`)
-- ✅ Full navigation flow works: Splash → Auth → Onboarding → Home → Recipe Detail → Cooking Mode
-- ✅ Grocery List with categorized items, WhatsApp share, checkbox toggle
-- ✅ Favorites screen with collections, 2-column grid, filters, reorder mode
+- ✅ Full navigation flow works
 - ✅ Bottom navigation working (Home, Grocery, Chat, Favs, Stats)
-- ✅ All 8 screens cross-checked against wireframes (all match)
+- ✅ All 8 screens cross-checked against wireframes
 
 ## Your Task
 
@@ -71,45 +69,48 @@ data/repository/
 - `DataModule.kt` - Bind FakeChatRepository
 
 ### UI Components (from wireframes - Screen 9, line 1111):
-1. Top app bar ("RasoiAI Assistant", ⋮ menu)
+1. Top app bar ("RasoiAI Assistant", ← back, ⋮ menu)
 2. Chat messages list (scrollable):
    - AI messages (left aligned, 🤖 icon)
-   - User messages (right aligned)
+   - User messages (right aligned, 👤 icon)
    - Recipe suggestion cards with [View Recipe] buttons
 3. Quick action chips (time-based):
-   - Morning: "Quick breakfast", "Healthy start"
-   - Afternoon: "Lunch ideas", "Light meal"
-   - Evening: "Dinner suggestions", "Family meal"
-   - Night: "Light snack", "Quick bite"
+   - Morning (6-11 AM): "Quick breakfast", "Healthy start"
+   - Afternoon (11 AM-4 PM): "Lunch ideas", "Light meal"
+   - Evening (4-9 PM): "Dinner suggestions", "Family meal"
+   - Night (9 PM+): "Light snack", "Quick bite"
 4. Text input bar with:
-   - Text field placeholder
-   - 📎 Attachment button (for pantry photos)
-   - 🎤 Voice input button
+   - Text field ("Type a message...")
+   - 📎 Attachment button (pantry photos - placeholder)
+   - 🎤 Voice input button (placeholder)
+   - Send button
 5. Bottom navigation bar
 
 ### Key Features:
-- Chat history persisted from previous sessions
-- Clear Chat option in menu
-- Recipe suggestions with clickable cards
-- Time-based quick actions
+- Chat history persisted (mock for now)
+- Clear Chat option in overflow menu
+- Recipe suggestions with clickable cards → navigate to Recipe Detail
+- Time-based quick actions that change based on current time
+- Welcome message from AI on first load
 
 ### Key Patterns (follow existing code):
 - ViewModel: `StateFlow<UiState>` + `StateFlow<NavigationEvent?>`
 - Screen receives callbacks, ViewModel handles logic
 - Use `MaterialTheme.colorScheme` and `spacing` from theme
 - Use `hiltViewModel()` for DI
-- Use LazyColumn for message list (reverse layout)
+- Use LazyColumn for message list (reverseLayout = true)
 
 ## Reference Files
 
 | File | Path | Why |
 |------|------|-----|
 | Wireframes | `docs/design/RasoiAI Screen Wireframes.md` | Screen 9 design (line 1111+) |
-| Favorites Screen | `app/presentation/favorites/FavoritesScreen.kt` | Recent implementation reference |
-| Favorites ViewModel | `app/presentation/favorites/FavoritesViewModel.kt` | State pattern reference |
+| Favorites Screen | `app/presentation/favorites/FavoritesScreen.kt` | Recent implementation pattern |
+| Favorites ViewModel | `app/presentation/favorites/FavoritesViewModel.kt` | State management pattern |
 | Grocery Screen | `app/presentation/grocery/GroceryScreen.kt` | Bottom nav pattern |
 | RasoiNavHost | `app/presentation/navigation/RasoiNavHost.kt` | Navigation setup |
 | Recipe Model | `domain/model/Recipe.kt` | Recipe data structure |
+| DataModule | `data/di/DataModule.kt` | DI bindings to update |
 
 ## Domain Models to Create
 
@@ -120,6 +121,7 @@ data class ChatMessage(
     val content: String,
     val isFromUser: Boolean,
     val timestamp: Long,
+    val quickActions: List<String>? = null,  // For AI messages with suggestions
     val recipeSuggestions: List<RecipeSuggestion>? = null
 )
 
@@ -131,10 +133,18 @@ data class RecipeSuggestion(
 )
 ```
 
+## Mock AI Responses (for FakeChatRepository)
+
+When user sends a message, return mock AI responses:
+- If message contains "paneer" → suggest Palak Paneer, Paneer Butter Masala
+- If message contains "breakfast" → suggest Aloo Paratha, Idli Sambar, Masala Dosa
+- If message contains "quick" or "fast" → suggest recipes with totalTimeMinutes < 30
+- Default → return generic helpful response with random recipe suggestions
+
 ## Working Directory
 Project root: `D:/Abhay/VibeCoding/KKB`
 
-Start by reading Screen 9 wireframes in `docs/design/RasoiAI Screen Wireframes.md` (line 1111), then implement the Chat screen.
+Start by reading Screen 9 wireframes in `docs/design/RasoiAI Screen Wireframes.md` (line 1111), then implement the Chat screen following the patterns in `app/presentation/favorites/`.
 ```
 
 ---
@@ -144,7 +154,7 @@ Start by reading Screen 9 wireframes in `docs/design/RasoiAI Screen Wireframes.m
 ```
 I'm building **RasoiAI** - an AI meal planning app for Indian families.
 
-**COMPLETED:** Splash, Auth, Onboarding, Home, Recipe Detail, Cooking Mode, Grocery List, Favorites. All screens verified against wireframes. All tests pass.
+**COMPLETED:** Splash, Auth, Onboarding, Home, Recipe Detail, Cooking Mode, Grocery List, Favorites (8 screens). All tests pass.
 
 **NEXT:** Implement Chat Screen (Screen 9)
 
@@ -153,42 +163,34 @@ I'm building **RasoiAI** - an AI meal planning app for Indian families.
 **Create these files:**
 1. `app/presentation/chat/ChatScreen.kt` - Message list + input bar
 2. `app/presentation/chat/ChatViewModel.kt` - State management
-3. `app/presentation/chat/components/` - ChatMessageItem, QuickActionChips, ChatInputBar
-4. `data/repository/FakeChatRepository.kt` - Mock chat data
+3. `app/presentation/chat/components/` - ChatMessageItem, QuickActionChips, ChatInputBar, RecipeSuggestionCard
+4. `domain/model/ChatMessage.kt` - Message data class
+5. `domain/repository/ChatRepository.kt` - Repository interface
+6. `data/repository/FakeChatRepository.kt` - Mock chat with AI responses
 
 **Update:**
 - `RasoiNavHost.kt` - Wire up ChatScreen (replace placeholder)
 - `DataModule.kt` - Provide FakeChatRepository
 
 **Chat UI:**
-- Top bar: "RasoiAI Assistant" with menu
-- Message bubbles (AI left, User right)
-- Recipe suggestion cards with [View Recipe]
-- Quick action chips (time-based suggestions)
-- Input bar with text field, attachment, voice buttons
+- Top bar: "RasoiAI Assistant" with back arrow and menu
+- Message bubbles (AI left with 🤖, User right with 👤)
+- Recipe suggestion cards with [View Recipe] buttons
+- Quick action chips (time-based: breakfast/lunch/dinner/snack)
+- Input bar with text field, attachment 📎, voice 🎤, send buttons
+- Bottom navigation
 
-**Reference:** `app/presentation/favorites/` for recent ViewModel/Screen patterns
-**Domain models:** `domain/model/Recipe.kt` (Recipe structure)
+**Mock AI behavior:**
+- "paneer" → suggest Palak Paneer, Paneer Butter Masala
+- "breakfast" → suggest Aloo Paratha, Idli, Dosa
+- "quick" → suggest recipes under 30 min
+- Default → helpful response with random suggestions
+
+**Reference:** `app/presentation/favorites/` for ViewModel/Screen patterns
+**Domain models:** `domain/model/Recipe.kt`
 
 Project root: `D:/Abhay/VibeCoding/KKB`
 ```
-
----
-
-## FILES TO REFERENCE:
-
-| File | Path | Priority | Description |
-|------|------|----------|-------------|
-| Screen Wireframes | `docs/design/RasoiAI Screen Wireframes.md` | **HIGH** | Chat design (Screen 9, line 1111) |
-| Favorites Screen | `app/presentation/favorites/FavoritesScreen.kt` | **HIGH** | Recent implementation pattern |
-| Favorites ViewModel | `app/presentation/favorites/FavoritesViewModel.kt` | **HIGH** | State management pattern |
-| Recipe Model | `domain/model/Recipe.kt` | **HIGH** | Recipe data structure |
-| Grocery Screen | `app/presentation/grocery/GroceryScreen.kt` | **HIGH** | Bottom nav pattern |
-| RasoiNavHost | `app/presentation/navigation/RasoiNavHost.kt` | **HIGH** | Navigation setup |
-| FakeRecipeRepository | `data/repository/FakeRecipeRepository.kt` | MEDIUM | Recipe data source |
-| DataModule | `data/di/DataModule.kt` | MEDIUM | DI bindings |
-| Theme | `app/presentation/theme/` | MEDIUM | Colors, spacing |
-| CLAUDE.md | Root | MEDIUM | Project overview |
 
 ---
 
@@ -196,7 +198,7 @@ Project root: `D:/Abhay/VibeCoding/KKB`
 
 ```
 ┌─────────────────────────────────────┐
-│  ←  RasoiAI Assistant           ⋮   │  ← Top bar with menu
+│  ←  RasoiAI Assistant           ⋮   │  ← Top bar with back + menu
 │─────────────────────────────────────│
 │                                     │
 │  ┌─────────────────────────────────┐│
@@ -234,7 +236,7 @@ Project root: `D:/Abhay/VibeCoding/KKB`
 │  └─────────────────────────────────┘│
 │                                     │
 │  ┌─────────────────────────────────┐│
-│  │ Type a message...        📎  🎤 ││  ← Input bar
+│  │ Type a message...     📎  🎤  ➤ ││  ← Input bar
 │  └─────────────────────────────────┘│
 │─────────────────────────────────────│
 │  🏠     📋     💬     ❤️     📊    │
@@ -256,10 +258,12 @@ Project root: `D:/Abhay/VibeCoding/KKB`
 ```
 
 ### Time-Based Quick Actions:
-- Morning (6-11 AM): "Quick breakfast", "Healthy start"
-- Afternoon (11 AM-4 PM): "Lunch ideas", "Light meal"
-- Evening (4-9 PM): "Dinner suggestions", "Family meal"
-- Night (9 PM+): "Light snack", "Quick bite"
+| Time | Actions |
+|------|---------|
+| Morning (6-11 AM) | "Quick breakfast", "Healthy start" |
+| Afternoon (11 AM-4 PM) | "Lunch ideas", "Light meal" |
+| Evening (4-9 PM) | "Dinner suggestions", "Family meal" |
+| Night (9 PM+) | "Light snack", "Quick bite" |
 
 ---
 
@@ -274,11 +278,28 @@ Project root: `D:/Abhay/VibeCoding/KKB`
 | 5 | Recipe Detail | ✅ Done | Tabs: Ingredients/Instructions |
 | 6 | Cooking Mode | ✅ Done | Step-by-step with timer, rating |
 | 7 | Grocery List | ✅ Done | Categorized, WhatsApp share |
-| 8 | Favorites | ✅ Done | Collections, 2-column grid, filters |
+| 8 | Favorites | ✅ Done | Collections, 2-column grid, filters, reorder |
 | 9 | **Chat** | ⏳ **Next** | AI assistant, chat history |
 | 10 | Pantry Scan | Pending | Camera, expiry tracking |
 | 11 | Stats | Pending | Streaks, achievements |
 | 12 | Settings | Pending | Profile, preferences |
+
+---
+
+## FILES TO REFERENCE:
+
+| File | Path | Priority | Description |
+|------|------|----------|-------------|
+| Screen Wireframes | `docs/design/RasoiAI Screen Wireframes.md` | **HIGH** | Chat design (Screen 9, line 1111) |
+| Favorites Screen | `app/presentation/favorites/FavoritesScreen.kt` | **HIGH** | Recent screen pattern |
+| Favorites ViewModel | `app/presentation/favorites/FavoritesViewModel.kt` | **HIGH** | State management pattern |
+| Recipe Model | `domain/model/Recipe.kt` | **HIGH** | Recipe data structure |
+| FakeRecipeRepository | `data/repository/FakeRecipeRepository.kt` | **HIGH** | Recipe data for suggestions |
+| Grocery Screen | `app/presentation/grocery/GroceryScreen.kt` | MEDIUM | Bottom nav pattern |
+| RasoiNavHost | `app/presentation/navigation/RasoiNavHost.kt` | **HIGH** | Navigation setup |
+| DataModule | `data/di/DataModule.kt` | **HIGH** | DI bindings to update |
+| Theme | `app/presentation/theme/` | MEDIUM | Colors, spacing |
+| CLAUDE.md | Root | MEDIUM | Project overview |
 
 ---
 
@@ -289,8 +310,8 @@ Project root: `D:/Abhay/VibeCoding/KKB`
 | Primary | `#FF6838` | `#FFB59C` |
 | Secondary | `#5A822B` | `#A8D475` |
 | Background | `#FDFAF4` | `#1C1B1F` |
-| Vegetarian | Green dot (●) | - |
-| Non-Veg | Red dot (🔴) | - |
+| AI Message Bg | `surfaceVariant` | - |
+| User Message Bg | `primaryContainer` | - |
 
 | Token | Value |
 |-------|-------|
@@ -312,89 +333,70 @@ cd D:\Abhay\VibeCoding\KKB\android
 
 # Install on device/emulator
 .\gradlew installDebug
-
-# Launch app via adb
-"C:\Users\itsab\AppData\Local\Android\Sdk\platform-tools\adb.exe" shell am start -n com.rasoiai.app/com.rasoiai.app.MainActivity
 ```
-
----
-
-## FAVORITES SCREEN IMPLEMENTATION SUMMARY:
-
-The Favorites screen was implemented with the following files:
-
-### Domain Layer
-- `domain/model/FavoriteCollection.kt` - Collection and FavoriteItem data classes
-- `domain/repository/FavoritesRepository.kt` - Repository interface
-
-### Data Layer
-- `data/repository/FakeFavoritesRepository.kt` - Mock implementation with sample collections
-
-### Presentation Layer
-- `app/presentation/favorites/FavoritesScreen.kt` - Main screen composable
-- `app/presentation/favorites/FavoritesViewModel.kt` - State management
-- `app/presentation/favorites/components/CollectionCard.kt` - Collection thumbnail
-- `app/presentation/favorites/components/RecipeGridItem.kt` - 2-column recipe card
-- `app/presentation/favorites/components/FilterChips.kt` - Cuisine/Time filters
-- `app/presentation/favorites/components/CreateCollectionDialog.kt` - New collection dialog
-
-### Key Features Implemented
-- Collections row with horizontal scroll
-- Default collections: All, Recently Viewed
-- Custom collections: Weekend Specials, Quick Meals, Kids Friendly
-- Create new collection dialog
-- Filter by cuisine (North/South/East/West)
-- Filter by time (< 15/30/45/60 min)
-- 2-column recipe grid with images
-- Recipe cards with veg/non-veg indicator
-- Reorder mode with drag handles
-- Search functionality
-- Add to collection menu
-- Remove from favorites
 
 ---
 
 ## IMPLEMENTATION CHECKLIST FOR CHAT:
 
-### 1. Create Chat Screen Files
+### 1. Create Domain Models
+- [ ] `domain/model/ChatMessage.kt` - ChatMessage + RecipeSuggestion data classes
+
+### 2. Create Repository
+- [ ] `domain/repository/ChatRepository.kt` - Interface
+- [ ] `data/repository/FakeChatRepository.kt` - Mock implementation with AI responses
+
+### 3. Create Chat Screen Files
 ```
 app/presentation/chat/
 ├── ChatScreen.kt              # Main composable
 ├── ChatViewModel.kt           # State management
 └── components/
-    ├── ChatMessageItem.kt     # Message bubbles
-    ├── QuickActionChips.kt    # Suggested actions
-    ├── ChatInputBar.kt        # Text input bar
-    └── RecipeSuggestionCard.kt # Recipe cards in chat
-```
-
-### 2. Create/Update Domain Models
-- Create `ChatMessage` model in `domain/model/`
-- Create `ChatRepository` interface in `domain/repository/`
-
-### 3. Create Repository
-```
-data/repository/
-└── FakeChatRepository.kt   # Mock data with chat history
+    ├── ChatMessageItem.kt     # AI/User message bubbles
+    ├── QuickActionChips.kt    # Time-based suggestions
+    ├── ChatInputBar.kt        # Text input + buttons
+    └── RecipeSuggestionCard.kt # Clickable recipe cards
 ```
 
 ### 4. Update Navigation
-- `RasoiNavHost.kt`: Replace PlaceholderScreen with ChatScreen
-- Chat is part of bottom navigation (3rd tab)
+- [ ] `RasoiNavHost.kt`: Replace PlaceholderScreen with ChatScreen
+- [ ] Add navigation to Recipe Detail from recipe suggestion cards
 
 ### 5. Update DI
-- `DataModule.kt`: Bind FakeChatRepository
+- [ ] `DataModule.kt`: Bind FakeChatRepository to ChatRepository
 
-### 6. Key Features to Implement
-- [ ] Message list with AI/User bubbles
-- [ ] Quick action chips (time-based)
+### 6. Key Features
+- [ ] Welcome message from AI on first load
+- [ ] Message list with reverse layout (newest at bottom)
+- [ ] AI message bubbles (left, with 🤖 icon)
+- [ ] User message bubbles (right, with 👤 icon)
+- [ ] Quick action chips that change based on time of day
 - [ ] Text input with send button
-- [ ] Voice input button (placeholder)
-- [ ] Attachment button (placeholder)
-- [ ] Recipe suggestion cards
-- [ ] Click to navigate to recipe detail
-- [ ] Clear chat history option
+- [ ] Voice/attachment buttons (placeholder - just show toast)
+- [ ] Recipe suggestion cards with [View Recipe] button
+- [ ] Navigate to Recipe Detail when clicking recipe
+- [ ] Clear chat history in overflow menu
 - [ ] Bottom navigation integration
+
+---
+
+## PREVIOUS IMPLEMENTATION REFERENCE (Favorites):
+
+The Favorites screen was implemented with these files as a reference pattern:
+
+### Domain Layer
+- `domain/model/FavoriteCollection.kt` - Data classes
+- `domain/repository/FavoritesRepository.kt` - Repository interface
+
+### Data Layer
+- `data/repository/FakeFavoritesRepository.kt` - Mock implementation
+
+### Presentation Layer
+- `app/presentation/favorites/FavoritesScreen.kt` - Main screen
+- `app/presentation/favorites/FavoritesViewModel.kt` - ViewModel with UiState + NavigationEvent
+- `app/presentation/favorites/components/` - UI components
+
+Follow this same pattern for Chat screen.
 
 ---
 
