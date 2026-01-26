@@ -9,11 +9,13 @@ import com.rasoiai.data.repository.FakeChatRepository
 import com.rasoiai.data.repository.FakeFavoritesRepository
 import com.rasoiai.data.repository.FakeGroceryRepository
 import com.rasoiai.data.repository.FakeMealPlanRepository
+import com.rasoiai.data.repository.FakePantryRepository
 import com.rasoiai.data.repository.FakeRecipeRepository
 import com.rasoiai.domain.repository.ChatRepository
 import com.rasoiai.domain.repository.FavoritesRepository
 import com.rasoiai.domain.repository.GroceryRepository
 import com.rasoiai.domain.repository.MealPlanRepository
+import com.rasoiai.domain.repository.PantryRepository
 import com.rasoiai.domain.repository.RecipeRepository
 import dagger.Module
 import dagger.Provides
@@ -105,5 +107,11 @@ object DataModule {
     @Singleton
     fun provideChatRepository(fakeChatRepository: FakeChatRepository): ChatRepository {
         return fakeChatRepository
+    }
+
+    @Provides
+    @Singleton
+    fun providePantryRepository(fakePantryRepository: FakePantryRepository): PantryRepository {
+        return fakePantryRepository
     }
 }

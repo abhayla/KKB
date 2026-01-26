@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current Status
 
-**9 screens implemented.** Ready for Pantry Scan screen development.
+**10 screens implemented.** Ready for Stats screen development.
 
 | Phase | Status | Document |
 |-------|--------|----------|
@@ -35,7 +35,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Grocery List | ✅ Complete | `presentation/grocery/` |
 | Favorites | ✅ Complete | `presentation/favorites/` |
 | Chat | ✅ Complete | `presentation/chat/` |
-| **Pantry Scan** | ⏳ **Next Step** | Camera, expiry tracking, grocery integration |
+| Pantry Scan | ✅ Complete | `presentation/pantry/` |
+| **Stats** | ⏳ **Next Step** | Cooking streak, leaderboards, achievements |
 
 ## Infrastructure Setup (Complete)
 
@@ -202,7 +203,8 @@ android/
 │   │   ├── cookingmode/          # CookingModeScreen.kt, CookingModeViewModel.kt, components/
 │   │   ├── grocery/              # GroceryScreen.kt, GroceryViewModel.kt, components/
 │   │   ├── favorites/            # FavoritesScreen.kt, FavoritesViewModel.kt, components/
-│   │   └── chat/                 # ChatScreen.kt, ChatViewModel.kt, components/
+│   │   ├── chat/                 # ChatScreen.kt, ChatViewModel.kt, components/
+│   │   └── pantry/               # PantryScreen.kt, PantryViewModel.kt, components/
 │   └── di/                       # Hilt modules
 ├── domain/src/main/java/com/rasoiai/domain/
 │   ├── model/                    # Recipe.kt, MealPlan.kt, Festival.kt, User.kt
@@ -359,7 +361,7 @@ ruff check .
 | Project Guide | `CLAUDE.md` | HIGH |
 | Screen Wireframes | `docs/design/RasoiAI Screen Wireframes.md` | HIGH |
 | Architecture Decisions | `docs/design/Android Architecture Decisions.md` | HIGH |
-| Favorites Screen (Reference) | `app/presentation/favorites/` | HIGH (most recent pattern) |
+| Pantry Screen (Reference) | `app/presentation/pantry/` | HIGH (most recent pattern) |
 | Design System | `docs/design/RasoiAI Design System.md` | MEDIUM |
 | Technical Design | `docs/design/RasoiAI Technical Design.md` | MEDIUM |
 | Requirements | `docs/requirements/RasoiAI Requirements.md` | LOW |

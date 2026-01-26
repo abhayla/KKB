@@ -11,7 +11,7 @@ I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 
 ## Project Status
 
-9 screens complete (Splash → Auth → Onboarding → Home → Recipe Detail → Cooking Mode → Grocery List → Favorites → Chat). App builds and all tests pass. Ready for Pantry Scan screen implementation.
+10 screens complete (Splash → Auth → Onboarding → Home → Recipe Detail → Cooking Mode → Grocery List → Favorites → Chat → Pantry Scan). App builds and all tests pass. Ready for Stats screen implementation.
 
 | Phase | Status | Document |
 |-------|--------|----------|
@@ -30,122 +30,97 @@ I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 | Grocery List | ✅ Complete | `presentation/grocery/` |
 | Favorites | ✅ Complete | `presentation/favorites/` |
 | Chat | ✅ Complete | `presentation/chat/` |
-| **Pantry Scan** | ⏳ **Next Step** | Camera, expiry tracking, grocery integration |
+| Pantry Scan | ✅ Complete | `presentation/pantry/` |
+| **Stats** | ⏳ **Next Step** | Cooking streak, leaderboards, achievements |
 
 ## App Verified Working
 
-- ✅ App builds successfully (`.\gradlew build`)
-- ✅ All tests pass (`.\gradlew test`)
+- ✅ App builds successfully (`./gradlew build`)
+- ✅ All tests pass (`./gradlew test`)
 - ✅ Full navigation flow works
 - ✅ Bottom navigation working (Home, Grocery, Chat, Favs, Stats)
-- ✅ All 8 screens cross-checked against wireframes
+- ✅ All 10 screens cross-checked against wireframes
 
 ## Your Task
 
-**Implement the Chat Screen** (Screen 9 in wireframes):
+**Implement the Stats Screen** (Screen 11 in wireframes):
 
 ### Files to Create:
 ```
-app/presentation/chat/
-├── ChatScreen.kt              # Main composable with message list
-├── ChatViewModel.kt           # State management, AI interaction
+app/presentation/stats/
+├── StatsScreen.kt              # Main composable with stats display
+├── StatsViewModel.kt           # State management, stats data
 └── components/
-    ├── ChatMessageItem.kt     # User/AI message bubbles
-    ├── QuickActionChips.kt    # Suggested actions (Suggest dinner, etc.)
-    ├── ChatInputBar.kt        # Text input, voice button, attachment
-    └── RecipeSuggestionCard.kt # Recipe card in chat
+    ├── StreakCard.kt           # Current streak display with fire emoji
+    ├── CalendarView.kt         # Monthly calendar with cooking indicators
+    ├── MonthlyStatsRow.kt      # Meals cooked, new recipes, avg rating
+    ├── AchievementCard.kt      # Badge/achievement display
+    ├── ChallengeCard.kt        # Weekly challenge with progress bar
+    └── LeaderboardSection.kt   # Top cookers leaderboard
 
 domain/model/
-└── ChatMessage.kt             # Chat message domain model
+└── CookingStats.kt             # Stats domain models (Streak, Achievement, Challenge)
 
 domain/repository/
-└── ChatRepository.kt          # Repository interface for chat history
+└── StatsRepository.kt          # Repository interface for cooking stats
 
 data/repository/
-└── FakeChatRepository.kt      # Mock chat data and responses
+└── FakeStatsRepository.kt      # Mock stats data
 ```
 
 ### Update Files:
-- `RasoiNavHost.kt` - Replace placeholder with ChatScreen
-- `DataModule.kt` - Bind FakeChatRepository
+- `RasoiNavHost.kt` - Replace placeholder with StatsScreen
+- `DataModule.kt` - Bind FakeStatsRepository
 
-### UI Components (from wireframes - Screen 9, line 1111):
-1. Top app bar ("RasoiAI Assistant", ← back, ⋮ menu)
-2. Chat messages list (scrollable):
-   - AI messages (left aligned, 🤖 icon)
-   - User messages (right aligned, 👤 icon)
-   - Recipe suggestion cards with [View Recipe] buttons
-3. Quick action chips (time-based):
-   - Morning (6-11 AM): "Quick breakfast", "Healthy start"
-   - Afternoon (11 AM-4 PM): "Lunch ideas", "Light meal"
-   - Evening (4-9 PM): "Dinner suggestions", "Family meal"
-   - Night (9 PM+): "Light snack", "Quick bite"
-4. Text input bar with:
-   - Text field ("Type a message...")
-   - 📎 Attachment button (pantry photos - placeholder)
-   - 🎤 Voice input button (placeholder)
-   - Send button
-5. Bottom navigation bar
+### UI Components (from wireframes - Screen 11, line 1272):
+1. Top app bar ("My Cooking Stats", ← back)
+2. Current Streak card (fire emoji, days count, best streak)
+3. Calendar view:
+   - Month/year header with navigation
+   - Weekly grid with cooking indicators (emoji per day)
+   - Today highlighted
+4. This Month stats row (3 cards):
+   - Meals Cooked (count)
+   - New Recipes (count)
+   - Avg Rating (number)
+5. Achievements section:
+   - Horizontal scroll of badges
+   - [View All] button
+6. Weekly Challenge card:
+   - Challenge name and description
+   - Progress bar (e.g., 2/5)
+   - Reward badge
+7. Leaderboard section (top 3):
+   - Rank, name, meals count
+8. Bottom navigation bar
 
 ### Key Features:
-- Chat history persisted (mock for now)
-- Clear Chat option in overflow menu
-- Recipe suggestions with clickable cards → navigate to Recipe Detail
-- Time-based quick actions that change based on current time
-- Welcome message from AI on first load
+- Cooking streak tracking (consecutive days)
+- Monthly calendar with cooking history
+- Achievement badges (First Meal, 7-Day Streak, Master Chef, 50 Meals)
+- Weekly challenges with progress
+- Leaderboard (mock data for now)
 
 ### Key Patterns (follow existing code):
 - ViewModel: `StateFlow<UiState>` + `StateFlow<NavigationEvent?>`
 - Screen receives callbacks, ViewModel handles logic
 - Use `MaterialTheme.colorScheme` and `spacing` from theme
 - Use `hiltViewModel()` for DI
-- Use LazyColumn for message list (reverseLayout = true)
 
 ## Reference Files
 
 | File | Path | Why |
 |------|------|-----|
-| Wireframes | `docs/design/RasoiAI Screen Wireframes.md` | Screen 9 design (line 1111+) |
-| Favorites Screen | `app/presentation/favorites/FavoritesScreen.kt` | Recent implementation pattern |
-| Favorites ViewModel | `app/presentation/favorites/FavoritesViewModel.kt` | State management pattern |
-| Grocery Screen | `app/presentation/grocery/GroceryScreen.kt` | Bottom nav pattern |
+| Wireframes | `docs/design/RasoiAI Screen Wireframes.md` | Screen 11 design (line 1272+) |
+| Pantry Screen | `app/presentation/pantry/PantryScreen.kt` | Recent implementation pattern |
+| Pantry ViewModel | `app/presentation/pantry/PantryViewModel.kt` | State management pattern |
 | RasoiNavHost | `app/presentation/navigation/RasoiNavHost.kt` | Navigation setup |
-| Recipe Model | `domain/model/Recipe.kt` | Recipe data structure |
 | DataModule | `data/di/DataModule.kt` | DI bindings to update |
-
-## Domain Models to Create
-
-```kotlin
-// ChatMessage.kt
-data class ChatMessage(
-    val id: String,
-    val content: String,
-    val isFromUser: Boolean,
-    val timestamp: Long,
-    val quickActions: List<String>? = null,  // For AI messages with suggestions
-    val recipeSuggestions: List<RecipeSuggestion>? = null
-)
-
-data class RecipeSuggestion(
-    val recipeId: String,
-    val recipeName: String,
-    val cookTimeMinutes: Int,
-    val imageUrl: String?
-)
-```
-
-## Mock AI Responses (for FakeChatRepository)
-
-When user sends a message, return mock AI responses:
-- If message contains "paneer" → suggest Palak Paneer, Paneer Butter Masala
-- If message contains "breakfast" → suggest Aloo Paratha, Idli Sambar, Masala Dosa
-- If message contains "quick" or "fast" → suggest recipes with totalTimeMinutes < 30
-- Default → return generic helpful response with random recipe suggestions
 
 ## Working Directory
 Project root: `D:/Abhay/VibeCoding/KKB`
 
-Start by reading Screen 9 wireframes in `docs/design/RasoiAI Screen Wireframes.md` (line 1111), then implement the Chat screen following the patterns in `app/presentation/favorites/`.
+Start by reading Screen 11 wireframes in `docs/design/RasoiAI Screen Wireframes.md` (line 1272), then implement the Stats screen following the patterns in `app/presentation/pantry/`.
 ```
 
 ---
