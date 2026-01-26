@@ -572,6 +572,7 @@ private fun MealSection(
     onAddClick: () -> Unit
 ) {
     val totalTime = meals.sumOf { it.prepTimeMinutes }
+    val totalCalories = meals.sumOf { it.calories }
 
     Card(
         modifier = Modifier
@@ -636,7 +637,7 @@ private fun MealSection(
                     horizontalArrangement = Arrangement.End
                 ) {
                     Text(
-                        text = "Total: ${if (totalTime > 0) "$totalTime min" else "--"}",
+                        text = "Total: ${if (totalTime > 0) "$totalTime min" else "--"} · ${if (totalCalories > 0) "$totalCalories cal" else "--"}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -684,20 +685,24 @@ private fun MealItemRow(
             overflow = TextOverflow.Ellipsis
         )
 
-        // Time
-        if (mealItem.prepTimeMinutes > 0) {
-            Text(
-                text = "${mealItem.prepTimeMinutes} min",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        } else {
-            Text(
-                text = "--",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        // Time and Calories
+        Text(
+            text = buildString {
+                if (mealItem.prepTimeMinutes > 0) {
+                    append("${mealItem.prepTimeMinutes} min")
+                } else {
+                    append("--")
+                }
+                append(" · ")
+                if (mealItem.calories > 0) {
+                    append("${mealItem.calories} cal")
+                } else {
+                    append("--")
+                }
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
         Spacer(modifier = Modifier.width(spacing.md))
 

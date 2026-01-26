@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current Status
 
-**Core screens implemented.** Ready for Grocery List screen development.
+**Core screens implemented.** Ready for Favorites screen development.
 
 | Phase | Status | Document |
 |-------|--------|----------|
@@ -32,7 +32,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Home Screen | ✅ Complete | `presentation/home/` |
 | Recipe Detail | ✅ Complete | `presentation/recipedetail/` |
 | Cooking Mode | ✅ Complete | `presentation/cookingmode/` |
-| **Grocery List** | ⏳ **Next Step** | Categorized items, WhatsApp share |
+| Grocery List | ✅ Complete | `presentation/grocery/` |
+| **Favorites** | ⏳ **Next Step** | Collections, 2-column grid, Recently Viewed |
 
 ## Infrastructure Setup (Complete)
 
@@ -196,7 +197,8 @@ android/
 │   │   ├── onboarding/           # OnboardingScreen.kt, OnboardingViewModel.kt
 │   │   ├── home/                 # HomeScreen.kt, HomeViewModel.kt, components/
 │   │   ├── recipedetail/         # RecipeDetailScreen.kt, RecipeDetailViewModel.kt, components/
-│   │   └── cookingmode/          # CookingModeScreen.kt, CookingModeViewModel.kt, components/
+│   │   ├── cookingmode/          # CookingModeScreen.kt, CookingModeViewModel.kt, components/
+│   │   └── grocery/              # GroceryScreen.kt, GroceryViewModel.kt, components/
 │   └── di/                       # Hilt modules
 ├── domain/src/main/java/com/rasoiai/domain/
 │   ├── model/                    # Recipe.kt, MealPlan.kt, Festival.kt, User.kt
@@ -303,6 +305,9 @@ cd D:\Abhay\VibeCoding\KKB\android
 
 # Install on device/emulator
 .\gradlew installDebug
+
+# Launch app via adb
+adb shell am start -n com.rasoiai.app/com.rasoiai.app.MainActivity
 ```
 
 ### Backend (Python)
@@ -346,6 +351,7 @@ ruff check .
 | Project Guide | `CLAUDE.md` | HIGH |
 | Screen Wireframes | `docs/design/RasoiAI Screen Wireframes.md` | HIGH |
 | Architecture Decisions | `docs/design/Android Architecture Decisions.md` | HIGH |
+| Grocery Screen (Reference) | `presentation/grocery/` | HIGH (recent pattern) |
 | Design System | `docs/design/RasoiAI Design System.md` | MEDIUM |
 | Technical Design | `docs/design/RasoiAI Technical Design.md` | MEDIUM |
 | Requirements | `docs/requirements/RasoiAI Requirements.md` | LOW |

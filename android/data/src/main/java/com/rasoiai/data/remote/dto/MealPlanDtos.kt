@@ -56,6 +56,7 @@ data class MealItemDto(
     val recipeImageUrl: String?,
     @SerializedName("prep_time_minutes")
     val prepTimeMinutes: Int,
+    val calories: Int = 0,
     @SerializedName("is_locked")
     val isLocked: Boolean,
     val order: Int,

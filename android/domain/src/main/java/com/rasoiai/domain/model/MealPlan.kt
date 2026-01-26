@@ -36,6 +36,7 @@ data class MealItem(
     val recipeName: String,
     val recipeImageUrl: String?,
     val prepTimeMinutes: Int,
+    val calories: Int,
     val isLocked: Boolean,
     val order: Int,
     val dietaryTags: List<DietaryTag>

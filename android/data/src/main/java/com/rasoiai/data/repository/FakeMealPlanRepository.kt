@@ -394,6 +394,7 @@ class FakeMealPlanRepository @Inject constructor() : MealPlanRepository {
             recipeName = name,
             recipeImageUrl = null,
             prepTimeMinutes = prepTimeMinutes,
+            calories = calories,
             isLocked = false,
             order = 0,
             dietaryTags = if (isVeg) listOf(DietaryTag.VEGETARIAN) else listOf(DietaryTag.NON_VEGETARIAN)
