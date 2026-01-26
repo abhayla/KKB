@@ -120,16 +120,51 @@ data object RecipeDetail : Screen("recipe/{recipeId}") {
 navController.navigate(Screen.RecipeDetail.createRoute(recipeId))
 ```
 
+## Bottom Navigation Integration
+
+Screens with bottom navigation use `RasoiBottomNavigation` component from `home/components/`:
+
+```kotlin
+// In any bottom nav screen composable:
+Scaffold(
+    bottomBar = {
+        RasoiBottomNavigation(
+            selectedItem = NavigationItem.GROCERY,  // Current screen
+            onItemSelected = { item ->
+                when (item) {
+                    NavigationItem.HOME -> onNavigateToHome()
+                    NavigationItem.GROCERY -> { /* Already here */ }
+                    NavigationItem.CHAT -> onNavigateToChat()
+                    NavigationItem.FAVORITES -> onNavigateToFavorites()
+                    NavigationItem.STATS -> onNavigateToStats()
+                }
+            }
+        )
+    }
+) { paddingValues -> /* Screen content */ }
+```
+
+**Bottom nav items:** HOME, GROCERY, CHAT, FAVORITES, STATS
+
 ## Key Domain Models
+
+Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
 | Model | Key Fields |
 |-------|-----------|
-| `Recipe` | id, name, cuisine, region, dietaryTags, prepTime, cookTime, ingredients, steps, nutritionInfo |
-| `Ingredient` | name, quantity, unit, isOptional |
-| `CookingStep` | stepNumber, instruction, durationMinutes, imageUrl |
-| `MealItem` | recipeId, recipeName, isLocked, servings |
+| `Recipe` | id, name, cuisineType, dietaryTags, prepTimeMinutes, cookTimeMinutes, ingredients, instructions, nutrition |
+| `Ingredient` | id, name, quantity, unit, category (IngredientCategory), isOptional |
+| `Instruction` | stepNumber, instruction, durationMinutes, timerRequired, tips |
+| `MealPlan` | id, weekStartDate, weekEndDate, days |
 | `MealPlanDay` | date, breakfast, lunch, dinner, snacks, festival |
-| `NutritionInfo` | calories, protein, carbs, fat, fiber |
+| `MealItem` | recipeId, recipeName, isLocked, servings |
+| `Nutrition` | calories, proteinGrams, carbohydratesGrams, fatGrams, fiberGrams |
+
+**Key Enums in Recipe.kt:**
+- `IngredientCategory`: VEGETABLES, FRUITS, DAIRY, GRAINS, PULSES, SPICES, OILS, MEAT, SEAFOOD, NUTS, SWEETENERS, OTHER
+- `DietaryTag`: VEGETARIAN, NON_VEGETARIAN, VEGAN, JAIN, SATTVIC, HALAL, EGGETARIAN
+- `CuisineType`: NORTH, SOUTH, EAST, WEST
+- `MealType`: BREAKFAST, LUNCH, DINNER, SNACKS (in MealPlan.kt)
 
 ## Design System
 
@@ -150,29 +185,41 @@ navController.navigate(Screen.RecipeDetail.createRoute(recipeId))
 ## Module Structure
 
 ```
-RasoiAI/
-├── app/                          # Main application module
-│   └── presentation/             # All screens & ViewModels
-│       ├── navigation/
-│       ├── theme/
-│       ├── common/
-│       └── [feature]/            # splash, auth, onboarding, home, recipe, etc.
-├── core/                         # Shared utilities & UI components
+android/
+├── app/src/main/java/com/rasoiai/app/
+│   ├── presentation/             # All screens & ViewModels
+│   │   ├── navigation/           # RasoiNavHost.kt, Screen.kt, PlaceholderScreen.kt
+│   │   ├── theme/                # Color.kt, Type.kt, Shape.kt, Spacing.kt, Theme.kt
+│   │   ├── common/               # UiState.kt, BaseViewModel.kt
+│   │   ├── splash/               # SplashScreen.kt, SplashViewModel.kt
+│   │   ├── auth/                 # AuthScreen.kt, AuthViewModel.kt, GoogleAuthClient.kt
+│   │   ├── onboarding/           # OnboardingScreen.kt, OnboardingViewModel.kt
+│   │   ├── home/                 # HomeScreen.kt, HomeViewModel.kt, components/
+│   │   ├── recipedetail/         # RecipeDetailScreen.kt, RecipeDetailViewModel.kt, components/
+│   │   └── cookingmode/          # CookingModeScreen.kt, CookingModeViewModel.kt, components/
+│   └── di/                       # Hilt modules
+├── domain/src/main/java/com/rasoiai/domain/
+│   ├── model/                    # Recipe.kt, MealPlan.kt, Festival.kt, User.kt
+│   ├── repository/               # MealPlanRepository.kt, RecipeRepository.kt, AuthRepository.kt
+│   └── usecase/                  # GetCurrentMealPlanUseCase.kt, GenerateMealPlanUseCase.kt, etc.
+├── data/src/main/java/com/rasoiai/data/
+│   ├── local/                    # Room DB, DAOs, Entities
+│   ├── remote/                   # Retrofit API, DTOs
+│   ├── repository/               # Repository implementations (FakeMealPlanRepository, FakeRecipeRepository)
+│   └── sync/                     # SyncManager, OfflineQueueManager
+├── core/src/main/java/com/rasoiai/core/
 │   ├── ui/                       # Theme, shared composables
 │   ├── util/                     # Extensions, constants
 │   └── network/                  # NetworkMonitor
-├── data/                         # Data layer module
-│   ├── local/                    # Room DB, DAOs, Entities
-│   ├── remote/                   # Retrofit API, DTOs
-│   ├── repository/               # Repository implementations
-│   └── sync/                     # SyncManager, OfflineQueueManager
-├── domain/                       # Domain layer module (pure Kotlin)
-│   ├── model/                    # Domain models
-│   ├── repository/               # Repository interfaces
-│   └── usecase/                  # Business logic use cases
 └── gradle/
     └── libs.versions.toml        # Centralized dependency versions
 ```
+
+**Package naming:**
+- App module: `com.rasoiai.app.*`
+- Domain module: `com.rasoiai.domain.*`
+- Data module: `com.rasoiai.data.*`
+- Core module: `com.rasoiai.core.*`
 
 **Module Dependencies:** `app → core, data, domain` | `data → core, domain` | `domain → (none)` | `core → (none)`
 
@@ -224,18 +271,28 @@ RasoiAI/
 
 ## Development Commands
 
-### Android App (Windows - run from `android/` folder)
+### Android App (run from `android/` folder)
 ```bash
+cd D:\Abhay\VibeCoding\KKB\android
+
 # Build
 .\gradlew build
 
-# Run unit tests
+# Run all unit tests
 .\gradlew test
 
 # Run single test class
 .\gradlew test --tests "com.rasoiai.app.ClassName"
 
-# Run instrumented tests
+# Run single test method
+.\gradlew test --tests "com.rasoiai.app.ClassName.testMethodName"
+
+# Run tests for specific module
+.\gradlew :domain:test
+.\gradlew :data:test
+.\gradlew :app:test
+
+# Run instrumented tests (requires emulator/device)
 .\gradlew connectedAndroidTest
 
 # Lint
@@ -243,6 +300,9 @@ RasoiAI/
 
 # Clean build
 .\gradlew clean build
+
+# Install on device/emulator
+.\gradlew installDebug
 ```
 
 ### Backend (Python)

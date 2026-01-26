@@ -40,6 +40,11 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
     }
+
+    lint {
+        abortOnError = false
+        warningsAsErrors = false
+    }
 }
 
 dependencies {

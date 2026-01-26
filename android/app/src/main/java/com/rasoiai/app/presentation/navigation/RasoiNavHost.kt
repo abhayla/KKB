@@ -9,6 +9,7 @@ import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.rasoiai.app.presentation.auth.AuthScreen
 import com.rasoiai.app.presentation.cookingmode.CookingModeScreen
+import com.rasoiai.app.presentation.grocery.GroceryScreen
 import com.rasoiai.app.presentation.home.HomeScreen
 import com.rasoiai.app.presentation.onboarding.OnboardingScreen
 import com.rasoiai.app.presentation.recipedetail.RecipeDetailScreen
@@ -143,8 +144,23 @@ fun RasoiNavHost(
 
         // Grocery
         composable(route = Screen.Grocery.route) {
-            // TODO: GroceryScreen
-            PlaceholderScreen(title = "Grocery List")
+            GroceryScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                },
+                onNavigateToChat = {
+                    navController.navigate(Screen.Chat.route)
+                },
+                onNavigateToFavorites = {
+                    navController.navigate(Screen.Favorites.route)
+                },
+                onNavigateToStats = {
+                    navController.navigate(Screen.Stats.route)
+                }
+            )
         }
 
         // Favorites
