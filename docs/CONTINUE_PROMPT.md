@@ -11,7 +11,7 @@ I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 
 ## Project Status
 
-8 screens complete (Splash → Auth → Onboarding → Home → Recipe Detail → Cooking Mode → Grocery List → Favorites). App builds and all tests pass. Ready for Chat screen implementation.
+9 screens complete (Splash → Auth → Onboarding → Home → Recipe Detail → Cooking Mode → Grocery List → Favorites → Chat). App builds and all tests pass. Ready for Pantry Scan screen implementation.
 
 | Phase | Status | Document |
 |-------|--------|----------|
@@ -29,7 +29,8 @@ I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 | Cooking Mode | ✅ Complete | `presentation/cookingmode/` |
 | Grocery List | ✅ Complete | `presentation/grocery/` |
 | Favorites | ✅ Complete | `presentation/favorites/` |
-| **Chat** | ⏳ **Next Step** | AI assistant, chat history |
+| Chat | ✅ Complete | `presentation/chat/` |
+| **Pantry Scan** | ⏳ **Next Step** | Camera, expiry tracking, grocery integration |
 
 ## App Verified Working
 

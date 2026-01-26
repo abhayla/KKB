@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.rasoiai.app.presentation.auth.AuthScreen
+import com.rasoiai.app.presentation.chat.ChatScreen
 import com.rasoiai.app.presentation.cookingmode.CookingModeScreen
 import com.rasoiai.app.presentation.favorites.FavoritesScreen
 import com.rasoiai.app.presentation.grocery.GroceryScreen
@@ -189,8 +190,25 @@ fun RasoiNavHost(
 
         // Chat
         composable(route = Screen.Chat.route) {
-            // TODO: ChatScreen
-            PlaceholderScreen(title = "AI Chat")
+            ChatScreen(
+                onNavigateToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                },
+                onNavigateToGrocery = {
+                    navController.navigate(Screen.Grocery.route)
+                },
+                onNavigateToFavorites = {
+                    navController.navigate(Screen.Favorites.route)
+                },
+                onNavigateToStats = {
+                    navController.navigate(Screen.Stats.route)
+                },
+                onNavigateToRecipeDetail = { recipeId ->
+                    navController.navigate(Screen.RecipeDetail.createRoute(recipeId))
+                }
+            )
         }
 
         // Pantry

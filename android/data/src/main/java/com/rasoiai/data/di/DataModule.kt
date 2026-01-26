@@ -5,10 +5,12 @@ import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.core.network.NetworkMonitorImpl
 import com.rasoiai.data.local.RasoiDatabase
 import com.rasoiai.data.remote.api.RasoiApiService
+import com.rasoiai.data.repository.FakeChatRepository
 import com.rasoiai.data.repository.FakeFavoritesRepository
 import com.rasoiai.data.repository.FakeGroceryRepository
 import com.rasoiai.data.repository.FakeMealPlanRepository
 import com.rasoiai.data.repository.FakeRecipeRepository
+import com.rasoiai.domain.repository.ChatRepository
 import com.rasoiai.domain.repository.FavoritesRepository
 import com.rasoiai.domain.repository.GroceryRepository
 import com.rasoiai.domain.repository.MealPlanRepository
@@ -97,5 +99,11 @@ object DataModule {
     @Singleton
     fun provideFavoritesRepository(fakeFavoritesRepository: FakeFavoritesRepository): FavoritesRepository {
         return fakeFavoritesRepository
+    }
+
+    @Provides
+    @Singleton
+    fun provideChatRepository(fakeChatRepository: FakeChatRepository): ChatRepository {
+        return fakeChatRepository
     }
 }
