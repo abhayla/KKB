@@ -15,11 +15,11 @@
 | **Hilt DI** | 85% | Missing @Binds optimization, no Dispatcher injection |
 | **Data Layer (Offline-First)** | 90% | CRITICAL: Remove fallbackToDestructiveMigration() |
 | **Kotlin Patterns** | 95% | 1 non-null assertion to fix |
-| **Testing** | 25% | ViewModel tests added (4 of 13), needs more coverage |
+| **Testing** | 40% | ViewModel tests added (7 of 13), needs more coverage |
 | **Performance** | 85% | Splash Screen integrated ✅, Missing Baseline Profiles |
 | **Security** | 70% | HTTP BODY logging, hardcoded Web Client ID |
 | **DevOps/Gradle** | 90% | Well-configured, minor optimizations available |
-| **Overall** | **82%** | Good foundation, remaining gaps to address |
+| **Overall** | **84%** | Good foundation, remaining gaps to address |
 
 ---
 
@@ -309,7 +309,7 @@ app (presentation) → domain → data → core
 
 4. ~~**Refactor navigation events** - Change all 13 ViewModels to use Channel~~ ✅ COMPLETED
 5. ~~**Integrate Splash Screen API** - Add `installSplashScreen()` to MainActivity~~ ✅ COMPLETED
-6. **Add critical tests** - Focus on ViewModels and repositories (IN PROGRESS: 4/13 ViewModels tested)
+6. **Add critical tests** - Focus on ViewModels and repositories (IN PROGRESS: 7/13 ViewModels tested)
 
 ### Phase 3: Medium Priority (Next Sprint)
 
