@@ -73,6 +73,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -108,41 +109,22 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val navigationEvent by viewModel.navigationEvent.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Handle navigation events
-    LaunchedEffect(navigationEvent) {
-        when (val event = navigationEvent) {
-            is HomeNavigationEvent.NavigateToRecipeDetail -> {
-                onNavigateToRecipeDetail(event.recipeId, event.isLocked, event.fromMealPlan)
-                viewModel.onNavigationHandled()
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { event ->
+            when (event) {
+                is HomeNavigationEvent.NavigateToRecipeDetail -> {
+                    onNavigateToRecipeDetail(event.recipeId, event.isLocked, event.fromMealPlan)
+                }
+                HomeNavigationEvent.NavigateToSettings -> onNavigateToSettings()
+                HomeNavigationEvent.NavigateToGrocery -> onNavigateToGrocery()
+                HomeNavigationEvent.NavigateToChat -> onNavigateToChat()
+                HomeNavigationEvent.NavigateToFavorites -> onNavigateToFavorites()
+                HomeNavigationEvent.NavigateToStats -> onNavigateToStats()
+                HomeNavigationEvent.NavigateToNotifications -> { /* TODO: Navigate to notifications */ }
             }
-            HomeNavigationEvent.NavigateToSettings -> {
-                onNavigateToSettings()
-                viewModel.onNavigationHandled()
-            }
-            HomeNavigationEvent.NavigateToGrocery -> {
-                onNavigateToGrocery()
-                viewModel.onNavigationHandled()
-            }
-            HomeNavigationEvent.NavigateToChat -> {
-                onNavigateToChat()
-                viewModel.onNavigationHandled()
-            }
-            HomeNavigationEvent.NavigateToFavorites -> {
-                onNavigateToFavorites()
-                viewModel.onNavigationHandled()
-            }
-            HomeNavigationEvent.NavigateToStats -> {
-                onNavigateToStats()
-                viewModel.onNavigationHandled()
-            }
-            HomeNavigationEvent.NavigateToNotifications -> {
-                // TODO: Navigate to notifications
-                viewModel.onNavigationHandled()
-            }
-            null -> { /* No navigation */ }
         }
     }
 
@@ -510,7 +492,10 @@ private fun WeekDateSelector(
         horizontalArrangement = Arrangement.spacedBy(spacing.xs),
         contentPadding = PaddingValues(horizontal = spacing.md)
     ) {
-        items(weekDates) { weekDay ->
+        items(
+            items = weekDates,
+            key = { it.date.toEpochDay() }
+        ) { weekDay ->
             DateItem(
                 weekDay = weekDay,
                 onClick = { onDateSelect(weekDay.date) }
@@ -1157,7 +1142,7 @@ private fun SwapRecipeSheet(
     onSelectRecipe: (MealItem) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var searchQuery by remember { mutableStateOf("") }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
 
     // Filter suggestions based on search query
     val filteredSuggestions = remember(searchQuery, swapSuggestions) {

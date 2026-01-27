@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,17 +36,22 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.rasoiai.app.presentation.theme.spacing
 import com.rasoiai.domain.model.Ingredient
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableSet
 
 @Composable
 fun IngredientsTab(
-    ingredients: List<Ingredient>,
+    ingredients: ImmutableList<Ingredient>,
     selectedServings: Int,
-    checkedIngredients: Set<String>,
+    checkedIngredients: ImmutableSet<String>,
     onServingsChange: (Int) -> Unit,
     onIngredientChecked: (String) -> Unit,
     onAddAllToGrocery: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Keep callback reference stable across recompositions
+    val currentOnIngredientChecked by rememberUpdatedState(onIngredientChecked)
+
     Column(modifier = modifier.fillMaxWidth()) {
         // Servings Selector
         ServingsSelector(
@@ -56,12 +62,15 @@ fun IngredientsTab(
 
         Spacer(modifier = Modifier.height(spacing.sm))
 
-        // Ingredients List
+        // Ingredients List with stable key for each item
         ingredients.forEach { ingredient ->
+            val onCheckedChange = remember(ingredient.id) {
+                { currentOnIngredientChecked(ingredient.id) }
+            }
             IngredientItem(
                 ingredient = ingredient,
                 isChecked = ingredient.id in checkedIngredients,
-                onCheckedChange = { onIngredientChecked(ingredient.id) }
+                onCheckedChange = onCheckedChange
             )
         }
 
@@ -87,6 +96,9 @@ fun IngredientsTab(
     }
 }
 
+/** Constant list of serving options to avoid recreation */
+private val SERVINGS_OPTIONS = (1..12).toList()
+
 @Composable
 private fun ServingsSelector(
     selectedServings: Int,
@@ -94,7 +106,6 @@ private fun ServingsSelector(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val servingsOptions = (1..12).toList()
 
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
@@ -133,7 +144,7 @@ private fun ServingsSelector(
             onDismissRequest = { expanded = false },
             modifier = Modifier.fillMaxWidth(0.9f)
         ) {
-            servingsOptions.forEach { servings ->
+            SERVINGS_OPTIONS.forEach { servings ->
                 DropdownMenuItem(
                     text = {
                         Text(

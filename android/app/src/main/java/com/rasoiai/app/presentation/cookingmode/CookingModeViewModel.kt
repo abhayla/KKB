@@ -12,10 +12,13 @@ import com.rasoiai.domain.model.Recipe
 import com.rasoiai.domain.repository.RecipeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -103,8 +106,8 @@ class CookingModeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(CookingModeUiState())
     val uiState: StateFlow<CookingModeUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = MutableStateFlow<CookingModeNavigationEvent?>(null)
-    val navigationEvent: StateFlow<CookingModeNavigationEvent?> = _navigationEvent.asStateFlow()
+    private val _navigationEvent = Channel<CookingModeNavigationEvent>()
+    val navigationEvent: Flow<CookingModeNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     private var timerJob: Job? = null
 
@@ -307,7 +310,7 @@ class CookingModeViewModel @Inject constructor(
     fun confirmExit() {
         stopTimer()
         _uiState.update { it.copy(showExitConfirmation = false) }
-        _navigationEvent.value = CookingModeNavigationEvent.NavigateBack
+        _navigationEvent.trySend(CookingModeNavigationEvent.NavigateBack)
     }
 
     fun updateRating(rating: Int) {
@@ -328,21 +331,13 @@ class CookingModeViewModel @Inject constructor(
             Timber.i("Feedback: ${currentState.feedback}")
 
             _uiState.update { it.copy(showCompletionDialog = false) }
-            _navigationEvent.value = CookingModeNavigationEvent.NavigateToHome
+            _navigationEvent.send(CookingModeNavigationEvent.NavigateToHome)
         }
     }
 
     fun skipRating() {
         _uiState.update { it.copy(showCompletionDialog = false) }
-        _navigationEvent.value = CookingModeNavigationEvent.NavigateToHome
-    }
-
-    // endregion
-
-    // region Navigation
-
-    fun onNavigationHandled() {
-        _navigationEvent.value = null
+        _navigationEvent.trySend(CookingModeNavigationEvent.NavigateToHome)
     }
 
     // endregion

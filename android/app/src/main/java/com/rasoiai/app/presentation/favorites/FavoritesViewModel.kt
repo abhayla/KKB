@@ -8,10 +8,13 @@ import com.rasoiai.domain.model.Recipe
 import com.rasoiai.domain.repository.FavoritesRepository
 import com.rasoiai.domain.repository.RecipeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -93,8 +96,8 @@ class FavoritesViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(FavoritesUiState())
     val uiState: StateFlow<FavoritesUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = MutableStateFlow<FavoritesNavigationEvent?>(null)
-    val navigationEvent: StateFlow<FavoritesNavigationEvent?> = _navigationEvent.asStateFlow()
+    private val _navigationEvent = Channel<FavoritesNavigationEvent>()
+    val navigationEvent: Flow<FavoritesNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     init {
         loadData()
@@ -199,7 +202,7 @@ class FavoritesViewModel @Inject constructor(
 
     fun onRecipeClick(recipeId: String) {
         if (_uiState.value.isReorderMode) return
-        _navigationEvent.value = FavoritesNavigationEvent.NavigateToRecipeDetail(recipeId)
+        _navigationEvent.trySend(FavoritesNavigationEvent.NavigateToRecipeDetail(recipeId))
     }
 
     fun removeFromFavorites(recipeId: String) {
@@ -322,28 +325,24 @@ class FavoritesViewModel @Inject constructor(
 
     // region Navigation
 
-    fun onNavigationHandled() {
-        _navigationEvent.value = null
-    }
-
     fun navigateBack() {
-        _navigationEvent.value = FavoritesNavigationEvent.NavigateBack
+        _navigationEvent.trySend(FavoritesNavigationEvent.NavigateBack)
     }
 
     fun navigateToHome() {
-        _navigationEvent.value = FavoritesNavigationEvent.NavigateToHome
+        _navigationEvent.trySend(FavoritesNavigationEvent.NavigateToHome)
     }
 
     fun navigateToGrocery() {
-        _navigationEvent.value = FavoritesNavigationEvent.NavigateToGrocery
+        _navigationEvent.trySend(FavoritesNavigationEvent.NavigateToGrocery)
     }
 
     fun navigateToChat() {
-        _navigationEvent.value = FavoritesNavigationEvent.NavigateToChat
+        _navigationEvent.trySend(FavoritesNavigationEvent.NavigateToChat)
     }
 
     fun navigateToStats() {
-        _navigationEvent.value = FavoritesNavigationEvent.NavigateToStats
+        _navigationEvent.trySend(FavoritesNavigationEvent.NavigateToStats)
     }
 
     // endregion

@@ -75,7 +75,10 @@ abstract class RasoiDatabase : RoomDatabase() {
                 RasoiDatabase::class.java,
                 DATABASE_NAME
             )
-                .fallbackToDestructiveMigration()
+                // NOTE: Implement proper migrations before production release.
+                // fallbackToDestructiveMigration() was removed to prevent data loss.
+                // Add migrations for each schema version change:
+                // .addMigrations(MIGRATION_7_8, MIGRATION_8_9, etc.)
                 .build()
         }
     }

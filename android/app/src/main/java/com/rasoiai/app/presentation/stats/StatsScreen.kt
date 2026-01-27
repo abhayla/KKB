@@ -59,42 +59,20 @@ fun StatsScreen(
     viewModel: StatsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val navigationEvent by viewModel.navigationEvent.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Handle navigation events
-    LaunchedEffect(navigationEvent) {
-        when (val event = navigationEvent) {
-            StatsNavigationEvent.NavigateBack -> {
-                // Stats is a main tab, so we navigate to home instead
-                onNavigateToHome()
-                viewModel.onNavigationHandled()
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { event ->
+            when (event) {
+                StatsNavigationEvent.NavigateBack -> onNavigateToHome()
+                StatsNavigationEvent.NavigateToHome -> onNavigateToHome()
+                StatsNavigationEvent.NavigateToGrocery -> onNavigateToGrocery()
+                StatsNavigationEvent.NavigateToChat -> onNavigateToChat()
+                StatsNavigationEvent.NavigateToFavorites -> onNavigateToFavorites()
+                StatsNavigationEvent.NavigateToAllAchievements -> { /* TODO: Navigate to full achievements screen */ }
+                StatsNavigationEvent.NavigateToFullLeaderboard -> { /* TODO: Navigate to full leaderboard screen */ }
             }
-            StatsNavigationEvent.NavigateToHome -> {
-                onNavigateToHome()
-                viewModel.onNavigationHandled()
-            }
-            StatsNavigationEvent.NavigateToGrocery -> {
-                onNavigateToGrocery()
-                viewModel.onNavigationHandled()
-            }
-            StatsNavigationEvent.NavigateToChat -> {
-                onNavigateToChat()
-                viewModel.onNavigationHandled()
-            }
-            StatsNavigationEvent.NavigateToFavorites -> {
-                onNavigateToFavorites()
-                viewModel.onNavigationHandled()
-            }
-            StatsNavigationEvent.NavigateToAllAchievements -> {
-                // TODO: Navigate to full achievements screen
-                viewModel.onNavigationHandled()
-            }
-            StatsNavigationEvent.NavigateToFullLeaderboard -> {
-                // TODO: Navigate to full leaderboard screen
-                viewModel.onNavigationHandled()
-            }
-            null -> { /* No navigation */ }
         }
     }
 

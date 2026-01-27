@@ -10,9 +10,12 @@ import com.rasoiai.domain.model.MonthlyStats
 import com.rasoiai.domain.model.WeeklyChallenge
 import com.rasoiai.domain.repository.StatsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -75,8 +78,8 @@ class StatsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(StatsUiState())
     val uiState: StateFlow<StatsUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = MutableStateFlow<StatsNavigationEvent?>(null)
-    val navigationEvent: StateFlow<StatsNavigationEvent?> = _navigationEvent.asStateFlow()
+    private val _navigationEvent = Channel<StatsNavigationEvent>()
+    val navigationEvent: Flow<StatsNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     init {
         loadInitialData()
@@ -240,36 +243,32 @@ class StatsViewModel @Inject constructor(
 
     // region Navigation
 
-    fun onNavigationHandled() {
-        _navigationEvent.value = null
-    }
-
     fun navigateBack() {
-        _navigationEvent.value = StatsNavigationEvent.NavigateBack
+        _navigationEvent.trySend(StatsNavigationEvent.NavigateBack)
     }
 
     fun navigateToHome() {
-        _navigationEvent.value = StatsNavigationEvent.NavigateToHome
+        _navigationEvent.trySend(StatsNavigationEvent.NavigateToHome)
     }
 
     fun navigateToGrocery() {
-        _navigationEvent.value = StatsNavigationEvent.NavigateToGrocery
+        _navigationEvent.trySend(StatsNavigationEvent.NavigateToGrocery)
     }
 
     fun navigateToChat() {
-        _navigationEvent.value = StatsNavigationEvent.NavigateToChat
+        _navigationEvent.trySend(StatsNavigationEvent.NavigateToChat)
     }
 
     fun navigateToFavorites() {
-        _navigationEvent.value = StatsNavigationEvent.NavigateToFavorites
+        _navigationEvent.trySend(StatsNavigationEvent.NavigateToFavorites)
     }
 
     fun onViewAllAchievements() {
-        _navigationEvent.value = StatsNavigationEvent.NavigateToAllAchievements
+        _navigationEvent.trySend(StatsNavigationEvent.NavigateToAllAchievements)
     }
 
     fun onViewFullLeaderboard() {
-        _navigationEvent.value = StatsNavigationEvent.NavigateToFullLeaderboard
+        _navigationEvent.trySend(StatsNavigationEvent.NavigateToFullLeaderboard)
     }
 
     // endregion

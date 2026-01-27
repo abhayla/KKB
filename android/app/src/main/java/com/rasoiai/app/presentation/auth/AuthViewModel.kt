@@ -7,10 +7,13 @@ import com.rasoiai.app.BuildConfig
 import com.rasoiai.data.local.datastore.UserPreferencesDataStore
 import com.rasoiai.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -44,8 +47,8 @@ class AuthViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = MutableStateFlow<AuthNavigationEvent?>(null)
-    val navigationEvent: StateFlow<AuthNavigationEvent?> = _navigationEvent.asStateFlow()
+    private val _navigationEvent = Channel<AuthNavigationEvent>()
+    val navigationEvent: Flow<AuthNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     init {
         // Check if already signed in
@@ -134,23 +137,17 @@ class AuthViewModel @Inject constructor(
         _uiState.update { it.copy(errorMessage = null) }
     }
 
-    /**
-     * Called when navigation has been handled.
-     */
-    fun onNavigationHandled() {
-        _navigationEvent.value = null
-    }
-
     private fun navigateAfterSignIn() {
         viewModelScope.launch {
             // Check if onboarding is complete from DataStore
             val isOnboarded = userPreferencesDataStore.isOnboarded.first()
 
-            _navigationEvent.value = if (isOnboarded) {
+            val event = if (isOnboarded) {
                 AuthNavigationEvent.NavigateToHome
             } else {
                 AuthNavigationEvent.NavigateToOnboarding
             }
+            _navigationEvent.send(event)
         }
     }
 

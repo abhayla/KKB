@@ -74,7 +74,6 @@ fun CookingModeScreen(
     viewModel: CookingModeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val navigationEvent by viewModel.navigationEvent.collectAsStateWithLifecycle()
 
     // Keep screen on
     KeepScreenOn()
@@ -85,17 +84,12 @@ fun CookingModeScreen(
     }
 
     // Handle navigation events
-    LaunchedEffect(navigationEvent) {
-        when (navigationEvent) {
-            CookingModeNavigationEvent.NavigateBack -> {
-                onNavigateBack()
-                viewModel.onNavigationHandled()
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { event ->
+            when (event) {
+                CookingModeNavigationEvent.NavigateBack -> onNavigateBack()
+                CookingModeNavigationEvent.NavigateToHome -> onNavigateToHome()
             }
-            CookingModeNavigationEvent.NavigateToHome -> {
-                onNavigateToHome()
-                viewModel.onNavigationHandled()
-            }
-            null -> { /* No navigation */ }
         }
     }
 

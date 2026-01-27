@@ -56,37 +56,21 @@ fun ChatScreen(
     viewModel: ChatViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val navigationEvent by viewModel.navigationEvent.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Handle navigation events
-    LaunchedEffect(navigationEvent) {
-        when (val event = navigationEvent) {
-            ChatNavigationEvent.NavigateBack -> {
-                onNavigateToHome()
-                viewModel.onNavigationHandled()
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { event ->
+            when (event) {
+                ChatNavigationEvent.NavigateBack -> onNavigateToHome()
+                ChatNavigationEvent.NavigateToHome -> onNavigateToHome()
+                ChatNavigationEvent.NavigateToGrocery -> onNavigateToGrocery()
+                ChatNavigationEvent.NavigateToFavorites -> onNavigateToFavorites()
+                ChatNavigationEvent.NavigateToStats -> onNavigateToStats()
+                is ChatNavigationEvent.NavigateToRecipeDetail -> {
+                    onNavigateToRecipeDetail(event.recipeId)
+                }
             }
-            ChatNavigationEvent.NavigateToHome -> {
-                onNavigateToHome()
-                viewModel.onNavigationHandled()
-            }
-            ChatNavigationEvent.NavigateToGrocery -> {
-                onNavigateToGrocery()
-                viewModel.onNavigationHandled()
-            }
-            ChatNavigationEvent.NavigateToFavorites -> {
-                onNavigateToFavorites()
-                viewModel.onNavigationHandled()
-            }
-            ChatNavigationEvent.NavigateToStats -> {
-                onNavigateToStats()
-                viewModel.onNavigationHandled()
-            }
-            is ChatNavigationEvent.NavigateToRecipeDetail -> {
-                onNavigateToRecipeDetail(event.recipeId)
-                viewModel.onNavigationHandled()
-            }
-            null -> { /* No navigation */ }
         }
     }
 

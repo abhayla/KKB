@@ -11,9 +11,18 @@ import com.rasoiai.domain.model.Nutrition
 import com.rasoiai.domain.model.Recipe
 import com.rasoiai.domain.repository.RecipeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableSet
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -33,22 +42,28 @@ enum class RecipeLockState {
 
 /**
  * UI state for the Recipe Detail screen
+ * Uses immutable collections for Compose stability optimization.
  */
 data class RecipeDetailUiState(
     val isLoading: Boolean = true,
     val errorMessage: String? = null,
     val recipe: Recipe? = null,
     val selectedServings: Int = 4,
-    val scaledIngredients: List<Ingredient> = emptyList(),
+    val scaledIngredients: ImmutableList<Ingredient> = persistentListOf(),
     val scaledNutrition: Nutrition? = null,
-    val checkedIngredients: Set<String> = emptySet(),
+    val checkedIngredients: ImmutableSet<String> = persistentSetOf(),
     val selectedTabIndex: Int = 0,
     /** Lock state in meal plan context - determines which lock icon to show (if any) */
-    val lockState: RecipeLockState = RecipeLockState.NO_CONTEXT
+    val lockState: RecipeLockState = RecipeLockState.NO_CONTEXT,
+    /** Cached display tags to avoid recomputation on every access */
+    val displayTags: ImmutableList<String> = persistentListOf(),
+    /** Cached cuisine display text */
+    val cuisineDisplayText: String = ""
 ) {
     /** For backwards compatibility */
     val isLocked: Boolean
         get() = lockState == RecipeLockState.LOCKED
+
     val isVegetarian: Boolean
         get() = recipe?.dietaryTags?.any {
             it == DietaryTag.VEGETARIAN || it == DietaryTag.VEGAN || it == DietaryTag.JAIN
@@ -57,20 +72,27 @@ data class RecipeDetailUiState(
     val totalTimeMinutes: Int
         get() = recipe?.totalTimeMinutes ?: 0
 
-    val displayTags: List<String>
-        get() {
-            val tags = mutableListOf<String>()
-            recipe?.let { r ->
-                // Add dietary tags
-                r.dietaryTags.forEach { tags.add(it.displayName) }
-                // Add difficulty
-                tags.add(r.difficulty.value.replaceFirstChar { it.uppercase() })
-            }
-            return tags
+    val ingredientCount: Int
+        get() = scaledIngredients.size
+
+    val instructionCount: Int
+        get() = recipe?.instructions?.size ?: 0
+
+    val allIngredientsChecked: Boolean
+        get() = checkedIngredients.size == scaledIngredients.size && scaledIngredients.isNotEmpty()
+
+    companion object {
+        /** Compute display tags from recipe - call when recipe changes */
+        fun computeDisplayTags(recipe: Recipe?): ImmutableList<String> {
+            if (recipe == null) return persistentListOf()
+            return buildList {
+                recipe.dietaryTags.forEach { add(it.displayName) }
+                add(recipe.difficulty.value.replaceFirstChar { it.uppercase() })
+            }.toImmutableList()
         }
 
-    val cuisineDisplayText: String
-        get() {
+        /** Compute cuisine display text from recipe - call when recipe changes */
+        fun computeCuisineDisplayText(recipe: Recipe?): String {
             val cuisine = recipe?.cuisineType?.displayName ?: ""
             val region = when (recipe?.cuisineType) {
                 com.rasoiai.domain.model.CuisineType.NORTH -> "Punjabi"
@@ -81,15 +103,7 @@ data class RecipeDetailUiState(
             }
             return if (region.isNotEmpty()) "$cuisine \u2022 $region" else cuisine
         }
-
-    val ingredientCount: Int
-        get() = scaledIngredients.size
-
-    val instructionCount: Int
-        get() = recipe?.instructions?.size ?: 0
-
-    val allIngredientsChecked: Boolean
-        get() = checkedIngredients.size == scaledIngredients.size && scaledIngredients.isNotEmpty()
+    }
 }
 
 /**
@@ -121,8 +135,8 @@ class RecipeDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(RecipeDetailUiState(lockState = lockState))
     val uiState: StateFlow<RecipeDetailUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = MutableStateFlow<RecipeDetailNavigationEvent?>(null)
-    val navigationEvent: StateFlow<RecipeDetailNavigationEvent?> = _navigationEvent.asStateFlow()
+    private val _navigationEvent = Channel<RecipeDetailNavigationEvent>()
+    val navigationEvent: Flow<RecipeDetailNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     init {
         loadRecipe()
@@ -142,8 +156,10 @@ class RecipeDetailViewModel @Inject constructor(
                                 isLoading = false,
                                 recipe = recipe,
                                 selectedServings = recipe.servings,
-                                scaledIngredients = recipe.ingredients,
-                                scaledNutrition = recipe.nutrition
+                                scaledIngredients = recipe.ingredients.toImmutableList(),
+                                scaledNutrition = recipe.nutrition,
+                                displayTags = RecipeDetailUiState.computeDisplayTags(recipe),
+                                cuisineDisplayText = RecipeDetailUiState.computeCuisineDisplayText(recipe)
                             )
                         }
                     } else {
@@ -188,7 +204,7 @@ class RecipeDetailViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             selectedServings = servings,
-                            scaledIngredients = scaledRecipe.ingredients,
+                            scaledIngredients = scaledRecipe.ingredients.toImmutableList(),
                             scaledNutrition = scaledRecipe.nutrition
                         )
                     }
@@ -206,9 +222,9 @@ class RecipeDetailViewModel @Inject constructor(
     fun toggleIngredientChecked(ingredientId: String) {
         _uiState.update { state ->
             val newChecked = if (ingredientId in state.checkedIngredients) {
-                state.checkedIngredients - ingredientId
+                (state.checkedIngredients - ingredientId).toImmutableSet()
             } else {
-                state.checkedIngredients + ingredientId
+                (state.checkedIngredients + ingredientId).toImmutableSet()
             }
             state.copy(checkedIngredients = newChecked)
         }
@@ -216,12 +232,12 @@ class RecipeDetailViewModel @Inject constructor(
 
     fun checkAllIngredients() {
         _uiState.update { state ->
-            state.copy(checkedIngredients = state.scaledIngredients.map { it.id }.toSet())
+            state.copy(checkedIngredients = state.scaledIngredients.map { it.id }.toImmutableSet())
         }
     }
 
     fun uncheckAllIngredients() {
-        _uiState.update { it.copy(checkedIngredients = emptySet()) }
+        _uiState.update { it.copy(checkedIngredients = persistentSetOf()) }
     }
 
     // endregion
@@ -257,26 +273,18 @@ class RecipeDetailViewModel @Inject constructor(
     }
 
     fun startCookingMode() {
-        _navigationEvent.value = RecipeDetailNavigationEvent.NavigateToCookingMode(recipeId)
+        _navigationEvent.trySend(RecipeDetailNavigationEvent.NavigateToCookingMode(recipeId))
     }
 
     fun modifyWithAI() {
         val recipeName = _uiState.value.recipe?.name ?: "this recipe"
-        _navigationEvent.value = RecipeDetailNavigationEvent.NavigateToChat(
+        _navigationEvent.trySend(RecipeDetailNavigationEvent.NavigateToChat(
             "I'd like to modify $recipeName"
-        )
+        ))
     }
 
     fun navigateBack() {
-        _navigationEvent.value = RecipeDetailNavigationEvent.NavigateBack
-    }
-
-    // endregion
-
-    // region Navigation
-
-    fun onNavigationHandled() {
-        _navigationEvent.value = null
+        _navigationEvent.trySend(RecipeDetailNavigationEvent.NavigateBack)
     }
 
     // endregion

@@ -13,10 +13,13 @@ import com.rasoiai.domain.model.SpecialDietaryNeed
 import com.rasoiai.domain.model.SpiceLevel
 import com.rasoiai.domain.model.UserPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -127,8 +130,8 @@ class OnboardingViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(OnboardingUiState())
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = MutableStateFlow<OnboardingNavigationEvent?>(null)
-    val navigationEvent: StateFlow<OnboardingNavigationEvent?> = _navigationEvent.asStateFlow()
+    private val _navigationEvent = Channel<OnboardingNavigationEvent>()
+    val navigationEvent: Flow<OnboardingNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     // region Navigation
 
@@ -153,10 +156,6 @@ class OnboardingViewModel @Inject constructor(
     }
 
     private fun OnboardingStep.isLastStep() = this == OnboardingStep.COOKING_TIME
-
-    fun onNavigationHandled() {
-        _navigationEvent.value = null
-    }
 
     // endregion
 
@@ -334,7 +333,7 @@ class OnboardingViewModel @Inject constructor(
                 userPreferencesDataStore.saveOnboardingComplete(preferences)
                 Timber.i("Onboarding complete, preferences saved")
 
-                _navigationEvent.value = OnboardingNavigationEvent.NavigateToHome
+                _navigationEvent.send(OnboardingNavigationEvent.NavigateToHome)
 
             } catch (e: Exception) {
                 Timber.e(e, "Error completing onboarding")

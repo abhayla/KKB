@@ -108,17 +108,14 @@ fun OnboardingScreen(
     viewModel: OnboardingViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val navigationEvent by viewModel.navigationEvent.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Handle navigation events
-    LaunchedEffect(navigationEvent) {
-        when (navigationEvent) {
-            OnboardingNavigationEvent.NavigateToHome -> {
-                onNavigateToHome()
-                viewModel.onNavigationHandled()
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { event ->
+            when (event) {
+                OnboardingNavigationEvent.NavigateToHome -> onNavigateToHome()
             }
-            null -> { /* No navigation */ }
         }
     }
 

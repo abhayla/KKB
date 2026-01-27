@@ -73,6 +73,15 @@ android {
         kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
     }
 
+    // Compose compiler stability configuration
+    kotlinOptions {
+        freeCompilerArgs = freeCompilerArgs + listOf(
+            "-P",
+            "plugin:androidx.compose.compiler.plugins.kotlin:stabilityConfigurationPath=" +
+                "${projectDir.absolutePath}/compose-stability.conf"
+        )
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -142,6 +151,9 @@ dependencies {
 
     // Coroutines
     implementation(libs.bundles.coroutines)
+
+    // Immutable Collections (Compose stability)
+    implementation(libs.kotlinx.collections.immutable)
 
     // Testing
     testImplementation(libs.junit5)
