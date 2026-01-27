@@ -37,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -88,12 +89,15 @@ fun RecipeDetailScreen(
         }
     }
 
+    // Stable no-op callback for unimplemented feature
+    val onMoreClick = remember { { /* TODO: Show more options */ } }
+
     RecipeDetailContent(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
         onBackClick = viewModel::navigateBack,
         onFavoriteClick = viewModel::toggleFavorite,
-        onMoreClick = { /* TODO: Show more options */ },
+        onMoreClick = onMoreClick,
         onTabSelect = viewModel::selectTab,
         onServingsChange = viewModel::updateServings,
         onIngredientChecked = viewModel::toggleIngredientChecked,
@@ -216,6 +220,11 @@ private fun RecipeDetailContent(
 
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
+                        // Stable tab click handlers to avoid recomposition
+                        val currentOnTabSelect by rememberUpdatedState(onTabSelect)
+                        val onSelectIngredientsTab = remember { { currentOnTabSelect(0) } }
+                        val onSelectInstructionsTab = remember { { currentOnTabSelect(1) } }
+
                         // Tabs
                         TabRow(
                             selectedTabIndex = uiState.selectedTabIndex,
@@ -224,7 +233,7 @@ private fun RecipeDetailContent(
                         ) {
                             Tab(
                                 selected = uiState.selectedTabIndex == 0,
-                                onClick = { onTabSelect(0) },
+                                onClick = onSelectIngredientsTab,
                                 text = {
                                     Text(
                                         text = "INGREDIENTS",
@@ -238,7 +247,7 @@ private fun RecipeDetailContent(
                             )
                             Tab(
                                 selected = uiState.selectedTabIndex == 1,
-                                onClick = { onTabSelect(1) },
+                                onClick = onSelectInstructionsTab,
                                 text = {
                                     Text(
                                         text = "INSTRUCTIONS",
