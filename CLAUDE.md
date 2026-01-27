@@ -517,3 +517,6 @@ Ensure `ANDROID_HOME` is set and the emulator is running. Use `adb devices` to v
 - Architecture Decisions: `docs/design/Android Architecture Decisions.md`
 - Recipe Rules Requirements: `docs/requirements/Recipe Rules Screen Requirements.md`
 - Continuation Prompt: `docs/CONTINUE_PROMPT.md` (use to resume work in new context)
+
+**Code Review Reference:**
+- Android Best Practices Audit Guide: `docs/claude-docs/Android-Best-Practices-Audit-Guide.md` (audit checklist for code quality)
