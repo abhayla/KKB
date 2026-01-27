@@ -11,8 +11,9 @@ I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 
 ## Current Status
 
-**All 13 screens implemented.** Backend integration complete for core repositories.
+**Android app complete. Backend implemented and running.**
 
+### Android App
 | Component | Status |
 |-----------|--------|
 | UI Screens | ✅ Complete (13 screens) |
@@ -23,155 +24,153 @@ I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 | MealPlan Repository | ✅ Complete (offline-first) |
 | Recipe Repository | ✅ Complete (offline-first) |
 | Grocery Repository | ✅ Complete (offline-first) |
-| Firebase Auth Flow | ✅ Verified (unit tests pass) |
-| Other Repositories | ⏳ Fake (Favorites, Chat, Stats, etc.) |
+| Other Repositories | ⏳ Fake (Favorites, Chat, Stats) |
 
-## Firebase Setup Status
+### Backend (Python FastAPI)
+| Component | Status |
+|-----------|--------|
+| Project Structure | ✅ Complete |
+| Database Models | ✅ 17 tables (SQLite dev, PostgreSQL prod) |
+| All 18 API Endpoints | ✅ Implemented |
+| Firebase Auth | ✅ Configured (service account loaded) |
+| JWT Authentication | ✅ Working |
+| Recipe Seed Data | ✅ 17 Indian recipes |
+| Festival Seed Data | ✅ 23 festivals (need 2026 dates) |
+| Claude AI Integration | ✅ Code ready (needs API key) |
 
-| Item | Status |
-|------|--------|
-| google-services.json | ✅ Present |
-| Web Client ID | ✅ Configured in BuildConfig |
-| Unit Tests | ✅ Passing |
-| Debug SHA-1 | ✅ Available (see below) |
-
-**Debug SHA-1 Fingerprint** (add to Firebase Console):
-```
-0D:1C:9D:5D:36:70:91:06:7E:16:C8:D8:EC:5F:AF:C1:6C:39:1D:6E
-```
+### Server Status
+- Backend running at `http://localhost:8000`
+- API docs at `http://localhost:8000/docs`
+- Health check: `curl http://localhost:8000/health`
 
 ## IMMEDIATE NEXT STEPS
 
 **Choose based on priority:**
 
-### Option 1: Complete Firebase Console Setup (if not done)
-1. Go to Firebase Console → Project Settings → Your apps
-2. Add SHA-1 fingerprint: `0D:1C:9D:5D:36:70:91:06:7E:16:C8:D8:EC:5F:AF:C1:6C:39:1D:6E`
-3. Enable Google Sign-In in Authentication → Sign-in method
-4. Test on device: `cd android && ./gradlew installDebug`
+### Option 1: End-to-End Testing
+1. Start backend: `cd backend && ./venv/Scripts/uvicorn app.main:app --reload`
+2. Install Android app: `cd android && ./gradlew installDebug`
+3. Test full auth flow (Google Sign-In → Firebase → Backend JWT)
+4. Test meal plan generation
 
-### Option 2: Implement Remaining Repositories
-- `FavoritesRepositoryImpl` - follows same offline-first pattern
-- `ChatRepositoryImpl` - may need real-time updates
-- `StatsRepositoryImpl` - analytics and streak tracking
-- `SettingsRepositoryImpl` - user preferences sync
+### Option 2: Add Claude API Key for AI Features
+1. Get API key from console.anthropic.com
+2. Add to `backend/.env`: `ANTHROPIC_API_KEY=sk-ant-...`
+3. Test meal plan generation with AI
 
-### Option 3: Backend API Development
-- Set up Python/FastAPI backend
-- Implement JWT token exchange endpoint
-- Create meal plan generation API with Claude
+### Option 3: Update Festival Data for 2026
+- Current festivals are for 2025
+- Update `backend/scripts/seed_festivals.py` with 2026 dates
+- Re-run seed script
 
-## Architecture (Offline-First)
+### Option 4: Implement Remaining Android Repositories
+- `FavoritesRepositoryImpl` - offline-first pattern
+- `ChatRepositoryImpl` - connect to chat endpoints
+- `StatsRepositoryImpl` - cooking streaks and achievements
+
+### Option 5: Production Deployment
+- Set up PostgreSQL database
+- Configure production environment
+- Deploy to cloud (Railway, Render, etc.)
+
+## Key Files Reference
+
+### Backend (Python)
+| Purpose | File |
+|---------|------|
+| Main App | `backend/app/main.py` |
+| Config | `backend/app/config.py` |
+| Environment | `backend/.env` |
+| Firebase Auth | `backend/app/core/firebase.py` |
+| JWT Security | `backend/app/core/security.py` |
+| All Endpoints | `backend/app/api/v1/endpoints/` |
+| Database Models | `backend/app/models/` |
+| Services | `backend/app/services/` |
+| Claude AI | `backend/app/ai/` |
+| Seed Scripts | `backend/scripts/seed_*.py` |
+
+### Android
+| Purpose | File |
+|---------|------|
+| Project Context | `CLAUDE.md` |
+| API Service | `data/remote/api/RasoiApiService.kt` |
+| Auth Repository | `data/repository/AuthRepositoryImpl.kt` |
+| MealPlan Repo | `data/repository/MealPlanRepositoryImpl.kt` |
+| Recipe Repo | `data/repository/RecipeRepositoryImpl.kt` |
+| DTO Mappers | `data/remote/mapper/DtoMappers.kt` |
+| Entity Mappers | `data/local/mapper/EntityMappers.kt` |
+
+## Commands Reference
+
+### Backend
+```bash
+cd D:/Abhay/VibeCoding/KKB/backend
+
+# Activate venv and start server
+./venv/Scripts/uvicorn app.main:app --reload
+
+# Run seed scripts (if needed)
+./venv/Scripts/python -m scripts.seed_recipes
+./venv/Scripts/python -m scripts.seed_festivals
+
+# Test health
+curl http://localhost:8000/health
+```
+
+### Android
+```bash
+cd D:/Abhay/VibeCoding/KKB/android
+
+./gradlew assembleDebug   # Build
+./gradlew test            # Run tests
+./gradlew installDebug    # Install on device
+```
+
+## API Endpoints (18 total)
+
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| POST | `/api/v1/auth/firebase` | No |
+| GET | `/api/v1/users/me` | Yes |
+| PUT | `/api/v1/users/preferences` | Yes |
+| POST | `/api/v1/meal-plans/generate` | Yes |
+| GET | `/api/v1/meal-plans/current` | Yes |
+| GET | `/api/v1/meal-plans/{id}` | Yes |
+| POST | `/api/v1/meal-plans/{id}/items/{itemId}/swap` | Yes |
+| PUT | `/api/v1/meal-plans/{id}/items/{itemId}/lock` | Yes |
+| GET | `/api/v1/recipes/{id}` | Yes |
+| GET | `/api/v1/recipes/{id}/scale` | Yes |
+| GET | `/api/v1/recipes/search` | Yes |
+| GET | `/api/v1/grocery` | Yes |
+| GET | `/api/v1/grocery/whatsapp` | Yes |
+| GET | `/api/v1/festivals/upcoming` | No |
+| POST | `/api/v1/chat/message` | Yes |
+| GET | `/api/v1/chat/history` | Yes |
+| GET | `/api/v1/stats/streak` | Yes |
+| GET | `/api/v1/stats/monthly` | Yes |
+
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
+│  ANDROID APP                                                │
 │  UI (Compose) → ViewModel → UseCase → Repository            │
 │                                           ↓                 │
 │                              ┌────────────┴────────────┐    │
 │                              ↓                         ↓    │
 │                         Room (Local)            Retrofit    │
 │                         Source of Truth         (Remote)    │
-│                              ↓                         ↓    │
-│                         EntityMappers           DtoMappers  │
-│                              └──────────┬──────────────┘    │
-│                                         ↓                   │
-│                                   Domain Models             │
+└─────────────────────────────────┼───────────────────────────┘
+                                  │ HTTP/JWT
+┌─────────────────────────────────┼───────────────────────────┐
+│  BACKEND (FastAPI)              ↓                           │
+│  Endpoints → Services → SQLAlchemy → SQLite/PostgreSQL      │
+│       ↓                                                     │
+│  Claude AI (meal planning, chat)                            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Key Files Reference
-
-| Purpose | File |
-|---------|------|
-| Project Context | `CLAUDE.md` |
-| Auth Flow | `data/repository/AuthRepositoryImpl.kt` |
-| Auth ViewModel | `app/presentation/auth/AuthViewModel.kt` |
-| Google Sign-In | `app/presentation/auth/GoogleAuthClient.kt` |
-| MealPlan Repo | `data/repository/MealPlanRepositoryImpl.kt` |
-| Recipe Repo | `data/repository/RecipeRepositoryImpl.kt` |
-| Grocery Repo | `data/repository/GroceryRepositoryImpl.kt` |
-| Entity Mappers | `data/local/mapper/EntityMappers.kt` |
-| DTO Mappers | `data/remote/mapper/DtoMappers.kt` |
-| DI Module | `data/di/DataModule.kt` |
-| API Service | `data/remote/api/RasoiApiService.kt` |
-
-## Environment
-
-- Working directory: `D:/Abhay/VibeCoding/KKB`
-- Build: `cd android && ./gradlew assembleDebug`
-- Test: `cd android && ./gradlew test`
-- Install: `cd android && ./gradlew installDebug`
-- SHA-1: `cd android && ./gradlew signingReport`
-
-## Real Repositories Implemented
-
-All follow offline-first pattern with:
-- Room as single source of truth
-- API fetch when online
-- Local cache updates
-- Sync support for offline mutations
-
-| Repository | Key Features |
-|------------|--------------|
-| Auth | Firebase → Backend JWT exchange, token storage |
-| MealPlan | Generate, swap meals, lock state, sync |
-| Recipe | Search, scale, favorites, cache |
-| Grocery | Generate from meal plan, toggle purchased, custom items |
-
 Continue from here based on the immediate next step you choose.
-```
-
----
-
-## QUICK REFERENCE
-
-### Build Commands:
-```bash
-cd "D:/Abhay/VibeCoding/KKB/android"
-./gradlew assembleDebug   # Build APK
-./gradlew test            # Run tests
-./gradlew build           # Full build + tests
-./gradlew installDebug    # Install on device
-./gradlew signingReport   # Get SHA-1 fingerprint
-```
-
-### Test on Device:
-```bash
-# Install and launch
-./gradlew installDebug
-adb shell am start -n com.rasoiai.app/.MainActivity
-
-# View auth logs
-adb logcat -s RasoiAI:* | grep -E "(Firebase|Auth|JWT)"
-```
-
-### Key Patterns:
-
-**ViewModel Pattern:**
-```kotlin
-data class FeatureUiState(val isLoading: Boolean = true, ...)
-sealed class FeatureNavigationEvent { ... }
-
-@HiltViewModel
-class FeatureViewModel @Inject constructor(...) : ViewModel() {
-    private val _uiState = MutableStateFlow(FeatureUiState())
-    val uiState: StateFlow<FeatureUiState> = _uiState.asStateFlow()
-}
-```
-
-**Repository Pattern (Offline-First):**
-```kotlin
-@Singleton
-class RepositoryImpl @Inject constructor(
-    private val apiService: RasoiApiService,
-    private val dao: FeatureDao,
-    private val networkMonitor: NetworkMonitor
-) : Repository {
-    // 1. Return from local DB (single source of truth)
-    // 2. Fetch from API if online
-    // 3. Cache to local DB
-    // 4. Queue mutations for sync if offline
-}
 ```
 
 ---
@@ -183,82 +182,68 @@ class RepositoryImpl @Inject constructor(
 - ViewModel pattern with StateFlow
 - Hilt DI, Navigation Compose setup
 
-### Session 11: Wireframe Review & Recipe Rules Design
+### Sessions 11-13: Wireframe Review & Recipe Rules
 - Redesigned Home with 3-level locking
-- Added lock indicator to Recipe Detail
-- Created Recipe Rules wireframe
-
-### Session 12: Recipe Rules Implementation
 - Recipe Rules screen with 4 tabs
-- Domain models (RecipeRule, NutritionGoal)
-- FakeRecipeRulesRepository
-
-### Session 13: Wireframe Updates & Lock Icon Fixes
 - Split wireframes into 16 files
-- Lock icons show state (locked/unlocked) not action
-- AddRecipeSheet/SwapRecipeSheet 2-column grids
-- RecipeLockState tri-state enum
-- fromMealPlan navigation parameter
 
-### Session 14: Backend Integration Phase 1
+### Sessions 14-18: Android Backend Integration
 - Auth token storage in DataStore
 - AuthInterceptor for API requests
 - DTO and Entity mappers
-- AuthRepositoryImpl (Firebase → Backend JWT)
-- MealPlanRepositoryImpl (offline-first)
-- Updated Room entities with full data
+- AuthRepositoryImpl, MealPlanRepositoryImpl, RecipeRepositoryImpl, GroceryRepositoryImpl
+- Firebase auth flow verified
 
-### Session 15: MealPlanRepositoryImpl Wiring
-- Wired MealPlanRepositoryImpl in DataModule.kt
-- Added MealPlanDao provider
-- Build verified successful
-
-### Session 16: RecipeRepositoryImpl Implementation
-- Added Recipe Entity mappers in EntityMappers.kt
-- Created RecipeRepositoryImpl.kt with offline-first pattern
-- Wired in DataModule.kt with RecipeDao, FavoriteDao providers
-
-### Session 17: GroceryRepositoryImpl Implementation
-- Added Grocery Entity mappers in EntityMappers.kt
-- Created GroceryRepositoryImpl.kt with offline-first pattern
-- Features: generate from meal plan, toggle purchased, custom items
-- Wired in DataModule.kt with GroceryDao provider
-
-### Session 18: Firebase Auth Flow Verification
-- Verified google-services.json configuration
-- Confirmed Web Client ID in BuildConfig
-- Extracted debug SHA-1 fingerprint
-- All unit tests passing
-- Documented Firebase Console setup steps
-- **Next: Complete Firebase Console setup or implement more repositories**
+### Session 19: Python Backend Implementation
+- Created complete FastAPI backend structure
+- 17 SQLAlchemy models (SQLite compatible)
+- 18 API endpoints matching Android DTOs
+- Firebase Admin SDK integration
+- JWT authentication
+- Claude AI client for meal planning and chat
+- Seed scripts: 17 recipes, 23 festivals
+- Server running at localhost:8000
+- Firebase service account configured
 
 ---
 
-## FILES CREATED/MODIFIED IN BACKEND INTEGRATION
+## BACKEND FILES CREATED
 
-### New Files:
 ```
-data/remote/interceptor/AuthInterceptor.kt
-data/remote/mapper/DtoMappers.kt
-data/local/mapper/EntityMappers.kt
-data/repository/AuthRepositoryImpl.kt
-data/repository/MealPlanRepositoryImpl.kt
-data/repository/RecipeRepositoryImpl.kt
-data/repository/GroceryRepositoryImpl.kt
-```
-
-### Modified Files:
-```
-data/local/datastore/UserPreferencesDataStore.kt
-data/local/entity/MealPlanEntity.kt
-data/local/dao/MealPlanDao.kt
-data/local/RasoiDatabase.kt
-data/di/DataModule.kt
-app/presentation/auth/AuthViewModel.kt
-app/build.gradle.kts (WEB_CLIENT_ID)
+backend/
+├── app/
+│   ├── main.py                    # FastAPI entry point
+│   ├── config.py                  # Pydantic settings
+│   ├── api/
+│   │   ├── deps.py                # Auth dependencies
+│   │   └── v1/
+│   │       ├── router.py          # Route aggregator
+│   │       └── endpoints/         # 8 endpoint files
+│   ├── core/
+│   │   ├── security.py            # JWT handling
+│   │   ├── firebase.py            # Firebase Admin SDK
+│   │   └── exceptions.py          # Custom exceptions
+│   ├── db/
+│   │   ├── database.py            # SQLAlchemy async engine
+│   │   └── base.py                # Base model class
+│   ├── models/                    # 7 model files, 17 tables
+│   ├── schemas/                   # 8 Pydantic schema files
+│   ├── services/                  # 8 service files
+│   └── ai/                        # Claude integration
+│       ├── claude_client.py
+│       ├── meal_planner.py
+│       ├── chat_assistant.py
+│       └── prompts/
+├── scripts/
+│   ├── seed_recipes.py            # 17 Indian recipes
+│   └── seed_festivals.py          # 23 festivals
+├── .env                           # Environment config
+├── requirements.txt
+├── Dockerfile
+└── docker-compose.yml
 ```
 
 ---
 
 *Last Updated: January 2026*
-*Backend integration Phase 1 complete. MealPlan, Recipe, Grocery repositories implemented with offline-first pattern. Firebase auth flow verified.*
+*Backend fully implemented. Server running. Firebase auth configured. Ready for end-to-end testing.*

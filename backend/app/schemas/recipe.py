@@ -1,0 +1,100 @@
+"""Recipe schemas matching Android DTOs."""
+
+from typing import Optional
+
+from pydantic import BaseModel, Field
+
+
+class IngredientDto(BaseModel):
+    """Ingredient matching Android IngredientDto."""
+
+    id: str
+    name: str
+    quantity: str  # String in Android DTO
+    unit: str
+    category: str  # vegetables, dairy, grains, spices, etc.
+    is_optional: bool = False
+    substitute_for: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class InstructionDto(BaseModel):
+    """Instruction matching Android InstructionDto."""
+
+    step_number: int
+    instruction: str
+    duration_minutes: Optional[int] = None
+    timer_required: bool = False
+    tips: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class NutritionDto(BaseModel):
+    """Nutrition info matching Android NutritionDto."""
+
+    calories: int
+    protein: int  # grams
+    carbohydrates: int  # grams
+    fat: int  # grams
+    fiber: int  # grams
+    sugar: int = 0  # grams
+    sodium: int = 0  # mg
+
+    class Config:
+        from_attributes = True
+
+
+class RecipeResponse(BaseModel):
+    """Recipe response matching Android RecipeResponse."""
+
+    id: str
+    name: str
+    description: str
+    image_url: Optional[str] = None
+    prep_time_minutes: int
+    cook_time_minutes: int
+    servings: int
+    difficulty: str  # easy, medium, hard
+    cuisine_type: str  # north, south, east, west
+    meal_types: list[str]  # breakfast, lunch, dinner, snacks
+    dietary_tags: list[str]  # vegetarian, vegan, etc.
+    ingredients: list[IngredientDto]
+    instructions: list[InstructionDto]
+    nutrition: Optional[NutritionDto] = None
+
+    class Config:
+        from_attributes = True
+
+
+class RecipeSearchParams(BaseModel):
+    """Query parameters for recipe search."""
+
+    q: str = ""
+    cuisine: Optional[str] = None
+    dietary: Optional[str] = None
+    meal_type: Optional[str] = None
+    page: int = Field(default=1, ge=1)
+    limit: int = Field(default=20, ge=1, le=100)
+
+
+class RecipeCreate(BaseModel):
+    """Create a new recipe (admin)."""
+
+    name: str = Field(..., max_length=255)
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    cuisine_type: str
+    meal_types: list[str]
+    dietary_tags: list[str]
+    prep_time_minutes: int = Field(ge=0)
+    cook_time_minutes: int = Field(ge=0)
+    servings: int = Field(default=4, ge=1)
+    difficulty_level: str = "medium"
+    is_festive: bool = False
+    is_fasting_friendly: bool = False
+    is_quick_meal: bool = False
+    is_kid_friendly: bool = False

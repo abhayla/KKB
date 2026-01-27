@@ -81,6 +81,7 @@ service-account.json
 .playwright-mcp/
 screenshots/
 screenshot*.png
+screen.png
 
 # Misc
 Notes
