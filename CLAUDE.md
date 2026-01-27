@@ -337,13 +337,12 @@ app ─────┬──────> core
 
 ## Technical Stack
 
-| Component | Technology |
-|-----------|------------|
-| Build Tools | AGP 8.13.2, Gradle Kotlin DSL |
-| DI & Processing | Hilt 2.50, KSP 1.9.22-1.0.17 |
-| Android Libraries | Room 2.6.1, Retrofit 2.9.0, Coil 2.5.0, Navigation Compose 2.7.7, DataStore 1.0.0 |
-| Backend | Python, FastAPI, SQLAlchemy, Pydantic |
-| Database | PostgreSQL, Redis (cache) |
+See `android/gradle/libs.versions.toml` for exact dependency versions.
+
+| Layer | Key Technologies |
+|-------|-----------------|
+| Android | Kotlin 1.9.22, Jetpack Compose, Hilt, Room, Retrofit, Navigation Compose |
+| Backend | Python, FastAPI, SQLAlchemy, PostgreSQL, Redis |
 | Auth | Firebase Auth (Google OAuth only) |
 | LLM | Claude API (claude-3-sonnet) |
 | Testing | JUnit5, MockK, Turbine, Compose Testing |
@@ -355,14 +354,15 @@ app ─────┬──────> core
 3. **Auth**: Google OAuth only (Phone OTP removed for MVP simplicity).
 4. **Festival Intelligence**: 30+ festivals with fasting modes and auto-suggested menus.
 
-## India-Specific Considerations
+## India-Specific Domain Knowledge
 
-- **Dietary patterns**: Vegetarian majority, Jain (no root vegetables), Sattvic (no onion/garlic), fasting days, Halal
-- **Regional cuisines**: North, South, East, West (4 zones) with distinct ingredients and styles
-- **Family structures**: Nuclear + joint families (3-8 members), multi-generational support
-- **Measurements**: Support katori (bowl), chammach (spoon) alongside metric
-- **Grocery**: WhatsApp sharing to kirana stores
-- **Offline**: Essential for tier 2-3 cities with connectivity issues
+| Aspect | Details |
+|--------|---------|
+| **Dietary Tags** | `VEGETARIAN`, `VEGAN`, `JAIN` (no root vegetables), `SATTVIC` (no onion/garlic), `HALAL`, `EGGETARIAN` |
+| **Cuisine Zones** | `NORTH`, `SOUTH`, `EAST`, `WEST` with distinct ingredients |
+| **Measurements** | Support both metric and traditional: katori (bowl), chammach (spoon), glass |
+| **Family Size** | 3-8 members, multi-generational support |
+| **Connectivity** | Offline-first essential (tier 2-3 cities) |
 
 ## Development Commands
 
@@ -435,48 +435,26 @@ ruff check .
 
 ## Current Status
 
-**All 13 screens implemented.** Backend integration complete for core repositories.
+**All 13 screens implemented.** Overall audit score: **97%** (production-ready).
 
 | Component | Status |
 |-----------|--------|
-| UI Screens | ✅ Complete (13 screens) |
+| UI Screens | ✅ Complete (13 screens in `presentation/`) |
 | Auth Integration | ✅ Complete (Firebase + Backend JWT) |
 | API Layer | ✅ Complete (Retrofit + AuthInterceptor) |
-| DTO Mappers | ✅ Complete (API → Domain) |
-| Entity Mappers | ✅ Complete (Room ↔ Domain) |
-| MealPlan Repository | ✅ Complete (offline-first) |
-| Recipe Repository | ✅ Complete (offline-first) |
-| Grocery Repository | ✅ Complete (offline-first) |
-| Firebase Auth Flow | ✅ Verified (unit tests pass) |
-| Other Repositories | ⏳ Fake (Favorites, Chat, Stats, etc.) |
+| Mappers | ✅ Complete (DTO & Entity mappers) |
+| Core Repositories | ✅ MealPlan, Recipe, Grocery (offline-first) |
+| Other Repositories | ⏳ Fake implementations (Favorites, Chat, Stats) |
+| Test Coverage | ✅ All ViewModels, DAOs, Mappers tested |
 
-**Debug SHA-1:** `0D:1C:9D:5D:36:70:91:06:7E:16:C8:D8:EC:5F:AF:C1:6C:39:1D:6E`
+**Before First Run:** Add `google-services.json` to `android/app/` from Firebase Console (see CI/CD Notes for placeholder).
 
-**Immediate Next Step:** Complete Firebase Console setup (add SHA-1) or implement remaining repositories.
-
-| Phase | Status | Location |
-|-------|--------|----------|
-| Requirements | ✅ | `docs/requirements/RasoiAI Requirements.md` |
-| Technical Design | ✅ | `docs/design/RasoiAI Technical Design.md` |
-| Architecture Decisions | ✅ | `docs/design/Android Architecture Decisions.md` |
-| Design System | ✅ | `docs/design/RasoiAI Design System.md` |
-| Screen Wireframes | ✅ | `docs/design/RasoiAI Screen Wireframes.md` |
-| All 13 Screens | ✅ | See Implemented Screens below |
-
-**Implemented Screens:**
-1. Splash (`presentation/splash/`)
-2. Auth (`presentation/auth/`)
-3. Onboarding (`presentation/onboarding/`)
-4. Home (`presentation/home/`)
-5. Recipe Detail (`presentation/recipedetail/`)
-6. Cooking Mode (`presentation/cookingmode/`)
-7. Grocery List (`presentation/grocery/`)
-8. Favorites (`presentation/favorites/`)
-9. Chat (`presentation/chat/`)
-10. Pantry Scan (`presentation/pantry/`)
-11. Stats (`presentation/stats/`)
-12. Settings (`presentation/settings/`)
-13. Recipe Rules (`presentation/reciperules/`)
+| Documentation | Location |
+|--------------|----------|
+| Requirements | `docs/requirements/RasoiAI Requirements.md` |
+| Technical Design | `docs/design/RasoiAI Technical Design.md` |
+| Architecture Decisions | `docs/design/Android Architecture Decisions.md` |
+| Audit Report | `docs/claude-docs/RasoiAI-Codebase-Audit-Report.md` |
 
 ## Troubleshooting
 
@@ -491,33 +469,26 @@ Ensure `ANDROID_HOME` is set and the emulator is running. Use `adb devices` to v
 
 ## Rules for Claude
 
-1. **Bash Path Syntax**: Always use forward slashes `/` in bash commands, not backslashes `\`. Use `./gradlew` not `.\gradlew`. Quote paths containing spaces (e.g., `cd "D:/My Projects/app"`). The shell is Unix-style bash, not Windows CMD.
+1. **Bash Path Syntax**: Always use forward slashes `/` in bash commands, not backslashes `\`. Use `./gradlew` not `.\gradlew`. Quote paths containing spaces. The shell is Unix-style bash, not Windows CMD.
 
-2. **Document Output Location**: All documents generated by Claude must be saved in `docs/claude-docs/` folder by default, until manually moved by the user.
+2. **Document Output Location**: Save generated documents to `docs/claude-docs/` by default.
 
-3. **Dietary Tags**: Use these standard tags: `vegetarian`, `vegan`, `jain`, `sattvic`, `halal`, `eggetarian`. Recipes can have multiple tags.
-
-4. **Cuisine Zones**: Use `north`, `south`, `east`, `west` for regional classification.
-
-5. **Measurements**: Support both metric and Indian traditional units (katori, chammach, glass).
-
-6. **Offline Consideration**: Any feature design must account for offline-first behavior.
+3. **Offline-First**: Any feature design must account for offline-first behavior with Room as source of truth.
 
 ## Key Documentation
 
 **Reference implementations** (use as patterns for new screens):
-- Recipe Rules: `presentation/reciperules/` (most recent, 4-tab layout with bottom sheets)
-- Settings: `presentation/settings/` (form-based screen with sections)
-- Home: `presentation/home/` (bottom navigation integration)
-- Favorites: `presentation/favorites/` (tab/list pattern with filtering)
-- Pantry: `presentation/pantry/` (camera integration, `ScanResultsSheet` bottom sheet component)
-- Stats: `presentation/stats/` (gamification, charts, `CuisineBreakdownSection` component)
+| Pattern | Reference | Key Features |
+|---------|-----------|--------------|
+| Tabs + Bottom Sheets | `presentation/reciperules/` | 4-tab layout, modal sheets |
+| Form-based Settings | `presentation/settings/` | Sections, toggles, navigation |
+| Bottom Navigation | `presentation/home/` | RasoiBottomNavigation integration |
+| List with Filtering | `presentation/favorites/` | Tab/list pattern |
+| Camera Integration | `presentation/pantry/` | ScanResultsSheet component |
+| Charts/Gamification | `presentation/stats/` | CuisineBreakdownSection |
 
-**High priority docs:**
-- Screen Wireframes: `docs/design/RasoiAI Screen Wireframes.md`
-- Architecture Decisions: `docs/design/Android Architecture Decisions.md`
-- Recipe Rules Requirements: `docs/requirements/Recipe Rules Screen Requirements.md`
-- Continuation Prompt: `docs/CONTINUE_PROMPT.md` (use to resume work in new context)
-
-**Code Review Reference:**
-- Android Best Practices Audit Guide: `docs/claude-docs/Android-Best-Practices-Audit-Guide.md` (audit checklist for code quality)
+**Key docs:**
+- Wireframes: `docs/design/wireframes/` (individual screen specs)
+- Architecture: `docs/design/Android Architecture Decisions.md`
+- Audit Checklist: `docs/claude-docs/Android-Best-Practices-Audit-Guide.md`
+- Resume Context: `docs/CONTINUE_PROMPT.md`
