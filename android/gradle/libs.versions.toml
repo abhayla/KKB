@@ -48,6 +48,9 @@ work = "2.9.0"
 # Splash Screen
 splashscreen = "1.0.1"
 
+# Baseline Profiles
+profileinstaller = "1.3.1"
+
 # Logging
 timber = "5.0.1"
 
@@ -62,6 +65,12 @@ kotlinx-serialization = "1.6.2"
 
 # Immutable Collections
 kotlinx-collections-immutable = "0.3.7"
+
+# Memory Leak Detection
+leakcanary = "2.13"
+
+# Memory Leak Detection
+leakcanary = "2.13"
 
 # Testing
 junit = "5.10.1"
@@ -101,6 +110,7 @@ javax-inject = { group = "javax.inject", name = "javax.inject", version = "1" }
 hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hilt-navigation-compose" }
 hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hilt-work" }
 hilt-work-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "hilt-work" }
+hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hilt" }
 
 # Room
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
@@ -139,6 +149,9 @@ work-testing = { group = "androidx.work", name = "work-testing", version.ref = "
 # Splash Screen
 splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
 
+# Baseline Profiles
+profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
+
 # Logging
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
 
@@ -164,6 +177,9 @@ mockk-android = { group = "io.mockk", name = "mockk-android", version.ref = "moc
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 androidx-test-ext = { group = "androidx.test.ext", name = "junit", version.ref = "androidx-test-ext" }
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
+
+# Memory Leak Detection
+leakcanary = { group = "com.squareup.leakcanary", name = "leakcanary-android", version.ref = "leakcanary" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

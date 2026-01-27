@@ -15,26 +15,7 @@ import com.rasoiai.data.local.dao.RecipeRulesDao
 import com.rasoiai.data.local.dao.ChatDao
 import com.rasoiai.data.remote.api.RasoiApiService
 import com.rasoiai.data.remote.interceptor.AuthInterceptor
-import com.rasoiai.data.repository.AuthRepositoryImpl
-import com.rasoiai.data.repository.MealPlanRepositoryImpl
-import com.rasoiai.data.repository.RecipeRepositoryImpl
-import com.rasoiai.data.repository.GroceryRepositoryImpl
-import com.rasoiai.data.repository.FavoritesRepositoryImpl
-import com.rasoiai.data.repository.PantryRepositoryImpl
-import com.rasoiai.data.repository.StatsRepositoryImpl
-import com.rasoiai.data.repository.SettingsRepositoryImpl
-import com.rasoiai.data.repository.RecipeRulesRepositoryImpl
-import com.rasoiai.data.repository.ChatRepositoryImpl
-import com.rasoiai.domain.repository.AuthRepository
-import com.rasoiai.domain.repository.ChatRepository
-import com.rasoiai.domain.repository.FavoritesRepository
-import com.rasoiai.domain.repository.GroceryRepository
-import com.rasoiai.domain.repository.MealPlanRepository
-import com.rasoiai.domain.repository.PantryRepository
-import com.rasoiai.domain.repository.RecipeRepository
-import com.rasoiai.domain.repository.RecipeRulesRepository
-import com.rasoiai.domain.repository.SettingsRepository
-import com.rasoiai.domain.repository.StatsRepository
+import com.rasoiai.data.BuildConfig
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -44,7 +25,6 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import com.rasoiai.data.BuildConfig
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
@@ -159,63 +139,5 @@ object DataModule {
         return database.chatDao()
     }
 
-    @Provides
-    @Singleton
-    fun provideAuthRepository(authRepositoryImpl: AuthRepositoryImpl): AuthRepository {
-        return authRepositoryImpl
-    }
-
-    @Provides
-    @Singleton
-    fun provideMealPlanRepository(mealPlanRepositoryImpl: MealPlanRepositoryImpl): MealPlanRepository {
-        return mealPlanRepositoryImpl
-    }
-
-    @Provides
-    @Singleton
-    fun provideRecipeRepository(recipeRepositoryImpl: RecipeRepositoryImpl): RecipeRepository {
-        return recipeRepositoryImpl
-    }
-
-    @Provides
-    @Singleton
-    fun provideGroceryRepository(groceryRepositoryImpl: GroceryRepositoryImpl): GroceryRepository {
-        return groceryRepositoryImpl
-    }
-
-    @Provides
-    @Singleton
-    fun provideFavoritesRepository(favoritesRepositoryImpl: FavoritesRepositoryImpl): FavoritesRepository {
-        return favoritesRepositoryImpl
-    }
-
-    @Provides
-    @Singleton
-    fun provideChatRepository(chatRepositoryImpl: ChatRepositoryImpl): ChatRepository {
-        return chatRepositoryImpl
-    }
-
-    @Provides
-    @Singleton
-    fun providePantryRepository(pantryRepositoryImpl: PantryRepositoryImpl): PantryRepository {
-        return pantryRepositoryImpl
-    }
-
-    @Provides
-    @Singleton
-    fun provideStatsRepository(statsRepositoryImpl: StatsRepositoryImpl): StatsRepository {
-        return statsRepositoryImpl
-    }
-
-    @Provides
-    @Singleton
-    fun provideSettingsRepository(settingsRepositoryImpl: SettingsRepositoryImpl): SettingsRepository {
-        return settingsRepositoryImpl
-    }
-
-    @Provides
-    @Singleton
-    fun provideRecipeRulesRepository(recipeRulesRepositoryImpl: RecipeRulesRepositoryImpl): RecipeRulesRepository {
-        return recipeRulesRepositoryImpl
-    }
+    // Repository bindings moved to RepositoryModule using @Binds for efficiency
 }

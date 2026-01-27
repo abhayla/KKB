@@ -87,5 +87,13 @@ dependencies {
     testImplementation(libs.coroutines.test)
     testImplementation(libs.room.testing)
     testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.turbine)
+
+    // Instrumented Testing (Room DAO tests)
     androidTestImplementation(libs.androidx.test.ext)
+    androidTestImplementation(libs.espresso.core)
+    androidTestImplementation(libs.coroutines.test)
+    androidTestImplementation(libs.room.testing)
+    androidTestImplementation(libs.turbine)
+    androidTestImplementation(libs.junit4)
 }
