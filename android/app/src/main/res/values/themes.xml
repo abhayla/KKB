@@ -1,8 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- App theme used after splash screen -->
     <style name="Theme.RasoiAI" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:statusBarColor">@color/background_light</item>
         <item name="android:navigationBarColor">@color/background_light</item>
         <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <!-- Splash screen theme - used for cold start -->
+    <style name="Theme.RasoiAI.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/background_light</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.RasoiAI</item>
     </style>
 </resources>

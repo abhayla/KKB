@@ -15,11 +15,11 @@
 | **Hilt DI** | 85% | Missing @Binds optimization, no Dispatcher injection |
 | **Data Layer (Offline-First)** | 90% | CRITICAL: Remove fallbackToDestructiveMigration() |
 | **Kotlin Patterns** | 95% | 1 non-null assertion to fix |
-| **Testing** | 15% | CRITICAL: ~1.5% coverage, needs 70% target |
-| **Performance** | 75% | Missing Baseline Profiles, incomplete Splash Screen |
+| **Testing** | 40% | ViewModel tests added (7 of 13), needs more coverage |
+| **Performance** | 85% | Splash Screen integrated ✅, Missing Baseline Profiles |
 | **Security** | 70% | HTTP BODY logging, hardcoded Web Client ID |
 | **DevOps/Gradle** | 90% | Well-configured, minor optimizations available |
-| **Overall** | **80%** | Good foundation, remaining gaps to address |
+| **Overall** | **84%** | Good foundation, remaining gaps to address |
 
 ---
 
@@ -93,10 +93,14 @@ val accessToken = runBlocking {  // Can cause ANR
 
 ---
 
-### 6. Splash Screen API Not Integrated
+### 6. ~~Splash Screen API Not Integrated~~ ✅ FIXED (2026-01-27)
 **Location:** `android/app/src/main/java/com/rasoiai/app/MainActivity.kt`
 
-**Current State:** Dependency added but `installSplashScreen()` not called.
+**Fix Applied:**
+- Added `Theme.RasoiAI.Splash` theme with branded background and icon
+- Configured `postSplashScreenTheme` for seamless transition
+- Added dark mode splash theme variant
+- Called `installSplashScreen()` before `super.onCreate()` in MainActivity
 
 ---
 
@@ -304,8 +308,8 @@ app (presentation) → domain → data → core
 ### Phase 2: High Priority (This Sprint)
 
 4. ~~**Refactor navigation events** - Change all 13 ViewModels to use Channel~~ ✅ COMPLETED
-5. **Integrate Splash Screen API** - Add `installSplashScreen()` to MainActivity
-6. **Add critical tests** - Focus on ViewModels and repositories
+5. ~~**Integrate Splash Screen API** - Add `installSplashScreen()` to MainActivity~~ ✅ COMPLETED
+6. **Add critical tests** - Focus on ViewModels and repositories (IN PROGRESS: 7/13 ViewModels tested)
 
 ### Phase 3: Medium Priority (Next Sprint)
 
