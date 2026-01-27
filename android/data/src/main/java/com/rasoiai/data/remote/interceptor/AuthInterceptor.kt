@@ -11,6 +11,10 @@ import javax.inject.Singleton
 /**
  * OkHttp interceptor that adds Authorization header to API requests.
  * Reads the access token from DataStore and adds it as a Bearer token.
+ *
+ * Note: runBlocking is used here because OkHttp interceptors are synchronous by design
+ * and run on OkHttp's dispatcher threads, not the main thread. This is the standard
+ * pattern for accessing suspend functions in OkHttp interceptors.
  */
 @Singleton
 class AuthInterceptor @Inject constructor(
@@ -45,10 +49,12 @@ class AuthInterceptor @Inject constructor(
             val authenticatedRequest = originalRequest.newBuilder()
                 .header(HEADER_AUTHORIZATION, "$TOKEN_TYPE $accessToken")
                 .build()
-            Timber.d("Added auth header to request: ${originalRequest.url}")
+            // Log only path to avoid exposing sensitive query parameters
+            Timber.d("Added auth header to request: $requestPath")
             chain.proceed(authenticatedRequest)
         } else {
-            Timber.w("No access token available for request: ${originalRequest.url}")
+            // Log only path to avoid exposing sensitive query parameters
+            Timber.w("No access token available for request: $requestPath")
             chain.proceed(originalRequest)
         }
     }

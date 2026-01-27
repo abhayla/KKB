@@ -190,14 +190,16 @@ fun GroceryScreen(
         )
     }
 
-    if (uiState.showEditDialog && uiState.selectedItem != null) {
-        EditItemDialog(
-            item = uiState.selectedItem!!,
-            onDismiss = viewModel::dismissEditDialog,
-            onConfirm = { quantity, unit ->
-                viewModel.updateItemQuantity(quantity, unit)
-            }
-        )
+    if (uiState.showEditDialog) {
+        uiState.selectedItem?.let { item ->
+            EditItemDialog(
+                item = item,
+                onDismiss = viewModel::dismissEditDialog,
+                onConfirm = { quantity, unit ->
+                    viewModel.updateItemQuantity(quantity, unit)
+                }
+            )
+        }
     }
 
     if (uiState.showAddItemDialog) {

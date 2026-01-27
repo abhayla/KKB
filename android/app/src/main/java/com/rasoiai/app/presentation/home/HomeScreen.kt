@@ -73,6 +73,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -510,7 +511,10 @@ private fun WeekDateSelector(
         horizontalArrangement = Arrangement.spacedBy(spacing.xs),
         contentPadding = PaddingValues(horizontal = spacing.md)
     ) {
-        items(weekDates) { weekDay ->
+        items(
+            items = weekDates,
+            key = { it.date.toEpochDay() }
+        ) { weekDay ->
             DateItem(
                 weekDay = weekDay,
                 onClick = { onDateSelect(weekDay.date) }
@@ -1157,7 +1161,7 @@ private fun SwapRecipeSheet(
     onSelectRecipe: (MealItem) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var searchQuery by remember { mutableStateOf("") }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
 
     // Filter suggestions based on search query
     val filteredSuggestions = remember(searchQuery, swapSuggestions) {
