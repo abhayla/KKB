@@ -340,12 +340,15 @@ cd android
 ./gradlew :data:test
 ./gradlew :app:test
 
-# Single test
+# Single test class or method
 ./gradlew test --tests "com.rasoiai.app.ClassName"
 ./gradlew test --tests "com.rasoiai.app.ClassName.testMethodName"
+./gradlew :app:testDebugUnitTest --tests "*.HomeViewModelTest"
 
-# Instrumented tests (requires emulator/device)
-./gradlew connectedAndroidTest
+# Instrumented/Espresso tests (requires emulator/device)
+./gradlew connectedAndroidTest                    # All instrumented tests
+./gradlew :app:connectedDebugAndroidTest          # App module only
+./gradlew connectedCheck --tests "*.HomeScreenTest"  # Single test class
 
 # Lint
 ./gradlew lint                   # Report: app/build/reports/lint-results-debug.html
@@ -353,6 +356,9 @@ cd android
 # Install & Launch
 ./gradlew installDebug
 "$ANDROID_HOME/platform-tools/adb" shell am start -n com.rasoiai.app/com.rasoiai.app.MainActivity
+
+# Clean build (when you encounter strange build issues)
+./gradlew clean && ./gradlew assembleDebug
 ```
 
 ### Backend (Python)
@@ -364,6 +370,22 @@ pytest tests/test_meal_plans.py -v
 alembic upgrade head             # Database migrations
 ruff check .                     # Lint
 ```
+
+## Test Structure
+
+```
+android/
+├── app/src/test/                    # Unit tests (JUnit5, MockK)
+│   └── java/com/rasoiai/app/
+│       └── presentation/            # ViewModel tests (*ViewModelTest.kt)
+├── app/src/androidTest/             # Instrumented tests (Espresso)
+│   └── java/com/rasoiai/app/
+│       └── *Test.kt                 # UI/E2E tests
+├── domain/src/test/                 # UseCase tests
+└── data/src/test/                   # Repository tests
+```
+
+**Test naming:** `ClassNameTest.kt` for unit tests, `ScreenNameTest.kt` for UI tests
 
 ## CI/CD
 
@@ -380,6 +402,16 @@ Artifacts uploaded: lint results, test results, debug APK.
 **Emulator not detected:** Set `ANDROID_HOME` and verify with `adb devices`.
 
 **Memory leaks:** LeakCanary is included in debug builds. Check logcat for leak traces during development.
+
+**Gradle daemon issues (Windows):** If builds hang or fail mysteriously, stop existing daemons:
+```bash
+./gradlew --stop
+```
+
+**KSP/Hilt errors after code changes:** Clean and rebuild:
+```bash
+./gradlew clean :app:kspDebugKotlin
+```
 
 ## Rules for Claude
 

@@ -11,7 +11,7 @@ I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 
 ## Current Status
 
-**Android app complete. Backend implemented and running.**
+**Android app complete with E2E test framework. Backend implemented.**
 
 ### Android App
 | Component | Status |
@@ -25,6 +25,17 @@ I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 | Recipe Repository | ✅ Complete (offline-first) |
 | Grocery Repository | ✅ Complete (offline-first) |
 | Other Repositories | ⏳ Fake (Favorites, Chat, Stats) |
+| **E2E Test Framework** | ✅ Complete (33 files, 42 tests) |
+
+### E2E Testing Framework (NEW)
+| Component | Count | Status |
+|-----------|-------|--------|
+| Base Infrastructure | 3 files | ✅ Complete |
+| Robot Classes | 12 files | ✅ Complete |
+| Flow Tests (Phases 1-14) | 14 files | ✅ Complete |
+| Performance Tests (Phase 15) | 1 file | ✅ Complete |
+| DI Test Modules | 3 files | ✅ Complete |
+| **Total** | **33 files** | ✅ Build passes |
 
 ### Backend (Python FastAPI)
 | Component | Status |
@@ -38,35 +49,38 @@ I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 | Festival Seed Data | ✅ 23 festivals (need 2026 dates) |
 | Claude AI Integration | ✅ Code ready (needs API key) |
 
-### Server Status
-- Backend running at `http://localhost:8000`
-- API docs at `http://localhost:8000/docs`
-- Health check: `curl http://localhost:8000/health`
-
 ## IMMEDIATE NEXT STEPS
 
 **Choose based on priority:**
 
-### Option 1: End-to-End Testing
-1. Start backend: `cd backend && ./venv/Scripts/uvicorn app.main:app --reload`
-2. Install Android app: `cd android && ./gradlew installDebug`
-3. Test full auth flow (Google Sign-In → Firebase → Backend JWT)
-4. Test meal plan generation
+### Option 1: Run E2E Tests on Device/Emulator
+```bash
+cd D:/Abhay/VibeCoding/KKB/android
 
-### Option 2: Add Claude API Key for AI Features
+# Run all E2E tests
+./gradlew :app:connectedAndroidTest
+
+# Run specific phase
+./gradlew :app:connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.flows.OnboardingFlowTest
+
+# Run performance tests
+./gradlew :app:connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.performance.PerformanceTest
+```
+
+### Option 2: Implement Remaining Android Repositories
+- `FavoritesRepositoryImpl` - offline-first pattern
+- `ChatRepositoryImpl` - connect to chat endpoints
+- `StatsRepositoryImpl` - cooking streaks and achievements
+
+### Option 3: Add Claude API Key for AI Features
 1. Get API key from console.anthropic.com
 2. Add to `backend/.env`: `ANTHROPIC_API_KEY=sk-ant-...`
 3. Test meal plan generation with AI
 
-### Option 3: Update Festival Data for 2026
+### Option 4: Update Festival Data for 2026
 - Current festivals are for 2025
 - Update `backend/scripts/seed_festivals.py` with 2026 dates
 - Re-run seed script
-
-### Option 4: Implement Remaining Android Repositories
-- `FavoritesRepositoryImpl` - offline-first pattern
-- `ChatRepositoryImpl` - connect to chat endpoints
-- `StatsRepositoryImpl` - cooking streaks and achievements
 
 ### Option 5: Production Deployment
 - Set up PostgreSQL database
@@ -74,6 +88,18 @@ I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 - Deploy to cloud (Railway, Render, etc.)
 
 ## Key Files Reference
+
+### E2E Testing (NEW)
+| Purpose | File |
+|---------|------|
+| Base Test Class | `app/src/androidTest/java/com/rasoiai/app/e2e/base/BaseE2ETest.kt` |
+| Test Data | `app/src/androidTest/java/com/rasoiai/app/e2e/base/TestDataFactory.kt` |
+| Test Extensions | `app/src/androidTest/java/com/rasoiai/app/e2e/base/ComposeTestExtensions.kt` |
+| Robot Classes | `app/src/androidTest/java/com/rasoiai/app/e2e/robots/*.kt` (12 files) |
+| Flow Tests | `app/src/androidTest/java/com/rasoiai/app/e2e/flows/*.kt` (14 files) |
+| Performance Tests | `app/src/androidTest/java/com/rasoiai/app/e2e/performance/PerformanceTest.kt` |
+| DI Modules | `app/src/androidTest/java/com/rasoiai/app/e2e/di/*.kt` (3 files) |
+| E2E Test Guide | `docs/testing/E2E-Testing-Prompt.md` |
 
 ### Backend (Python)
 | Purpose | File |
@@ -102,6 +128,16 @@ I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 
 ## Commands Reference
 
+### Android
+```bash
+cd D:/Abhay/VibeCoding/KKB/android
+
+./gradlew assembleDebug           # Build
+./gradlew test                    # Unit tests
+./gradlew installDebug            # Install on device
+./gradlew :app:connectedAndroidTest  # E2E tests (requires device/emulator)
+```
+
 ### Backend
 ```bash
 cd D:/Abhay/VibeCoding/KKB/backend
@@ -117,37 +153,25 @@ cd D:/Abhay/VibeCoding/KKB/backend
 curl http://localhost:8000/health
 ```
 
-### Android
-```bash
-cd D:/Abhay/VibeCoding/KKB/android
+## E2E Test Coverage (15 Phases, 42 Tests)
 
-./gradlew assembleDebug   # Build
-./gradlew test            # Run tests
-./gradlew installDebug    # Install on device
-```
-
-## API Endpoints (18 total)
-
-| Method | Endpoint | Auth |
-|--------|----------|------|
-| POST | `/api/v1/auth/firebase` | No |
-| GET | `/api/v1/users/me` | Yes |
-| PUT | `/api/v1/users/preferences` | Yes |
-| POST | `/api/v1/meal-plans/generate` | Yes |
-| GET | `/api/v1/meal-plans/current` | Yes |
-| GET | `/api/v1/meal-plans/{id}` | Yes |
-| POST | `/api/v1/meal-plans/{id}/items/{itemId}/swap` | Yes |
-| PUT | `/api/v1/meal-plans/{id}/items/{itemId}/lock` | Yes |
-| GET | `/api/v1/recipes/{id}` | Yes |
-| GET | `/api/v1/recipes/{id}/scale` | Yes |
-| GET | `/api/v1/recipes/search` | Yes |
-| GET | `/api/v1/grocery` | Yes |
-| GET | `/api/v1/grocery/whatsapp` | Yes |
-| GET | `/api/v1/festivals/upcoming` | No |
-| POST | `/api/v1/chat/message` | Yes |
-| GET | `/api/v1/chat/history` | Yes |
-| GET | `/api/v1/stats/streak` | Yes |
-| GET | `/api/v1/stats/monthly` | Yes |
+| Phase | Test File | Tests |
+|-------|-----------|-------|
+| 1 | AuthFlowTest | Splash screen, Google OAuth |
+| 2 | OnboardingFlowTest | 5 onboarding steps |
+| 3 | MealPlanGenerationTest | Generation progress |
+| 4 | HomeScreenTest | Week view, meal interactions |
+| 5 | GroceryFlowTest | List display, check/uncheck |
+| 6 | ChatFlowTest | Chat interface, suggestions |
+| 7 | FavoritesFlowTest | Add favorites, collections |
+| 8 | StatsScreenTest | Streak, charts, achievements |
+| 9 | SettingsFlowTest | Profile, preferences |
+| 10 | PantryFlowTest | Add items, expiring soon |
+| 11 | RecipeRulesFlowTest | Include/exclude rules |
+| 12 | CookingModeFlowTest | Scaling, cooking mode |
+| 13 | OfflineFlowTest | Offline access, sync |
+| 14 | EdgeCasesTest | Timeouts, errors, validation |
+| 15 | PerformanceTest | Cold start, transitions, memory |
 
 ## Architecture
 
@@ -205,9 +229,65 @@ Continue from here based on the immediate next step you choose.
 - Server running at localhost:8000
 - Firebase service account configured
 
+### Session 20: E2E Espresso Test Framework
+- Implemented complete E2E test framework (33 files)
+- Robot pattern for all 12 screens
+- 14 flow test classes covering phases 1-14
+- Performance test class for phase 15
+- Test DI modules (TestDataModule, FakeAuthModule, FakeNetworkModule)
+- TestDataFactory with Sharma Family test profile
+- ComposeTestExtensions for fluent test API
+- Build verified passing
+
 ---
 
-## BACKEND FILES CREATED
+## E2E TEST FILES CREATED (Session 20)
+
+```
+android/app/src/androidTest/java/com/rasoiai/app/e2e/
+├── base/
+│   ├── BaseE2ETest.kt              # Common setup, Hilt, Compose rules
+│   ├── TestDataFactory.kt          # Sharma Family test data
+│   └── ComposeTestExtensions.kt    # Fluent test API extensions
+├── di/
+│   ├── TestDataModule.kt           # Replaces RepositoryModule with fakes
+│   ├── FakeAuthModule.kt           # FakeGoogleAuthClient, FakeAuthRepository
+│   └── FakeNetworkModule.kt        # FakeNetworkMonitor for offline testing
+├── robots/
+│   ├── AuthRobot.kt
+│   ├── OnboardingRobot.kt
+│   ├── HomeRobot.kt
+│   ├── GroceryRobot.kt
+│   ├── ChatRobot.kt
+│   ├── FavoritesRobot.kt
+│   ├── StatsRobot.kt
+│   ├── SettingsRobot.kt
+│   ├── PantryRobot.kt
+│   ├── RecipeRulesRobot.kt
+│   ├── RecipeDetailRobot.kt
+│   └── CookingModeRobot.kt
+├── flows/
+│   ├── AuthFlowTest.kt             # Phase 1
+│   ├── OnboardingFlowTest.kt       # Phase 2
+│   ├── MealPlanGenerationTest.kt   # Phase 3
+│   ├── HomeScreenTest.kt           # Phase 4
+│   ├── GroceryFlowTest.kt          # Phase 5
+│   ├── ChatFlowTest.kt             # Phase 6
+│   ├── FavoritesFlowTest.kt        # Phase 7
+│   ├── StatsScreenTest.kt          # Phase 8
+│   ├── SettingsFlowTest.kt         # Phase 9
+│   ├── PantryFlowTest.kt           # Phase 10
+│   ├── RecipeRulesFlowTest.kt      # Phase 11
+│   ├── CookingModeFlowTest.kt      # Phase 12
+│   ├── OfflineFlowTest.kt          # Phase 13
+│   └── EdgeCasesTest.kt            # Phase 14
+└── performance/
+    └── PerformanceTest.kt          # Phase 15
+```
+
+---
+
+## BACKEND FILES CREATED (Session 19)
 
 ```
 backend/
@@ -246,4 +326,4 @@ backend/
 ---
 
 *Last Updated: January 2026*
-*Backend fully implemented. Server running. Firebase auth configured. Ready for end-to-end testing.*
+*E2E test framework complete (33 files). Backend implemented. Ready to run E2E tests on device/emulator.*
