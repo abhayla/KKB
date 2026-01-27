@@ -66,6 +66,12 @@ kotlinx-serialization = "1.6.2"
 # Immutable Collections
 kotlinx-collections-immutable = "0.3.7"
 
+# Memory Leak Detection
+leakcanary = "2.13"
+
+# Memory Leak Detection
+leakcanary = "2.13"
+
 # Testing
 junit = "5.10.1"
 junit4 = "4.13.2"
@@ -170,6 +176,9 @@ mockk-android = { group = "io.mockk", name = "mockk-android", version.ref = "moc
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 androidx-test-ext = { group = "androidx.test.ext", name = "junit", version.ref = "androidx-test-ext" }
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
+
+# Memory Leak Detection
+leakcanary = { group = "com.squareup.leakcanary", name = "leakcanary-android", version.ref = "leakcanary" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

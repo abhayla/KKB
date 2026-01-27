@@ -158,6 +158,9 @@ dependencies {
     // Immutable Collections (Compose stability)
     implementation(libs.kotlinx.collections.immutable)
 
+    // Memory Leak Detection (debug only)
+    debugImplementation(libs.leakcanary)
+
     // Testing
     testImplementation(libs.junit5)
     testImplementation(libs.mockk)
