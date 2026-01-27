@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -6,6 +8,22 @@ plugins {
     alias(libs.plugins.google.services)
     alias(libs.plugins.firebase.crashlytics)
 }
+
+// Load local.properties for sensitive configuration
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        load(localPropertiesFile.inputStream())
+    }
+}
+
+// Get Web Client ID from local.properties or environment variable (for CI)
+val webClientId: String = localProperties.getProperty("WEB_CLIENT_ID")
+    ?: System.getenv("WEB_CLIENT_ID")
+    ?: throw GradleException(
+        "WEB_CLIENT_ID not found. Please add it to local.properties or set as environment variable.\n" +
+        "See local.properties.example for reference."
+    )
 
 android {
     namespace = "com.rasoiai.app"
@@ -18,13 +36,13 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.rasoiai.app.HiltTestRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
 
-        // Web Client ID for Google Sign-In (from google-services.json oauth_client with client_type: 3)
-        buildConfigField("String", "WEB_CLIENT_ID", "\"1016523916534-tiop62vjrd3ak3sh91ru76bj8p04v49f.apps.googleusercontent.com\"")
+        // Web Client ID for Google Sign-In (loaded from local.properties or environment variable)
+        buildConfigField("String", "WEB_CLIENT_ID", "\"$webClientId\"")
     }
 
     signingConfigs {
@@ -171,4 +189,6 @@ dependencies {
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.hilt.android.testing)
+    kspAndroidTest(libs.hilt.compiler)
 }
