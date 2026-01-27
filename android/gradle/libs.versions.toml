@@ -48,6 +48,9 @@ work = "2.9.0"
 # Splash Screen
 splashscreen = "1.0.1"
 
+# Baseline Profiles
+profileinstaller = "1.3.1"
+
 # Logging
 timber = "5.0.1"
 
@@ -138,6 +141,9 @@ work-testing = { group = "androidx.work", name = "work-testing", version.ref = "
 
 # Splash Screen
 splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
+
+# Baseline Profiles
+profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
 
 # Logging
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }

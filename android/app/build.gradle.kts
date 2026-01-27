@@ -114,6 +114,9 @@ dependencies {
     // Splash Screen (Android 12+)
     implementation(libs.splashscreen)
 
+    // Baseline Profiles (startup performance optimization)
+    implementation(libs.profileinstaller)
+
     // Navigation
     implementation(libs.navigation.compose)
 
