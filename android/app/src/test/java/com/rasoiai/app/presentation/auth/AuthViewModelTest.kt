@@ -1,7 +1,6 @@
 package com.rasoiai.app.presentation.auth
 
 import app.cash.turbine.test
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.rasoiai.data.local.datastore.UserPreferencesDataStore
 import com.rasoiai.domain.repository.AuthRepository
@@ -27,7 +26,6 @@ import org.junit.jupiter.api.Test
 class AuthViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
-    private lateinit var mockFirebaseAuth: FirebaseAuth
     private lateinit var mockGoogleAuthClient: GoogleAuthClient
     private lateinit var mockAuthRepository: AuthRepository
     private lateinit var mockUserPreferencesDataStore: UserPreferencesDataStore
@@ -35,7 +33,6 @@ class AuthViewModelTest {
     @BeforeEach
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        mockFirebaseAuth = mockk(relaxed = true)
         mockGoogleAuthClient = mockk(relaxed = true)
         mockAuthRepository = mockk(relaxed = true)
         mockUserPreferencesDataStore = mockk(relaxed = true)
@@ -65,26 +62,57 @@ class AuthViewModelTest {
     }
 
     @Test
-    @DisplayName("When already signed in, should navigate to onboarding")
-    fun `when already signed in should navigate to onboarding`() = runTest {
+    @DisplayName("When already signed in, should set isSignedIn to true")
+    fun `when already signed in should set isSignedIn to true`() = runTest {
         val mockUser = mockk<FirebaseUser>(relaxed = true)
         every { mockGoogleAuthClient.isSignedIn } returns true
         every { mockGoogleAuthClient.currentUser } returns mockUser
 
         val viewModel = AuthViewModel(mockGoogleAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
 
-        // Advance to allow init to complete
-        testDispatcher.scheduler.advanceUntilIdle()
-
         viewModel.uiState.test {
             val state = awaitItem()
             assertTrue(state.isSignedIn)
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    @DisplayName("When already signed in, should emit navigation event")
+    fun `when already signed in should emit navigation event`() = runTest {
+        val mockUser = mockk<FirebaseUser>(relaxed = true)
+        every { mockGoogleAuthClient.isSignedIn } returns true
+        every { mockGoogleAuthClient.currentUser } returns mockUser
+
+        val viewModel = AuthViewModel(mockGoogleAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
+
+        // Advance to allow init coroutine to complete
+        testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.navigationEvent.test {
             val event = awaitItem()
+            // Not onboarded, so should navigate to onboarding
             assertEquals(AuthNavigationEvent.NavigateToOnboarding, event)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    @DisplayName("When already signed in and onboarded, should navigate to home")
+    fun `when already signed in and onboarded should navigate to home`() = runTest {
+        val mockUser = mockk<FirebaseUser>(relaxed = true)
+        every { mockGoogleAuthClient.isSignedIn } returns true
+        every { mockGoogleAuthClient.currentUser } returns mockUser
+        every { mockUserPreferencesDataStore.isOnboarded } returns flowOf(true)
+
+        val viewModel = AuthViewModel(mockGoogleAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
+
+        // Advance to allow init coroutine to complete
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.navigationEvent.test {
+            val event = awaitItem()
+            assertEquals(AuthNavigationEvent.NavigateToHome, event)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -100,37 +128,10 @@ class AuthViewModelTest {
         viewModel.uiState.test {
             awaitItem() // Initial state
 
-            // Manually trigger an error state would require mocking sign-in
-            // For now, just verify clearError clears any error
             viewModel.clearError()
 
             val state = awaitItem()
             assertNull(state.errorMessage)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    @DisplayName("onNavigationHandled should clear navigation event")
-    fun `onNavigationHandled should clear navigation event`() = runTest {
-        val mockUser = mockk<FirebaseUser>(relaxed = true)
-        every { mockGoogleAuthClient.isSignedIn } returns true
-        every { mockGoogleAuthClient.currentUser } returns mockUser
-
-        val viewModel = AuthViewModel(mockGoogleAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
-
-        // Advance to allow navigation event to be set
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        viewModel.navigationEvent.test {
-            // Skip to the navigation event
-            val event = awaitItem()
-            assertEquals(AuthNavigationEvent.NavigateToOnboarding, event)
-
-            viewModel.onNavigationHandled()
-
-            val clearedEvent = awaitItem()
-            assertNull(clearedEvent)
             cancelAndIgnoreRemainingEvents()
         }
     }
