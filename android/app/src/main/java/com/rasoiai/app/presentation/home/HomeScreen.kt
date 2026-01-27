@@ -109,41 +109,22 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val navigationEvent by viewModel.navigationEvent.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Handle navigation events
-    LaunchedEffect(navigationEvent) {
-        when (val event = navigationEvent) {
-            is HomeNavigationEvent.NavigateToRecipeDetail -> {
-                onNavigateToRecipeDetail(event.recipeId, event.isLocked, event.fromMealPlan)
-                viewModel.onNavigationHandled()
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { event ->
+            when (event) {
+                is HomeNavigationEvent.NavigateToRecipeDetail -> {
+                    onNavigateToRecipeDetail(event.recipeId, event.isLocked, event.fromMealPlan)
+                }
+                HomeNavigationEvent.NavigateToSettings -> onNavigateToSettings()
+                HomeNavigationEvent.NavigateToGrocery -> onNavigateToGrocery()
+                HomeNavigationEvent.NavigateToChat -> onNavigateToChat()
+                HomeNavigationEvent.NavigateToFavorites -> onNavigateToFavorites()
+                HomeNavigationEvent.NavigateToStats -> onNavigateToStats()
+                HomeNavigationEvent.NavigateToNotifications -> { /* TODO: Navigate to notifications */ }
             }
-            HomeNavigationEvent.NavigateToSettings -> {
-                onNavigateToSettings()
-                viewModel.onNavigationHandled()
-            }
-            HomeNavigationEvent.NavigateToGrocery -> {
-                onNavigateToGrocery()
-                viewModel.onNavigationHandled()
-            }
-            HomeNavigationEvent.NavigateToChat -> {
-                onNavigateToChat()
-                viewModel.onNavigationHandled()
-            }
-            HomeNavigationEvent.NavigateToFavorites -> {
-                onNavigateToFavorites()
-                viewModel.onNavigationHandled()
-            }
-            HomeNavigationEvent.NavigateToStats -> {
-                onNavigateToStats()
-                viewModel.onNavigationHandled()
-            }
-            HomeNavigationEvent.NavigateToNotifications -> {
-                // TODO: Navigate to notifications
-                viewModel.onNavigationHandled()
-            }
-            null -> { /* No navigation */ }
         }
     }
 

@@ -55,47 +55,37 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val navigationEvent by viewModel.navigationEvent.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Handle navigation events
-    LaunchedEffect(navigationEvent) {
-        when (val event = navigationEvent) {
-            SettingsNavigationEvent.NavigateBack -> {
-                onNavigateBack()
-                viewModel.onNavigationHandled()
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { event ->
+            when (event) {
+                SettingsNavigationEvent.NavigateBack -> onNavigateBack()
+                SettingsNavigationEvent.NavigateToAuth -> onNavigateToAuth()
+                SettingsNavigationEvent.NavigateToRecipeRules -> onNavigateToRecipeRules()
+                // Handle other navigation events - for now show snackbar as placeholder
+                is SettingsNavigationEvent.NavigateToEditProfile,
+                is SettingsNavigationEvent.NavigateToEditFamilyMember,
+                SettingsNavigationEvent.NavigateToAddFamilyMember,
+                SettingsNavigationEvent.NavigateToDietaryRestrictions,
+                SettingsNavigationEvent.NavigateToDislikedIngredients,
+                SettingsNavigationEvent.NavigateToCuisinePreferences,
+                SettingsNavigationEvent.NavigateToCookingTime,
+                SettingsNavigationEvent.NavigateToSpiceLevel,
+                SettingsNavigationEvent.NavigateToNotifications,
+                SettingsNavigationEvent.NavigateToUnits,
+                SettingsNavigationEvent.NavigateToFriendsLeaderboard,
+                SettingsNavigationEvent.NavigateToConnectedAccounts,
+                SettingsNavigationEvent.NavigateToShareApp,
+                SettingsNavigationEvent.NavigateToHelpFaq,
+                SettingsNavigationEvent.NavigateToContactUs,
+                SettingsNavigationEvent.NavigateToRateApp,
+                SettingsNavigationEvent.NavigateToPrivacyPolicy,
+                SettingsNavigationEvent.NavigateToTermsOfService -> {
+                    snackbarHostState.showSnackbar("Coming soon!")
+                }
             }
-            SettingsNavigationEvent.NavigateToAuth -> {
-                onNavigateToAuth()
-                viewModel.onNavigationHandled()
-            }
-            SettingsNavigationEvent.NavigateToRecipeRules -> {
-                onNavigateToRecipeRules()
-                viewModel.onNavigationHandled()
-            }
-            // Handle other navigation events - for now show snackbar as placeholder
-            is SettingsNavigationEvent.NavigateToEditProfile,
-            is SettingsNavigationEvent.NavigateToEditFamilyMember,
-            SettingsNavigationEvent.NavigateToAddFamilyMember,
-            SettingsNavigationEvent.NavigateToDietaryRestrictions,
-            SettingsNavigationEvent.NavigateToDislikedIngredients,
-            SettingsNavigationEvent.NavigateToCuisinePreferences,
-            SettingsNavigationEvent.NavigateToCookingTime,
-            SettingsNavigationEvent.NavigateToSpiceLevel,
-            SettingsNavigationEvent.NavigateToNotifications,
-            SettingsNavigationEvent.NavigateToUnits,
-            SettingsNavigationEvent.NavigateToFriendsLeaderboard,
-            SettingsNavigationEvent.NavigateToConnectedAccounts,
-            SettingsNavigationEvent.NavigateToShareApp,
-            SettingsNavigationEvent.NavigateToHelpFaq,
-            SettingsNavigationEvent.NavigateToContactUs,
-            SettingsNavigationEvent.NavigateToRateApp,
-            SettingsNavigationEvent.NavigateToPrivacyPolicy,
-            SettingsNavigationEvent.NavigateToTermsOfService -> {
-                snackbarHostState.showSnackbar("Coming soon!")
-                viewModel.onNavigationHandled()
-            }
-            null -> { /* No navigation */ }
         }
     }
 

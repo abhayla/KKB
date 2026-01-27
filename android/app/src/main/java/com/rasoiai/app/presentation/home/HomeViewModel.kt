@@ -9,9 +9,12 @@ import com.rasoiai.domain.model.MealPlanDay
 import com.rasoiai.domain.model.MealType
 import com.rasoiai.domain.repository.MealPlanRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -127,8 +130,8 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = MutableStateFlow<HomeNavigationEvent?>(null)
-    val navigationEvent: StateFlow<HomeNavigationEvent?> = _navigationEvent.asStateFlow()
+    private val _navigationEvent = Channel<HomeNavigationEvent>()
+    val navigationEvent: Flow<HomeNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     init {
         loadMealPlan()
@@ -263,7 +266,7 @@ class HomeViewModel @Inject constructor(
         val mealType = state.selectedMealType ?: return
         val isLocked = state.isRecipeEffectivelyLocked(mealItem, mealType)
         dismissRecipeActionSheet()
-        _navigationEvent.value = HomeNavigationEvent.NavigateToRecipeDetail(mealItem.recipeId, isLocked)
+        _navigationEvent.trySend(HomeNavigationEvent.NavigateToRecipeDetail(mealItem.recipeId, isLocked))
     }
 
     fun showSwapOptions() {
@@ -487,32 +490,28 @@ class HomeViewModel @Inject constructor(
 
     // region Navigation
 
-    fun onNavigationHandled() {
-        _navigationEvent.value = null
-    }
-
     fun navigateToSettings() {
-        _navigationEvent.value = HomeNavigationEvent.NavigateToSettings
+        _navigationEvent.trySend(HomeNavigationEvent.NavigateToSettings)
     }
 
     fun navigateToNotifications() {
-        _navigationEvent.value = HomeNavigationEvent.NavigateToNotifications
+        _navigationEvent.trySend(HomeNavigationEvent.NavigateToNotifications)
     }
 
     fun navigateToGrocery() {
-        _navigationEvent.value = HomeNavigationEvent.NavigateToGrocery
+        _navigationEvent.trySend(HomeNavigationEvent.NavigateToGrocery)
     }
 
     fun navigateToChat() {
-        _navigationEvent.value = HomeNavigationEvent.NavigateToChat
+        _navigationEvent.trySend(HomeNavigationEvent.NavigateToChat)
     }
 
     fun navigateToFavorites() {
-        _navigationEvent.value = HomeNavigationEvent.NavigateToFavorites
+        _navigationEvent.trySend(HomeNavigationEvent.NavigateToFavorites)
     }
 
     fun navigateToStats() {
-        _navigationEvent.value = HomeNavigationEvent.NavigateToStats
+        _navigationEvent.trySend(HomeNavigationEvent.NavigateToStats)
     }
 
     // endregion

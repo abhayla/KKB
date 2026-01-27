@@ -94,52 +94,36 @@ fun GroceryScreen(
     viewModel: GroceryViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val navigationEvent by viewModel.navigationEvent.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
 
     // Handle navigation events
-    LaunchedEffect(navigationEvent) {
-        when (val event = navigationEvent) {
-            GroceryNavigationEvent.NavigateBack -> {
-                onNavigateBack()
-                viewModel.onNavigationHandled()
-            }
-            GroceryNavigationEvent.NavigateToHome -> {
-                onNavigateToHome()
-                viewModel.onNavigationHandled()
-            }
-            GroceryNavigationEvent.NavigateToChat -> {
-                onNavigateToChat()
-                viewModel.onNavigationHandled()
-            }
-            GroceryNavigationEvent.NavigateToFavorites -> {
-                onNavigateToFavorites()
-                viewModel.onNavigationHandled()
-            }
-            GroceryNavigationEvent.NavigateToStats -> {
-                onNavigateToStats()
-                viewModel.onNavigationHandled()
-            }
-            is GroceryNavigationEvent.ShareViaWhatsApp -> {
-                val intent = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, event.text)
-                    setPackage("com.whatsapp")
-                }
-                try {
-                    context.startActivity(intent)
-                } catch (e: Exception) {
-                    // WhatsApp not installed, use regular share
-                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { event ->
+            when (event) {
+                GroceryNavigationEvent.NavigateBack -> onNavigateBack()
+                GroceryNavigationEvent.NavigateToHome -> onNavigateToHome()
+                GroceryNavigationEvent.NavigateToChat -> onNavigateToChat()
+                GroceryNavigationEvent.NavigateToFavorites -> onNavigateToFavorites()
+                GroceryNavigationEvent.NavigateToStats -> onNavigateToStats()
+                is GroceryNavigationEvent.ShareViaWhatsApp -> {
+                    val intent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
                         putExtra(Intent.EXTRA_TEXT, event.text)
+                        setPackage("com.whatsapp")
                     }
-                    context.startActivity(Intent.createChooser(shareIntent, "Share Grocery List"))
+                    try {
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        // WhatsApp not installed, use regular share
+                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, event.text)
+                        }
+                        context.startActivity(Intent.createChooser(shareIntent, "Share Grocery List"))
+                    }
                 }
-                viewModel.onNavigationHandled()
             }
-            null -> { /* No navigation */ }
         }
     }
 

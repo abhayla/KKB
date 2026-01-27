@@ -6,9 +6,12 @@ import com.rasoiai.domain.model.PantryCategory
 import com.rasoiai.domain.model.PantryItem
 import com.rasoiai.domain.repository.PantryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -69,8 +72,8 @@ class PantryViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(PantryUiState())
     val uiState: StateFlow<PantryUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = MutableStateFlow<PantryNavigationEvent?>(null)
-    val navigationEvent: StateFlow<PantryNavigationEvent?> = _navigationEvent.asStateFlow()
+    private val _navigationEvent = Channel<PantryNavigationEvent>()
+    val navigationEvent: Flow<PantryNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     init {
         loadPantryItems()
@@ -285,37 +288,33 @@ class PantryViewModel @Inject constructor(
 
     // region Navigation
 
-    fun onNavigationHandled() {
-        _navigationEvent.value = null
-    }
-
     fun navigateBack() {
-        _navigationEvent.value = PantryNavigationEvent.NavigateBack
+        _navigationEvent.trySend(PantryNavigationEvent.NavigateBack)
     }
 
     fun navigateToHome() {
-        _navigationEvent.value = PantryNavigationEvent.NavigateToHome
+        _navigationEvent.trySend(PantryNavigationEvent.NavigateToHome)
     }
 
     fun navigateToGrocery() {
-        _navigationEvent.value = PantryNavigationEvent.NavigateToGrocery
+        _navigationEvent.trySend(PantryNavigationEvent.NavigateToGrocery)
     }
 
     fun navigateToChat() {
-        _navigationEvent.value = PantryNavigationEvent.NavigateToChat
+        _navigationEvent.trySend(PantryNavigationEvent.NavigateToChat)
     }
 
     fun navigateToFavorites() {
-        _navigationEvent.value = PantryNavigationEvent.NavigateToFavorites
+        _navigationEvent.trySend(PantryNavigationEvent.NavigateToFavorites)
     }
 
     fun navigateToStats() {
-        _navigationEvent.value = PantryNavigationEvent.NavigateToStats
+        _navigationEvent.trySend(PantryNavigationEvent.NavigateToStats)
     }
 
     fun onFindRecipesClick() {
         val ingredients = _uiState.value.pantryItems.map { it.name }
-        _navigationEvent.value = PantryNavigationEvent.NavigateToRecipeSearch(ingredients)
+        _navigationEvent.trySend(PantryNavigationEvent.NavigateToRecipeSearch(ingredients))
     }
 
     // endregion

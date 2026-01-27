@@ -59,17 +59,14 @@ fun RecipeRulesScreen(
     viewModel: RecipeRulesViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val navigationEvent by viewModel.navigationEvent.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Handle navigation events
-    LaunchedEffect(navigationEvent) {
-        when (navigationEvent) {
-            RecipeRulesNavigationEvent.NavigateBack -> {
-                onNavigateBack()
-                viewModel.onNavigationHandled()
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { event ->
+            when (event) {
+                RecipeRulesNavigationEvent.NavigateBack -> onNavigateBack()
             }
-            null -> { /* No navigation */ }
         }
     }
 

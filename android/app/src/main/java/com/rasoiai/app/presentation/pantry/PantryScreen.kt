@@ -72,42 +72,23 @@ fun PantryScreen(
     viewModel: PantryViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val navigationEvent by viewModel.navigationEvent.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Handle navigation events
-    LaunchedEffect(navigationEvent) {
-        when (val event = navigationEvent) {
-            PantryNavigationEvent.NavigateBack -> {
-                onNavigateBack()
-                viewModel.onNavigationHandled()
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { event ->
+            when (event) {
+                PantryNavigationEvent.NavigateBack -> onNavigateBack()
+                PantryNavigationEvent.NavigateToHome -> onNavigateToHome()
+                PantryNavigationEvent.NavigateToGrocery -> onNavigateToGrocery()
+                PantryNavigationEvent.NavigateToChat -> onNavigateToChat()
+                PantryNavigationEvent.NavigateToFavorites -> onNavigateToFavorites()
+                PantryNavigationEvent.NavigateToStats -> onNavigateToStats()
+                is PantryNavigationEvent.NavigateToRecipeSearch -> {
+                    // Navigate to chat with ingredients context
+                    onNavigateToChat()
+                }
             }
-            PantryNavigationEvent.NavigateToHome -> {
-                onNavigateToHome()
-                viewModel.onNavigationHandled()
-            }
-            PantryNavigationEvent.NavigateToGrocery -> {
-                onNavigateToGrocery()
-                viewModel.onNavigationHandled()
-            }
-            PantryNavigationEvent.NavigateToChat -> {
-                onNavigateToChat()
-                viewModel.onNavigationHandled()
-            }
-            PantryNavigationEvent.NavigateToFavorites -> {
-                onNavigateToFavorites()
-                viewModel.onNavigationHandled()
-            }
-            PantryNavigationEvent.NavigateToStats -> {
-                onNavigateToStats()
-                viewModel.onNavigationHandled()
-            }
-            is PantryNavigationEvent.NavigateToRecipeSearch -> {
-                // Navigate to chat with ingredients context
-                onNavigateToChat()
-                viewModel.onNavigationHandled()
-            }
-            null -> { /* No navigation */ }
         }
     }
 

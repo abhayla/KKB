@@ -17,9 +17,12 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableSet
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -132,8 +135,8 @@ class RecipeDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(RecipeDetailUiState(lockState = lockState))
     val uiState: StateFlow<RecipeDetailUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = MutableStateFlow<RecipeDetailNavigationEvent?>(null)
-    val navigationEvent: StateFlow<RecipeDetailNavigationEvent?> = _navigationEvent.asStateFlow()
+    private val _navigationEvent = Channel<RecipeDetailNavigationEvent>()
+    val navigationEvent: Flow<RecipeDetailNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     init {
         loadRecipe()
@@ -270,26 +273,18 @@ class RecipeDetailViewModel @Inject constructor(
     }
 
     fun startCookingMode() {
-        _navigationEvent.value = RecipeDetailNavigationEvent.NavigateToCookingMode(recipeId)
+        _navigationEvent.trySend(RecipeDetailNavigationEvent.NavigateToCookingMode(recipeId))
     }
 
     fun modifyWithAI() {
         val recipeName = _uiState.value.recipe?.name ?: "this recipe"
-        _navigationEvent.value = RecipeDetailNavigationEvent.NavigateToChat(
+        _navigationEvent.trySend(RecipeDetailNavigationEvent.NavigateToChat(
             "I'd like to modify $recipeName"
-        )
+        ))
     }
 
     fun navigateBack() {
-        _navigationEvent.value = RecipeDetailNavigationEvent.NavigateBack
-    }
-
-    // endregion
-
-    // region Navigation
-
-    fun onNavigationHandled() {
-        _navigationEvent.value = null
+        _navigationEvent.trySend(RecipeDetailNavigationEvent.NavigateBack)
     }
 
     // endregion

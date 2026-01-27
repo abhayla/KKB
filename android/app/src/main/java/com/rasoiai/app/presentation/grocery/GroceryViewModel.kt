@@ -8,9 +8,12 @@ import com.rasoiai.domain.model.GroceryList
 import com.rasoiai.domain.model.IngredientCategory
 import com.rasoiai.domain.repository.GroceryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -123,8 +126,8 @@ class GroceryViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(GroceryUiState())
     val uiState: StateFlow<GroceryUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = MutableStateFlow<GroceryNavigationEvent?>(null)
-    val navigationEvent: StateFlow<GroceryNavigationEvent?> = _navigationEvent.asStateFlow()
+    private val _navigationEvent = Channel<GroceryNavigationEvent>()
+    val navigationEvent: Flow<GroceryNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     init {
         loadGroceryList()
@@ -287,7 +290,7 @@ class GroceryViewModel @Inject constructor(
     fun shareViaWhatsApp() {
         val text = _uiState.value.whatsAppShareText
         dismissWhatsAppDialog()
-        _navigationEvent.value = GroceryNavigationEvent.ShareViaWhatsApp(text)
+        _navigationEvent.trySend(GroceryNavigationEvent.ShareViaWhatsApp(text))
     }
 
     // endregion
@@ -320,35 +323,31 @@ class GroceryViewModel @Inject constructor(
     fun shareAsText() {
         dismissMoreOptionsMenu()
         val text = _uiState.value.whatsAppShareText
-        _navigationEvent.value = GroceryNavigationEvent.ShareViaWhatsApp(text)
+        _navigationEvent.trySend(GroceryNavigationEvent.ShareViaWhatsApp(text))
     }
 
     // endregion
 
     // region Navigation
 
-    fun onNavigationHandled() {
-        _navigationEvent.value = null
-    }
-
     fun navigateBack() {
-        _navigationEvent.value = GroceryNavigationEvent.NavigateBack
+        _navigationEvent.trySend(GroceryNavigationEvent.NavigateBack)
     }
 
     fun navigateToHome() {
-        _navigationEvent.value = GroceryNavigationEvent.NavigateToHome
+        _navigationEvent.trySend(GroceryNavigationEvent.NavigateToHome)
     }
 
     fun navigateToChat() {
-        _navigationEvent.value = GroceryNavigationEvent.NavigateToChat
+        _navigationEvent.trySend(GroceryNavigationEvent.NavigateToChat)
     }
 
     fun navigateToFavorites() {
-        _navigationEvent.value = GroceryNavigationEvent.NavigateToFavorites
+        _navigationEvent.trySend(GroceryNavigationEvent.NavigateToFavorites)
     }
 
     fun navigateToStats() {
-        _navigationEvent.value = GroceryNavigationEvent.NavigateToStats
+        _navigationEvent.trySend(GroceryNavigationEvent.NavigateToStats)
     }
 
     // endregion

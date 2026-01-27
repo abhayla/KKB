@@ -8,9 +8,12 @@ import com.rasoiai.domain.model.FamilyMember
 import com.rasoiai.domain.model.User
 import com.rasoiai.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -92,8 +95,8 @@ class SettingsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = MutableStateFlow<SettingsNavigationEvent?>(null)
-    val navigationEvent: StateFlow<SettingsNavigationEvent?> = _navigationEvent.asStateFlow()
+    private val _navigationEvent = Channel<SettingsNavigationEvent>()
+    val navigationEvent: Flow<SettingsNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     init {
         loadData()
@@ -164,7 +167,7 @@ class SettingsViewModel @Inject constructor(
             settingsRepository.signOut()
                 .onSuccess {
                     Timber.i("User signed out")
-                    _navigationEvent.value = SettingsNavigationEvent.NavigateToAuth
+                    _navigationEvent.send(SettingsNavigationEvent.NavigateToAuth)
                 }
                 .onFailure { e ->
                     Timber.e(e, "Failed to sign out")
@@ -182,88 +185,84 @@ class SettingsViewModel @Inject constructor(
 
     // region Navigation
 
-    fun onNavigationHandled() {
-        _navigationEvent.value = null
-    }
-
     fun navigateBack() {
-        _navigationEvent.value = SettingsNavigationEvent.NavigateBack
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateBack)
     }
 
     fun onEditProfileClick() {
-        _navigationEvent.value = SettingsNavigationEvent.NavigateToEditProfile
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateToEditProfile)
     }
 
     fun onEditFamilyMemberClick(memberId: String) {
-        _navigationEvent.value = SettingsNavigationEvent.NavigateToEditFamilyMember(memberId)
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateToEditFamilyMember(memberId))
     }
 
     fun onAddFamilyMemberClick() {
-        _navigationEvent.value = SettingsNavigationEvent.NavigateToAddFamilyMember
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateToAddFamilyMember)
     }
 
     fun onDietaryRestrictionsClick() {
-        _navigationEvent.value = SettingsNavigationEvent.NavigateToDietaryRestrictions
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateToDietaryRestrictions)
     }
 
     fun onDislikedIngredientsClick() {
-        _navigationEvent.value = SettingsNavigationEvent.NavigateToDislikedIngredients
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateToDislikedIngredients)
     }
 
     fun onCuisinePreferencesClick() {
-        _navigationEvent.value = SettingsNavigationEvent.NavigateToCuisinePreferences
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateToCuisinePreferences)
     }
 
     fun onCookingTimeClick() {
-        _navigationEvent.value = SettingsNavigationEvent.NavigateToCookingTime
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateToCookingTime)
     }
 
     fun onSpiceLevelClick() {
-        _navigationEvent.value = SettingsNavigationEvent.NavigateToSpiceLevel
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateToSpiceLevel)
     }
 
     fun onRecipeRulesClick() {
-        _navigationEvent.value = SettingsNavigationEvent.NavigateToRecipeRules
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateToRecipeRules)
     }
 
     fun onNotificationsClick() {
-        _navigationEvent.value = SettingsNavigationEvent.NavigateToNotifications
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateToNotifications)
     }
 
     fun onUnitsClick() {
-        _navigationEvent.value = SettingsNavigationEvent.NavigateToUnits
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateToUnits)
     }
 
     fun onFriendsLeaderboardClick() {
-        _navigationEvent.value = SettingsNavigationEvent.NavigateToFriendsLeaderboard
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateToFriendsLeaderboard)
     }
 
     fun onConnectedAccountsClick() {
-        _navigationEvent.value = SettingsNavigationEvent.NavigateToConnectedAccounts
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateToConnectedAccounts)
     }
 
     fun onShareAppClick() {
-        _navigationEvent.value = SettingsNavigationEvent.NavigateToShareApp
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateToShareApp)
     }
 
     fun onHelpFaqClick() {
-        _navigationEvent.value = SettingsNavigationEvent.NavigateToHelpFaq
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateToHelpFaq)
     }
 
     fun onContactUsClick() {
-        _navigationEvent.value = SettingsNavigationEvent.NavigateToContactUs
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateToContactUs)
     }
 
     fun onRateAppClick() {
-        _navigationEvent.value = SettingsNavigationEvent.NavigateToRateApp
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateToRateApp)
     }
 
     fun onPrivacyPolicyClick() {
-        _navigationEvent.value = SettingsNavigationEvent.NavigateToPrivacyPolicy
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateToPrivacyPolicy)
     }
 
     fun onTermsOfServiceClick() {
-        _navigationEvent.value = SettingsNavigationEvent.NavigateToTermsOfService
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateToTermsOfService)
     }
 
     // endregion

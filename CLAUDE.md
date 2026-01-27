@@ -106,17 +106,18 @@ class FeatureViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(FeatureUiState())
     val uiState: StateFlow<FeatureUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = MutableStateFlow<FeatureNavigationEvent?>(null)
-    val navigationEvent: StateFlow<FeatureNavigationEvent?> = _navigationEvent.asStateFlow()
+    // Use Channel for one-time navigation events (prevents replay on config change)
+    private val _navigationEvent = Channel<FeatureNavigationEvent>()
+    val navigationEvent: Flow<FeatureNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     // Update state with copy()
     fun doSomething() {
         _uiState.update { it.copy(isLoading = true) }
     }
 
-    // Clear navigation after handling
-    fun onNavigationHandled() {
-        _navigationEvent.value = null
+    // Send navigation event (use trySend for non-suspend context)
+    fun navigateToDetail(id: String) {
+        _navigationEvent.trySend(FeatureNavigationEvent.NavigateToDetail(id))
     }
 }
 ```

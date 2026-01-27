@@ -10,7 +10,7 @@
 
 | Category | Score | Status |
 |----------|-------|--------|
-| **Architecture (MVVM)** | 77% | Needs navigation event refactoring |
+| **Architecture (MVVM)** | 95% | Navigation events fixed ✅ |
 | **Jetpack Compose** | 92% | Minor recomposition fixes needed |
 | **Hilt DI** | 85% | Missing @Binds optimization, no Dispatcher injection |
 | **Data Layer (Offline-First)** | 90% | CRITICAL: Remove fallbackToDestructiveMigration() |
@@ -19,7 +19,7 @@
 | **Performance** | 75% | Missing Baseline Profiles, incomplete Splash Screen |
 | **Security** | 70% | HTTP BODY logging, hardcoded Web Client ID |
 | **DevOps/Gradle** | 90% | Well-configured, minor optimizations available |
-| **Overall** | **76%** | Good foundation, critical gaps to address |
+| **Overall** | **80%** | Good foundation, remaining gaps to address |
 
 ---
 
@@ -39,21 +39,17 @@
 
 ---
 
-### 2. Navigation Events Using StateFlow (All 13 ViewModels)
+### 2. ~~Navigation Events Using StateFlow (All 13 ViewModels)~~ ✅ FIXED
 **Severity:** HIGH
 **Affected Files:** All ViewModels in `presentation/*/`
 
-```kotlin
-// WRONG - StateFlow replays on configuration change
-private val _navigationEvent = MutableStateFlow<NavigationEvent?>(null)
-val navigationEvent: StateFlow<NavigationEvent?> = _navigationEvent.asStateFlow()
-```
-
-**Fix:** Use Channel for one-time events:
+**Status:** Fixed on 2026-01-27. All 13 ViewModels now use `Channel` for navigation events:
 ```kotlin
 private val _navigationEvent = Channel<NavigationEvent>()
 val navigationEvent: Flow<NavigationEvent> = _navigationEvent.receiveAsFlow()
 ```
+
+All corresponding Screen composables updated to use `LaunchedEffect(Unit)` with `collect`.
 
 ---
 
@@ -118,7 +114,7 @@ val accessToken = runBlocking {  // Can cause ANR
 | StateFlow exposure (not MutableStateFlow) | ✅ Pass | All 14 ViewModels correct |
 | UiState data class pattern | ✅ Pass | Consistent across all screens |
 | viewModelScope usage | ✅ Pass | All async operations correct |
-| Navigation events | ❌ Fail | All use StateFlow instead of Channel |
+| Navigation events | ✅ Pass | All use Channel (fixed 2026-01-27) |
 | No LiveData | ✅ Pass | All StateFlow/Flow |
 | No business logic in Composables | ✅ Pass | Properly delegated |
 
@@ -307,7 +303,7 @@ app (presentation) → domain → data → core
 
 ### Phase 2: High Priority (This Sprint)
 
-4. **Refactor navigation events** - Change all 13 ViewModels to use Channel
+4. ~~**Refactor navigation events** - Change all 13 ViewModels to use Channel~~ ✅ COMPLETED
 5. **Integrate Splash Screen API** - Add `installSplashScreen()` to MainActivity
 6. **Add critical tests** - Focus on ViewModels and repositories
 

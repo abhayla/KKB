@@ -48,21 +48,13 @@ fun SplashScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
 
-    LaunchedEffect(uiState.navigationEvent) {
-        when (uiState.navigationEvent) {
-            SplashNavigationEvent.NavigateToAuth -> {
-                onNavigateToAuth()
-                viewModel.onNavigationHandled()
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { event ->
+            when (event) {
+                SplashNavigationEvent.NavigateToAuth -> onNavigateToAuth()
+                SplashNavigationEvent.NavigateToOnboarding -> onNavigateToOnboarding()
+                SplashNavigationEvent.NavigateToHome -> onNavigateToHome()
             }
-            SplashNavigationEvent.NavigateToOnboarding -> {
-                onNavigateToOnboarding()
-                viewModel.onNavigationHandled()
-            }
-            SplashNavigationEvent.NavigateToHome -> {
-                onNavigateToHome()
-                viewModel.onNavigationHandled()
-            }
-            null -> { /* Still loading */ }
         }
     }
 

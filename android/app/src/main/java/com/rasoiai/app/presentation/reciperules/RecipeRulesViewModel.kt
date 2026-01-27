@@ -13,10 +13,13 @@ import com.rasoiai.domain.model.RuleFrequency
 import com.rasoiai.domain.model.RuleType
 import com.rasoiai.domain.repository.RecipeRulesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -147,8 +150,8 @@ class RecipeRulesViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(RecipeRulesUiState())
     val uiState: StateFlow<RecipeRulesUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = MutableStateFlow<RecipeRulesNavigationEvent?>(null)
-    val navigationEvent: StateFlow<RecipeRulesNavigationEvent?> = _navigationEvent.asStateFlow()
+    private val _navigationEvent = Channel<RecipeRulesNavigationEvent>()
+    val navigationEvent: Flow<RecipeRulesNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     init {
         loadData()
@@ -581,11 +584,7 @@ class RecipeRulesViewModel @Inject constructor(
     // region Navigation
 
     fun navigateBack() {
-        _navigationEvent.value = RecipeRulesNavigationEvent.NavigateBack
-    }
-
-    fun onNavigationHandled() {
-        _navigationEvent.value = null
+        _navigationEvent.trySend(RecipeRulesNavigationEvent.NavigateBack)
     }
 
     // endregion

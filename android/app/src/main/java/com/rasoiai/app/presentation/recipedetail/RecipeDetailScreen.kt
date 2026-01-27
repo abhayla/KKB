@@ -59,25 +59,20 @@ fun RecipeDetailScreen(
     viewModel: RecipeDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val navigationEvent by viewModel.navigationEvent.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Handle navigation events
-    LaunchedEffect(navigationEvent) {
-        when (val event = navigationEvent) {
-            is RecipeDetailNavigationEvent.NavigateToCookingMode -> {
-                onNavigateToCookingMode(event.recipeId)
-                viewModel.onNavigationHandled()
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { event ->
+            when (event) {
+                is RecipeDetailNavigationEvent.NavigateToCookingMode -> {
+                    onNavigateToCookingMode(event.recipeId)
+                }
+                is RecipeDetailNavigationEvent.NavigateToChat -> {
+                    onNavigateToChat(event.recipeContext)
+                }
+                RecipeDetailNavigationEvent.NavigateBack -> onNavigateBack()
             }
-            is RecipeDetailNavigationEvent.NavigateToChat -> {
-                onNavigateToChat(event.recipeContext)
-                viewModel.onNavigationHandled()
-            }
-            RecipeDetailNavigationEvent.NavigateBack -> {
-                onNavigateBack()
-                viewModel.onNavigationHandled()
-            }
-            null -> { /* No navigation */ }
         }
     }
 

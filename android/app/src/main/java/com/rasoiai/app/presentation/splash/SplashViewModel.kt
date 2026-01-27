@@ -7,19 +7,21 @@ import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.data.local.datastore.UserPreferencesDataStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class SplashUiState(
-    val isLoading: Boolean = true,
-    val navigationEvent: SplashNavigationEvent? = null
+    val isLoading: Boolean = true
 )
 
 sealed class SplashNavigationEvent {
@@ -36,6 +38,9 @@ class SplashViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(SplashUiState())
     val uiState: StateFlow<SplashUiState> = _uiState.asStateFlow()
+
+    private val _navigationEvent = Channel<SplashNavigationEvent>()
+    val navigationEvent: Flow<SplashNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     val isOnline: StateFlow<Boolean> = networkMonitor.isOnline
         .stateIn(
@@ -59,22 +64,14 @@ class SplashViewModel @Inject constructor(
             // Check if onboarding is complete from DataStore
             val isOnboarded = userPreferencesDataStore.isOnboarded.first()
 
-            val navigationEvent = when {
+            val event = when {
                 !isLoggedIn -> SplashNavigationEvent.NavigateToAuth
                 !isOnboarded -> SplashNavigationEvent.NavigateToOnboarding
                 else -> SplashNavigationEvent.NavigateToHome
             }
 
-            _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    navigationEvent = navigationEvent
-                )
-            }
+            _uiState.update { it.copy(isLoading = false) }
+            _navigationEvent.send(event)
         }
-    }
-
-    fun onNavigationHandled() {
-        _uiState.update { it.copy(navigationEvent = null) }
     }
 }

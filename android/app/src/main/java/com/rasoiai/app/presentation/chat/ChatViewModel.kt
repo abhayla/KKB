@@ -5,9 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.rasoiai.domain.model.ChatMessage
 import com.rasoiai.domain.repository.ChatRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -47,8 +50,8 @@ class ChatViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = MutableStateFlow<ChatNavigationEvent?>(null)
-    val navigationEvent: StateFlow<ChatNavigationEvent?> = _navigationEvent.asStateFlow()
+    private val _navigationEvent = Channel<ChatNavigationEvent>()
+    val navigationEvent: Flow<ChatNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     init {
         loadMessages()
@@ -163,32 +166,28 @@ class ChatViewModel @Inject constructor(
 
     // region Navigation
 
-    fun onNavigationHandled() {
-        _navigationEvent.value = null
-    }
-
     fun navigateBack() {
-        _navigationEvent.value = ChatNavigationEvent.NavigateBack
+        _navigationEvent.trySend(ChatNavigationEvent.NavigateBack)
     }
 
     fun navigateToHome() {
-        _navigationEvent.value = ChatNavigationEvent.NavigateToHome
+        _navigationEvent.trySend(ChatNavigationEvent.NavigateToHome)
     }
 
     fun navigateToGrocery() {
-        _navigationEvent.value = ChatNavigationEvent.NavigateToGrocery
+        _navigationEvent.trySend(ChatNavigationEvent.NavigateToGrocery)
     }
 
     fun navigateToFavorites() {
-        _navigationEvent.value = ChatNavigationEvent.NavigateToFavorites
+        _navigationEvent.trySend(ChatNavigationEvent.NavigateToFavorites)
     }
 
     fun navigateToStats() {
-        _navigationEvent.value = ChatNavigationEvent.NavigateToStats
+        _navigationEvent.trySend(ChatNavigationEvent.NavigateToStats)
     }
 
     fun navigateToRecipeDetail(recipeId: String) {
-        _navigationEvent.value = ChatNavigationEvent.NavigateToRecipeDetail(recipeId)
+        _navigationEvent.trySend(ChatNavigationEvent.NavigateToRecipeDetail(recipeId))
     }
 
     // endregion

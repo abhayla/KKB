@@ -70,37 +70,21 @@ fun FavoritesScreen(
     viewModel: FavoritesViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val navigationEvent by viewModel.navigationEvent.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Handle navigation events
-    LaunchedEffect(navigationEvent) {
-        when (val event = navigationEvent) {
-            FavoritesNavigationEvent.NavigateBack -> {
-                onNavigateToHome()
-                viewModel.onNavigationHandled()
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { event ->
+            when (event) {
+                FavoritesNavigationEvent.NavigateBack -> onNavigateToHome()
+                FavoritesNavigationEvent.NavigateToHome -> onNavigateToHome()
+                FavoritesNavigationEvent.NavigateToGrocery -> onNavigateToGrocery()
+                FavoritesNavigationEvent.NavigateToChat -> onNavigateToChat()
+                FavoritesNavigationEvent.NavigateToStats -> onNavigateToStats()
+                is FavoritesNavigationEvent.NavigateToRecipeDetail -> {
+                    onNavigateToRecipeDetail(event.recipeId)
+                }
             }
-            FavoritesNavigationEvent.NavigateToHome -> {
-                onNavigateToHome()
-                viewModel.onNavigationHandled()
-            }
-            FavoritesNavigationEvent.NavigateToGrocery -> {
-                onNavigateToGrocery()
-                viewModel.onNavigationHandled()
-            }
-            FavoritesNavigationEvent.NavigateToChat -> {
-                onNavigateToChat()
-                viewModel.onNavigationHandled()
-            }
-            FavoritesNavigationEvent.NavigateToStats -> {
-                onNavigateToStats()
-                viewModel.onNavigationHandled()
-            }
-            is FavoritesNavigationEvent.NavigateToRecipeDetail -> {
-                onNavigateToRecipeDetail(event.recipeId)
-                viewModel.onNavigationHandled()
-            }
-            null -> { /* No navigation */ }
         }
     }
 
