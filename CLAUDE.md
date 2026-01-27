@@ -16,54 +16,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Quick Start
 
 ```bash
-# 1. Navigate to android folder
 cd android
-
-# 2. Build the project
-./gradlew build
-
-# 3. Run tests
-./gradlew test
-
-# 4. Install on device/emulator
-./gradlew installDebug
+./gradlew build          # Build
+./gradlew test           # Run tests
+./gradlew installDebug   # Install on device/emulator
 ```
 
 **Prerequisites:** Android Studio, JDK 17+, Android SDK 34
 
-**Android SDK Path:** Set `ANDROID_HOME` environment variable or use Android Studio's default location.
-
-**ADB Command:** Use full path if adb is not in PATH:
+**Firebase Setup:** Add `google-services.json` to `android/app/` from Firebase Console, or create a placeholder for build-only testing:
 ```bash
-# Windows (Git Bash) - adjust path to your SDK location
-"$ANDROID_HOME/platform-tools/adb" devices
-
-# Or use Android Studio's terminal which has adb in PATH
-```
-
-## Infrastructure Setup (Complete)
-
-| Category | Status | Details |
-|----------|--------|---------|
-| CI/CD | ✅ | GitHub Actions (`android-ci.yml`) - build, test, lint on push/PR |
-| Firebase | ✅ | Plugins configured (google-services, crashlytics), Analytics & Crashlytics deps |
-| Logging | ✅ | Timber integrated in `RasoiAIApplication` |
-| Background Sync | ✅ | WorkManager + `SyncWorker` for offline data sync |
-| Network Security | ✅ | `network_security_config.xml` (cleartext blocked except localhost) |
-| Gradle Wrapper | ✅ | `gradlew` / `gradlew.bat` scripts |
-| Test Infrastructure | ✅ | Sample tests in app, domain, data modules |
-
-### Before Starting Feature Development
-
-1. **Firebase Setup** - Create Firebase project and download `google-services.json` to `android/app/`
-2. **Release Signing** - Configure keystore in `android/app/build.gradle.kts` (placeholder exists)
-
-### CI/CD Notes
-
-The GitHub Actions workflow (`android-ci.yml`) automatically creates a placeholder `google-services.json` for CI builds. For local development without Firebase:
-```bash
-# Create placeholder for build-only testing (from android/ folder)
-mkdir -p app/src/debug
 echo '{"project_info":{"project_number":"000000000000","project_id":"rasoiai-debug","storage_bucket":"rasoiai-debug.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:000000000000:android:0000000000000000000000","android_client_info":{"package_name":"com.rasoiai.app.debug"}},"oauth_client":[],"api_key":[{"current_key":"fake-api-key-for-ci"}],"services":{}}],"configuration_version":"1"}' > app/google-services.json
 ```
 
@@ -345,7 +307,7 @@ See `android/gradle/libs.versions.toml` for exact dependency versions.
 | Backend | Python, FastAPI, SQLAlchemy, PostgreSQL, Redis |
 | Auth | Firebase Auth (Google OAuth only) |
 | LLM | Claude API (claude-3-sonnet) |
-| Testing | JUnit5, MockK, Turbine, Compose Testing |
+| Testing | JUnit5, MockK, Turbine, Espresso (UI/E2E) |
 
 ## Key Design Decisions
 
@@ -366,118 +328,74 @@ See `android/gradle/libs.versions.toml` for exact dependency versions.
 
 ## Development Commands
 
-**Important:** Use forward slashes `/` in bash commands (not backslashes `\`). The shell is Unix-style bash, not Windows CMD.
-
 ### Android App (run from `android/` folder)
 ```bash
 cd android
 
-# Build
-./gradlew build
-
-# Quick compilation check (no tests)
-./gradlew assembleDebug
-
-# Run all unit tests
-./gradlew test
-
-# Run single test class
-./gradlew test --tests "com.rasoiai.app.ClassName"
-
-# Run single test method
-./gradlew test --tests "com.rasoiai.app.ClassName.testMethodName"
-
-# Run tests for specific module
-./gradlew :domain:test
+# Build & Test
+./gradlew build                  # Full build with tests
+./gradlew assembleDebug          # Quick compilation (no tests)
+./gradlew test                   # All unit tests
+./gradlew :domain:test           # Module-specific tests
 ./gradlew :data:test
 ./gradlew :app:test
 
-# Run instrumented tests (requires emulator/device)
+# Single test
+./gradlew test --tests "com.rasoiai.app.ClassName"
+./gradlew test --tests "com.rasoiai.app.ClassName.testMethodName"
+
+# Instrumented tests (requires emulator/device)
 ./gradlew connectedAndroidTest
 
-# Lint (Android lint)
-./gradlew lint
+# Lint
+./gradlew lint                   # Report: app/build/reports/lint-results-debug.html
 
-# Lint report location
-# app/build/reports/lint-results-debug.html
-
-# Clean build
-./gradlew clean build
-
-# Install on device/emulator
+# Install & Launch
 ./gradlew installDebug
-
-# Launch app via adb (use full path)
-"/c/Users/itsab/AppData/Local/Android/Sdk/platform-tools/adb" shell am start -n com.rasoiai.app/com.rasoiai.app.MainActivity
+"$ANDROID_HOME/platform-tools/adb" shell am start -n com.rasoiai.app/com.rasoiai.app.MainActivity
 ```
 
 ### Backend (Python)
 ```bash
-# Install dependencies
 pip install -r requirements.txt
-
-# Run server
-uvicorn app.main:app --reload
-
-# Run tests
-pytest
-
-# Run single test file
+uvicorn app.main:app --reload    # Run server
+pytest                           # Run tests
 pytest tests/test_meal_plans.py -v
-
-# Database migrations
-alembic upgrade head
-alembic revision --autogenerate -m "description"
-
-# Lint
-ruff check .
+alembic upgrade head             # Database migrations
+ruff check .                     # Lint
 ```
 
-## Current Status
+## CI/CD
 
-**All 13 screens implemented.** Overall audit score: **97%** (production-ready).
+GitHub Actions runs on push/PR to `main`/`develop` branches (see `.github/workflows/android-ci.yml`):
+- Lint → Unit Tests → Build Debug APK
+- Instrumented tests run on PRs only (uses Android emulator)
 
-| Component | Status |
-|-----------|--------|
-| UI Screens | ✅ Complete (13 screens in `presentation/`) |
-| Auth Integration | ✅ Complete (Firebase + Backend JWT) |
-| API Layer | ✅ Complete (Retrofit + AuthInterceptor) |
-| Mappers | ✅ Complete (DTO & Entity mappers) |
-| Core Repositories | ✅ MealPlan, Recipe, Grocery (offline-first) |
-| Other Repositories | ⏳ Fake implementations (Favorites, Chat, Stats) |
-| Test Coverage | ✅ All ViewModels, DAOs, Mappers tested |
-
-**Before First Run:** Add `google-services.json` to `android/app/` from Firebase Console (see CI/CD Notes for placeholder).
-
-| Documentation | Location |
-|--------------|----------|
-| Requirements | `docs/requirements/RasoiAI Requirements.md` |
-| Technical Design | `docs/design/RasoiAI Technical Design.md` |
-| Architecture Decisions | `docs/design/Android Architecture Decisions.md` |
-| Audit Report | `docs/claude-docs/RasoiAI-Codebase-Audit-Report.md` |
+Artifacts uploaded: lint results, test results, debug APK.
 
 ## Troubleshooting
 
-**Build fails with missing google-services.json:**
-Place a valid `google-services.json` in `android/app/` from Firebase Console, or create the placeholder shown in CI/CD Notes section for build-only testing.
+**Gradle sync fails:** Ensure JDK 17+ and `JAVA_HOME` set. Kotlin/KSP must be 1.9.22 / 1.9.22-1.0.17 (see `gradle/libs.versions.toml`).
 
-**Gradle sync fails with version mismatch:**
-Ensure JDK 17+ is installed and `JAVA_HOME` is set correctly. The project requires exact Kotlin/KSP version compatibility (1.9.22 / 1.9.22-1.0.17). Check `gradle/libs.versions.toml` for current versions.
+**Emulator not detected:** Set `ANDROID_HOME` and verify with `adb devices`.
 
-**Emulator not detected:**
-Ensure `ANDROID_HOME` is set and the emulator is running. Use `adb devices` to verify connection.
+**Memory leaks:** LeakCanary is included in debug builds. Check logcat for leak traces during development.
 
 ## Rules for Claude
 
-1. **Bash Path Syntax**: Always use forward slashes `/` in bash commands, not backslashes `\`. Use `./gradlew` not `.\gradlew`. Quote paths containing spaces. The shell is Unix-style bash, not Windows CMD.
+1. **Bash Syntax**: Use forward slashes `/` (not `\`), use `./gradlew` (not `.\gradlew`), quote paths with spaces. Shell is Unix-style bash.
 
-2. **Document Output Location**: Save generated documents to `docs/claude-docs/` by default.
+2. **Document Output**:
+   - Generated documents → `docs/claude-docs/`
+   - Test screenshots/artifacts → `docs/testing/screenshots/` (gitignored)
+   - Audit reports → `docs/claude-docs/`
 
-3. **Offline-First**: Any feature design must account for offline-first behavior with Room as source of truth.
+3. **Offline-First**: All features must use Room as source of truth with offline support.
 
-## Key Documentation
+## Reference Implementations
 
-**Reference implementations** (use as patterns for new screens):
+Use these as patterns for new screens:
+
 | Pattern | Reference | Key Features |
 |---------|-----------|--------------|
 | Tabs + Bottom Sheets | `presentation/reciperules/` | 4-tab layout, modal sheets |
@@ -487,8 +405,13 @@ Ensure `ANDROID_HOME` is set and the emulator is running. Use `adb devices` to v
 | Camera Integration | `presentation/pantry/` | ScanResultsSheet component |
 | Charts/Gamification | `presentation/stats/` | CuisineBreakdownSection |
 
-**Key docs:**
-- Wireframes: `docs/design/wireframes/` (individual screen specs)
-- Architecture: `docs/design/Android Architecture Decisions.md`
-- Audit Checklist: `docs/claude-docs/Android-Best-Practices-Audit-Guide.md`
-- Resume Context: `docs/CONTINUE_PROMPT.md`
+## Key Documentation
+
+| Document | Location |
+|----------|----------|
+| Requirements | `docs/requirements/RasoiAI Requirements.md` |
+| Technical Design | `docs/design/RasoiAI Technical Design.md` |
+| Architecture Decisions | `docs/design/Android Architecture Decisions.md` |
+| Wireframes | `docs/design/wireframes/` |
+| Audit Checklist | `docs/claude-docs/Android-Best-Practices-Audit-Guide.md` |
+| E2E Testing Guide | `docs/testing/E2E-Testing-Prompt.md` |

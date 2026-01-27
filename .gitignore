@@ -71,7 +71,7 @@ htmlcov/
 *.local
 
 # Secrets
-google-services.json
+*google-services.json
 *.keystore
 *.jks
 credentials.json
@@ -79,9 +79,10 @@ service-account.json
 
 # Testing/Debug
 .playwright-mcp/
-screenshots/
+docs/testing/screenshots/
 screenshot*.png
-screen.png
+screen*.png
+ui*.xml
 
 # Misc
 Notes

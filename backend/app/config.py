@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     # Anthropic Claude
     anthropic_api_key: Optional[str] = None
 
+    # Google AI (Gemini)
+    google_ai_api_key: Optional[str] = None
+
     # Server
     api_v1_prefix: str = "/api/v1"
     debug: bool = True

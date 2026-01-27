@@ -69,9 +69,6 @@ kotlinx-collections-immutable = "0.3.7"
 # Memory Leak Detection
 leakcanary = "2.13"
 
-# Memory Leak Detection
-leakcanary = "2.13"
-
 # Testing
 junit = "5.10.1"
 junit4 = "4.13.2"

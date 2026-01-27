@@ -32,7 +32,9 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DataModule {
 
-    private const val BASE_URL = "https://api.rasoiai.app/"
+    // Use 10.0.2.2 to access host machine's localhost from Android emulator
+    // TODO: Use BuildConfig to switch between debug/release URLs
+    private const val BASE_URL = "http://10.0.2.2:8000/api/v1/"
     private const val TIMEOUT_SECONDS = 30L
 
     @Provides

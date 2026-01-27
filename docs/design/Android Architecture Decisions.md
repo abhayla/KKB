@@ -641,42 +641,38 @@ class HomeViewModelTest {
 }
 ```
 
-### Example UI Test (Compose)
+### Example UI Test (Espresso)
 ```kotlin
 @HiltAndroidTest
+@RunWith(AndroidJUnit4::class)
 class HomeScreenTest {
 
     @get:Rule(order = 0)
     val hiltRule = HiltAndroidRule(this)
 
     @get:Rule(order = 1)
-    val composeTestRule = createAndroidComposeRule<MainActivity>()
+    val activityRule = ActivityScenarioRule(MainActivity::class.java)
 
     @Test
     fun homeScreen_displaysMealPlan_whenDataLoaded() {
-        composeTestRule.apply {
-            // Wait for loading to complete
-            waitUntil {
-                onNodeWithTag("loading_indicator").isNotDisplayed()
-            }
+        // Wait for loading to complete
+        onView(withId(R.id.loading_indicator))
+            .check(matches(not(isDisplayed())))
 
-            // Verify meal plan is displayed
-            onNodeWithText("Today's Meals").assertIsDisplayed()
-            onNodeWithText("Breakfast").assertIsDisplayed()
-            onNodeWithText("Lunch").assertIsDisplayed()
-            onNodeWithText("Dinner").assertIsDisplayed()
-        }
+        // Verify meal plan is displayed
+        onView(withText("Today's Meals")).check(matches(isDisplayed()))
+        onView(withText("Breakfast")).check(matches(isDisplayed()))
+        onView(withText("Lunch")).check(matches(isDisplayed()))
+        onView(withText("Dinner")).check(matches(isDisplayed()))
     }
 
     @Test
     fun homeScreen_navigatesToRecipe_whenMealClicked() {
-        composeTestRule.apply {
-            // Click on a meal item
-            onNodeWithTag("meal_item_breakfast").performClick()
+        // Click on a meal item
+        onView(withId(R.id.meal_item_breakfast)).perform(click())
 
-            // Verify navigation to recipe detail
-            onNodeWithTag("recipe_detail_screen").assertIsDisplayed()
-        }
+        // Verify navigation to recipe detail
+        onView(withId(R.id.recipe_detail_screen)).check(matches(isDisplayed()))
     }
 }
 ```
@@ -685,7 +681,7 @@ class HomeScreenTest {
 - Offline-first architecture requires thorough unit testing
 - Complex business logic (dietary restrictions, fasting) needs coverage
 - StateFlow testing with Turbine is straightforward
-- Compose UI testing verifies critical user flows
+- Espresso UI/E2E testing verifies critical user flows
 - CI/CD optimized: fast unit tests for PRs, slower UI tests nightly
 
 ---
@@ -857,7 +853,7 @@ RasoiAI/
 - [Navigation Compose](https://developer.android.com/develop/ui/compose/navigation)
 - [KSP Migration Guide](https://developer.android.com/build/migrate-to-ksp)
 - [Version Catalogs](https://developer.android.com/build/migrate-to-catalogs)
-- [Compose Testing](https://developer.android.com/develop/ui/compose/testing)
+- [Espresso Testing](https://developer.android.com/training/testing/espresso)
 - [App Modularization](https://developer.android.com/topic/modularization)
 
 ---
