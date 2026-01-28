@@ -106,4 +106,16 @@ object TestTags {
     const val STATS_SCREEN = "stats_screen"
     const val STATS_STREAK_WIDGET = "stats_streak_widget"
     const val STATS_CUISINE_CHART = "stats_cuisine_chart"
+
+    // Settings Screen
+    const val SETTINGS_SCREEN = "settings_screen"
+
+    // Cooking Mode Screen
+    const val COOKING_MODE_SCREEN = "cooking_mode_screen"
+
+    // Pantry Screen
+    const val PANTRY_SCREEN = "pantry_screen"
+
+    // Recipe Rules Screen
+    const val RECIPE_RULES_SCREEN = "recipe_rules_screen"
 }

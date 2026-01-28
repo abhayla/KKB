@@ -80,6 +80,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
+import com.rasoiai.app.presentation.common.TestTags
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -180,6 +182,7 @@ private fun OnboardingContent(
     onToggleBusyDay: (DayOfWeek) -> Unit
 ) {
     Scaffold(
+        modifier = Modifier.testTag(TestTags.ONBOARDING_PROGRESS_BAR),
         topBar = {
             TopAppBar(
                 title = { },

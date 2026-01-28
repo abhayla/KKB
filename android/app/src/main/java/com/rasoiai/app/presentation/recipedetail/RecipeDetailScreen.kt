@@ -40,7 +40,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import com.rasoiai.app.presentation.common.TestTags
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -104,7 +106,7 @@ fun RecipeDetailScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RecipeDetailContent(
+internal fun RecipeDetailContent(
     uiState: RecipeDetailUiState,
     snackbarHostState: SnackbarHostState,
     onBackClick: () -> Unit,
@@ -118,6 +120,7 @@ private fun RecipeDetailContent(
     onModifyWithAI: () -> Unit
 ) {
     Scaffold(
+        modifier = Modifier.testTag(TestTags.RECIPE_DETAIL_SCREEN),
         topBar = {
             TopAppBar(
                 title = { },

@@ -101,6 +101,26 @@ Cross-screen data validation:
 | E2E Tests | ADB + Manual/Automated | Complete user journeys |
 | Flow Testing | Turbine | StateFlow/Channel in ViewModels |
 
+### Current UI Test Coverage (~265 tests across 13 screens)
+
+| Screen | Test File | Tests |
+|--------|-----------|-------|
+| Auth | `AuthScreenTest.kt` | 18 |
+| Auth (Integration) | `AuthIntegrationTest.kt` | 9 |
+| Onboarding | `OnboardingScreenTest.kt` | 41 |
+| Home | `HomeScreenTest.kt` | 22 |
+| Recipe Detail | `RecipeDetailScreenTest.kt` | 26 |
+| Grocery | `GroceryScreenTest.kt` | 21 |
+| Chat | `ChatScreenTest.kt` | 17 |
+| Favorites | `FavoritesScreenTest.kt` | 17 |
+| Stats | `StatsScreenTest.kt` | 21 |
+| Settings | `SettingsScreenTest.kt` | 15 |
+| Pantry | `PantryScreenTest.kt` | 18 |
+| Recipe Rules | `RecipeRulesScreenTest.kt` | 22 |
+| Cooking Mode | `CookingModeScreenTest.kt` | 27 |
+
+All test files are in `android/app/src/androidTest/java/com/rasoiai/app/presentation/`.
+
 ---
 
 ## Test Architecture: Real Backend + Fake Auth
@@ -179,6 +199,8 @@ The E2E tests use **Option B: Real Backend + Fake Google Auth Only**. This means
 | `e2e/di/FakeGoogleAuthClient.kt` | Bypasses Google OAuth, returns fake credentials |
 | `e2e/di/FakeAuthModule.kt` | Hilt module that replaces real GoogleAuthClient |
 | `e2e/base/BaseE2ETest.kt` | Base test class with Hilt setup |
+| `presentation/common/TestTags.kt` | All semantic test tags for UI elements |
+| `presentation/*ScreenTest.kt` | UI tests for each screen (13 files) |
 
 ---
 

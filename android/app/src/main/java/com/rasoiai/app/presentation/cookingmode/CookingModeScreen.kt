@@ -50,6 +50,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import com.rasoiai.app.presentation.common.TestTags
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -149,7 +151,7 @@ private fun KeepScreenOn() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CookingModeContent(
+internal fun CookingModeContent(
     uiState: CookingModeUiState,
     onCloseClick: () -> Unit,
     onVoiceGuidanceToggle: () -> Unit,
@@ -168,6 +170,7 @@ private fun CookingModeContent(
     onSkipRating: () -> Unit
 ) {
     Scaffold(
+        modifier = Modifier.testTag(TestTags.COOKING_MODE_SCREEN),
         topBar = {
             TopAppBar(
                 title = {

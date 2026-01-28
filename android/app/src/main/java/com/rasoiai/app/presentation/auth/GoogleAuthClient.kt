@@ -22,10 +22,22 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
+ * User data returned after successful sign-in.
+ * Contains the Firebase ID token for backend authentication.
+ */
+data class SignInUserData(
+    val userId: String,
+    val email: String?,
+    val displayName: String?,
+    val photoUrl: String?,
+    val firebaseIdToken: String
+)
+
+/**
  * Result of a Google Sign-In attempt
  */
 sealed class GoogleSignInResult {
-    data class Success(val user: FirebaseUser) : GoogleSignInResult()
+    data class Success(val userData: SignInUserData) : GoogleSignInResult()
     data class Error(val message: String, val exception: Exception? = null) : GoogleSignInResult()
     data object Cancelled : GoogleSignInResult()
 }
@@ -42,19 +54,19 @@ sealed class GoogleSignInResult {
 class GoogleAuthClient @Inject constructor(
     @ApplicationContext private val context: Context,
     private val firebaseAuth: FirebaseAuth
-) {
+) : GoogleAuthClientInterface {
     private val credentialManager = CredentialManager.create(context)
 
     /**
      * The currently signed-in user, or null if not signed in.
      */
-    val currentUser: FirebaseUser?
+    override val currentUser: FirebaseUser?
         get() = firebaseAuth.currentUser
 
     /**
      * Whether a user is currently signed in.
      */
-    val isSignedIn: Boolean
+    override val isSignedIn: Boolean
         get() = currentUser != null
 
     /**
@@ -64,7 +76,7 @@ class GoogleAuthClient @Inject constructor(
      * @param webClientId OAuth 2.0 Web Client ID from Firebase Console
      * @return Result of the sign-in attempt
      */
-    suspend fun signIn(
+    override suspend fun signIn(
         activityContext: Context,
         webClientId: String
     ): GoogleSignInResult {
@@ -137,7 +149,23 @@ class GoogleAuthClient @Inject constructor(
 
             if (user != null) {
                 Timber.i("Successfully signed in user: ${user.email}")
-                GoogleSignInResult.Success(user)
+
+                // Get the Firebase ID token for backend auth
+                val tokenResult = user.getIdToken(false).await()
+                val firebaseIdToken = tokenResult?.token
+
+                if (firebaseIdToken != null) {
+                    val userData = SignInUserData(
+                        userId = user.uid,
+                        email = user.email,
+                        displayName = user.displayName,
+                        photoUrl = user.photoUrl?.toString(),
+                        firebaseIdToken = firebaseIdToken
+                    )
+                    GoogleSignInResult.Success(userData)
+                } else {
+                    GoogleSignInResult.Error("Failed to get authentication token")
+                }
             } else {
                 Timber.w("Firebase auth succeeded but user is null")
                 GoogleSignInResult.Error("Sign in succeeded but user data is unavailable")
@@ -151,7 +179,7 @@ class GoogleAuthClient @Inject constructor(
     /**
      * Signs out the current user from both Firebase and Credential Manager.
      */
-    suspend fun signOut() {
+    override suspend fun signOut() {
         try {
             // Sign out from Firebase
             firebaseAuth.signOut()

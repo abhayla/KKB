@@ -78,6 +78,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -87,6 +88,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.rasoiai.app.presentation.common.TestTags
 import com.rasoiai.app.presentation.home.components.RasoiBottomNavigation
 import com.rasoiai.app.presentation.navigation.Screen
 import com.rasoiai.app.presentation.theme.DietaryColors
@@ -200,6 +202,7 @@ private fun HomeScreenContent(
     onBottomNavItemClick: (Screen) -> Unit
 ) {
     Scaffold(
+        modifier = Modifier.testTag(TestTags.HOME_SCREEN),
         topBar = {
             TopAppBar(
                 title = {

@@ -3,7 +3,7 @@ package com.rasoiai.app.e2e.base
 import android.content.Context
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.core.app.ApplicationProvider
-import com.rasoiai.app.MainActivity
+import com.rasoiai.app.TestActivity
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Before
@@ -20,7 +20,7 @@ abstract class BaseE2ETest {
     val hiltRule = HiltAndroidRule(this)
 
     @get:Rule(order = 1)
-    val composeTestRule = createAndroidComposeRule<MainActivity>()
+    val composeTestRule = createAndroidComposeRule<TestActivity>()
 
     protected val context: Context
         get() = ApplicationProvider.getApplicationContext()

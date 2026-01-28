@@ -44,6 +44,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import com.rasoiai.app.presentation.common.TestTags
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -177,7 +179,7 @@ fun PantryScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PantryScreenContent(
+internal fun PantryScreenContent(
     uiState: PantryUiState,
     snackbarHostState: SnackbarHostState,
     onBackClick: () -> Unit,
@@ -190,6 +192,7 @@ private fun PantryScreenContent(
     onBottomNavItemClick: (Screen) -> Unit
 ) {
     Scaffold(
+        modifier = Modifier.testTag(TestTags.PANTRY_SCREEN),
         topBar = {
             TopAppBar(
                 title = {

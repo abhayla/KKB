@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -44,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rasoiai.app.R
+import com.rasoiai.app.presentation.common.TestTags
 import com.rasoiai.app.presentation.splash.components.AppLogo
 import com.rasoiai.app.presentation.theme.spacing
 
@@ -79,6 +81,7 @@ fun AuthScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .testTag(TestTags.AUTH_SCREEN)
     ) {
         Column(
             modifier = Modifier
@@ -108,7 +111,8 @@ fun AuthScreen(
                 text = stringResource(R.string.welcome_title),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.testTag(TestTags.AUTH_WELCOME_TEXT)
             )
 
             Spacer(modifier = Modifier.height(spacing.sm))
@@ -168,7 +172,9 @@ private fun GoogleSignInButton(
     Button(
         onClick = onClick,
         enabled = !isLoading,
-        modifier = modifier.height(56.dp),
+        modifier = modifier
+            .height(56.dp)
+            .testTag(TestTags.GOOGLE_SIGN_IN_BUTTON),
         shape = RoundedCornerShape(spacing.sm),
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.White,

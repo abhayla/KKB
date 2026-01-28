@@ -12,6 +12,20 @@
         <meta-data
             android:name="firebase_analytics_collection_deactivated"
             android:value="true" />
+
+        <!-- TestActivity for E2E tests - does not use installSplashScreen()
+             to avoid surface permission issues on emulators.
+             Only included in debug builds. -->
+        <activity
+            android:name=".TestActivity"
+            android:exported="false"
+            android:theme="@style/Theme.RasoiAI" />
+
+        <!-- SimpleTestActivity for minimal Compose testing (no Hilt) -->
+        <activity
+            android:name=".SimpleTestActivity"
+            android:exported="false"
+            android:theme="@style/Theme.RasoiAI" />
     </application>
 
 </manifest>

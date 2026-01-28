@@ -24,8 +24,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.rasoiai.app.presentation.common.TestTags
 import com.rasoiai.app.presentation.theme.spacing
 
 @Composable
@@ -71,7 +73,9 @@ fun ChatInputBar(
                         style = MaterialTheme.typography.bodyMedium
                     )
                 },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag(TestTags.CHAT_INPUT_FIELD),
                 shape = RoundedCornerShape(24.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -105,7 +109,9 @@ fun ChatInputBar(
             IconButton(
                 onClick = onSendClick,
                 enabled = inputText.isNotBlank() && !isSending,
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier
+                    .size(40.dp)
+                    .testTag(TestTags.CHAT_SEND_BUTTON),
                 colors = IconButtonDefaults.iconButtonColors(
                     containerColor = if (inputText.isNotBlank() && !isSending)
                         MaterialTheme.colorScheme.primary

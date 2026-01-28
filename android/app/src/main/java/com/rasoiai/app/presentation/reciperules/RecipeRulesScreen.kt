@@ -29,6 +29,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import com.rasoiai.app.presentation.common.TestTags
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -136,7 +138,7 @@ fun RecipeRulesScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RecipeRulesScreenContent(
+internal fun RecipeRulesScreenContent(
     uiState: RecipeRulesUiState,
     snackbarHostState: SnackbarHostState,
     onBackClick: () -> Unit,
@@ -151,6 +153,7 @@ private fun RecipeRulesScreenContent(
     onDeleteNutritionGoal: (NutritionGoal) -> Unit
 ) {
     Scaffold(
+        modifier = Modifier.testTag(TestTags.RECIPE_RULES_SCREEN),
         topBar = {
             TopAppBar(
                 title = {

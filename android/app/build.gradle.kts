@@ -37,6 +37,8 @@ android {
         versionName = "1.0.0"
 
         testInstrumentationRunner = "com.rasoiai.app.HiltTestRunner"
+        // Disabled clearPackageData to avoid test isolation issues with Compose
+        // testInstrumentationRunnerArguments["clearPackageData"] = "true"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -103,6 +105,8 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/LICENSE.md"
+            excludes += "/META-INF/LICENSE-notice.md"
         }
     }
 
@@ -110,6 +114,12 @@ android {
         abortOnError = false
         warningsAsErrors = false
         checkDependencies = true
+    }
+
+    testOptions {
+        // Disabled Test Orchestrator temporarily to fix Compose test issues
+        // execution = "ANDROIDX_TEST_ORCHESTRATOR"
+        animationsDisabled = true
     }
 }
 
@@ -185,10 +195,24 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.work.testing)
+
+    // Tracing - explicit version to fix test NoSuchMethodError: forceEnableAppTracing
+    implementation("androidx.tracing:tracing:1.2.0")
+
+    // Android instrumented tests
     androidTestImplementation(libs.androidx.test.ext)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.espresso.core)
+    androidTestImplementation(libs.espresso.intents)
+    androidTestImplementation(libs.espresso.contrib)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.ui.test.junit4)
     androidTestImplementation(libs.hilt.android.testing)
+    androidTestImplementation(libs.coroutines.test)
+    androidTestImplementation(libs.mockk.android)
     kspAndroidTest(libs.hilt.compiler)
+
+    // Test Orchestrator (prevents TransactionTooLargeException)
+    androidTestUtil(libs.androidx.test.orchestrator)
 }

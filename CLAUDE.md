@@ -18,8 +18,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 See `docs/CONTINUE_PROMPT.md` for session context and active work.
 
 **Test Coverage (as of Jan 2026):**
-- ~190 UI tests across 10 screens (Compose UI Testing)
-- Remaining: RecipeRulesScreenTest, CookingModeScreenTest, RecipeDetailScreenTest
+- ~265 UI tests across 13 screens (Compose UI Testing)
+- All major screens have UI tests: Auth, Onboarding, Home, RecipeDetail, Grocery, Chat, Favorites, Stats, Settings, Pantry, RecipeRules, CookingMode
+- Remaining: GenerationScreen, integration tests, offline/edge case tests
 
 ## Quick Start
 
@@ -390,7 +391,10 @@ android/
 
 Tests use **Compose UI Testing** (not Espresso) for native Compose support. Located in `app/src/androidTest/`.
 
-**Current coverage:** ~190 tests across Auth, Onboarding, Home, Grocery, Chat, Favorites, Stats, Settings, Pantry screens.
+**Current coverage:** ~265 tests across 13 screens:
+- Auth (18), Onboarding (41), Home (22), RecipeDetail (26), Grocery (21)
+- Chat (17), Favorites (17), Stats (21), Settings (15), Pantry (18)
+- RecipeRules (22), CookingMode (27)
 
 | Test Type | Pattern | Purpose |
 |-----------|---------|---------|

@@ -20,8 +20,11 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
+import com.rasoiai.app.presentation.common.TestTags
 import com.rasoiai.app.presentation.navigation.Screen
 import com.rasoiai.app.presentation.theme.RasoiAITheme
 
@@ -83,13 +86,23 @@ fun RasoiBottomNavigation(
     onItemClick: (Screen) -> Unit
 ) {
     NavigationBar(
+        modifier = Modifier.testTag(TestTags.BOTTOM_NAV),
         containerColor = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
         bottomNavItems.forEach { item ->
             val isSelected = currentScreen.route == item.screen.route
+            val testTag = when (item.screen) {
+                Screen.Home -> TestTags.BOTTOM_NAV_HOME
+                Screen.Grocery -> TestTags.BOTTOM_NAV_GROCERY
+                Screen.Chat -> TestTags.BOTTOM_NAV_CHAT
+                Screen.Favorites -> TestTags.BOTTOM_NAV_FAVORITES
+                Screen.Stats -> TestTags.BOTTOM_NAV_STATS
+                else -> ""
+            }
 
             NavigationBarItem(
+                modifier = Modifier.testTag(testTag),
                 selected = isSelected,
                 onClick = { onItemClick(item.screen) },
                 icon = {

@@ -132,9 +132,8 @@ class ComponentsTest {
 
     @Test
     fun navigationBar_displaysItems() {
-        var selectedItem by mutableStateOf(0)
-
         composeTestRule.setContent {
+            var selectedItem by remember { mutableStateOf(0) }
             RasoiAITheme {
                 NavigationBar {
                     NavigationBarItem(

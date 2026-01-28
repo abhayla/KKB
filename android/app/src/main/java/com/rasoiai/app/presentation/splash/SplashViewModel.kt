@@ -2,7 +2,7 @@ package com.rasoiai.app.presentation.splash
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.auth.FirebaseAuth
+import com.rasoiai.app.presentation.auth.GoogleAuthClientInterface
 import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.data.local.datastore.UserPreferencesDataStore
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,7 +33,8 @@ sealed class SplashNavigationEvent {
 @HiltViewModel
 class SplashViewModel @Inject constructor(
     networkMonitor: NetworkMonitor,
-    private val userPreferencesDataStore: UserPreferencesDataStore
+    private val userPreferencesDataStore: UserPreferencesDataStore,
+    private val googleAuthClient: GoogleAuthClientInterface
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SplashUiState())
@@ -58,8 +59,8 @@ class SplashViewModel @Inject constructor(
             // Splash delay for branding (2 seconds as per wireframe spec)
             delay(2000)
 
-            // Check if user is logged in via Firebase Auth
-            val isLoggedIn = FirebaseAuth.getInstance().currentUser != null
+            // Check if user is logged in via injected auth client (allows test mocking)
+            val isLoggedIn = googleAuthClient.isSignedIn
 
             // Check if onboarding is complete from DataStore
             val isOnboarded = userPreferencesDataStore.isOnboarded.first()

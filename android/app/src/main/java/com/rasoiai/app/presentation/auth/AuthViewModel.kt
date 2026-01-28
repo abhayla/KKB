@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -39,7 +38,7 @@ sealed class AuthNavigationEvent {
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val googleAuthClient: GoogleAuthClient,
+    private val googleAuthClient: GoogleAuthClientInterface,
     private val authRepository: AuthRepository,
     private val userPreferencesDataStore: UserPreferencesDataStore
 ) : ViewModel() {
@@ -69,30 +68,15 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
-            // Get the web client ID from BuildConfig or use a placeholder
-            // In production, this should come from google-services.json or BuildConfig
+            // Get the web client ID from BuildConfig
             val webClientId = getWebClientId()
 
             when (val result = googleAuthClient.signIn(activityContext, webClientId)) {
                 is GoogleSignInResult.Success -> {
-                    Timber.i("Firebase sign in successful: ${result.user.email}")
+                    Timber.i("Google sign in successful: ${result.userData.email}")
 
                     // Exchange Firebase token for backend JWT
-                    try {
-                        val firebaseToken = result.user.getIdToken(false).await().token
-                        if (firebaseToken != null) {
-                            exchangeFirebaseToken(firebaseToken)
-                        } else {
-                            // Fallback: proceed without backend token (offline mode)
-                            Timber.w("Could not get Firebase ID token, proceeding without backend auth")
-                            _uiState.update { it.copy(isLoading = false, isSignedIn = true) }
-                            navigateAfterSignIn()
-                        }
-                    } catch (e: Exception) {
-                        Timber.w(e, "Failed to get Firebase ID token, proceeding without backend auth")
-                        _uiState.update { it.copy(isLoading = false, isSignedIn = true) }
-                        navigateAfterSignIn()
-                    }
+                    exchangeFirebaseToken(result.userData.firebaseIdToken)
                 }
                 is GoogleSignInResult.Cancelled -> {
                     _uiState.update { it.copy(isLoading = false) }
