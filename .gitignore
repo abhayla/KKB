@@ -85,6 +85,13 @@ docs/testing/screenshots/
 screenshot*.png
 screen*.png
 ui*.xml
+*.db
+local.db
+test_*.log
+test_*.txt
+
+# Claude Code
+.claude/
 
 # Misc
 Notes

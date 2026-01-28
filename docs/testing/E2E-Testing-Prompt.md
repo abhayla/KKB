@@ -9,6 +9,12 @@ This document provides a comprehensive testing guide for the RasoiAI Android app
 ```
 I need you to perform complete End-to-End testing of the RasoiAI Android app on an emulator.
 
+## Backend Status
+- Firestore database: `rasoiai-6dcdd`
+- **3,590 recipes** (imported from khanakyabanega)
+- 12 festivals seeded
+- Auth accepts `fake-firebase-token` for testing
+
 ## Test Objective
 Test the complete user journey as a NEW user with a 3-member family, validating:
 - All screen interactions and UI states
@@ -242,6 +248,17 @@ adb shell pm list packages | grep rasoiai
 
 ### Backend Setup (Firestore)
 
+**Recipe Database Status:** 3,590 recipes already imported from khanakyabanega.
+
+| Category | Count |
+|----------|-------|
+| North Indian | 3,124 |
+| South Indian | 358 |
+| West Indian | 85 |
+| East Indian | 23 |
+| Vegetarian | 3,482 |
+| Vegan | 1,347 |
+
 ```bash
 cd backend
 
@@ -266,8 +283,11 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 # Verify API is running
 curl http://localhost:8000/health
 
-# Seed Firestore with recipes and festivals (first time only)
-PYTHONPATH=. python scripts/seed_firestore.py
+# Verify recipe database (already seeded with 3,590 recipes)
+python scripts/verify_recipe_import.py
+
+# Only if you need to re-seed (normally not required):
+# PYTHONPATH=. python scripts/seed_firestore.py
 ```
 
 ### Firebase Service Account Setup
@@ -335,17 +355,32 @@ adb logcat -s RasoiAI:V > test_logs_$(date +%Y%m%d_%H%M%S).txt
 ### Expected Meal Plan Constraints
 
 Based on this profile, generated meal plans MUST:
-1. Be 100% VEGETARIAN (no meat, fish, eggs)
+1. Be 100% VEGETARIAN (no meat, fish, eggs) - **3,482 vegetarian recipes available**
 2. Exclude onion and garlic (SATTVIC)
 3. Never contain peanuts (ALLERGY)
 4. Avoid karela, baingan, mushroom recipes
-5. Include NORTH and SOUTH Indian cuisines
+5. Include NORTH and SOUTH Indian cuisines - **3,124 North + 358 South available**
 6. Have ≤30 min prep on weekdays
 7. Have ≤60 min prep on weekends
 8. Suggest quick meals on Mon/Wed/Fri (busy days)
 9. Consider DIABETIC needs for Ramesh (low sugar)
 10. Consider LOW_SALT for Sunita
 11. Consider NO_SPICY for Aarav (mild preparations)
+
+**Recipe Rules to Create (Phase 11):**
+| Rule | Type | Frequency | Enforcement |
+|------|------|-----------|-------------|
+| Chai → Breakfast | Recipe/Meal-Slot | Daily | REQUIRED |
+| Chai → Snacks | Recipe/Meal-Slot | Daily | REQUIRED |
+| Moringa/Drumstick | Ingredient Include | 1x/week | PREFERRED |
+| Paneer | Ingredient Exclude | NEVER | REQUIRED |
+| Green Leafy | Nutrition Goal | 5x/week | PREFERRED |
+
+**Sample Valid Recipes (from 3,590 database):**
+- Aloo Gobi, Dal Tadka, Vegetable Pulao (North)
+- Masala Dosa, Idli Sambar, Drumstick Sambar (South)
+- Khichdi, Poha, Upma, Chai (Breakfast options)
+- Sahjan ki Sabzi, Moringa Dal (Moringa recipes)
 
 ---
 
@@ -1288,69 +1323,160 @@ SELECT * FROM pantry_items ORDER BY category, name;
 
 ## Phase 11: Recipe Rules Screen Testing
 
-### Test 11.1: Include Rules Tab
-
 **Navigation:** Settings → Recipe Rules
 
+**Screen Structure:** 4 tabs - Recipe, Ingredient, Meal-Slot, Nutrition
+
+### Test 11.1: Chai Daily Rule (Recipe + Meal-Slot)
+
+**Objective:** Ensure Chai appears daily at Breakfast AND Snacks
+
 **Steps:**
-1. Verify 4 tabs: Include, Exclude, Nutrition, Settings
-2. On Include tab, tap "Add Rule"
+1. Navigate to Recipe Rules screen
+2. On "Recipe" tab, tap "+ ADD RECIPE RULE"
+3. Create first rule:
+   - Action: INCLUDE
+   - Search & select: "Chai" (from 3,590 recipes)
+   - Frequency: Daily
+   - Meal Slot: Breakfast
+   - Enforcement: REQUIRED
+4. Save rule
+5. Add second rule:
+   - Action: INCLUDE
+   - Target: "Chai"
+   - Frequency: Daily
+   - Meal Slot: Snacks
+   - Enforcement: REQUIRED
+6. Save rule
+
+**Expected Results:**
+- [ ] Two Chai rules appear in list
+- [ ] First shows: "📖 Chai • Every day • Breakfast • Required"
+- [ ] Second shows: "📖 Chai • Every day • Snacks • Required"
+- [ ] Toggle switches are ON (active)
+
+### Test 11.2: Moringa Weekly Rule (Ingredient Include)
+
+**Objective:** Include Moringa (Drumstick/Sahjan) at least once per week
+
+**Steps:**
+1. Switch to "Ingredient" tab
+2. Tap "+ ADD INGREDIENT RULE"
 3. Create rule:
-   - Type: RECIPE
-   - Target: "Dal Tadka"
-   - Frequency: 2 times per week
-   - Meal Slot: Lunch, Dinner
+   - Action: INCLUDE
+   - Search & select: "Moringa" or "Drumstick" or "Sahjan"
+   - Frequency: 1 time per week (minimum)
    - Enforcement: PREFERRED
 4. Save rule
 
 **Expected Results:**
-- [ ] Rule appears in list
-- [ ] Shows frequency and enforcement
-- [ ] Edit/delete available
+- [ ] Rule appears: "🥕 Moringa • 1x per week • Preferred"
+- [ ] Recipes with moringa/drumstick will be prioritized
 
-**Verify Database:**
-```sql
-SELECT * FROM recipe_rules WHERE action = 'INCLUDE';
-```
+**Note:** Moringa-containing recipes in database include:
+- Drumstick Sambar (South Indian)
+- Sahjan ki Sabzi (North Indian)
+- Moringa Dal
 
-### Test 11.2: Exclude Rules Tab
+### Test 11.3: Exclude Rules Tab
 
 **Steps:**
-1. Switch to Exclude tab
-2. Add rule:
-   - Type: INGREDIENT
+1. Switch to "Ingredient" tab (for excludes)
+2. Tap "+ ADD INGREDIENT RULE"
+3. Create rule:
+   - Action: EXCLUDE
    - Target: "Paneer"
    - Frequency: NEVER
    - Enforcement: REQUIRED
-3. Save rule
+4. Save rule
 
 **Expected Results:**
-- [ ] Rule saved
-- [ ] Next meal plan will exclude paneer
+- [ ] Rule shows: "🚫 Paneer • Never • Required"
+- [ ] All paneer recipes excluded from meal plans
 
-### Test 11.3: Nutrition Goals Tab
+### Test 11.4: Nutrition Goals Tab
 
 **Steps:**
-1. Switch to Nutrition tab
-2. Add goal:
-   - Category: GREEN_LEAFY
+1. Switch to "Nutrition" tab
+2. Tap "+ ADD NUTRITION GOAL"
+3. Add goal:
+   - Category: GREEN_LEAFY (🥬)
    - Weekly Target: 5 servings
-   - Enforcement: PREFERRED
-3. Save goal
+4. Save goal
 
 **Expected Results:**
-- [ ] Goal appears in list
-- [ ] Progress bar (starts at 0)
+- [ ] Goal card appears with progress bar
+- [ ] Shows "🥬 Green leafy vegetables"
+- [ ] Shows "0/5 times" (new goal)
+- [ ] Progress bar at 0%
 
-### Test 11.4: Rules Applied to New Plan
+### Test 11.5: Rules Applied to New Plan
+
+**Setup - Active Rules:**
+| # | Tab | Rule | Expected Impact |
+|---|-----|------|-----------------|
+| 1 | Recipe | Chai → Breakfast, Daily, REQUIRED | 7 breakfast slots have Chai |
+| 2 | Recipe | Chai → Snacks, Daily, REQUIRED | 7 snack slots have Chai |
+| 3 | Ingredient | Moringa → 1x/week, PREFERRED | At least 1 moringa recipe |
+| 4 | Ingredient | Paneer → NEVER, REQUIRED | 0 paneer recipes |
+| 5 | Nutrition | GREEN_LEAFY → 5x/week | 5+ green leafy recipes |
 
 **Steps:**
-1. Create the rules above
-2. Regenerate meal plan (Settings → Regenerate)
-3. Verify:
-   - Dal Tadka appears 2x
-   - No paneer recipes
-   - Green leafy veggies included
+1. Ensure all rules above are created and active
+2. Go to Settings → "Regenerate Meal Plan"
+3. Wait for generation
+4. Navigate to Home screen
+5. Check all 7 days
+
+**Verification Checklist:**
+- [ ] **Chai at Breakfast:** All 7 days show Chai at breakfast slot
+- [ ] **Chai at Snacks:** All 7 days show Chai at snacks slot
+- [ ] **Moringa:** At least 1 recipe contains moringa/drumstick (check recipe details)
+- [ ] **No Paneer:** Zero recipes contain paneer (Palak Paneer, Shahi Paneer, etc. excluded)
+- [ ] **Green Leafy:** 5+ recipes have spinach, methi, sarson, palak, etc.
+
+**Database Verification:**
+```sql
+-- Verify Chai appears 14 times (7 breakfast + 7 snacks)
+SELECT COUNT(*) FROM meal_plan_items
+WHERE recipe_name ILIKE '%chai%';
+-- Expected: 14
+
+-- Verify Moringa appears at least 1x
+SELECT COUNT(*) FROM meal_plan_items mpi
+JOIN recipes r ON mpi.recipe_id = r.id
+WHERE r.ingredients ILIKE '%moringa%'
+   OR r.ingredients ILIKE '%drumstick%'
+   OR r.ingredients ILIKE '%sahjan%';
+-- Expected: >= 1
+
+-- Verify NO paneer recipes
+SELECT COUNT(*) FROM meal_plan_items mpi
+JOIN recipes r ON mpi.recipe_id = r.id
+WHERE r.ingredients ILIKE '%paneer%';
+-- Expected: 0
+```
+
+### Test 11.6: Rule CRUD Operations
+
+**Edit Rule:**
+1. Tap on Moringa rule card
+2. Change frequency from 1x/week → 2x/week
+3. Save
+4. Verify card updates to "2x per week"
+
+**Toggle Rule:**
+1. Tap toggle switch on Chai breakfast rule
+2. Rule becomes inactive (grayed out)
+3. Regenerate meal plan
+4. Verify Chai no longer required at breakfast
+5. Re-enable rule
+
+**Delete Rule:**
+1. Tap delete icon on Paneer exclude rule
+2. Confirmation dialog: "Delete rule for Paneer?"
+3. Tap DELETE
+4. Rule removed from list
 
 ---
 
@@ -1625,6 +1751,7 @@ For thorough testing, verify each screen in these states:
 
 | Entity | Expected Count | Actual | Status |
 |--------|----------------|--------|--------|
+| recipes (Firestore) | 3,590 | | |
 | meal_plans | 1 | | |
 | meal_plan_items | 28 | | |
 | grocery_items | 40+ | | |
@@ -1634,15 +1761,16 @@ For thorough testing, verify each screen in these states:
 
 ## API Verification
 
-| Endpoint | Method | Status | Time |
-|----------|--------|--------|------|
-| /auth/firebase | POST | | |
-| /meal-plans/generate | POST | | |
-| /meal-plans/current | GET | | |
-| /recipes/{id} | GET | | |
-| /grocery | GET | | |
-| /chat/message | POST | | |
-| /users/preferences | PUT | | |
+| Endpoint | Method | Expected | Status | Time |
+|----------|--------|----------|--------|------|
+| /auth/firebase | POST | 200 OK | | |
+| /meal-plans/generate | POST | 201 Created | | |
+| /meal-plans/current | GET | 200 OK | | |
+| /recipes | GET | 3,590 recipes | | |
+| /recipes/{id} | GET | Recipe detail | | |
+| /grocery | GET | 40+ items | | |
+| /chat/message | POST | AI response | | |
+| /users/preferences | PUT | 200 OK | | |
 
 ## Failed Tests
 
@@ -1714,23 +1842,27 @@ sqlite3 local.db "SELECT * FROM meal_plans;"
 ### Firestore Database (Backend)
 ```bash
 # Use Firebase Console or Firebase CLI to verify data
-# https://console.firebase.google.com/project/<project-id>/firestore
+# https://console.firebase.google.com/project/rasoiai-6dcdd/firestore
 
-# Or use Python script to query Firestore
+# Or use verify script to check recipe counts
 cd backend
-PYTHONPATH=. python -c "
-import asyncio
-from app.repositories.recipe_repository import RecipeRepository
-from app.repositories.user_repository import UserRepository
+python scripts/verify_recipe_import.py
 
-async def check():
-    recipes = await RecipeRepository().get_all()
-    print(f'Recipes: {len(recipes)}')
-    for r in recipes[:3]:
-        print(f'  - {r[\"name\"]}')
+# Expected output:
+# Total recipes: 3,590
+# North Indian: 3,124
+# South Indian: 358
+# West Indian: 85
+# East Indian: 23
+# Vegetarian: 3,482
+# Vegan: 1,347
 
-asyncio.run(check())
-"
+# Sample recipes for test verification:
+# - Aloo Gobi (North, Vegetarian)
+# - Masala Dosa (South, Vegan)
+# - Dhokla (West, Vegetarian)
+# - Dal Tadka (North, Vegan)
+# - Paneer Butter Masala (North, Vegetarian)
 ```
 
 ### Network
@@ -1824,4 +1956,5 @@ Use API 34 for Espresso tests. API 36 has compatibility problems.
 
 ---
 
-*Last Updated: January 2026*
+*Last Updated: January 28, 2026*
+*Recipe Database: 3,590 recipes (imported from khanakyabanega)*
