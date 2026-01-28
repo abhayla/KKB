@@ -54,6 +54,16 @@ def verify_firebase_token(id_token: str) -> dict:
     """
     global _firebase_app
 
+    # E2E Test mode: accept fake-firebase-token from Android tests
+    if settings.debug and id_token == "fake-firebase-token":
+        logger.info("E2E Test: Using fake Firebase token for testing")
+        return {
+            "uid": "fake-user-id",
+            "email": "test@example.com",
+            "name": "Test User",
+            "picture": None,
+        }
+
     # Development mode: mock Firebase verification
     if _firebase_app is None:
         if settings.debug:

@@ -16,7 +16,7 @@ from app.core.exceptions import (
     NotFoundError,
 )
 from app.core.firebase import initialize_firebase
-from app.db.database import init_db
+from app.db.firestore import init_firestore
 
 # Configure logging
 logging.basicConfig(
@@ -36,10 +36,9 @@ async def lifespan(app: FastAPI):
     initialize_firebase()
     logger.info("Firebase initialized")
 
-    # Initialize database (creates tables if needed)
-    if settings.debug:
-        await init_db()
-        logger.info("Database tables initialized")
+    # Initialize Firestore connection
+    await init_firestore()
+    logger.info("Firestore connection initialized")
 
     logger.info("RasoiAI Backend started successfully")
 

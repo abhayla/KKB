@@ -1,6 +1,8 @@
 # RasoiAI - Technical Design Document (TDD)
 
-## Version 1.0 | January 2025
+## Version 1.1 | January 2026
+
+> **⚠️ Database Update (Jan 2026):** Backend database migrated from PostgreSQL/SQLAlchemy to **Firebase Firestore** for simplified deployment and real-time sync. The document below reflects the original PostgreSQL design; actual implementation uses Firestore repositories. See `backend/app/repositories/` for current implementation.
 
 ---
 
@@ -31,10 +33,10 @@ This document provides the technical blueprint for building RasoiAI, an AI-power
 |-----------|------------|--------|
 | Android App | Kotlin + Jetpack Compose | MVP |
 | Backend API | Python (FastAPI) | MVP |
-| Database | PostgreSQL + Redis | MVP |
-| AI/LLM | Claude API | MVP |
+| Database | Firebase Firestore | MVP *(updated from PostgreSQL)* |
+| AI/LLM | Google Gemini / Claude API | MVP |
 | Auth | Firebase Auth | MVP |
-| Storage | AWS S3 | MVP |
+| Storage | Firebase Storage | MVP |
 
 ### 1.3 Design Principles
 

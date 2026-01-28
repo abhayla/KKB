@@ -76,6 +76,8 @@ htmlcov/
 *.jks
 credentials.json
 service-account.json
+*-service-account.json
+*firebase*service*account*.json
 
 # Testing/Debug
 .playwright-mcp/

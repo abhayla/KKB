@@ -9,192 +9,154 @@ Use this prompt to start a new conversation/context and continue the project fro
 ```
 I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 
-## Current Status
+## Current Task: E2E Testing with Firestore Backend
 
-**Android app complete with E2E test framework. Backend implemented.**
+Backend has been migrated from SQLite to Firebase Firestore. E2E tests use FakeGoogleAuthClient with real backend API calls.
 
-### Android App
-| Component | Status |
-|-----------|--------|
-| UI Screens | ✅ Complete (13 screens) |
-| Auth Integration | ✅ Complete (Firebase + Backend JWT) |
-| API Layer | ✅ Complete (Retrofit + AuthInterceptor) |
-| DTO Mappers | ✅ Complete (API → Domain) |
-| Entity Mappers | ✅ Complete (Room ↔ Domain) |
-| MealPlan Repository | ✅ Complete (offline-first) |
-| Recipe Repository | ✅ Complete (offline-first) |
-| Grocery Repository | ✅ Complete (offline-first) |
-| Other Repositories | ⏳ Fake (Favorites, Chat, Stats) |
-| **E2E Test Framework** | ✅ Complete (33 files, 42 tests) |
+**Backend Status:**
+- Firestore database configured (project: `rasoiai-6dcdd`)
+- Auth endpoint accepts `fake-firebase-token` for testing
+- Seeded with 10 recipes + 12 festivals
 
-### E2E Testing Framework (NEW)
-| Component | Count | Status |
+**To run E2E tests:**
+```bash
+# 1. Start backend
+cd backend
+uvicorn app.main:app --reload --port 8000
+
+# 2. Run Android tests
+cd android
+./gradlew :app:connectedDebugAndroidTest
+```
+
+### Session 23 Completed Work
+
+**Test Files Created:**
+| Test File | Tests | Status |
 |-----------|-------|--------|
-| Base Infrastructure | 3 files | ✅ Complete |
-| Robot Classes | 12 files | ✅ Complete |
-| Flow Tests (Phases 1-14) | 14 files | ✅ Complete |
-| Performance Tests (Phase 15) | 1 file | ✅ Complete |
-| DI Test Modules | 3 files | ✅ Complete |
-| **Total** | **33 files** | ✅ Build passes |
+| `AuthScreenTest.kt` | 18 UI tests | ✅ All Passing |
+| `AuthIntegrationTest.kt` | 9 integration tests | ✅ All Passing |
+| `OnboardingScreenTest.kt` | 41 UI tests | ✅ All Passing |
+| `HomeScreenTest.kt` | 22 UI tests | ✅ All Passing |
+| `GroceryScreenTest.kt` | 21 UI tests | ✅ Created |
+| `ChatScreenTest.kt` | 17 UI tests | ✅ Created |
+| `FavoritesScreenTest.kt` | 17 UI tests | ✅ Created |
+| `StatsScreenTest.kt` | 21 UI tests | ✅ Created |
+| `SettingsScreenTest.kt` | 15 UI tests | ✅ Created |
+| `PantryScreenTest.kt` | 18 UI tests | ✅ Created |
 
-### Backend (Python FastAPI)
-| Component | Status |
-|-----------|--------|
-| Project Structure | ✅ Complete |
-| Database Models | ✅ 17 tables (SQLite dev, PostgreSQL prod) |
-| All 18 API Endpoints | ✅ Implemented |
-| Firebase Auth | ✅ Configured (service account loaded) |
-| JWT Authentication | ✅ Working |
-| Recipe Seed Data | ✅ 17 Indian recipes |
-| Festival Seed Data | ✅ 23 festivals (need 2026 dates) |
-| Claude AI Integration | ✅ Code ready (needs API key) |
+### Key Testing Decisions Made
 
-## IMMEDIATE NEXT STEPS
+1. **Framework**: Compose UI Testing (NOT Espresso)
+   - Native Compose support with semantic queries
+   - Espresso only for: system dialogs, intent verification
 
-**Choose based on priority:**
+2. **Test Patterns**:
+   - **UI Tests** (`*ScreenTest.kt`): Test wrapper composable with mock UiState, no ViewModel
+   - **Integration Tests** (`*IntegrationTest.kt`): Full app with Hilt DI + FakeGoogleAuthClient
 
-### Option 1: Run E2E Tests on Device/Emulator
+3. **Screen Content Composables**: Made `internal` for testing:
+   - `GroceryScreenContent`, `ChatScreenContent`, `FavoritesScreenContent`
+   - `StatsScreenContent`, `SettingsScreenContent`, `PantryScreenContent`
+   - `RecipeRulesScreenContent`, `CookingModeContent`
+
+4. **API Compatibility**: Use API 34 emulator (API 36 has Espresso issues)
+
+### Test Coverage Status
+
+| Phase | Screen | UI Tests | Status |
+|-------|--------|----------|--------|
+| 1 | Auth | 18 ✅ | **DONE** |
+| 2 | Onboarding | 41 ✅ | **DONE** |
+| 3 | Generation | - | ❌ TODO |
+| 4 | Home | 22 ✅ | **DONE** |
+| 5 | Grocery | 21 ✅ | **DONE** |
+| 6 | Chat | 17 ✅ | **DONE** |
+| 7 | Favorites | 17 ✅ | **DONE** |
+| 8 | Stats | 21 ✅ | **DONE** |
+| 9 | Settings | 15 ✅ | **DONE** |
+| 10 | Pantry | 18 ✅ | **DONE** |
+| 11 | Recipe Rules | - | ❌ TODO |
+| 12 | Cooking Mode | - | ❌ TODO |
+| 13 | Offline | - | ❌ TODO |
+| 14 | Edge Cases | - | ❌ TODO |
+| 15 | Performance | - | ❌ TODO |
+
+**Total: ~190 UI tests created**
+
+### Remaining Work
+
+1. **RecipeRulesScreenTest.kt** - Phase 11 (Recipe Rules screen with 4 tabs)
+2. **CookingModeScreenTest.kt** - Phase 12 (Cooking Mode with timer)
+3. **RecipeDetailScreenTest.kt** - Phase 4/12 (Recipe details and scaling)
+4. Integration tests for navigation flows
+
+### Running Tests
+
 ```bash
-cd D:/Abhay/VibeCoding/KKB/android
+cd android
 
-# Run all E2E tests
-./gradlew :app:connectedAndroidTest
+# Run all UI tests
+./gradlew :app:connectedDebugAndroidTest
 
-# Run specific phase
-./gradlew :app:connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.flows.OnboardingFlowTest
+# Run specific screen test
+./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.presentation.grocery.GroceryScreenTest
 
-# Run performance tests
-./gradlew :app:connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.performance.PerformanceTest
+# Run all presentation tests
+./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.package=com.rasoiai.app.presentation
 ```
 
-### Option 2: Implement Remaining Android Repositories
-- `FavoritesRepositoryImpl` - offline-first pattern
-- `ChatRepositoryImpl` - connect to chat endpoints
-- `StatsRepositoryImpl` - cooking streaks and achievements
+### Test File Template
 
-### Option 3: Add Claude API Key for AI Features
-1. Get API key from console.anthropic.com
-2. Add to `backend/.env`: `ANTHROPIC_API_KEY=sk-ant-...`
-3. Test meal plan generation with AI
+```kotlin
+class {Screen}ScreenTest {
+    @get:Rule
+    val composeTestRule = createComposeRule()
 
-### Option 4: Update Festival Data for 2026
-- Current festivals are for 2025
-- Update `backend/scripts/seed_festivals.py` with 2026 dates
-- Re-run seed script
+    // Test data factory
+    private fun createTestUiState(...): {Screen}UiState { ... }
 
-### Option 5: Production Deployment
-- Set up PostgreSQL database
-- Configure production environment
-- Deploy to cloud (Railway, Render, etc.)
+    // Tests grouped by category
+    @Test fun screen_displaysElement_whenCondition() { ... }
+    @Test fun screen_action_triggersCallback() { ... }
+}
 
-## Key Files Reference
-
-### E2E Testing (NEW)
-| Purpose | File |
-|---------|------|
-| Base Test Class | `app/src/androidTest/java/com/rasoiai/app/e2e/base/BaseE2ETest.kt` |
-| Test Data | `app/src/androidTest/java/com/rasoiai/app/e2e/base/TestDataFactory.kt` |
-| Test Extensions | `app/src/androidTest/java/com/rasoiai/app/e2e/base/ComposeTestExtensions.kt` |
-| Robot Classes | `app/src/androidTest/java/com/rasoiai/app/e2e/robots/*.kt` (12 files) |
-| Flow Tests | `app/src/androidTest/java/com/rasoiai/app/e2e/flows/*.kt` (14 files) |
-| Performance Tests | `app/src/androidTest/java/com/rasoiai/app/e2e/performance/PerformanceTest.kt` |
-| DI Modules | `app/src/androidTest/java/com/rasoiai/app/e2e/di/*.kt` (3 files) |
-| E2E Test Guide | `docs/testing/E2E-Testing-Prompt.md` |
-
-### Backend (Python)
-| Purpose | File |
-|---------|------|
-| Main App | `backend/app/main.py` |
-| Config | `backend/app/config.py` |
-| Environment | `backend/.env` |
-| Firebase Auth | `backend/app/core/firebase.py` |
-| JWT Security | `backend/app/core/security.py` |
-| All Endpoints | `backend/app/api/v1/endpoints/` |
-| Database Models | `backend/app/models/` |
-| Services | `backend/app/services/` |
-| Claude AI | `backend/app/ai/` |
-| Seed Scripts | `backend/scripts/seed_*.py` |
-
-### Android
-| Purpose | File |
-|---------|------|
-| Project Context | `CLAUDE.md` |
-| API Service | `data/remote/api/RasoiApiService.kt` |
-| Auth Repository | `data/repository/AuthRepositoryImpl.kt` |
-| MealPlan Repo | `data/repository/MealPlanRepositoryImpl.kt` |
-| Recipe Repo | `data/repository/RecipeRepositoryImpl.kt` |
-| DTO Mappers | `data/remote/mapper/DtoMappers.kt` |
-| Entity Mappers | `data/local/mapper/EntityMappers.kt` |
-
-## Commands Reference
-
-### Android
-```bash
-cd D:/Abhay/VibeCoding/KKB/android
-
-./gradlew assembleDebug           # Build
-./gradlew test                    # Unit tests
-./gradlew installDebug            # Install on device
-./gradlew :app:connectedAndroidTest  # E2E tests (requires device/emulator)
+// Test wrapper composable (mirrors actual screen)
+@Composable
+private fun {Screen}TestContent(
+    uiState: {Screen}UiState,
+    onAction: () -> Unit = {},
+) { /* Mirror screen structure */ }
 ```
 
-### Backend
-```bash
-cd D:/Abhay/VibeCoding/KKB/backend
-
-# Activate venv and start server
-./venv/Scripts/uvicorn app.main:app --reload
-
-# Run seed scripts (if needed)
-./venv/Scripts/python -m scripts.seed_recipes
-./venv/Scripts/python -m scripts.seed_festivals
-
-# Test health
-curl http://localhost:8000/health
+Continue by running all tests and creating tests for Recipe Rules and Cooking Mode screens.
 ```
 
-## E2E Test Coverage (15 Phases, 42 Tests)
+---
 
-| Phase | Test File | Tests |
-|-------|-----------|-------|
-| 1 | AuthFlowTest | Splash screen, Google OAuth |
-| 2 | OnboardingFlowTest | 5 onboarding steps |
-| 3 | MealPlanGenerationTest | Generation progress |
-| 4 | HomeScreenTest | Week view, meal interactions |
-| 5 | GroceryFlowTest | List display, check/uncheck |
-| 6 | ChatFlowTest | Chat interface, suggestions |
-| 7 | FavoritesFlowTest | Add favorites, collections |
-| 8 | StatsScreenTest | Streak, charts, achievements |
-| 9 | SettingsFlowTest | Profile, preferences |
-| 10 | PantryFlowTest | Add items, expiring soon |
-| 11 | RecipeRulesFlowTest | Include/exclude rules |
-| 12 | CookingModeFlowTest | Scaling, cooking mode |
-| 13 | OfflineFlowTest | Offline access, sync |
-| 14 | EdgeCasesTest | Timeouts, errors, validation |
-| 15 | PerformanceTest | Cold start, transitions, memory |
-
-## Architecture
+## TEST FILES CREATED (Sessions 21-23)
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  ANDROID APP                                                │
-│  UI (Compose) → ViewModel → UseCase → Repository            │
-│                                           ↓                 │
-│                              ┌────────────┴────────────┐    │
-│                              ↓                         ↓    │
-│                         Room (Local)            Retrofit    │
-│                         Source of Truth         (Remote)    │
-└─────────────────────────────────┼───────────────────────────┘
-                                  │ HTTP/JWT
-┌─────────────────────────────────┼───────────────────────────┐
-│  BACKEND (FastAPI)              ↓                           │
-│  Endpoints → Services → SQLAlchemy → SQLite/PostgreSQL      │
-│       ↓                                                     │
-│  Claude AI (meal planning, chat)                            │
-└─────────────────────────────────────────────────────────────┘
-```
-
-Continue from here based on the immediate next step you choose.
+android/app/src/androidTest/java/com/rasoiai/app/presentation/
+├── auth/
+│   ├── AuthScreenTest.kt           # 18 UI tests ✅
+│   └── AuthIntegrationTest.kt      # 9 integration tests ✅
+├── chat/
+│   └── ChatScreenTest.kt           # 17 UI tests ✅
+├── favorites/
+│   └── FavoritesScreenTest.kt      # 17 UI tests ✅
+├── grocery/
+│   └── GroceryScreenTest.kt        # 21 UI tests ✅
+├── home/
+│   └── HomeScreenTest.kt           # 22 UI tests ✅
+├── onboarding/
+│   └── OnboardingScreenTest.kt     # 41 UI tests ✅
+├── pantry/
+│   └── PantryScreenTest.kt         # 18 UI tests ✅
+├── settings/
+│   └── SettingsScreenTest.kt       # 15 UI tests ✅
+└── stats/
+    └── StatsScreenTest.kt          # 21 UI tests ✅
 ```
 
 ---
@@ -220,110 +182,92 @@ Continue from here based on the immediate next step you choose.
 
 ### Session 19: Python Backend Implementation
 - Created complete FastAPI backend structure
-- 17 SQLAlchemy models (SQLite compatible)
+- 17 SQLAlchemy models (SQLite compatible) → *Migrated to Firestore in Session 24*
 - 18 API endpoints matching Android DTOs
 - Firebase Admin SDK integration
 - JWT authentication
 - Claude AI client for meal planning and chat
 - Seed scripts: 17 recipes, 23 festivals
-- Server running at localhost:8000
-- Firebase service account configured
 
-### Session 20: E2E Espresso Test Framework
-- Implemented complete E2E test framework (33 files)
-- Robot pattern for all 12 screens
-- 14 flow test classes covering phases 1-14
-- Performance test class for phase 15
-- Test DI modules (TestDataModule, FakeAuthModule, FakeNetworkModule)
-- TestDataFactory with Sharma Family test profile
-- ComposeTestExtensions for fluent test API
-- Build verified passing
+### Session 20: E2E Espresso Test Framework (Initial)
+- Robot pattern framework created
+- 14 flow test classes (phases 1-14)
+- Test DI modules
 
----
+### Session 21: Compose UI Tests - HomeScreenTest
+- Pivoted from Espresso to Compose UI Testing
+- Created HomeScreenTest.kt with 22 passing tests
+- Established test wrapper composable pattern
 
-## E2E TEST FILES CREATED (Session 20)
+### Session 22: Auth Tests + Onboarding Tests
+- **AuthScreenTest.kt**: 18 UI tests (all passing)
+- **AuthIntegrationTest.kt**: 9 integration tests with FakeGoogleAuthClient (all passing)
+- **OnboardingScreenTest.kt**: 40+ tests created
 
-```
-android/app/src/androidTest/java/com/rasoiai/app/e2e/
-├── base/
-│   ├── BaseE2ETest.kt              # Common setup, Hilt, Compose rules
-│   ├── TestDataFactory.kt          # Sharma Family test data
-│   └── ComposeTestExtensions.kt    # Fluent test API extensions
-├── di/
-│   ├── TestDataModule.kt           # Replaces RepositoryModule with fakes
-│   ├── FakeAuthModule.kt           # FakeGoogleAuthClient, FakeAuthRepository
-│   └── FakeNetworkModule.kt        # FakeNetworkMonitor for offline testing
-├── robots/
-│   ├── AuthRobot.kt
-│   ├── OnboardingRobot.kt
-│   ├── HomeRobot.kt
-│   ├── GroceryRobot.kt
-│   ├── ChatRobot.kt
-│   ├── FavoritesRobot.kt
-│   ├── StatsRobot.kt
-│   ├── SettingsRobot.kt
-│   ├── PantryRobot.kt
-│   ├── RecipeRulesRobot.kt
-│   ├── RecipeDetailRobot.kt
-│   └── CookingModeRobot.kt
-├── flows/
-│   ├── AuthFlowTest.kt             # Phase 1
-│   ├── OnboardingFlowTest.kt       # Phase 2
-│   ├── MealPlanGenerationTest.kt   # Phase 3
-│   ├── HomeScreenTest.kt           # Phase 4
-│   ├── GroceryFlowTest.kt          # Phase 5
-│   ├── ChatFlowTest.kt             # Phase 6
-│   ├── FavoritesFlowTest.kt        # Phase 7
-│   ├── StatsScreenTest.kt          # Phase 8
-│   ├── SettingsFlowTest.kt         # Phase 9
-│   ├── PantryFlowTest.kt           # Phase 10
-│   ├── RecipeRulesFlowTest.kt      # Phase 11
-│   ├── CookingModeFlowTest.kt      # Phase 12
-│   ├── OfflineFlowTest.kt          # Phase 13
-│   └── EdgeCasesTest.kt            # Phase 14
-└── performance/
-    └── PerformanceTest.kt          # Phase 15
-```
+### Session 23: Bulk Screen Tests
+- Fixed OnboardingScreenTest (41 tests passing)
+- Created tests for 6 additional screens:
+  - GroceryScreenTest.kt (21 tests)
+  - ChatScreenTest.kt (17 tests)
+  - FavoritesScreenTest.kt (17 tests)
+  - StatsScreenTest.kt (21 tests)
+  - SettingsScreenTest.kt (15 tests)
+  - PantryScreenTest.kt (18 tests)
+- Made screen content composables `internal` for testing
+
+### Session 24: Backend Migration to Firestore
+- **Replaced SQLite/SQLAlchemy with Firebase Firestore**
+- Created Firestore repositories:
+  - `app/repositories/user_repository.py`
+  - `app/repositories/recipe_repository.py`
+  - `app/repositories/meal_plan_repository.py`
+  - `app/repositories/festival_repository.py`
+- Updated `app/db/firestore.py` - Firestore client utilities
+- Updated `app/services/auth_service.py` - Uses Firestore UserRepository
+- Updated `app/core/firebase.py` - Accepts `fake-firebase-token` for E2E testing
+- Created `scripts/seed_firestore.py` - Seeds 10 recipes + 12 festivals
+- Verified auth flow: `fake-firebase-token` → Backend → JWT returned
+- Updated E2E-Testing-Prompt.md with Firestore architecture
 
 ---
 
-## BACKEND FILES CREATED (Session 19)
+## ARCHITECTURE REMINDER
 
 ```
-backend/
-├── app/
-│   ├── main.py                    # FastAPI entry point
-│   ├── config.py                  # Pydantic settings
-│   ├── api/
-│   │   ├── deps.py                # Auth dependencies
-│   │   └── v1/
-│   │       ├── router.py          # Route aggregator
-│   │       └── endpoints/         # 8 endpoint files
-│   ├── core/
-│   │   ├── security.py            # JWT handling
-│   │   ├── firebase.py            # Firebase Admin SDK
-│   │   └── exceptions.py          # Custom exceptions
-│   ├── db/
-│   │   ├── database.py            # SQLAlchemy async engine
-│   │   └── base.py                # Base model class
-│   ├── models/                    # 7 model files, 17 tables
-│   ├── schemas/                   # 8 Pydantic schema files
-│   ├── services/                  # 8 service files
-│   └── ai/                        # Claude integration
-│       ├── claude_client.py
-│       ├── meal_planner.py
-│       ├── chat_assistant.py
-│       └── prompts/
-├── scripts/
-│   ├── seed_recipes.py            # 17 Indian recipes
-│   └── seed_festivals.py          # 23 festivals
-├── .env                           # Environment config
-├── requirements.txt
-├── Dockerfile
-└── docker-compose.yml
+┌─────────────────────────────────────────────────────────────┐
+│  ANDROID APP                                                │
+│  UI (Compose) → ViewModel → UseCase → Repository            │
+│                                           ↓                 │
+│                              ┌────────────┴────────────┐    │
+│                              ↓                         ↓    │
+│                         Room (Local)            Retrofit    │
+│                         (Cache)                 (Remote)    │
+└─────────────────────────────────────────────────────────────┘
+                                                      ↓
+┌─────────────────────────────────────────────────────────────┐
+│  PYTHON BACKEND (FastAPI)                                   │
+│  Endpoints → Services → Repositories → Firestore            │
+│                                                             │
+│  Auth: Accepts "fake-firebase-token" in debug mode          │
+│  Database: Firebase Firestore (project: rasoiai-6dcdd)      │
+└─────────────────────────────────────────────────────────────┘
+
+TEST LAYERS:
+┌─────────────────────────────────────────────────────────────┐
+│  UI Tests (*ScreenTest.kt)                                  │
+│  - Test wrapper composable with mock UiState                │
+│  - No ViewModel, no Hilt                                    │
+│  - Fast, isolated, reliable                                 │
+├─────────────────────────────────────────────────────────────┤
+│  Integration Tests (*IntegrationTest.kt)                    │
+│  - Full app with Hilt DI + FakeGoogleAuthClient             │
+│  - Real backend API calls (Firestore)                       │
+│  - Tests navigation flows end-to-end                        │
+│  - Requires: emulator + backend running                     │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-*Last Updated: January 2026*
-*E2E test framework complete (33 files). Backend implemented. Ready to run E2E tests on device/emulator.*
+*Last Updated: January 28, 2026*
+*Backend migrated to Firestore. ~190 UI tests across 10 screens. E2E tests ready with FakeGoogleAuthClient + real Firestore backend.*

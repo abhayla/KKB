@@ -97,9 +97,88 @@ Cross-screen data validation:
 |-------|-----------|---------|
 | Unit Tests | JUnit5 + MockK | ViewModel, Repository, UseCase |
 | UI Tests | Compose UI Testing | Screen composables with mock state |
-| Integration Tests | Hilt + FakeRepositories | Full navigation flows |
+| Integration Tests | Hilt + FakeGoogleAuthClient | Full navigation with real backend |
 | E2E Tests | ADB + Manual/Automated | Complete user journeys |
 | Flow Testing | Turbine | StateFlow/Channel in ViewModels |
+
+---
+
+## Test Architecture: Real Backend + Fake Auth
+
+The E2E tests use **Option B: Real Backend + Fake Google Auth Only**. This means:
+- Google OAuth is bypassed using `FakeGoogleAuthClient`
+- All API calls go to the real Python backend
+- Database is Firebase Firestore (real, not emulated)
+
+### Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           ANDROID E2E TEST                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  1. User taps "Sign in with Google"                                         │
+│                    ↓                                                        │
+│  2. FakeGoogleAuthClient (bypasses real Google OAuth)                       │
+│     Returns: { userId: "fake-user-id",                                      │
+│                email: "test@example.com",                                   │
+│                name: "Test User",                                           │
+│                firebaseIdToken: "fake-firebase-token" }                     │
+│                    ↓                                                        │
+│  3. AuthViewModel calls AuthRepository.signInWithGoogle("fake-firebase-token")│
+│                    ↓                                                        │
+│  4. REAL AuthRepositoryImpl calls backend API:                              │
+│     POST http://10.0.2.2:8000/api/v1/auth/firebase                          │
+│     Body: { "firebase_token": "fake-firebase-token" }                       │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                     ↓
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           PYTHON BACKEND (Firestore)                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  5. Backend receives "fake-firebase-token"                                  │
+│     firebase.py detects: settings.debug=True AND token=="fake-firebase-token"│
+│     Returns mock user: { uid: "fake-user-id",                               │
+│                          email: "test@example.com",                         │
+│                          name: "Test User" }                                │
+│                    ↓                                                        │
+│  6. Creates/finds user in Firestore                                         │
+│                    ↓                                                        │
+│  7. Returns REAL JWT tokens:                                                │
+│     { access_token: "eyJ...", refresh_token: "eyJ...", user: {...} }        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                     ↓
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      ANDROID APP (authenticated)                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  8. App stores JWT in DataStore                                             │
+│  9. Navigation: Auth → Onboarding (if new user) → Home                      │
+│  10. All subsequent API calls use REAL JWT to Firestore backend             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### What's Fake vs Real
+
+| Component | Status | Details |
+|-----------|--------|---------|
+| Google OAuth | **FAKE** | `FakeGoogleAuthClient` bypasses real Google sign-in |
+| Firebase Token | **FAKE** | Hardcoded `"fake-firebase-token"` |
+| Backend API | **REAL** | Python FastAPI at `localhost:8000` |
+| JWT Tokens | **REAL** | Backend generates real JWTs |
+| Database | **REAL** | Firebase Firestore |
+| All Repositories | **REAL** | Real implementations calling real APIs |
+
+### Key Test Files
+
+| File | Purpose |
+|------|---------|
+| `e2e/di/FakeGoogleAuthClient.kt` | Bypasses Google OAuth, returns fake credentials |
+| `e2e/di/FakeAuthModule.kt` | Hilt module that replaces real GoogleAuthClient |
+| `e2e/base/BaseE2ETest.kt` | Base test class with Hilt setup |
 
 ---
 
@@ -139,18 +218,42 @@ adb shell pm clear com.rasoiai.app.debug
 adb shell pm list packages | grep rasoiai
 ```
 
-### Backend Setup (if testing with real API)
+### Backend Setup (Firestore)
 
 ```bash
 cd backend
 
+# Activate virtual environment
+source venv/bin/activate  # Linux/Mac
+# .\venv\Scripts\activate  # Windows
+
+# Install dependencies (first time only)
+pip install -r requirements.txt
+
+# Configure Firebase (choose one):
+# Option 1: Service Account (recommended for testing)
+export FIREBASE_CREDENTIALS_PATH="./rasoiai-firebase-service-account.json"
+
+# Option 2: Firebase Emulator (for local development)
+# export FIRESTORE_EMULATOR_HOST="localhost:8080"
+# firebase emulators:start --only firestore
+
 # Start backend server
-source venv/bin/activate
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 # Verify API is running
 curl http://localhost:8000/health
+
+# Seed Firestore with recipes and festivals (first time only)
+PYTHONPATH=. python scripts/seed_firestore.py
 ```
+
+### Firebase Service Account Setup
+
+1. Go to Firebase Console → Project Settings → Service Accounts
+2. Click "Generate new private key"
+3. Save as `backend/rasoiai-firebase-service-account.json`
+4. Add to `.gitignore` (never commit credentials)
 
 ### Logging
 
@@ -1576,14 +1679,36 @@ adb shell input text "Hello"
 adb shell input keyevent KEYCODE_BACK
 ```
 
-### Database
+### Local Room Database
 ```bash
-# Pull database
+# Pull Room database from device
 adb exec-out run-as com.rasoiai.app.debug cat databases/rasoiai_database > local.db
 
-# Open with SQLite
+# Open with SQLite (for local cache inspection)
 sqlite3 local.db ".tables"
 sqlite3 local.db "SELECT * FROM meal_plans;"
+```
+
+### Firestore Database (Backend)
+```bash
+# Use Firebase Console or Firebase CLI to verify data
+# https://console.firebase.google.com/project/<project-id>/firestore
+
+# Or use Python script to query Firestore
+cd backend
+PYTHONPATH=. python -c "
+import asyncio
+from app.repositories.recipe_repository import RecipeRepository
+from app.repositories.user_repository import UserRepository
+
+async def check():
+    recipes = await RecipeRepository().get_all()
+    print(f'Recipes: {len(recipes)}')
+    for r in recipes[:3]:
+        print(f'  - {r[\"name\"]}')
+
+asyncio.run(check())
+"
 ```
 
 ### Network

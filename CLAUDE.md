@@ -274,17 +274,19 @@ See `android/gradle/libs.versions.toml` for exact dependency versions.
 | Layer | Key Technologies |
 |-------|-----------------|
 | Android | Kotlin 1.9.22, Jetpack Compose, Hilt, Room, Retrofit, Navigation Compose |
-| Backend | Python, FastAPI, SQLAlchemy, PostgreSQL, Redis |
+| Backend | Python, FastAPI, Firebase Firestore |
 | Auth | Firebase Auth (Google OAuth only) |
-| LLM | Claude API (claude-3-sonnet) |
-| Testing | JUnit5, MockK, Turbine, Espresso (UI/E2E) |
+| Database | Firebase Firestore (backend), Room (Android local cache) |
+| LLM | Google Gemini API (primary), Claude API (fallback) |
+| Testing | JUnit5, MockK, Turbine, Compose UI Testing |
 
 ## Key Design Decisions
 
-1. **Offline-First**: Room DB caches meal plans, recipes, grocery lists. SyncManager handles queued offline actions.
-2. **LLM Cost Optimization**: Cache meal plans by preference hash (60-70% savings), store generated recipes for reuse.
-3. **Auth**: Google OAuth only (Phone OTP removed for MVP simplicity).
-4. **Festival Intelligence**: 30+ festivals with fasting modes and auto-suggested menus.
+1. **Offline-First**: Room DB (Android) caches meal plans, recipes, grocery lists. Firestore (backend) is source of truth.
+2. **Database Flexibility**: Backend uses repository pattern with Firestore - can swap to PostgreSQL/MongoDB later without Android changes.
+3. **LLM Cost Optimization**: Cache meal plans by preference hash (60-70% savings), store generated recipes for reuse.
+4. **Auth**: Google OAuth only (Phone OTP removed for MVP simplicity). Backend accepts `fake-firebase-token` in debug mode for testing.
+5. **Festival Intelligence**: 30+ festivals with fasting modes and auto-suggested menus.
 
 ## India-Specific Domain Knowledge
 
@@ -331,7 +333,7 @@ cd android
 ./gradlew clean && ./gradlew assembleDebug
 ```
 
-### Backend (Python) - run from `backend/` folder
+### Backend (Python + Firestore) - run from `backend/` folder
 ```bash
 cd backend
 
@@ -340,24 +342,33 @@ python -m venv venv
 source venv/bin/activate         # Linux/Mac
 # .\venv\Scripts\activate        # Windows PowerShell
 
-# Install & Run
+# Install dependencies
 pip install -r requirements.txt
+
+# Configure Firebase (required)
+# Option 1: Service account file (recommended)
+export FIREBASE_CREDENTIALS_PATH=./rasoiai-firebase-service-account.json
+
+# Option 2: Firebase Emulator (for offline development)
+# export FIRESTORE_EMULATOR_HOST=localhost:8080
+# firebase emulators:start --only firestore
+
+# Start server
 uvicorn app.main:app --reload    # Server at http://localhost:8000/docs
 
-# Database
-alembic upgrade head             # Apply migrations
-alembic revision --autogenerate -m "Description"  # Create migration
+# Seed Firestore with initial data
+PYTHONPATH=. python scripts/seed_firestore.py
 
 # Testing
 pytest                           # All tests
 pytest --cov=app                 # With coverage
 pytest tests/test_auth.py -v     # Single file
-
-# Docker (alternative)
-docker-compose up -d             # Start all services
-docker-compose logs -f api       # View logs
-docker-compose down              # Stop
 ```
+
+**Firebase Setup:**
+1. Get service account key from Firebase Console → Project Settings → Service Accounts
+2. Save as `backend/rasoiai-firebase-service-account.json`
+3. Add to `.gitignore` (never commit credentials)
 
 ## Test Structure
 

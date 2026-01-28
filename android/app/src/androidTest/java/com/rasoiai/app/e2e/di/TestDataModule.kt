@@ -18,8 +18,8 @@ import com.rasoiai.domain.repository.RecipeRepository
 import com.rasoiai.domain.repository.RecipeRulesRepository
 import com.rasoiai.domain.repository.SettingsRepository
 import com.rasoiai.domain.repository.StatsRepository
-import com.rasoiai.domain.repository.AuthRepository
 import com.rasoiai.data.repository.AuthRepositoryImpl
+import com.rasoiai.domain.repository.AuthRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.components.SingletonComponent
