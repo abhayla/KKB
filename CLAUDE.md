@@ -439,7 +439,7 @@ Artifacts uploaded: lint results, test results, debug APK.
 
 ## Troubleshooting
 
-**Gradle sync fails:** Ensure JDK 17+ and `JAVA_HOME` set. Kotlin/KSP must be 1.9.22 / 1.9.22-1.0.17 (see `gradle/libs.versions.toml`). AGP 8.13.2 requires Android Studio Ladybug or newer.
+**Gradle sync fails:** Ensure JDK 17+ and `JAVA_HOME` set. Kotlin/KSP must be 1.9.22 / 1.9.22-1.0.17 (see `gradle/libs.versions.toml`). AGP 8.13.2 requires Android Studio Ladybug (2024.2) or newer.
 
 **Emulator not detected:** Set `ANDROID_HOME` and verify with `adb devices`.
 
@@ -457,7 +457,7 @@ Artifacts uploaded: lint results, test results, debug APK.
 
 ## Rules for Claude
 
-1. **Bash Syntax**: Use forward slashes `/` (not `\`), use `./gradlew` (not `.\gradlew`), quote paths with spaces. Shell is Unix-style bash.
+1. **Bash Syntax (CRITICAL)**: Use forward slashes `/` (not `\`), use `./gradlew` (not `.\gradlew`), quote paths with spaces. Shell is Unix-style bash even on Windows.
 
 2. **Document Output**:
    - Generated documents → `docs/claude-docs/`
@@ -490,6 +490,7 @@ Use these as patterns for new screens:
 | GET | `/api/v1/meal-plans/current` | Get current week's plan |
 | POST | `/api/v1/meal-plans/{planId}/items/{itemId}/swap` | Swap meal |
 | GET | `/api/v1/recipes/{id}` | Get recipe details |
+| GET | `/api/v1/recipes` | List recipes (with filters) |
 | GET | `/api/v1/grocery` | Get grocery list |
 | GET | `/api/v1/grocery/whatsapp` | WhatsApp formatted list |
 | GET | `/api/v1/festivals/upcoming` | Upcoming festivals |
@@ -497,6 +498,25 @@ Use these as patterns for new screens:
 | GET | `/api/v1/stats/streak` | Cooking streak |
 
 API docs available at `http://localhost:8000/docs` when backend is running.
+
+## Recipe Database
+
+**3,590 recipes** in Firestore (project: `rasoiai-6dcdd`):
+- 3,580 imported from khanakyabanega + 10 seed recipes
+- Distribution: North (3,124), South (358), West (85), East (23)
+- Dietary: Vegetarian (3,482), Vegan (1,347)
+
+**Recipe import scripts** (in `backend/scripts/`):
+```bash
+cd backend
+.\venv\Scripts\activate          # Windows PowerShell
+
+# Preview import
+python scripts/import_recipes_from_kkb.py --dry-run --limit 10
+
+# Verify current data
+python scripts/verify_recipe_import.py
+```
 
 ## Key Documentation
 
