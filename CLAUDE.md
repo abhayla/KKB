@@ -13,6 +13,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **Target SDK** | 34 (Min SDK 24 / Android 7.0) |
 | **Target Market** | Pan-India (Tier 1, 2, 3 cities) |
 
+## Current Project State
+
+See `docs/CONTINUE_PROMPT.md` for session context and active work.
+
+**Test Coverage (as of Jan 2026):**
+- ~190 UI tests across 10 screens (Compose UI Testing)
+- Remaining: RecipeRulesScreenTest, CookingModeScreenTest, RecipeDetailScreenTest
+
 ## Quick Start
 
 ```bash
@@ -235,58 +243,20 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
 ## Module Structure
 
-```
-android/
-├── app/src/main/java/com/rasoiai/app/
-│   ├── presentation/             # All screens & ViewModels
-│   │   ├── navigation/           # RasoiNavHost.kt, Screen.kt, PlaceholderScreen.kt
-│   │   ├── theme/                # Color.kt, Type.kt, Shape.kt, Spacing.kt, Theme.kt
-│   │   ├── common/               # UiState.kt, BaseViewModel.kt
-│   │   ├── splash/               # SplashScreen.kt, SplashViewModel.kt
-│   │   ├── auth/                 # AuthScreen.kt, AuthViewModel.kt, GoogleAuthClient.kt
-│   │   ├── onboarding/           # OnboardingScreen.kt, OnboardingViewModel.kt
-│   │   ├── home/                 # HomeScreen.kt, HomeViewModel.kt, components/
-│   │   ├── recipedetail/         # RecipeDetailScreen.kt, RecipeDetailViewModel.kt, components/
-│   │   ├── cookingmode/          # CookingModeScreen.kt, CookingModeViewModel.kt, components/
-│   │   ├── grocery/              # GroceryScreen.kt, GroceryViewModel.kt, components/
-│   │   ├── favorites/            # FavoritesScreen.kt, FavoritesViewModel.kt, components/
-│   │   ├── chat/                 # ChatScreen.kt, ChatViewModel.kt, components/
-│   │   ├── pantry/               # PantryScreen.kt, PantryViewModel.kt, components/
-│   │   ├── stats/                # StatsScreen.kt, StatsViewModel.kt, components/
-│   │   ├── settings/             # SettingsScreen.kt, SettingsViewModel.kt, components/
-│   │   └── reciperules/          # RecipeRulesScreen.kt, RecipeRulesViewModel.kt, components/
-│   └── di/                       # Hilt modules
-├── domain/src/main/java/com/rasoiai/domain/
-│   ├── model/                    # Recipe.kt, MealPlan.kt, Festival.kt, User.kt
-│   ├── repository/               # MealPlanRepository.kt, RecipeRepository.kt, AuthRepository.kt
-│   └── usecase/                  # GetCurrentMealPlanUseCase.kt, GenerateMealPlanUseCase.kt, etc.
-├── data/src/main/java/com/rasoiai/data/
-│   ├── local/
-│   │   ├── dao/                  # Room DAOs (MealPlanDao, etc.)
-│   │   ├── entity/               # Room Entities (MealPlanEntity, etc.)
-│   │   ├── datastore/            # DataStore (UserPreferencesDataStore - auth tokens)
-│   │   └── mapper/               # Entity ↔ Domain mappers (EntityMappers.kt)
-│   ├── remote/
-│   │   ├── api/                  # Retrofit service (RasoiApiService.kt)
-│   │   ├── dto/                  # API DTOs (MealPlanDto, etc.)
-│   │   ├── interceptor/          # AuthInterceptor (adds JWT to requests)
-│   │   └── mapper/               # DTO → Domain/Entity mappers (DtoMappers.kt)
-│   ├── repository/               # Real impls (AuthRepositoryImpl, MealPlanRepositoryImpl) + Fakes
-│   ├── di/                       # DataModule.kt (Hilt bindings)
-│   └── sync/                     # SyncManager, OfflineQueueManager
-├── core/src/main/java/com/rasoiai/core/
-│   ├── ui/                       # Theme, shared composables
-│   ├── util/                     # Extensions, constants
-│   └── network/                  # NetworkMonitor
-└── gradle/
-    └── libs.versions.toml        # Centralized dependency versions
-```
+Four-layer architecture under `android/`:
 
-**Package naming:**
-- App module: `com.rasoiai.app.*`
-- Domain module: `com.rasoiai.domain.*`
-- Data module: `com.rasoiai.data.*`
-- Core module: `com.rasoiai.core.*`
+| Module | Package | Purpose |
+|--------|---------|---------|
+| `app` | `com.rasoiai.app.*` | Screens, ViewModels, Hilt modules, navigation |
+| `domain` | `com.rasoiai.domain.*` | Models, repository interfaces, use cases |
+| `data` | `com.rasoiai.data.*` | Room (local), Retrofit (remote), repository impls |
+| `core` | `com.rasoiai.core.*` | Shared UI components, utilities, NetworkMonitor |
+
+**Key locations:**
+- Screens: `app/presentation/{feature}/` (e.g., `home/`, `recipedetail/`)
+- Domain models: `domain/model/`
+- Mappers: `data/local/mapper/EntityMappers.kt`, `data/remote/mapper/DtoMappers.kt`
+- Dependencies: `gradle/libs.versions.toml`
 
 **Module Dependencies:**
 ```
@@ -345,10 +315,10 @@ cd android
 ./gradlew test --tests "com.rasoiai.app.ClassName.testMethodName"
 ./gradlew :app:testDebugUnitTest --tests "*.HomeViewModelTest"
 
-# Instrumented/Espresso tests (requires emulator/device)
-./gradlew connectedAndroidTest                    # All instrumented tests
-./gradlew :app:connectedDebugAndroidTest          # App module only
-./gradlew connectedCheck --tests "*.HomeScreenTest"  # Single test class
+# Compose UI Tests (requires emulator/device - use API 34, not 36)
+./gradlew :app:connectedDebugAndroidTest          # All instrumented tests
+./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.presentation.auth.AuthScreenTest  # Single class
+./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.package=com.rasoiai.app.presentation  # All presentation tests
 
 # Lint
 ./gradlew lint                   # Report: app/build/reports/lint-results-debug.html
@@ -361,14 +331,32 @@ cd android
 ./gradlew clean && ./gradlew assembleDebug
 ```
 
-### Backend (Python)
+### Backend (Python) - run from `backend/` folder
 ```bash
+cd backend
+
+# Setup virtual environment
+python -m venv venv
+source venv/bin/activate         # Linux/Mac
+# .\venv\Scripts\activate        # Windows PowerShell
+
+# Install & Run
 pip install -r requirements.txt
-uvicorn app.main:app --reload    # Run server
-pytest                           # Run tests
-pytest tests/test_meal_plans.py -v
-alembic upgrade head             # Database migrations
-ruff check .                     # Lint
+uvicorn app.main:app --reload    # Server at http://localhost:8000/docs
+
+# Database
+alembic upgrade head             # Apply migrations
+alembic revision --autogenerate -m "Description"  # Create migration
+
+# Testing
+pytest                           # All tests
+pytest --cov=app                 # With coverage
+pytest tests/test_auth.py -v     # Single file
+
+# Docker (alternative)
+docker-compose up -d             # Start all services
+docker-compose logs -f api       # View logs
+docker-compose down              # Stop
 ```
 
 ## Test Structure
@@ -386,6 +374,45 @@ android/
 ```
 
 **Test naming:** `ClassNameTest.kt` for unit tests, `ScreenNameTest.kt` for UI tests
+
+## UI Testing (Compose UI Testing)
+
+Tests use **Compose UI Testing** (not Espresso) for native Compose support. Located in `app/src/androidTest/`.
+
+**Current coverage:** ~190 tests across Auth, Onboarding, Home, Grocery, Chat, Favorites, Stats, Settings, Pantry screens.
+
+| Test Type | Pattern | Purpose |
+|-----------|---------|---------|
+| UI Tests | `*ScreenTest.kt` | Test wrapper composable with mock UiState, no ViewModel |
+| Integration Tests | `*IntegrationTest.kt` | Full app with Hilt DI + FakeGoogleAuthClient |
+
+```kotlin
+// UI Test pattern - fast, isolated
+class FeatureScreenTest {
+    @get:Rule val composeTestRule = createComposeRule()
+
+    @Test fun screen_displaysElement_whenCondition() {
+        composeTestRule.setContent { FeatureTestContent(uiState = testState) }
+        composeTestRule.onNodeWithTag(TestTags.FEATURE_ELEMENT).assertIsDisplayed()
+    }
+}
+
+// Integration Test pattern - tests navigation flows
+@HiltAndroidTest
+class FeatureIntegrationTest : BaseE2ETest() {
+    @Inject lateinit var fakeGoogleAuthClient: FakeGoogleAuthClient
+    // Uses real navigation, fake auth
+}
+```
+
+**Key test files:**
+- `e2e/base/BaseE2ETest.kt` - Base class with Hilt setup, waitUntil helpers
+- `e2e/di/FakeGoogleAuthClient.kt` - Fake auth (configurable success/failure)
+- `presentation/common/TestTags.kt` - All semantic test tags
+
+**Important:** Use API 34 emulator (API 36 has Espresso compatibility issues).
+
+See `docs/testing/E2E-Testing-Prompt.md` for the full testing guide.
 
 ## CI/CD
 
@@ -437,6 +464,25 @@ Use these as patterns for new screens:
 | Camera Integration | `presentation/pantry/` | ScanResultsSheet component |
 | Charts/Gamification | `presentation/stats/` | CuisineBreakdownSection |
 
+## Backend API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/auth/firebase` | Exchange Firebase token for JWT |
+| GET | `/api/v1/users/me` | Get current user |
+| PUT | `/api/v1/users/preferences` | Update preferences |
+| POST | `/api/v1/meal-plans/generate` | Generate meal plan (AI) |
+| GET | `/api/v1/meal-plans/current` | Get current week's plan |
+| POST | `/api/v1/meal-plans/{planId}/items/{itemId}/swap` | Swap meal |
+| GET | `/api/v1/recipes/{id}` | Get recipe details |
+| GET | `/api/v1/grocery` | Get grocery list |
+| GET | `/api/v1/grocery/whatsapp` | WhatsApp formatted list |
+| GET | `/api/v1/festivals/upcoming` | Upcoming festivals |
+| POST | `/api/v1/chat/message` | AI chat |
+| GET | `/api/v1/stats/streak` | Cooking streak |
+
+API docs available at `http://localhost:8000/docs` when backend is running.
+
 ## Key Documentation
 
 | Document | Location |
@@ -447,3 +493,4 @@ Use these as patterns for new screens:
 | Wireframes | `docs/design/wireframes/` |
 | Audit Checklist | `docs/claude-docs/Android-Best-Practices-Audit-Guide.md` |
 | E2E Testing Guide | `docs/testing/E2E-Testing-Prompt.md` |
+| Session Context | `docs/CONTINUE_PROMPT.md` |
