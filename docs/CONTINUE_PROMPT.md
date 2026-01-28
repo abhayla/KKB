@@ -9,132 +9,125 @@ Use this prompt to start a new conversation/context and continue the project fro
 ```
 I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 
-## Current Task: E2E Testing with Firestore Backend
+## Current State: Production-Ready Backend with 3,590 Recipes
 
-Backend has been migrated from SQLite to Firebase Firestore. E2E tests use FakeGoogleAuthClient with real backend API calls.
+Backend runs on Firebase Firestore with a comprehensive recipe database imported from khanakyabanega.
 
 **Backend Status:**
-- Firestore database configured (project: `rasoiai-6dcdd`)
-- Auth endpoint accepts `fake-firebase-token` for testing
-- Seeded with 10 recipes + 12 festivals
+- Firestore database: `rasoiai-6dcdd`
+- **3,590 recipes** (3,580 imported from khanakyabanega + 10 seed recipes)
+- 12 festivals seeded
+- Auth accepts `fake-firebase-token` for testing
 
-**To run E2E tests:**
+**Recipe Distribution:**
+| Category | Count |
+|----------|-------|
+| North Indian | 3,124 |
+| South Indian | 358 |
+| West Indian | 85 |
+| East Indian | 23 |
+| Vegetarian | 3,482 |
+| Vegan | 1,347 |
+
+**To start backend:**
 ```bash
-# 1. Start backend
 cd backend
+.\venv\Scripts\activate          # Windows
+# source venv/bin/activate       # Linux/Mac
 uvicorn app.main:app --reload --port 8000
+```
 
-# 2. Run Android tests
+**To run Android tests:**
+```bash
 cd android
 ./gradlew :app:connectedDebugAndroidTest
 ```
 
-### Session 25 Completed Work
+### Session 26 Completed Work
 
-**Test Files Created:**
-| Test File | Tests | Status |
-|-----------|-------|--------|
-| `AuthScreenTest.kt` | 18 UI tests | ✅ All Passing |
-| `AuthIntegrationTest.kt` | 9 integration tests | ✅ All Passing |
-| `OnboardingScreenTest.kt` | 41 UI tests | ✅ All Passing |
-| `HomeScreenTest.kt` | 22 UI tests | ✅ All Passing |
-| `GroceryScreenTest.kt` | 21 UI tests | ✅ Created |
-| `ChatScreenTest.kt` | 17 UI tests | ✅ Created |
-| `FavoritesScreenTest.kt` | 17 UI tests | ✅ Created |
-| `StatsScreenTest.kt` | 21 UI tests | ✅ Created |
-| `SettingsScreenTest.kt` | 15 UI tests | ✅ Created |
-| `PantryScreenTest.kt` | 18 UI tests | ✅ Created |
-| `RecipeRulesScreenTest.kt` | 22 UI tests | ✅ Created |
-| `CookingModeScreenTest.kt` | 27 UI tests | ✅ Created |
-| `RecipeDetailScreenTest.kt` | 26 UI tests | ✅ Created |
+**Recipe Import from khanakyabanega:**
+- Imported 3,580 recipes from source Firebase project
+- Created transformation pipeline:
+  - Flat ingredient strings → structured objects (name, quantity, unit, category)
+  - Flat instructions → step objects with step_number
+  - Cuisine names normalized (e.g., "North Indian" → "north")
+  - Diet types mapped to dietary_tags array
+  - Meal types normalized
 
-### Key Testing Decisions Made
-
-1. **Framework**: Compose UI Testing (NOT Espresso)
-   - Native Compose support with semantic queries
-   - Espresso only for: system dialogs, intent verification
-
-2. **Test Patterns**:
-   - **UI Tests** (`*ScreenTest.kt`): Test wrapper composable with mock UiState, no ViewModel
-   - **Integration Tests** (`*IntegrationTest.kt`): Full app with Hilt DI + FakeGoogleAuthClient
-
-3. **Screen Content Composables**: Made `internal` for testing:
-   - `GroceryScreenContent`, `ChatScreenContent`, `FavoritesScreenContent`
-   - `StatsScreenContent`, `SettingsScreenContent`, `PantryScreenContent`
-   - `RecipeRulesScreenContent`, `CookingModeContent`, `RecipeDetailContent`
-
-4. **API Compatibility**: Use API 34 emulator (API 36 has Espresso issues)
+**Scripts Created:**
+| Script | Purpose |
+|--------|---------|
+| `scripts/inspect_source_recipes.py` | Analyze source database schema |
+| `scripts/import_recipes_from_kkb.py` | Transform and import recipes |
+| `scripts/verify_recipe_import.py` | Verify import results |
 
 ### Test Coverage Status
 
+~265 UI tests across 13 screens (Compose UI Testing):
+
 | Phase | Screen | UI Tests | Status |
 |-------|--------|----------|--------|
-| 1 | Auth | 18 ✅ | **DONE** |
-| 2 | Onboarding | 41 ✅ | **DONE** |
-| 3 | Generation | - | ❌ TODO |
-| 4 | Home | 22 ✅ | **DONE** |
-| 4b | Recipe Detail | 26 ✅ | **DONE** |
-| 5 | Grocery | 21 ✅ | **DONE** |
-| 6 | Chat | 17 ✅ | **DONE** |
-| 7 | Favorites | 17 ✅ | **DONE** |
-| 8 | Stats | 21 ✅ | **DONE** |
-| 9 | Settings | 15 ✅ | **DONE** |
-| 10 | Pantry | 18 ✅ | **DONE** |
-| 11 | Recipe Rules | 22 ✅ | **DONE** |
-| 12 | Cooking Mode | 27 ✅ | **DONE** |
-| 13 | Offline | - | ❌ TODO |
-| 14 | Edge Cases | - | ❌ TODO |
-| 15 | Performance | - | ❌ TODO |
-
-**Total: ~265 UI tests created**
+| 1 | Auth | 18 | DONE |
+| 2 | Onboarding | 41 | DONE |
+| 3 | Generation | - | TODO |
+| 4 | Home | 22 | DONE |
+| 4b | Recipe Detail | 26 | DONE |
+| 5 | Grocery | 21 | DONE |
+| 6 | Chat | 17 | DONE |
+| 7 | Favorites | 17 | DONE |
+| 8 | Stats | 21 | DONE |
+| 9 | Settings | 15 | DONE |
+| 10 | Pantry | 18 | DONE |
+| 11 | Recipe Rules | 22 | DONE |
+| 12 | Cooking Mode | 27 | DONE |
 
 ### Remaining Work
 
 1. **GenerationScreenTest.kt** - Phase 3 (AI-powered meal plan generation)
 2. Integration tests for navigation flows
-3. Offline mode tests - Phase 13
-4. Edge cases and error handling tests - Phase 14
-5. Performance tests - Phase 15
+3. Offline mode tests
+4. Edge cases and error handling tests
+5. Connect Android app to real backend API
+6. AI meal plan generation with Gemini/Claude
 
-### Running Tests
+### Key Files Reference
 
+- Architecture: `CLAUDE.md`
+- E2E Testing Guide: `docs/testing/E2E-Testing-Prompt.md`
+- Recipe Import: `backend/scripts/import_recipes_from_kkb.py`
+- Backend API: `backend/app/api/v1/endpoints/`
+```
+
+---
+
+## IMPORT SCRIPTS CREATED (Session 26)
+
+```
+backend/scripts/
+├── inspect_source_recipes.py      # Analyzes khanakyabanega schema
+├── import_recipes_from_kkb.py     # Imports & transforms recipes
+├── verify_recipe_import.py        # Verifies import results
+├── seed_firestore.py              # Seeds initial data
+├── seed_recipes.py                # Original recipe seeds
+└── seed_festivals.py              # Festival data seeds
+```
+
+**Recipe Import Usage:**
 ```bash
-cd android
+cd backend
+.\venv\Scripts\activate
 
-# Run all UI tests
-./gradlew :app:connectedDebugAndroidTest
+# Dry run (preview only)
+python scripts/import_recipes_from_kkb.py --dry-run --limit 10
 
-# Run specific screen test
-./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.presentation.grocery.GroceryScreenTest
+# Import specific count
+python scripts/import_recipes_from_kkb.py --limit 100
 
-# Run all presentation tests
-./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.package=com.rasoiai.app.presentation
-```
+# Import all
+python scripts/import_recipes_from_kkb.py --all
 
-### Test File Template
-
-```kotlin
-class {Screen}ScreenTest {
-    @get:Rule
-    val composeTestRule = createComposeRule()
-
-    // Test data factory
-    private fun createTestUiState(...): {Screen}UiState { ... }
-
-    // Tests grouped by category
-    @Test fun screen_displaysElement_whenCondition() { ... }
-    @Test fun screen_action_triggersCallback() { ... }
-}
-
-// Test wrapper composable (mirrors actual screen)
-@Composable
-private fun {Screen}TestContent(
-    uiState: {Screen}UiState,
-    onAction: () -> Unit = {},
-) { /* Mirror screen structure */ }
-```
-
-All screen UI tests are complete (~265 tests across 13 screens). Continue with integration tests or run existing tests to verify.
+# Verify results
+python scripts/verify_recipe_import.py
 ```
 
 ---
@@ -144,30 +137,30 @@ All screen UI tests are complete (~265 tests across 13 screens). Continue with i
 ```
 android/app/src/androidTest/java/com/rasoiai/app/presentation/
 ├── auth/
-│   ├── AuthScreenTest.kt           # 18 UI tests ✅
-│   └── AuthIntegrationTest.kt      # 9 integration tests ✅
+│   ├── AuthScreenTest.kt           # 18 UI tests
+│   └── AuthIntegrationTest.kt      # 9 integration tests
 ├── chat/
-│   └── ChatScreenTest.kt           # 17 UI tests ✅
+│   └── ChatScreenTest.kt           # 17 UI tests
 ├── cookingmode/
-│   └── CookingModeScreenTest.kt    # 27 UI tests ✅
+│   └── CookingModeScreenTest.kt    # 27 UI tests
 ├── favorites/
-│   └── FavoritesScreenTest.kt      # 17 UI tests ✅
+│   └── FavoritesScreenTest.kt      # 17 UI tests
 ├── grocery/
-│   └── GroceryScreenTest.kt        # 21 UI tests ✅
+│   └── GroceryScreenTest.kt        # 21 UI tests
 ├── home/
-│   └── HomeScreenTest.kt           # 22 UI tests ✅
+│   └── HomeScreenTest.kt           # 22 UI tests
 ├── onboarding/
-│   └── OnboardingScreenTest.kt     # 41 UI tests ✅
+│   └── OnboardingScreenTest.kt     # 41 UI tests
 ├── pantry/
-│   └── PantryScreenTest.kt         # 18 UI tests ✅
+│   └── PantryScreenTest.kt         # 18 UI tests
 ├── recipedetail/
-│   └── RecipeDetailScreenTest.kt   # 26 UI tests ✅
+│   └── RecipeDetailScreenTest.kt   # 26 UI tests
 ├── reciperules/
-│   └── RecipeRulesScreenTest.kt    # 22 UI tests ✅
+│   └── RecipeRulesScreenTest.kt    # 22 UI tests
 ├── settings/
-│   └── SettingsScreenTest.kt       # 15 UI tests ✅
+│   └── SettingsScreenTest.kt       # 15 UI tests
 └── stats/
-    └── StatsScreenTest.kt          # 21 UI tests ✅
+    └── StatsScreenTest.kt          # 21 UI tests
 ```
 
 ---
@@ -188,66 +181,41 @@ android/app/src/androidTest/java/com/rasoiai/app/presentation/
 - Auth token storage in DataStore
 - AuthInterceptor for API requests
 - DTO and Entity mappers
-- AuthRepositoryImpl, MealPlanRepositoryImpl, RecipeRepositoryImpl, GroceryRepositoryImpl
+- Repository implementations for Auth, MealPlan, Recipe, Grocery
 - Firebase auth flow verified
 
 ### Session 19: Python Backend Implementation
 - Created complete FastAPI backend structure
-- 17 SQLAlchemy models (SQLite compatible) → *Migrated to Firestore in Session 24*
+- 17 SQLAlchemy models (later migrated to Firestore)
 - 18 API endpoints matching Android DTOs
 - Firebase Admin SDK integration
 - JWT authentication
 - Claude AI client for meal planning and chat
-- Seed scripts: 17 recipes, 23 festivals
 
 ### Session 20: E2E Espresso Test Framework (Initial)
 - Robot pattern framework created
 - 14 flow test classes (phases 1-14)
 - Test DI modules
 
-### Session 21: Compose UI Tests - HomeScreenTest
+### Sessions 21-23: Compose UI Tests
 - Pivoted from Espresso to Compose UI Testing
-- Created HomeScreenTest.kt with 22 passing tests
+- Created UI tests for 10 screens
 - Established test wrapper composable pattern
 
-### Session 22: Auth Tests + Onboarding Tests
-- **AuthScreenTest.kt**: 18 UI tests (all passing)
-- **AuthIntegrationTest.kt**: 9 integration tests with FakeGoogleAuthClient (all passing)
-- **OnboardingScreenTest.kt**: 40+ tests created
-
-### Session 23: Bulk Screen Tests
-- Fixed OnboardingScreenTest (41 tests passing)
-- Created tests for 6 additional screens:
-  - GroceryScreenTest.kt (21 tests)
-  - ChatScreenTest.kt (17 tests)
-  - FavoritesScreenTest.kt (17 tests)
-  - StatsScreenTest.kt (21 tests)
-  - SettingsScreenTest.kt (15 tests)
-  - PantryScreenTest.kt (18 tests)
-- Made screen content composables `internal` for testing
-
 ### Session 24: Backend Migration to Firestore
-- **Replaced SQLite/SQLAlchemy with Firebase Firestore**
-- Created Firestore repositories:
-  - `app/repositories/user_repository.py`
-  - `app/repositories/recipe_repository.py`
-  - `app/repositories/meal_plan_repository.py`
-  - `app/repositories/festival_repository.py`
-- Updated `app/db/firestore.py` - Firestore client utilities
-- Updated `app/services/auth_service.py` - Uses Firestore UserRepository
-- Updated `app/core/firebase.py` - Accepts `fake-firebase-token` for E2E testing
-- Created `scripts/seed_firestore.py` - Seeds 10 recipes + 12 festivals
-- Verified auth flow: `fake-firebase-token` → Backend → JWT returned
-- Updated E2E-Testing-Prompt.md with Firestore architecture
+- Replaced SQLite/SQLAlchemy with Firebase Firestore
+- Created Firestore repositories for all entities
+- Updated auth to accept `fake-firebase-token` for testing
 
 ### Session 25: Complete UI Test Coverage
-- Created remaining screen tests:
-  - **RecipeRulesScreenTest.kt**: 22 UI tests (tabs, rules, nutrition goals)
-  - **CookingModeScreenTest.kt**: 27 UI tests (timer, step navigation, voice guidance)
-  - **RecipeDetailScreenTest.kt**: 26 UI tests (recipe info, tabs, scaling, favorites)
-- Made `RecipeDetailContent` internal for testing
-- Updated CONTINUE_PROMPT.md with test counts
-- **Total: ~265 UI tests across 13 screens**
+- Created remaining screen tests (RecipeRules, CookingMode, RecipeDetail)
+- Total: ~265 UI tests across 13 screens
+
+### Session 26: Recipe Import from khanakyabanega
+- Created inspection script to analyze source database
+- Built transformation pipeline for recipe data
+- Imported 3,580 recipes with structured ingredients/instructions
+- Verified import: 3,590 total recipes in RasoiAI
 
 ---
 
@@ -268,26 +236,26 @@ android/app/src/androidTest/java/com/rasoiai/app/presentation/
 │  PYTHON BACKEND (FastAPI)                                   │
 │  Endpoints → Services → Repositories → Firestore            │
 │                                                             │
-│  Auth: Accepts "fake-firebase-token" in debug mode          │
 │  Database: Firebase Firestore (project: rasoiai-6dcdd)      │
+│  Recipes: 3,590 (imported from khanakyabanega)              │
+│  Auth: Accepts "fake-firebase-token" in debug mode          │
 └─────────────────────────────────────────────────────────────┘
 
-TEST LAYERS:
+RECIPE DATA STRUCTURE:
 ┌─────────────────────────────────────────────────────────────┐
-│  UI Tests (*ScreenTest.kt)                                  │
-│  - Test wrapper composable with mock UiState                │
-│  - No ViewModel, no Hilt                                    │
-│  - Fast, isolated, reliable                                 │
-├─────────────────────────────────────────────────────────────┤
-│  Integration Tests (*IntegrationTest.kt)                    │
-│  - Full app with Hilt DI + FakeGoogleAuthClient             │
-│  - Real backend API calls (Firestore)                       │
-│  - Tests navigation flows end-to-end                        │
-│  - Requires: emulator + backend running                     │
+│  Recipe                                                     │
+│  ├── id, name, description, image_url                       │
+│  ├── cuisine_type: north | south | east | west              │
+│  ├── meal_types: [breakfast, lunch, dinner, snacks]         │
+│  ├── dietary_tags: [vegetarian, vegan, jain, ...]           │
+│  ├── prep_time_minutes, cook_time_minutes, servings         │
+│  ├── ingredients: [{name, quantity, unit, category}, ...]   │
+│  ├── instructions: [{step_number, instruction}, ...]        │
+│  └── nutrition: {calories, protein, carbs, fat, fiber}      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 *Last Updated: January 28, 2026*
-*Backend migrated to Firestore. ~265 UI tests across 13 screens. E2E tests ready with FakeGoogleAuthClient + real Firestore backend.*
+*3,590 recipes imported. ~265 UI tests across 13 screens. Backend on Firestore.*
