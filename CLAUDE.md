@@ -17,7 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 See `docs/CONTINUE_PROMPT.md` for session context and active work.
 
-**Test Coverage (as of Jan 2026):**
+**Test Coverage (last verified: Jan 28, 2026):**
 - ~265 UI tests across 13 screens (Compose UI Testing)
 - All major screens have UI tests: Auth, Onboarding, Home, RecipeDetail, Grocery, Chat, Favorites, Stats, Settings, Pantry, RecipeRules, CookingMode
 - Remaining: GenerationScreen, integration tests, offline/edge case tests
@@ -340,8 +340,8 @@ cd backend
 
 # Setup virtual environment
 python -m venv venv
-source venv/bin/activate         # Linux/Mac
-# .\venv\Scripts\activate        # Windows PowerShell
+source venv/bin/activate         # Linux/Mac/Git Bash
+.\venv\Scripts\activate          # Windows PowerShell (use this instead)
 
 # Install dependencies
 pip install -r requirements.txt
@@ -378,7 +378,7 @@ android/
 ├── app/src/test/                    # Unit tests (JUnit5, MockK)
 │   └── java/com/rasoiai/app/
 │       └── presentation/            # ViewModel tests (*ViewModelTest.kt)
-├── app/src/androidTest/             # Instrumented tests (Espresso)
+├── app/src/androidTest/             # Instrumented tests (Compose UI Testing)
 │   └── java/com/rasoiai/app/
 │       └── *Test.kt                 # UI/E2E tests
 ├── domain/src/test/                 # UseCase tests
@@ -439,7 +439,7 @@ Artifacts uploaded: lint results, test results, debug APK.
 
 ## Troubleshooting
 
-**Gradle sync fails:** Ensure JDK 17+ and `JAVA_HOME` set. Kotlin/KSP must be 1.9.22 / 1.9.22-1.0.17 (see `gradle/libs.versions.toml`).
+**Gradle sync fails:** Ensure JDK 17+ and `JAVA_HOME` set. Kotlin/KSP must be 1.9.22 / 1.9.22-1.0.17 (see `gradle/libs.versions.toml`). AGP 8.13.2 requires Android Studio Ladybug or newer.
 
 **Emulator not detected:** Set `ANDROID_HOME` and verify with `adb devices`.
 
