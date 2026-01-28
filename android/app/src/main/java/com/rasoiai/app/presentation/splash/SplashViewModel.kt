@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rasoiai.app.presentation.auth.GoogleAuthClientInterface
 import com.rasoiai.core.network.NetworkMonitor
-import com.rasoiai.data.local.datastore.UserPreferencesDataStore
+import com.rasoiai.data.local.datastore.UserPreferencesDataStoreInterface
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.channels.Channel
@@ -33,7 +33,7 @@ sealed class SplashNavigationEvent {
 @HiltViewModel
 class SplashViewModel @Inject constructor(
     networkMonitor: NetworkMonitor,
-    private val userPreferencesDataStore: UserPreferencesDataStore,
+    private val userPreferencesDataStore: UserPreferencesDataStoreInterface,
     private val googleAuthClient: GoogleAuthClientInterface
 ) : ViewModel() {
 

@@ -1,14 +1,11 @@
 package com.rasoiai.app.e2e.flows
 
 import com.rasoiai.app.e2e.base.BaseE2ETest
-import com.rasoiai.app.e2e.di.FakeAuthRepository
-import com.rasoiai.app.e2e.di.FakeGoogleAuthClient
 import com.rasoiai.app.e2e.robots.AuthRobot
 import com.rasoiai.app.e2e.robots.OnboardingRobot
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Before
 import org.junit.Test
-import javax.inject.Inject
 
 /**
  * Phase 1: Authentication Testing
@@ -23,21 +20,14 @@ class AuthFlowTest : BaseE2ETest() {
     private lateinit var authRobot: AuthRobot
     private lateinit var onboardingRobot: OnboardingRobot
 
-    @Inject
-    lateinit var fakeGoogleAuthClient: FakeGoogleAuthClient
-
-    @Inject
-    lateinit var fakeAuthRepository: FakeAuthRepository
-
     @Before
     override fun setUp() {
         super.setUp()
+        // Set up for new user flow (auth → onboarding)
+        setUpNewUserState()
+
         authRobot = AuthRobot(composeTestRule)
         onboardingRobot = OnboardingRobot(composeTestRule)
-
-        // Configure fake auth for successful sign-in by default
-        fakeGoogleAuthClient.setSignInSuccess()
-        fakeAuthRepository.setAuthSuccess()
     }
 
     /**
@@ -110,9 +100,9 @@ class AuthFlowTest : BaseE2ETest() {
      */
     @Test
     fun signIn_failure_showsError() {
-        // Given: Auth is configured to fail
+        // Given: FakeGoogleAuthClient is configured to fail
+        // This simulates Google Sign-In failure before reaching backend
         fakeGoogleAuthClient.setSignInFailure(Exception("Network error"))
-        fakeAuthRepository.setAuthFailure()
 
         authRobot.waitForAuthScreen()
 

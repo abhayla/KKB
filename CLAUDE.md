@@ -18,9 +18,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 See `docs/CONTINUE_PROMPT.md` for session context and active work.
 
 **Test Coverage (last verified: Jan 28, 2026):**
-- ~265 UI tests across 13 screens (Compose UI Testing)
-- All major screens have UI tests: Auth, Onboarding, Home, RecipeDetail, Grocery, Chat, Favorites, Stats, Settings, Pantry, RecipeRules, CookingMode
-- Remaining: GenerationScreen, integration tests, offline/edge case tests
+- ~400 tests total across all categories (Compose UI Testing)
+- UI Screen Tests: 15 screens (Auth, Onboarding, Generation, Home, RecipeDetail, Grocery, Chat, Favorites, Stats, Settings, Pantry, RecipeRules, CookingMode, Theme, Components)
+- E2E Flow Tests: 15 flow test files + database/validation/performance tests
+- Database Verification Tests: Room DB state validation
+- Recipe Constraint Tests: SATTVIC, allergy, timing constraints
+- Full User Journey Test: Complete Sharma Family profile flow
+- Offline/Edge Case/Performance Tests: Implemented
 
 ## Quick Start
 
@@ -340,15 +344,16 @@ cd backend
 
 # Setup virtual environment
 python -m venv venv
-source venv/bin/activate         # Linux/Mac/Git Bash
-.\venv\Scripts\activate          # Windows PowerShell (use this instead)
+.\venv\Scripts\activate          # Windows PowerShell
+# source venv/bin/activate       # Linux/Mac/Git Bash
 
 # Install dependencies
 pip install -r requirements.txt
 
 # Configure Firebase (required)
 # Option 1: Service account file (recommended)
-export FIREBASE_CREDENTIALS_PATH=./rasoiai-firebase-service-account.json
+export FIREBASE_CREDENTIALS_PATH=./rasoiai-firebase-service-account.json  # Linux/Mac/Git Bash
+# $env:FIREBASE_CREDENTIALS_PATH = "./rasoiai-firebase-service-account.json"  # Windows PowerShell
 
 # Option 2: Firebase Emulator (for offline development)
 # export FIRESTORE_EMULATOR_HOST=localhost:8080
@@ -375,26 +380,38 @@ pytest tests/test_auth.py -v     # Single file
 
 ```
 android/
-├── app/src/test/                    # Unit tests (JUnit5, MockK)
+├── app/src/test/                        # Unit tests (JUnit5, MockK)
 │   └── java/com/rasoiai/app/
-│       └── presentation/            # ViewModel tests (*ViewModelTest.kt)
-├── app/src/androidTest/             # Instrumented tests (Compose UI Testing)
+│       └── presentation/                # ViewModel tests (*ViewModelTest.kt)
+├── app/src/androidTest/                 # Instrumented tests (Compose UI Testing)
 │   └── java/com/rasoiai/app/
-│       └── *Test.kt                 # UI/E2E tests
-├── domain/src/test/                 # UseCase tests
-└── data/src/test/                   # Repository tests
+│       ├── presentation/                # UI Screen tests (*ScreenTest.kt)
+│       │   ├── auth/, onboarding/, generation/, home/
+│       │   ├── recipedetail/, grocery/, chat/, favorites/
+│       │   ├── stats/, settings/, pantry/, reciperules/, cookingmode/
+│       │   ├── theme/                   # ThemeTest.kt
+│       │   └── common/                  # TestTags.kt, ComponentsTest.kt
+│       └── e2e/                         # End-to-end tests
+│           ├── base/BaseE2ETest.kt      # Base class with Hilt setup
+│           ├── di/                      # FakeGoogleAuthClient, FakeDataStoreModule, FakeAuthRepository
+│           ├── flows/                   # Complete user flow tests (15 files)
+│           ├── database/                # Room DB verification
+│           ├── validation/              # Recipe constraint tests
+│           └── performance/             # Performance benchmarks
+├── domain/src/test/                     # UseCase tests
+└── data/src/test/                       # Repository tests
 ```
 
-**Test naming:** `ClassNameTest.kt` for unit tests, `ScreenNameTest.kt` for UI tests
+**Test naming:** `ClassNameTest.kt` for unit tests, `ScreenNameTest.kt` for UI tests, `*FlowTest.kt` for E2E flows
 
 ## UI Testing (Compose UI Testing)
 
 Tests use **Compose UI Testing** (not Espresso) for native Compose support. Located in `app/src/androidTest/`.
 
-**Current coverage:** ~265 tests across 13 screens:
-- Auth (18), Onboarding (41), Home (22), RecipeDetail (26), Grocery (21)
-- Chat (17), Favorites (17), Stats (21), Settings (15), Pantry (18)
-- RecipeRules (22), CookingMode (27)
+**Current coverage:** ~400 tests across 15 screens + E2E flows:
+- **UI Screen Tests:** Auth (18), Onboarding (41), Generation, Home (22), RecipeDetail (26), Grocery (21), Chat (17), Favorites (17), Stats (21), Settings (15), Pantry (18), RecipeRules (22), CookingMode (27), Theme, Components
+- **E2E Flow Tests:** 15 test files in `e2e/flows/` directory
+- **Other:** Database verification, Recipe constraints, Full user journey, Performance tests
 
 | Test Type | Pattern | Purpose |
 |-----------|---------|---------|
@@ -457,7 +474,7 @@ Artifacts uploaded: lint results, test results, debug APK.
 
 ## Rules for Claude
 
-1. **Bash Syntax (CRITICAL)**: Use forward slashes `/` (not `\`), use `./gradlew` (not `.\gradlew`), quote paths with spaces. Shell is Unix-style bash even on Windows.
+1. **Bash Syntax (CRITICAL)**: Use forward slashes `/` (not `\`), use `./gradlew` (not `.\gradlew`), quote paths with spaces. Shell is Unix-style bash even on Windows. This applies to ALL bash commands in this file and any commands Claude generates.
 
 2. **Document Output**:
    - Generated documents → `docs/claude-docs/`
@@ -488,14 +505,19 @@ Use these as patterns for new screens:
 | PUT | `/api/v1/users/preferences` | Update preferences |
 | POST | `/api/v1/meal-plans/generate` | Generate meal plan (AI) |
 | GET | `/api/v1/meal-plans/current` | Get current week's plan |
+| GET | `/api/v1/meal-plans/{id}` | Get specific plan |
 | POST | `/api/v1/meal-plans/{planId}/items/{itemId}/swap` | Swap meal |
+| PUT | `/api/v1/meal-plans/{planId}/items/{itemId}/lock` | Lock/unlock meal |
 | GET | `/api/v1/recipes/{id}` | Get recipe details |
-| GET | `/api/v1/recipes` | List recipes (with filters) |
+| GET | `/api/v1/recipes/{id}/scale` | Scale recipe servings |
+| GET | `/api/v1/recipes/search` | Search recipes |
 | GET | `/api/v1/grocery` | Get grocery list |
 | GET | `/api/v1/grocery/whatsapp` | WhatsApp formatted list |
 | GET | `/api/v1/festivals/upcoming` | Upcoming festivals |
 | POST | `/api/v1/chat/message` | AI chat |
+| GET | `/api/v1/chat/history` | Chat history |
 | GET | `/api/v1/stats/streak` | Cooking streak |
+| GET | `/api/v1/stats/monthly` | Monthly stats |
 
 API docs available at `http://localhost:8000/docs` when backend is running.
 
@@ -509,7 +531,8 @@ API docs available at `http://localhost:8000/docs` when backend is running.
 **Recipe import scripts** (in `backend/scripts/`):
 ```bash
 cd backend
-.\venv\Scripts\activate          # Windows PowerShell
+source venv/bin/activate         # Linux/Mac/Git Bash
+# .\venv\Scripts\activate        # Windows PowerShell (use this instead)
 
 # Preview import
 python scripts/import_recipes_from_kkb.py --dry-run --limit 10
@@ -528,4 +551,5 @@ python scripts/verify_recipe_import.py
 | Wireframes | `docs/design/wireframes/` |
 | Audit Checklist | `docs/claude-docs/Android-Best-Practices-Audit-Guide.md` |
 | E2E Testing Guide | `docs/testing/E2E-Testing-Prompt.md` |
+| E2E Test Status | `docs/testing/E2E-Test-Status.md` |
 | Session Context | `docs/CONTINUE_PROMPT.md` |

@@ -1317,7 +1317,8 @@ private fun GeneratingScreen(progress: GeneratingProgress) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(MaterialTheme.colorScheme.background)
+            .testTag(TestTags.GENERATING_SCREEN),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -1347,22 +1348,26 @@ private fun GeneratingScreen(progress: GeneratingProgress) {
             GeneratingProgressItem(
                 text = "Analyzing preferences",
                 isActive = progress.analyzingPreferences,
-                isDone = progress.analyzingPreferencesDone
+                isDone = progress.analyzingPreferencesDone,
+                testTag = TestTags.GENERATING_PROGRESS_ANALYZING
             )
             GeneratingProgressItem(
                 text = "Checking festivals",
                 isActive = progress.checkingFestivals,
-                isDone = progress.checkingFestivalsDone
+                isDone = progress.checkingFestivalsDone,
+                testTag = TestTags.GENERATING_PROGRESS_FESTIVALS
             )
             GeneratingProgressItem(
                 text = "Generating recipes",
                 isActive = progress.generatingRecipes,
-                isDone = progress.generatingRecipesDone
+                isDone = progress.generatingRecipesDone,
+                testTag = TestTags.GENERATING_PROGRESS_RECIPES
             )
             GeneratingProgressItem(
                 text = "Building grocery list",
                 isActive = progress.buildingGroceryList,
-                isDone = progress.buildingGroceryListDone
+                isDone = progress.buildingGroceryListDone,
+                testTag = TestTags.GENERATING_PROGRESS_GROCERY
             )
         }
     }
@@ -1372,12 +1377,14 @@ private fun GeneratingScreen(progress: GeneratingProgress) {
 private fun GeneratingProgressItem(
     text: String,
     isActive: Boolean,
-    isDone: Boolean
+    isDone: Boolean,
+    testTag: String = ""
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = spacing.xs),
+            .padding(vertical = spacing.xs)
+            .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(

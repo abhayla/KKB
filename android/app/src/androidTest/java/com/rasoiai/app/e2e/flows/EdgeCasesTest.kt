@@ -5,7 +5,6 @@ import com.rasoiai.app.e2e.base.FamilyMember
 import com.rasoiai.app.e2e.base.HealthNeed
 import com.rasoiai.app.e2e.base.MemberType
 import com.rasoiai.app.e2e.base.TestDataFactory
-import com.rasoiai.app.e2e.di.FakeAuthRepository
 import com.rasoiai.app.e2e.robots.AuthRobot
 import com.rasoiai.app.e2e.robots.HomeRobot
 import com.rasoiai.app.e2e.robots.OnboardingRobot
@@ -31,15 +30,20 @@ class EdgeCasesTest : BaseE2ETest() {
     private lateinit var homeRobot: HomeRobot
     private lateinit var onboardingRobot: OnboardingRobot
 
-    @Inject
-    lateinit var fakeAuthRepository: FakeAuthRepository
-
     @Before
     override fun setUp() {
         super.setUp()
         authRobot = AuthRobot(composeTestRule)
         homeRobot = HomeRobot(composeTestRule)
         onboardingRobot = OnboardingRobot(composeTestRule)
+    }
+
+    /**
+     * Helper to set up for tests that need Home screen access.
+     */
+    private fun setUpForHomeScreen() {
+        setUpAuthenticatedState()
+        homeRobot.waitForHomeScreen(LONG_TIMEOUT)
     }
 
     /**
@@ -55,8 +59,8 @@ class EdgeCasesTest : BaseE2ETest() {
      */
     @Test
     fun test_14_1_networkTimeout() {
-        // Navigate to home (assuming user is authenticated)
-        homeRobot.waitForHomeScreen(LONG_TIMEOUT)
+        // Set up authenticated state and navigate to home
+        setUpForHomeScreen()
 
         // Trigger an action that would timeout
         // (In real implementation, fake repository would simulate delay)
@@ -78,7 +82,7 @@ class EdgeCasesTest : BaseE2ETest() {
      */
     @Test
     fun test_14_2_apiErrorResponses() {
-        homeRobot.waitForHomeScreen(LONG_TIMEOUT)
+        setUpForHomeScreen()
 
         // App should handle errors gracefully
         // Verify no crash occurs even with simulated errors
@@ -166,10 +170,12 @@ class EdgeCasesTest : BaseE2ETest() {
      */
     @Test
     fun test_14_4_sessionExpiry() {
-        homeRobot.waitForHomeScreen(LONG_TIMEOUT)
+        setUpForHomeScreen()
 
-        // Clear session
-        fakeAuthRepository.clearSession()
+        // Clear session by resetting auth state
+        // This simulates session expiry - user is no longer authenticated
+        fakeGoogleAuthClient.reset()
+        fakeUserPreferencesDataStore.reset()
 
         // Next API operation should trigger redirect to auth
         // (Implementation dependent)
@@ -222,7 +228,7 @@ class EdgeCasesTest : BaseE2ETest() {
      */
     @Test
     fun rapidScreenTransitions_nocrash() {
-        homeRobot.waitForHomeScreen(LONG_TIMEOUT)
+        setUpForHomeScreen()
 
         // Rapidly switch between screens
         for (i in 1..5) {
@@ -242,7 +248,7 @@ class EdgeCasesTest : BaseE2ETest() {
      */
     @Test
     fun backNavigation_handlesProperly() {
-        homeRobot.waitForHomeScreen(LONG_TIMEOUT)
+        setUpForHomeScreen()
 
         // Navigate deep into the app
         homeRobot.navigateToGrocery()
@@ -256,6 +262,7 @@ class EdgeCasesTest : BaseE2ETest() {
     // Helper methods
 
     private fun navigateToOnboarding() {
+        setUpNewUserState()
         authRobot.waitForAuthScreen()
         authRobot.tapGoogleSignIn()
         authRobot.assertNavigatedToOnboarding()

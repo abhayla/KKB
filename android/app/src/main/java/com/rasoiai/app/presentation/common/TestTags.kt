@@ -56,6 +56,9 @@ object TestTags {
     const val GENERATING_PROGRESS_FESTIVALS = "generating_progress_festivals"
     const val GENERATING_PROGRESS_RECIPES = "generating_progress_recipes"
     const val GENERATING_PROGRESS_GROCERY = "generating_progress_grocery"
+    const val GENERATING_RETRY_BUTTON = "generating_retry_button"
+    const val GENERATING_ERROR_MESSAGE = "generating_error_message"
+    const val GENERATING_SUCCESS_MESSAGE = "generating_success_message"
 
     // Auth Screen
     const val AUTH_SCREEN = "auth_screen"

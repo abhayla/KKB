@@ -2,7 +2,7 @@ package com.rasoiai.app.presentation.onboarding
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.rasoiai.data.local.datastore.UserPreferencesDataStore
+import com.rasoiai.data.local.datastore.UserPreferencesDataStoreInterface
 import com.rasoiai.domain.model.CuisineType
 import com.rasoiai.domain.model.DayOfWeek
 import com.rasoiai.domain.model.DietaryRestriction
@@ -124,7 +124,7 @@ object CommonDislikedIngredients {
 
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
-    private val userPreferencesDataStore: UserPreferencesDataStore
+    private val userPreferencesDataStore: UserPreferencesDataStoreInterface
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OnboardingUiState())

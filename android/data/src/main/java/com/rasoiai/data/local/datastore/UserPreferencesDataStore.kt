@@ -33,7 +33,7 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 @Singleton
 class UserPreferencesDataStore @Inject constructor(
     @ApplicationContext private val context: Context
-) {
+) : UserPreferencesDataStoreInterface {
     private object PreferencesKeys {
         // Auth tokens
         val ACCESS_TOKEN = stringPreferencesKey("access_token")
@@ -58,21 +58,21 @@ class UserPreferencesDataStore @Inject constructor(
     private val json = Json { ignoreUnknownKeys = true }
 
     // Auth state flows
-    val isAuthenticated: Flow<Boolean> = context.dataStore.data.map { preferences ->
+    override val isAuthenticated: Flow<Boolean> = context.dataStore.data.map { preferences ->
         val token = preferences[PreferencesKeys.ACCESS_TOKEN]
         val expiry = preferences[PreferencesKeys.TOKEN_EXPIRY] ?: 0L
         !token.isNullOrEmpty() && System.currentTimeMillis() < expiry
     }
 
-    val accessToken: Flow<String?> = context.dataStore.data.map { preferences ->
+    override val accessToken: Flow<String?> = context.dataStore.data.map { preferences ->
         preferences[PreferencesKeys.ACCESS_TOKEN]
     }
 
-    val userId: Flow<String?> = context.dataStore.data.map { preferences ->
+    override val userId: Flow<String?> = context.dataStore.data.map { preferences ->
         preferences[PreferencesKeys.USER_ID]
     }
 
-    suspend fun saveAuthTokens(
+    override suspend fun saveAuthTokens(
         accessToken: String,
         refreshToken: String,
         expiresInSeconds: Long,
@@ -86,7 +86,7 @@ class UserPreferencesDataStore @Inject constructor(
         }
     }
 
-    suspend fun getAccessTokenSync(): String? {
+    override suspend fun getAccessTokenSync(): String? {
         return context.dataStore.data.map { preferences ->
             val expiry = preferences[PreferencesKeys.TOKEN_EXPIRY] ?: 0L
             if (System.currentTimeMillis() < expiry) {
@@ -97,13 +97,13 @@ class UserPreferencesDataStore @Inject constructor(
         }.first()
     }
 
-    suspend fun getRefreshToken(): String? {
+    override suspend fun getRefreshToken(): String? {
         return context.dataStore.data.map { preferences ->
             preferences[PreferencesKeys.REFRESH_TOKEN]
         }.first()
     }
 
-    suspend fun clearAuthTokens() {
+    override suspend fun clearAuthTokens() {
         context.dataStore.edit { prefs ->
             prefs.remove(PreferencesKeys.ACCESS_TOKEN)
             prefs.remove(PreferencesKeys.REFRESH_TOKEN)
@@ -112,11 +112,11 @@ class UserPreferencesDataStore @Inject constructor(
         }
     }
 
-    val isOnboarded: Flow<Boolean> = context.dataStore.data.map { preferences ->
+    override val isOnboarded: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[PreferencesKeys.IS_ONBOARDED] ?: false
     }
 
-    val userPreferences: Flow<UserPreferences?> = context.dataStore.data.map { preferences ->
+    override val userPreferences: Flow<UserPreferences?> = context.dataStore.data.map { preferences ->
         val isOnboarded = preferences[PreferencesKeys.IS_ONBOARDED] ?: false
         if (!isOnboarded) return@map null
 
@@ -149,7 +149,7 @@ class UserPreferencesDataStore @Inject constructor(
         )
     }
 
-    suspend fun saveOnboardingComplete(preferences: UserPreferences) {
+    override suspend fun saveOnboardingComplete(preferences: UserPreferences) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.IS_ONBOARDED] = true
             prefs[PreferencesKeys.HOUSEHOLD_SIZE] = preferences.householdSize
@@ -169,7 +169,7 @@ class UserPreferencesDataStore @Inject constructor(
         }
     }
 
-    suspend fun clearPreferences() {
+    override suspend fun clearPreferences() {
         context.dataStore.edit { it.clear() }
     }
 }

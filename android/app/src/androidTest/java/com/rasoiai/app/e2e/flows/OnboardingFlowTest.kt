@@ -2,8 +2,6 @@ package com.rasoiai.app.e2e.flows
 
 import com.rasoiai.app.e2e.base.BaseE2ETest
 import com.rasoiai.app.e2e.base.TestDataFactory
-import com.rasoiai.app.e2e.di.FakeAuthRepository
-import com.rasoiai.app.e2e.di.FakeGoogleAuthClient
 import com.rasoiai.app.e2e.robots.AuthRobot
 import com.rasoiai.app.e2e.robots.OnboardingRobot
 import com.rasoiai.domain.model.CuisineType
@@ -12,7 +10,6 @@ import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Before
 import org.junit.Test
 import java.time.DayOfWeek
-import javax.inject.Inject
 
 /**
  * Phase 2: Onboarding Testing (5 Steps)
@@ -30,23 +27,16 @@ class OnboardingFlowTest : BaseE2ETest() {
     private lateinit var authRobot: AuthRobot
     private lateinit var onboardingRobot: OnboardingRobot
 
-    @Inject
-    lateinit var fakeGoogleAuthClient: FakeGoogleAuthClient
-
-    @Inject
-    lateinit var fakeAuthRepository: FakeAuthRepository
-
     private val sharmaFamily = TestDataFactory.sharmaFamily
 
     @Before
     override fun setUp() {
         super.setUp()
+        // Set up for new user flow (auth → onboarding)
+        setUpNewUserState()
+
         authRobot = AuthRobot(composeTestRule)
         onboardingRobot = OnboardingRobot(composeTestRule)
-
-        // Configure for successful auth
-        fakeGoogleAuthClient.setSignInSuccess()
-        fakeAuthRepository.setAuthSuccess()
 
         // Navigate to onboarding
         navigateToOnboarding()

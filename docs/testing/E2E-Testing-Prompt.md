@@ -1,6 +1,120 @@
 # RasoiAI End-to-End Testing Guide
 
-This document provides a comprehensive testing guide for the RasoiAI Android app. Use this prompt to perform complete E2E testing on an Android emulator.
+This document provides test scenarios and verification criteria for the RasoiAI Android app.
+
+---
+
+## How to Run Tests
+
+**All testing uses Compose UI Testing (instrumented tests):**
+
+```bash
+cd android
+
+# Run all instrumented tests (~400 tests)
+./gradlew connectedDebugAndroidTest
+
+# Run specific test class
+./gradlew connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.presentation.auth.AuthScreenTest
+
+# Run specific package
+./gradlew connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.package=com.rasoiai.app.presentation.home
+```
+
+**Prerequisites:**
+1. Emulator running (API 34 - not API 36 due to Espresso issues)
+2. Backend running: `cd backend && uvicorn app.main:app --reload --port 8000`
+3. App installed: `./gradlew installDebug`
+
+**Auth Bypass:** Tests use `FakeGoogleAuthClient` which returns `fake-firebase-token`. The backend accepts this token in debug mode.
+
+---
+
+## Test Scenarios Reference
+
+The phases below describe **what scenarios should be tested**. These are implemented in the `*ScreenTest.kt` and `*IntegrationTest.kt` files in `app/src/androidTest/`.
+
+---
+
+## E2E Test Execution Flow
+
+The tests follow a **15-phase sequence** that mimics a complete user journey:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         E2E TEST EXECUTION FLOW                          │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Phase 1: AUTH ─────────────────► Phase 2: ONBOARDING (5 steps)
+   │                                  │
+   ├─ Splash screen                   ├─ Step 1: Household (3 members)
+   ├─ FakeGoogleAuthClient            ├─ Step 2: Dietary (VEGETARIAN + SATTVIC)
+   └─ Returns "fake-firebase-token"   ├─ Step 3: Cuisine (NORTH, SOUTH)
+                                      ├─ Step 4: Dislikes (Karela, Baingan)
+                                      └─ Step 5: Cooking Time (30/60 min)
+                                              │
+                                              ▼
+Phase 3: GENERATION ◄──────────────────────────┘
+   │
+   ├─ Analyzing preferences...
+   ├─ Checking festivals...
+   ├─ Generating recipes...
+   └─ Building grocery list...
+              │
+              ▼
+Phase 4: HOME ─────────► Phase 5: GROCERY ─────► Phase 6: CHAT
+   │                          │                       │
+   ├─ View meal cards         ├─ List by category     ├─ Recipe queries
+   ├─ Navigate days           ├─ Check/uncheck        ├─ Context awareness
+   ├─ Lock/Swap meals         ├─ WhatsApp share       └─ Recipe navigation
+   └─ Recipe Detail           └─ Update after swap
+              │
+              ▼
+Phase 7: FAVORITES ───► Phase 8: STATS ────────► Phase 9: SETTINGS
+   │                         │                        │
+   ├─ Empty state            ├─ Streak tracking       ├─ Profile display
+   ├─ Add/remove             ├─ Calendar marking      ├─ Preference edit
+   └─ Persistence            └─ Achievements          └─ Notifications
+              │
+              ▼
+Phase 10: PANTRY ────► Phase 11: RECIPE RULES ──► Phase 12: COOKING MODE
+   │                        │                           │
+   ├─ Add items             ├─ Chai daily rule          ├─ Recipe scaling
+   ├─ Expiry tracking       ├─ Moringa include          ├─ Step navigation
+   └─ Smart suggestions     ├─ Paneer exclude           └─ Timer functionality
+                            └─ Nutrition goals
+              │
+              ▼
+Phase 13: OFFLINE ───► Phase 14: EDGE CASES ────► Phase 15: PERFORMANCE
+   │                        │                           │
+   ├─ Cached access         ├─ Network errors           ├─ Cold start < 3s
+   ├─ Local modifications   ├─ Data validation          ├─ 60 FPS
+   └─ Sync on reconnect     └─ Session expiry           └─ Memory < 150MB
+```
+
+### Phase Summary
+
+| Phase | Name | Tests | Key Validations |
+|:-----:|------|:-----:|-----------------|
+| 1 | Auth | 18 | FakeGoogleAuthClient → Backend accepts fake token → JWT returned |
+| 2 | Onboarding | 41 | 5 steps with Sharma Family profile data |
+| 3 | Generation | 17 | 4-step progress, API calls, 28 meal items created |
+| 4 | Home | 22 | Meal cards, lock/swap, day navigation |
+| 5 | Grocery | 21 | Items derived from recipes, no allergens |
+| 6 | Chat | 17 | AI context awareness, recipe suggestions |
+| 7 | Favorites | 17 | Add/remove, persistence in Room DB |
+| 8 | Stats | 21 | Streak, calendar, achievements |
+| 9 | Settings | 15 | Preferences match onboarding input |
+| 10 | Pantry | 18 | Expiry tracking, smart suggestions |
+| 11 | Recipe Rules | 22 | Include/Exclude rules, nutrition goals |
+| 12 | Cooking Mode | 27 | Step-by-step, timers, scaling |
+| 13 | Offline | 7 | Cached data, local mutations, sync |
+| 14 | Edge Cases | 11 | Error handling, validation, session |
+| 15 | Performance | 6 | Cold start, FPS, memory |
+
+**Total: ~400 tests**
 
 ---
 
@@ -26,7 +140,8 @@ Test the complete user journey as a NEW user with a 3-member family, validating:
 ## Test User Profile: "Sharma Family"
 
 ### Account
-- Login: Google OAuth (test.sharma@gmail.com)
+- Login: FakeGoogleAuthClient (bypasses real OAuth, returns "fake-firebase-token")
+- Email: test@example.com (from FakeGoogleAuthClient)
 - New user (clear app data before testing)
 
 ### Household (3 Members)
@@ -57,7 +172,7 @@ Test the complete user journey as a NEW user with a 3-member family, validating:
 ## Test Execution Steps
 
 1. **Setup**: Start emulator (API 34), clear app data, install debug build
-2. **Auth**: Complete Google OAuth login as new user
+2. **Auth**: FakeGoogleAuthClient bypasses OAuth, returns fake token → Backend accepts → JWT issued
 3. **Onboarding**: Enter ALL test data across 5 steps
 4. **Generate**: Create meal plan and verify generation
 5. **Validate**: Cross-check data on ALL screens:
@@ -102,18 +217,20 @@ Cross-screen data validation:
 | Layer | Framework | Purpose |
 |-------|-----------|---------|
 | Unit Tests | JUnit5 + MockK | ViewModel, Repository, UseCase |
-| UI Tests | Compose UI Testing | Screen composables with mock state |
-| Integration Tests | Hilt + FakeGoogleAuthClient | Full navigation with real backend |
-| E2E Tests | ADB + Manual/Automated | Complete user journeys |
+| UI Screen Tests | Compose UI Testing | Screen composables with mock UiState |
+| Integration Tests | Hilt + FakeGoogleAuthClient | Full navigation flows with auth bypass |
 | Flow Testing | Turbine | StateFlow/Channel in ViewModels |
 
-### Current UI Test Coverage (~265 tests across 13 screens)
+**Note:** All tests run via `./gradlew connectedDebugAndroidTest`. ADB commands in this doc are for debugging/setup only.
+
+### Current UI Test Coverage (~400 tests across 15 screens)
 
 | Screen | Test File | Tests |
 |--------|-----------|-------|
 | Auth | `AuthScreenTest.kt` | 18 |
 | Auth (Integration) | `AuthIntegrationTest.kt` | 9 |
 | Onboarding | `OnboardingScreenTest.kt` | 41 |
+| **Generation** | `GenerationScreenTest.kt` | **17** |
 | Home | `HomeScreenTest.kt` | 22 |
 | Recipe Detail | `RecipeDetailScreenTest.kt` | 26 |
 | Grocery | `GroceryScreenTest.kt` | 21 |
@@ -125,7 +242,23 @@ Cross-screen data validation:
 | Recipe Rules | `RecipeRulesScreenTest.kt` | 22 |
 | Cooking Mode | `CookingModeScreenTest.kt` | 27 |
 
-All test files are in `android/app/src/androidTest/java/com/rasoiai/app/presentation/`.
+**Additional Test Categories:**
+
+| Category | Test File | Tests |
+|----------|-----------|-------|
+| Database Verification | `DatabaseVerificationTest.kt` | 18 |
+| Recipe Constraints | `RecipeConstraintTest.kt` | 22 |
+| Full User Journey | `FullUserJourneyTest.kt` | 1 |
+| E2E Flow Tests | `*FlowTest.kt` (16 files) | ~99 |
+| Performance Tests | `PerformanceTest.kt` | 6 |
+| Edge Cases | `EdgeCasesTest.kt` | 11 |
+| Offline Tests | `OfflineFlowTest.kt` | 7 |
+
+**Test Locations:**
+- UI Screen Tests: `android/app/src/androidTest/java/com/rasoiai/app/presentation/`
+- E2E Flow Tests: `android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/`
+- Database Tests: `android/app/src/androidTest/java/com/rasoiai/app/e2e/database/`
+- Validation Tests: `android/app/src/androidTest/java/com/rasoiai/app/e2e/validation/`
 
 ---
 
@@ -409,25 +542,36 @@ Based on this profile, generated meal plans MUST:
 -- auth_token = null
 ```
 
-### Test 1.2: Google OAuth Login
+### Test 1.2: Auth via FakeGoogleAuthClient
+
+**Note:** E2E tests use `FakeGoogleAuthClient` which bypasses real Google OAuth entirely.
 
 **Steps:**
 1. Tap "Continue with Google" button
-2. Select test Google account from picker
-3. Complete OAuth consent flow
-4. Wait for redirect
+2. FakeGoogleAuthClient intercepts and returns fake credentials immediately
+3. App sends "fake-firebase-token" to backend
+4. Backend (in debug mode) accepts fake token and returns real JWT
 
 **Expected Results:**
-- [ ] Google One Tap or account picker appears
-- [ ] Correct test account selectable
+- [ ] No Google account picker (bypassed by FakeGoogleAuthClient)
 - [ ] Loading indicator during auth
 - [ ] Successful authentication (no error)
 - [ ] Redirects to Onboarding Step 1 (NOT Home)
 
+**FakeGoogleAuthClient Returns:**
+```kotlin
+GoogleAuthResult(
+    userId = "fake-user-id",
+    email = "test@example.com",
+    displayName = "Test User",
+    firebaseIdToken = "fake-firebase-token"
+)
+```
+
 **Verify API:**
 ```
 POST /api/v1/auth/firebase
-Request: { "idToken": "<firebase_id_token>" }
+Request: { "idToken": "fake-firebase-token" }
 Response: 200 OK {
   "accessToken": "eyJ...",
   "refreshToken": "...",
@@ -443,10 +587,10 @@ Response: 200 OK {
 -- is_onboarded should still be false
 ```
 
-**Test Variations:**
-- [ ] Cancel OAuth flow → should stay on Auth screen
-- [ ] Select wrong account → should allow retry
-- [ ] Network timeout → should show error with retry
+**Test Variations (via FakeGoogleAuthClient configuration):**
+- [ ] Simulate auth failure → FakeGoogleAuthClient returns error → should show error with retry
+- [ ] Network timeout → backend unreachable → should show error with retry
+- [ ] Invalid token response → backend rejects → should show error
 
 ---
 
@@ -675,7 +819,9 @@ Response: 200 OK {
 
 ---
 
-## Phase 3: Meal Plan Generation
+## Phase 3: Meal Plan Generation ✅ IMPLEMENTED
+
+**Implementation:** `GenerationScreenTest.kt` (17 tests) + `MealPlanGenerationTest.kt` (3 flow tests)
 
 ### Test 3.1: Generation Progress
 
@@ -1532,7 +1678,9 @@ WHERE r.ingredients ILIKE '%paneer%';
 
 ---
 
-## Phase 13: Offline Testing
+## Phase 13: Offline Testing ✅ IMPLEMENTED
+
+**Implementation:** `OfflineFlowTest.kt` (7 tests)
 
 ### Test 13.1: Offline Meal Plan Access
 
@@ -1588,7 +1736,9 @@ SELECT * FROM sync_queue WHERE synced = 0;
 
 ---
 
-## Phase 14: Edge Cases & Error Handling
+## Phase 14: Edge Cases & Error Handling ✅ IMPLEMENTED
+
+**Implementation:** `EdgeCasesTest.kt` (11 tests)
 
 ### Test 14.1: Network Errors
 
@@ -1633,7 +1783,9 @@ SELECT * FROM sync_queue WHERE synced = 0;
 
 ---
 
-## Phase 15: Performance Testing
+## Phase 15: Performance Testing ✅ IMPLEMENTED
+
+**Implementation:** `PerformanceTest.kt` (6 tests)
 
 ### Test 15.1: Cold Start
 
@@ -1793,6 +1945,8 @@ For thorough testing, verify each screen in these states:
 
 ## ADB Commands Reference
 
+> **Note:** These commands are for debugging, setup, and manual exploration. Primary testing uses instrumented tests (`./gradlew connectedDebugAndroidTest`).
+
 ### App Management
 ```bash
 # Install
@@ -1946,7 +2100,9 @@ adb shell input tap 100 990
 ```
 
 ### 2. Google OAuth in Emulator
-Requires Google Play Services. Use:
+**Not needed for instrumented tests** - `FakeGoogleAuthClient` bypasses OAuth entirely.
+
+For manual testing (if needed):
 - Emulator with Google APIs (not vanilla AOSP)
 - Google account signed into emulator
 - Web client ID configured in `local.properties`

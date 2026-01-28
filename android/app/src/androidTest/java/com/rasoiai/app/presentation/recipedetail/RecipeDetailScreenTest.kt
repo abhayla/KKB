@@ -7,6 +7,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -19,6 +21,7 @@ import com.rasoiai.domain.model.Difficulty
 import com.rasoiai.domain.model.Ingredient
 import com.rasoiai.domain.model.IngredientCategory
 import com.rasoiai.domain.model.Instruction
+import com.rasoiai.domain.model.MealType
 import com.rasoiai.domain.model.Nutrition
 import com.rasoiai.domain.model.Recipe
 import kotlinx.collections.immutable.persistentListOf
@@ -43,7 +46,7 @@ class RecipeDetailScreenTest {
     private fun createTestIngredient(
         id: String,
         name: String,
-        quantity: Double,
+        quantity: String,
         unit: String,
         category: IngredientCategory = IngredientCategory.VEGETABLES
     ) = Ingredient(
@@ -76,12 +79,12 @@ class RecipeDetailScreenTest {
         cookTimeMinutes: Int = 30,
         servings: Int = 4,
         ingredients: List<Ingredient> = listOf(
-            createTestIngredient("1", "Paneer", 250.0, "grams", IngredientCategory.DAIRY),
-            createTestIngredient("2", "Onion", 2.0, "medium", IngredientCategory.VEGETABLES),
-            createTestIngredient("3", "Tomato", 3.0, "medium", IngredientCategory.VEGETABLES),
-            createTestIngredient("4", "Butter", 50.0, "grams", IngredientCategory.DAIRY),
-            createTestIngredient("5", "Cream", 100.0, "ml", IngredientCategory.DAIRY),
-            createTestIngredient("6", "Kasuri Methi", 1.0, "tbsp", IngredientCategory.SPICES)
+            createTestIngredient("1", "Paneer", "250", "grams", IngredientCategory.DAIRY),
+            createTestIngredient("2", "Onion", "2", "medium", IngredientCategory.VEGETABLES),
+            createTestIngredient("3", "Tomato", "3", "medium", IngredientCategory.VEGETABLES),
+            createTestIngredient("4", "Butter", "50", "grams", IngredientCategory.DAIRY),
+            createTestIngredient("5", "Cream", "100", "ml", IngredientCategory.DAIRY),
+            createTestIngredient("6", "Kasuri Methi", "1", "tbsp", IngredientCategory.SPICES)
         ),
         instructions: List<Instruction> = listOf(
             createTestInstruction(1, "Cut paneer into cubes and lightly fry until golden."),
@@ -92,10 +95,12 @@ class RecipeDetailScreenTest {
         ),
         nutrition: Nutrition = Nutrition(
             calories = 450,
-            proteinGrams = 18.0,
-            carbohydratesGrams = 25.0,
-            fatGrams = 32.0,
-            fiberGrams = 4.0
+            proteinGrams = 18,
+            carbohydratesGrams = 25,
+            fatGrams = 32,
+            fiberGrams = 4,
+            sugarGrams = 6,
+            sodiumMg = 520
         ),
         isFavorite: Boolean = false
     ) = Recipe(
@@ -112,7 +117,8 @@ class RecipeDetailScreenTest {
         instructions = instructions,
         nutrition = nutrition,
         imageUrl = null,
-        isFavorite = isFavorite
+        isFavorite = isFavorite,
+        mealTypes = listOf(MealType.LUNCH, MealType.DINNER)
     )
 
     private fun createTestUiState(
@@ -171,7 +177,7 @@ class RecipeDetailScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Paneer Butter Masala", substring = true).assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Paneer Butter Masala", substring = true).onFirst().assertIsDisplayed()
     }
 
     @Test

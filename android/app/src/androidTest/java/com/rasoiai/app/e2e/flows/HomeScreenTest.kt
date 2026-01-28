@@ -35,6 +35,9 @@ class HomeScreenTest : BaseE2ETest() {
     @Before
     override fun setUp() {
         super.setUp()
+        // Set up authenticated and onboarded user state
+        setUpAuthenticatedState()
+
         homeRobot = HomeRobot(composeTestRule)
         recipeDetailRobot = RecipeDetailRobot(composeTestRule)
         groceryRobot = GroceryRobot(composeTestRule)
@@ -42,7 +45,7 @@ class HomeScreenTest : BaseE2ETest() {
         favoritesRobot = FavoritesRobot(composeTestRule)
         statsRobot = StatsRobot(composeTestRule)
 
-        // Navigate to home screen (assuming user is authenticated and onboarded)
+        // Navigate to home screen
         homeRobot.waitForHomeScreen(LONG_TIMEOUT)
     }
 

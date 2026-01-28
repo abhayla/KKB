@@ -25,6 +25,9 @@ class RecipeRulesFlowTest : BaseE2ETest() {
     @Before
     override fun setUp() {
         super.setUp()
+        // Set up authenticated and onboarded user state
+        setUpAuthenticatedState()
+
         homeRobot = HomeRobot(composeTestRule)
         recipeRulesRobot = RecipeRulesRobot(composeTestRule)
 

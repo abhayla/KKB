@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rasoiai.app.BuildConfig
-import com.rasoiai.data.local.datastore.UserPreferencesDataStore
+import com.rasoiai.data.local.datastore.UserPreferencesDataStoreInterface
 import com.rasoiai.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -40,7 +40,7 @@ sealed class AuthNavigationEvent {
 class AuthViewModel @Inject constructor(
     private val googleAuthClient: GoogleAuthClientInterface,
     private val authRepository: AuthRepository,
-    private val userPreferencesDataStore: UserPreferencesDataStore
+    private val userPreferencesDataStore: UserPreferencesDataStoreInterface
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())

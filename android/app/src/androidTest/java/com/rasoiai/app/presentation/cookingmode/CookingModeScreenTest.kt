@@ -15,6 +15,7 @@ import com.rasoiai.domain.model.Difficulty
 import com.rasoiai.domain.model.Ingredient
 import com.rasoiai.domain.model.IngredientCategory
 import com.rasoiai.domain.model.Instruction
+import com.rasoiai.domain.model.MealType
 import com.rasoiai.domain.model.Nutrition
 import com.rasoiai.domain.model.Recipe
 import org.junit.Rule
@@ -70,14 +71,15 @@ class CookingModeScreenTest {
         cookTimeMinutes = 45,
         servings = 4,
         ingredients = listOf(
-            Ingredient("1", "Rajma", 250.0, "grams", IngredientCategory.PULSES),
-            Ingredient("2", "Onion", 2.0, "medium", IngredientCategory.VEGETABLES),
-            Ingredient("3", "Tomato", 3.0, "medium", IngredientCategory.VEGETABLES)
+            Ingredient("1", "Rajma", "250", "grams", IngredientCategory.PULSES),
+            Ingredient("2", "Onion", "2", "medium", IngredientCategory.VEGETABLES),
+            Ingredient("3", "Tomato", "3", "medium", IngredientCategory.VEGETABLES)
         ),
         instructions = instructions,
-        nutrition = Nutrition(350, 12.0, 45.0, 8.0, 10.0),
+        nutrition = Nutrition(350, 12, 45, 8, 10, 5, 400),
         imageUrl = null,
-        isFavorite = false
+        isFavorite = false,
+        mealTypes = listOf(MealType.LUNCH, MealType.DINNER)
     )
 
     private fun createTestUiState(

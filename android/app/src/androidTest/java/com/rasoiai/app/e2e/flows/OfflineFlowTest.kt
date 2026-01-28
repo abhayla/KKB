@@ -33,6 +33,9 @@ class OfflineFlowTest : BaseE2ETest() {
     @Before
     override fun setUp() {
         super.setUp()
+        // Set up authenticated and onboarded user state
+        setUpAuthenticatedState()
+
         homeRobot = HomeRobot(composeTestRule)
         groceryRobot = GroceryRobot(composeTestRule)
         recipeDetailRobot = RecipeDetailRobot(composeTestRule)

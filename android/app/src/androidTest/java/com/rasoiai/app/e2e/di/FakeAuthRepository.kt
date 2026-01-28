@@ -65,7 +65,16 @@ class FakeAuthRepository @Inject constructor() : AuthRepository {
 
     fun simulateSignedIn() {
         _isAuthenticated.value = true
-        _currentUser.value = createFakeUser()
+        _currentUser.value = createFakeUser(isOnboarded = false)
+    }
+
+    /**
+     * Simulate a fully authenticated AND onboarded user.
+     * Use this for tests that need to start at the Home screen.
+     */
+    fun simulateOnboardedUser() {
+        _isAuthenticated.value = true
+        _currentUser.value = createFakeUser(isOnboarded = true)
     }
 
     fun clearSession() {
@@ -80,12 +89,12 @@ class FakeAuthRepository @Inject constructor() : AuthRepository {
         fakeAccessToken = "fake-access-token"
     }
 
-    private fun createFakeUser(): User = User(
+    private fun createFakeUser(isOnboarded: Boolean = false): User = User(
         id = "fake-user-id",
         email = "test@example.com",
         name = "Test User",
         profileImageUrl = null,
-        isOnboarded = false,
+        isOnboarded = isOnboarded,
         preferences = null
     )
 }

@@ -6,14 +6,10 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.rasoiai.app.e2e.base.BaseE2ETest
-import com.rasoiai.app.e2e.di.FakeAuthRepository
-import com.rasoiai.app.e2e.di.FakeGoogleAuthClient
 import com.rasoiai.app.presentation.common.TestTags
-import com.rasoiai.domain.repository.AuthRepository
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Before
 import org.junit.Test
-import javax.inject.Inject
 
 /**
  * Integration tests for Auth screen with Hilt dependency injection.
@@ -38,22 +34,13 @@ import javax.inject.Inject
 @HiltAndroidTest
 class AuthIntegrationTest : BaseE2ETest() {
 
-    @Inject
-    lateinit var fakeGoogleAuthClient: FakeGoogleAuthClient
-
-    @Inject
-    lateinit var authRepository: AuthRepository
-
-    private val fakeAuthRepository: FakeAuthRepository
-        get() = authRepository as FakeAuthRepository
-
     @Before
     override fun setUp() {
         super.setUp()
         // Reset fake implementations to known state
         // Ensure user is NOT signed in so we go to Auth screen
         fakeGoogleAuthClient.reset()
-        fakeAuthRepository.reset()
+        fakeUserPreferencesDataStore.reset()
     }
 
     /**
@@ -102,9 +89,9 @@ class AuthIntegrationTest : BaseE2ETest() {
 
     @Test
     fun authScreen_successfulSignIn_navigatesToOnboarding() {
-        // Configure fake to succeed
+        // Configure fake Google auth to succeed
+        // Real AuthRepositoryImpl will call backend with "fake-firebase-token"
         fakeGoogleAuthClient.setSignInSuccess()
-        fakeAuthRepository.setAuthSuccess()
 
         waitForAuthScreen()
 
