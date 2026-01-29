@@ -2,6 +2,8 @@
 
 This document defines the complete configuration architecture for RasoiAI's meal plan generation system.
 
+**Related:** [Meal-Generation-Algorithm.md](./Meal-Generation-Algorithm.md) - Detailed algorithm implementation
+
 ---
 
 ## Overview
@@ -636,7 +638,9 @@ python scripts/sync_config.py --dry-run
 
 ## Meal Generation Algorithm
 
-### Flow
+> **Note:** For detailed implementation including fallback strategies, allergen expansion, and daily ingredient tracking, see [Meal-Generation-Algorithm.md](./Meal-Generation-Algorithm.md).
+
+### Flow (Summary)
 
 ```
 1. Load user preferences from Firestore

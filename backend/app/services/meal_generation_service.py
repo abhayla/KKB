@@ -444,19 +444,63 @@ class MealGenerationService:
             config = await self.config_service.get_config()
             aliases = self.config_service.get_ingredient_aliases(target)
 
-            recipes = await self.recipe_repo.search_by_ingredient(
-                ingredient=target,
-                ingredient_aliases=aliases,
-                cuisine_type=prefs.cuisine_type,
-                dietary_tags=prefs.dietary_tags,
-                meal_type=slot,
-                max_time_minutes=max_cooking_time,
-                exclude_ids=used_recipe_ids,
-                limit=10,
-            )
+            # For DAILY rules like Chai, search broadly and allow reuse
+            # This avoids multiple API calls and ensures daily items are always found
+            if frequency == "DAILY":
+                # Single broad search for DAILY items - no meal_type filter, allow reuse
+                recipes = await self.recipe_repo.search_by_ingredient(
+                    ingredient=target,
+                    ingredient_aliases=aliases,
+                    cuisine_type=prefs.cuisine_type,
+                    dietary_tags=prefs.dietary_tags,
+                    meal_type=None,  # Don't filter by meal type for daily items
+                    max_time_minutes=max_cooking_time,
+                    exclude_ids=None,  # Allow reusing recipes for daily items
+                    limit=20,
+                )
+                recipes = self._filter_by_excludes(recipes, exclude_ingredients)
 
-            # Filter out excluded ingredients
-            recipes = self._filter_by_excludes(recipes, exclude_ingredients)
+                # If no results with cuisine filter, try without
+                if not recipes:
+                    recipes = await self.recipe_repo.search_by_ingredient(
+                        ingredient=target,
+                        ingredient_aliases=aliases,
+                        cuisine_type=None,
+                        dietary_tags=prefs.dietary_tags,
+                        meal_type=None,
+                        max_time_minutes=max_cooking_time,
+                        exclude_ids=None,
+                        limit=20,
+                    )
+                    recipes = self._filter_by_excludes(recipes, exclude_ingredients)
+            else:
+                # For non-DAILY rules, prefer unique recipes
+                recipes = await self.recipe_repo.search_by_ingredient(
+                    ingredient=target,
+                    ingredient_aliases=aliases,
+                    cuisine_type=prefs.cuisine_type,
+                    dietary_tags=prefs.dietary_tags,
+                    meal_type=slot,
+                    max_time_minutes=max_cooking_time,
+                    exclude_ids=used_recipe_ids,
+                    limit=10,
+                )
+                recipes = self._filter_by_excludes(recipes, exclude_ingredients)
+
+                # Fallback: If no recipes found, retry without meal_type filter
+                if not recipes:
+                    logger.debug(f"No recipes for '{target}' with meal_type={slot}, retrying without meal_type filter")
+                    recipes = await self.recipe_repo.search_by_ingredient(
+                        ingredient=target,
+                        ingredient_aliases=aliases,
+                        cuisine_type=prefs.cuisine_type,
+                        dietary_tags=prefs.dietary_tags,
+                        meal_type=None,
+                        max_time_minutes=max_cooking_time,
+                        exclude_ids=used_recipe_ids,
+                        limit=10,
+                    )
+                    recipes = self._filter_by_excludes(recipes, exclude_ingredients)
 
             if recipes:
                 recipe = random.choice(recipes)

@@ -9,36 +9,24 @@ Use this prompt to start a new conversation/context and continue the project fro
 ```
 I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 
-## Current State: Production-Ready Backend with 3,590 Recipes
+## Current State: Algorithm Design Approved
 
-Backend runs on Firebase Firestore with a comprehensive recipe database imported from khanakyabanega.
+Backend runs on Firebase Firestore with a comprehensive recipe database. Meal generation algorithm has been fully documented and all 7 Key Design Decisions have been reviewed and approved.
 
 **Backend Status:**
 - Firestore database: `rasoiai-6dcdd`
 - **3,590 recipes** (3,580 imported from khanakyabanega + 10 seed recipes)
 - 12 festivals seeded
 - Auth accepts `fake-firebase-token` for testing
+- 92 backend tests passing
 
-**Recipe Distribution:**
-| Category | Count |
-|----------|-------|
-| North Indian | 3,124 |
-| South Indian | 358 |
-| West Indian | 85 |
-| East Indian | 23 |
-| Vegetarian | 3,482 |
-| Vegan | 1,347 |
-
-**Recipe Categories (for pairing):**
-| Category | Count | % |
-|----------|-------|---|
-| snack | 705 | 19.6% |
-| other | 576 | 16.0% |
-| sweet | 365 | 10.2% |
-| sabzi | 357 | 9.9% |
-| curry | 307 | 8.6% |
-| bread | 141 | 3.9% |
-| dal | 116 | 3.2% |
+**Key Documentation:**
+| Document | Path |
+|----------|------|
+| Architecture | `CLAUDE.md` |
+| Meal Generation Algorithm | `docs/design/Meal-Generation-Algorithm.md` |
+| Meal Generation Config | `docs/design/Meal-Generation-Config-Architecture.md` |
+| E2E Testing Guide | `docs/testing/E2E-Testing-Prompt.md` |
 
 **To start backend:**
 ```bash
@@ -48,72 +36,167 @@ cd backend
 uvicorn app.main:app --reload --port 8000
 ```
 
-**To run Android tests:**
-```bash
-cd android
-./gradlew :app:connectedDebugAndroidTest
-```
+### Session 31 Completed Work: Algorithm Design Review
 
-### Session 26 Completed Work
+**Created Documentation:**
+- `docs/design/Meal-Generation-Algorithm.md` - Comprehensive algorithm documentation
+- Cross-referenced with existing `Meal-Generation-Config-Architecture.md`
 
-**Recipe Import from khanakyabanega:**
-- Imported 3,580 recipes from source Firebase project
-- Created transformation pipeline:
-  - Flat ingredient strings → structured objects (name, quantity, unit, category)
-  - Flat instructions → step objects with step_number
-  - Cuisine names normalized (e.g., "North Indian" → "north")
-  - Diet types mapped to dietary_tags array
-  - Meal types normalized
+**7 Key Design Decisions Reviewed & Approved:**
 
-**Scripts Created:**
-| Script | Purpose |
-|--------|---------|
-| `scripts/inspect_source_recipes.py` | Analyze source database schema |
-| `scripts/import_recipes_from_kkb.py` | Transform and import recipes |
-| `scripts/verify_recipe_import.py` | Verify import results |
+| # | Decision | Key Points |
+|---|----------|------------|
+| **1** | Meal Structure | Main item(s) + Complementary item(s); 1-2+ mains based on cooking time (≤30m=1, 30-45m=2, >45m=2+); User configurable (Items per meal, Per meal-type, Override); Generic items allowed without database recipe |
+| **2** | Weekly Deduplication | User configurable; Default: Main no repeat, Complementary can repeat; Per-rule "Allow repeat" checkbox (default OFF); Priority: Per rule > Per item type > Global toggle |
+| **3** | Daily Ingredient Tracking | Only main item categories tracked (dal, sabzi, curry, etc.); Accompaniments (rice, roti) can repeat same day; Classification based on recipe category |
+| **4** | DAILY Rules | Merged into Decision #2 (per-rule "Allow repeat" checkbox) |
+| **5** | Allergen Expansion | User configurable toggle (default OFF); 8 allergen groups: peanut, dairy, gluten, shellfish, tree nuts, soy, egg, sesame; Regional variants included |
+| **6** | Cooking Time Minimums | Global minimum (15 min default) + meal-type overrides; Dinner override enabled by default (45 min) |
+| **7** | Progressive Fallbacks | 6-level fallback sequence; Never relax allergies; Dietary tags: user configurable "Strict dietary" toggle (default ON); Dislikes can relax with warning; Generic suggestion as final fallback |
 
-### Test Coverage Status
-
-~400 UI tests across 15 screens (Compose UI Testing):
-
-| Phase | Screen | UI Tests | Status |
-|-------|--------|----------|--------|
-| 1 | Auth | 18 | DONE |
-| 2 | Onboarding | 41 | DONE |
-| 3 | Generation | - | TODO |
-| 4 | Home | 22 | DONE |
-| 4b | Recipe Detail | 26 | DONE |
-| 5 | Grocery | 21 | DONE |
-| 6 | Chat | 17 | DONE |
-| 7 | Favorites | 17 | DONE |
-| 8 | Stats | 21 | DONE |
-| 9 | Settings | 15 | DONE |
-| 10 | Pantry | 18 | DONE |
-| 11 | Recipe Rules | 22 | DONE |
-| 12 | Cooking Mode | 27 | DONE |
+**Important Design Clarifications:**
+- Both main and complementary items can be suggested WITHOUT a database recipe (generic suggestions marked as "No recipe - make your own")
+- Complementary selection: Variety first (avoid duplicates in same meal), then cuisine preference
+- Pairing is config-driven with expandable categories
+- Fallbacks try database first, generic suggestion only as final option
 
 ### Remaining Work
 
-**Meal Generation Config (All Phases Complete!):**
-1. ~~**Phase 2: Backend Updates** - Implement pairing logic in meal generation service~~ DONE
-2. ~~**Phase 3: Chat Integration** - LLM function calling for config updates via chat~~ DONE
-3. ~~**Phase 4: Testing** - Additional edge case and integration testing~~ DONE (92 backend tests)
+**Implementation Required:**
+1. Update `MealGenerationService` to implement approved design decisions
+2. Add user preference settings for:
+   - Items per meal (B), Per meal-type (C), Override time (D)
+   - Weekly deduplication settings (global + per item type + per rule)
+   - Allergen variant toggle
+   - Cooking time minimums (global + per meal-type)
+   - Strict dietary toggle
+3. Update recipe category classification (main vs accompaniment)
+4. Implement generic suggestion support (items without database recipes)
+5. Add fallback warning notifications for dislikes
 
 **Android/Testing:**
-4. **GenerationScreenTest.kt** - UI tests for meal plan generation screen
-5. Integration tests for navigation flows
-6. Offline mode tests
-7. Edge cases and error handling tests
-8. Connect Android app to real backend API
+6. GenerationScreenTest.kt - UI tests for meal plan generation screen
+7. Connect Android app to real backend API
+8. Integration tests for navigation flows
 
 ### Key Files Reference
 
+**Documentation:**
 - Architecture: `CLAUDE.md`
+- Algorithm (NEW): `docs/design/Meal-Generation-Algorithm.md`
+- Config Architecture: `docs/design/Meal-Generation-Config-Architecture.md`
 - E2E Testing Guide: `docs/testing/E2E-Testing-Prompt.md`
-- Meal Generation Config: `docs/design/Meal-Generation-Config-Architecture.md`
+
+**Backend:**
+- Meal Generation Service: `backend/app/services/meal_generation_service.py`
+- Config Service: `backend/app/services/config_service.py`
+- Recipe Repository: `backend/app/repositories/recipe_repository.py`
 - Config YAML files: `backend/config/`
-- Recipe Import: `backend/scripts/import_recipes_from_kkb.py`
-- Backend API: `backend/app/api/v1/endpoints/`
+
+**Test Script:**
+- Tabular API Test: `backend/test_meal_api_tabular.py`
+```
+
+---
+
+## APPROVED DESIGN DECISIONS SUMMARY
+
+### Decision #1: Meal Structure
+
+```
+Meal Slot = Main Item(s) + Complementary Item(s)
+
+Cooking Time → Number of Mains:
+- ≤ 30 min  → 1 main + complementary (simple)
+- 30-45 min → 2 mains + complementary (full)
+- > 45 min  → 2+ mains + complementary (elaborate)
+
+User Settings (Priority: C > B > D > Time):
+- B: Items per meal ("2-3", "3-4", "4+")
+- C: Per meal-type (different for breakfast/lunch/dinner/snacks)
+- D: Override time logic ("Always full", "Always simple")
+
+Complementary Selection:
+1. Avoid duplicates in same meal (variety first)
+2. Use cuisine preference (North=Roti, South=Rice)
+3. If variety impossible, allow duplicate
+
+Generic Items:
+- Both main and complementary can be without database recipe
+- Marked as "No recipe - make your own"
+- Database recipes and generic treated equally
+```
+
+### Decision #2: Weekly Deduplication
+
+```
+Settings:
+- Global toggle: "Allow recipe repeats" (default OFF)
+- Per item type - Main: "Can repeat" (default OFF)
+- Per item type - Complementary: "Can repeat" (default ON)
+- Per INCLUDE rule: "Allow repeat" checkbox (default OFF)
+
+Priority: Per rule > Per item type (D) > Global toggle (A)
+```
+
+### Decision #3: Daily Ingredient Tracking
+
+```
+Main Item Categories (tracked):     Accompaniment Categories (not tracked):
+- dal                               - rice
+- sabzi                             - roti
+- curry                             - paratha
+- biryani                           - naan
+- pulao                             - chutney
+- khichdi                           - raita
+- dosa                              - sambar
+- idli                              - pickle
+- poha                              - papad
+- upma                              - salad
+- paneer_dish                       - beverage
+- egg_dish                          - chai
+```
+
+### Decision #5: Allergen Variants
+
+```python
+allergen_variants = {
+    "peanut": ["peanuts", "groundnut", "groundnuts", "moongphali"],
+    "dairy": ["milk", "cheese", "paneer", "curd", "yogurt", "cream", "butter", "ghee"],
+    "gluten": ["wheat", "maida", "atta", "bread", "roti", "naan"],
+    "shellfish": ["shrimp", "prawn", "crab", "lobster"],
+    "tree nuts": ["almond", "cashew", "walnut", "pistachio", "kaju", "badam"],
+    "soy": ["soya", "soybean", "soybeans", "tofu", "soy sauce", "soya chunks"],
+    "egg": ["eggs", "anda", "omelette", "egg white", "egg yolk"],
+    "sesame": ["til", "sesame seeds", "tahini", "gingelly"],
+}
+# Default: expansion OFF, user enables via toggle
+```
+
+### Decision #6: Cooking Time Minimums
+
+```
+Settings:
+- Global minimum: 15 min (default)
+- Dinner override: Enabled, 45 min (default)
+- Other meal overrides: Disabled (user can enable)
+
+Logic: Final time = max(user_time, global_min, meal_override)
+```
+
+### Decision #7: Progressive Fallbacks
+
+```
+Level 1: Full filters (cuisine + meal_type + time + dietary + excludes)
+Level 2: Remove meal_type filter
+Level 3: Remove cuisine_type filter
+Level 4: Remove cooking time limit
+Level 5: Relax dislikes (with warning)
+Level 6: Suggest generic item (no database recipe)
+
+NEVER RELAX:
+- Allergies (safety critical)
+- Dietary tags (if "Strict dietary" ON - default)
 ```
 
 ---
@@ -128,27 +211,12 @@ backend/scripts/
 ├── seed_firestore.py              # Seeds initial data
 ├── seed_recipes.py                # Original recipe seeds
 ├── seed_festivals.py              # Festival data seeds
-├── sync_config.py                 # Syncs YAML config → Firestore (Session 27)
-├── categorize_recipes.py          # Adds category field to recipes (Session 27)
-└── test_meal_generation.py        # Tests pairing logic (Session 28)
-```
+├── sync_config.py                 # Syncs YAML config → Firestore
+├── categorize_recipes.py          # Adds category field to recipes
+└── test_meal_generation.py        # Tests pairing logic
 
-**Recipe Import Usage:**
-```bash
-cd backend
-.\venv\Scripts\activate
-
-# Dry run (preview only)
-python scripts/import_recipes_from_kkb.py --dry-run --limit 10
-
-# Import specific count
-python scripts/import_recipes_from_kkb.py --limit 100
-
-# Import all
-python scripts/import_recipes_from_kkb.py --all
-
-# Verify results
-python scripts/verify_recipe_import.py
+backend/
+└── test_meal_api_tabular.py       # Tabular output API test (NEW)
 ```
 
 ---
@@ -207,8 +275,6 @@ android/app/src/androidTest/java/com/rasoiai/app/presentation/
 
 ### Session 19: Python Backend Implementation
 - Created complete FastAPI backend structure
-- 17 SQLAlchemy models (later migrated to Firestore)
-- 18 API endpoints matching Android DTOs
 - Firebase Admin SDK integration
 - JWT authentication
 - Claude AI client for meal planning and chat
@@ -226,79 +292,36 @@ android/app/src/androidTest/java/com/rasoiai/app/presentation/
 ### Session 24: Backend Migration to Firestore
 - Replaced SQLite/SQLAlchemy with Firebase Firestore
 - Created Firestore repositories for all entities
-- Updated auth to accept `fake-firebase-token` for testing
 
 ### Session 25: Complete UI Test Coverage
-- Created remaining screen tests (RecipeRules, CookingMode, RecipeDetail)
-- Total: ~400 UI tests across 15 screens (including E2E flows)
+- Created remaining screen tests
+- Total: ~400 UI tests across 15 screens
 
 ### Session 26: Recipe Import from khanakyabanega
-- Created inspection script to analyze source database
-- Built transformation pipeline for recipe data
 - Imported 3,580 recipes with structured ingredients/instructions
 - Verified import: 3,590 total recipes in RasoiAI
 
-### Session 27: Meal Generation Config (Phase 1 Complete)
-- Created config YAML files as source of truth:
-  - `backend/config/meal_generation.yaml` - Pairing rules, meal structure
-  - `backend/config/reference_data/ingredients.yaml` - 54 ingredients with aliases
-  - `backend/config/reference_data/dishes.yaml` - 68 common dishes
-  - `backend/config/reference_data/cuisines.yaml` - 4 regional cuisines
-- Created `scripts/sync_config.py` to sync YAML → Firestore
-- Created `scripts/categorize_recipes.py` to add category field to recipes
-- Categorized all 3,590 recipes (84% meaningful categories, 16% "other")
-- Firestore collections created: `system_config/meal_generation`, `reference_data/*`
+### Session 27: Meal Generation Config (Phase 1)
+- Created config YAML files as source of truth
+- Synced to Firestore
 
-### Session 28: Meal Generation Service (Phase 2 Complete)
-- Created `ConfigService` to load pairing rules from Firestore
-- Updated `RecipeRepository` with category/pairing search methods:
-  - `search_by_category()`, `search_by_categories()`
-  - `get_pairing_recipe()`, `get_recipe_pair()`
-  - `search_by_ingredient()` with alias support
-- Created `MealGenerationService` with 2-item pairing logic:
-  - Each meal slot has 2 complementary items (Dal+Rice, Sabzi+Roti, Dosa+Chutney)
-  - INCLUDE rules force items with complementary pairs
-  - EXCLUDE rules, allergies, dislikes properly enforced
-  - Config-driven pairing by cuisine and meal type
-- Refactored `/generate` endpoint to use service (cleaned up ~150 lines)
-- All tests passing: 46 meal items, 23 paired slots, 0 single slots
+### Session 28: Meal Generation Service (Phase 2)
+- Created ConfigService and MealGenerationService
+- 2-item pairing logic implemented
 
-### Session 29: Chat Integration (Phase 3 Complete)
-- Added tool calling support to Claude client:
-  - `ToolCall` and `ChatCompletionResult` dataclasses
-  - `generate_with_tools()` function for initial tool calls
-  - `continue_with_tool_result()` function for multi-turn tool conversations
-- Created `PreferenceUpdateService` with full preference management:
-  - `update_recipe_rule()` - ADD/REMOVE/MODIFY INCLUDE/EXCLUDE rules
-  - `update_allergy()` - manage food allergies with severity
-  - `update_dislike()` - manage disliked ingredients
-  - `update_preference()` - cooking time, busy days, dietary tags, cuisine
-  - `undo_last_change()` - revert last preference change
-  - `show_config()` - display current configuration
-  - Conflict detection between INCLUDE and EXCLUDE rules
-- Created tool definitions in `app/ai/tools/preference_tools.py`:
-  - 6 tools: update_recipe_rule, update_allergy, update_dislike, update_preference, undo_last_change, show_config
-  - `CONFIG_CHAT_SYSTEM_PROMPT` for RasoiAI cooking assistant
-  - `format_config_for_display()` for readable config output
-- Created `ChatRepository` for Firestore-based chat storage
-- Updated chat endpoint to remove SQLAlchemy dependency
-- Created `scripts/test_chat_tools.py` - all tests passing
+### Session 29: Chat Integration (Phase 3)
+- Tool calling support with 6 preference tools
+- PreferenceUpdateService for CRUD operations
 
 ### Session 30: Phase 4 Testing Complete
-- Created comprehensive test suite (92 backend tests total):
-  - `tests/test_preference_service.py` - 26 edge case tests for PreferenceUpdateService
-  - `tests/test_chat_integration.py` - 27 integration tests for chat tool flow
-  - `tests/test_meal_generation.py` - 22 tests for meal generation structures and logic
-  - `tests/test_chat_api.py` - 12 API endpoint tests for chat
-- Tests cover:
-  - INCLUDE/EXCLUDE rule enforcement
-  - Conflict detection between rules
-  - Allergy and dislike filtering
-  - Dietary tag validation (vegetarian, vegan, jain)
-  - Cooking time constraints
-  - Tool execution and error handling
-  - API authentication and validation
-- All phases of Meal Generation Config complete!
+- 92 backend tests created and passing
+- All phases of Meal Generation Config complete
+
+### Session 31: Algorithm Design Review (Current)
+- Created comprehensive algorithm documentation
+- Reviewed and approved all 7 Key Design Decisions
+- Clarified meal structure, deduplication, fallback logic
+- Ready for implementation updates
 
 ---
 
@@ -324,35 +347,26 @@ android/app/src/androidTest/java/com/rasoiai/app/presentation/
 │  Auth: Accepts "fake-firebase-token" in debug mode          │
 └─────────────────────────────────────────────────────────────┘
 
-RECIPE DATA STRUCTURE:
+MEAL STRUCTURE (Approved Design):
 ┌─────────────────────────────────────────────────────────────┐
-│  Recipe                                                     │
-│  ├── id, name, description, image_url                       │
-│  ├── cuisine_type: north | south | east | west              │
-│  ├── meal_types: [breakfast, lunch, dinner, snacks]         │
-│  ├── dietary_tags: [vegetarian, vegan, jain, ...]           │
-│  ├── category: dal | sabzi | curry | rice | snack | ...     │  ← NEW
-│  ├── prep_time_minutes, cook_time_minutes, servings         │
-│  ├── ingredients: [{name, quantity, unit, category}, ...]   │
-│  ├── instructions: [{step_number, instruction}, ...]        │
-│  └── nutrition: {calories, protein, carbs, fat, fiber}      │
-└─────────────────────────────────────────────────────────────┘
-
-MEAL GENERATION CONFIG (Phase 1 Complete):
-┌─────────────────────────────────────────────────────────────┐
-│  system_config/meal_generation                              │
-│  ├── meal_structure: {items_per_slot: 2, expandable: true}  │
-│  ├── pairing_rules_flat: {"north:dal": ["rice", "roti"]}    │
-│  ├── meal_type_pairs: {breakfast: ["paratha:chai", ...]}    │
-│  └── recipe_categories: [dal, rice, sabzi, curry, ...]      │
+│  Meal Slot                                                  │
+│  ├── Main Item 1 + Complementary (recommended)              │
+│  ├── Main Item 2 + Complementary (if time allows)           │
+│  └── ...                                                    │
 │                                                             │
-│  reference_data/ingredients: 54 with aliases                │
-│  reference_data/dishes: 68 with pairing info                │
-│  reference_data/cuisines: 4 regional cuisines               │
+│  Number of mains based on:                                  │
+│  - Cooking time: ≤30m=1, 30-45m=2, >45m=2+                 │
+│  - User preference (B, C, D options)                        │
+│  - Priority: Per meal-type > Items/meal > Override > Time   │
+│                                                             │
+│  Items can be:                                              │
+│  - Database recipe (full details)                           │
+│  - Generic suggestion (marked "No recipe - make your own")  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 *Last Updated: January 29, 2026*
-*3,590 recipes. 92 backend tests. ~400 UI tests. Meal Generation Config complete (all 4 phases).*
+*Session 31: Algorithm Design Review - 7 Key Design Decisions approved*
+*3,590 recipes. 92 backend tests. ~400 UI tests.*

@@ -367,8 +367,8 @@ cd backend
 
 # Setup virtual environment
 python -m venv venv
-.\venv\Scripts\activate          # Windows PowerShell
-# source venv/bin/activate       # Linux/Mac/Git Bash
+source venv/bin/activate         # Linux/Mac/Git Bash
+# .\venv\Scripts\activate        # Windows PowerShell (use this instead on Windows)
 
 # Install dependencies
 pip install -r requirements.txt
@@ -396,6 +396,9 @@ pytest tests/test_preference_service.py -v    # Preference service (26 tests)
 pytest tests/test_chat_integration.py -v      # Chat tool calling (27 tests)
 pytest tests/test_meal_generation.py -v       # Meal generation (22 tests)
 pytest tests/test_chat_api.py -v              # Chat API (12 tests)
+
+# Single test method
+pytest tests/test_preference_service.py::test_add_include_rule -v
 ```
 
 **Firebase Setup:**
@@ -505,6 +508,14 @@ Artifacts uploaded: lint results, test results, debug APK.
 ```bash
 ./gradlew clean :app:kspDebugKotlin
 ```
+
+**Backend tests fail with import errors:** Ensure you're running from the backend directory with PYTHONPATH set:
+```bash
+cd backend
+PYTHONPATH=. pytest tests/
+```
+
+**Firestore connection issues:** Verify service account file path and that Firebase project `rasoiai-6dcdd` credentials are valid.
 
 ## Rules for Claude
 
@@ -641,8 +652,20 @@ See `docs/design/Meal-Generation-Config-Architecture.md` for full system design.
 | Architecture Decisions | `docs/design/Android Architecture Decisions.md` |
 | Data Flow Diagram | `docs/design/Data-Flow-Diagram.md` |
 | Meal Generation Config | `docs/design/Meal-Generation-Config-Architecture.md` |
+| Meal Generation Algorithm | `docs/design/Meal-Generation-Algorithm.md` |
 | Wireframes | `docs/design/wireframes/` |
 | Audit Checklist | `docs/claude-docs/Android-Best-Practices-Audit-Guide.md` |
 | E2E Testing Guide | `docs/testing/E2E-Testing-Prompt.md` |
 | E2E Test Status | `docs/testing/E2E-Test-Status.md` |
 | Session Context | `docs/CONTINUE_PROMPT.md` |
+
+## Environment Variables
+
+**Backend** (set in shell or `.env` file):
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `FIREBASE_CREDENTIALS_PATH` | Path to Firebase service account JSON | Yes |
+| `ANTHROPIC_API_KEY` | Claude API key for AI features | For meal generation/chat |
+| `DEBUG` | Enable debug mode (`fake-firebase-token` accepted) | No (default: false) |
+| `JWT_SECRET_KEY` | Secret for JWT signing | Yes |
