@@ -1,0 +1,287 @@
+# Cuisine Reference Data
+# Regional Indian cuisine definitions with typical pairings
+
+cuisines:
+  - id: "north"
+    name: "North Indian"
+    states: ["Punjab", "Haryana", "Delhi", "Uttar Pradesh", "Rajasthan", "Himachal Pradesh", "Uttarakhand", "Jammu & Kashmir"]
+
+    characteristics:
+      staple_grains: ["wheat", "rice"]
+      cooking_fats: ["ghee", "mustard_oil", "butter"]
+      signature_spices: ["garam_masala", "cumin", "coriander", "turmeric", "red_chili"]
+      protein_sources: ["paneer", "dal", "rajma", "chole"]
+
+    typical_pairings:
+      breakfast:
+        - primary: "paratha"
+          accompaniments: ["chai", "curd", "pickle", "lassi"]
+        - primary: "poha"
+          accompaniments: ["chai", "sev"]
+        - primary: "chole_bhature"
+          accompaniments: ["lassi", "onion_salad"]
+        - primary: "halwa_puri"
+          accompaniments: ["chole", "sabzi"]
+        - primary: "aloo_paratha"
+          accompaniments: ["chai", "curd", "pickle"]
+
+      lunch:
+        - primary: "dal"
+          accompaniments: ["rice", "roti", "salad"]
+        - primary: "sabzi"
+          accompaniments: ["roti", "paratha"]
+        - primary: "rajma"
+          accompaniments: ["rice", "salad"]
+        - primary: "chole"
+          accompaniments: ["rice", "roti"]
+        - primary: "biryani"
+          accompaniments: ["raita", "salad"]
+        - primary: "khichdi"
+          accompaniments: ["curd", "papad", "pickle"]
+
+      dinner:
+        - primary: "dal"
+          accompaniments: ["roti", "sabzi"]
+        - primary: "paneer_curry"
+          accompaniments: ["naan", "rice"]
+        - primary: "sabzi"
+          accompaniments: ["paratha", "roti"]
+        - primary: "pulao"
+          accompaniments: ["raita", "dal"]
+
+      snacks:
+        - primary: "samosa"
+          accompaniments: ["chai", "chutney"]
+        - primary: "pakora"
+          accompaniments: ["chai", "chutney"]
+        - primary: "chaat"
+          accompaniments: ["chai"]
+        - primary: "mathri"
+          accompaniments: ["chai", "pickle"]
+
+  - id: "south"
+    name: "South Indian"
+    states: ["Tamil Nadu", "Karnataka", "Kerala", "Andhra Pradesh", "Telangana"]
+
+    characteristics:
+      staple_grains: ["rice"]
+      cooking_fats: ["coconut_oil", "sesame_oil", "gingelly_oil"]
+      signature_spices: ["curry_leaves", "mustard_seeds", "tamarind", "coconut", "asafoetida"]
+      protein_sources: ["dal", "sambar", "rasam"]
+
+    typical_pairings:
+      breakfast:
+        - primary: "idli"
+          accompaniments: ["sambar", "chutney"]
+        - primary: "dosa"
+          accompaniments: ["sambar", "chutney"]
+        - primary: "uttapam"
+          accompaniments: ["sambar", "chutney"]
+        - primary: "upma"
+          accompaniments: ["chutney", "coffee"]
+        - primary: "pongal"
+          accompaniments: ["sambar", "chutney"]
+        - primary: "vada"
+          accompaniments: ["sambar", "chutney"]
+
+      lunch:
+        - primary: "rice"
+          accompaniments: ["sambar", "rasam", "poriyal", "papad"]
+        - primary: "biryani"
+          accompaniments: ["raita", "salan"]
+        - primary: "curd_rice"
+          accompaniments: ["pickle", "papad"]
+        - primary: "lemon_rice"
+          accompaniments: ["papad", "pickle"]
+        - primary: "tamarind_rice"
+          accompaniments: ["papad", "appalam"]
+
+      dinner:
+        - primary: "dosa"
+          accompaniments: ["sambar", "chutney"]
+        - primary: "idli"
+          accompaniments: ["sambar", "chutney"]
+        - primary: "rice"
+          accompaniments: ["rasam", "curry"]
+        - primary: "chapati"
+          accompaniments: ["curry", "dal"]
+
+      snacks:
+        - primary: "vada"
+          accompaniments: ["sambar", "chutney"]
+        - primary: "bonda"
+          accompaniments: ["chutney", "coffee"]
+        - primary: "murukku"
+          accompaniments: ["coffee", "tea"]
+        - primary: "banana_chips"
+          accompaniments: ["tea"]
+
+  - id: "east"
+    name: "East Indian"
+    states: ["West Bengal", "Odisha", "Bihar", "Jharkhand", "Assam"]
+
+    characteristics:
+      staple_grains: ["rice"]
+      cooking_fats: ["mustard_oil", "ghee"]
+      signature_spices: ["panch_phoron", "mustard_seeds", "poppy_seeds", "nigella_seeds"]
+      protein_sources: ["fish", "dal", "chana"]
+
+    typical_pairings:
+      breakfast:
+        - primary: "luchi"
+          accompaniments: ["aloor_dom", "cholar_dal"]
+        - primary: "paratha"
+          accompaniments: ["chai", "sabzi"]
+        - primary: "puri"
+          accompaniments: ["sabzi", "halwa"]
+        - primary: "poha"
+          accompaniments: ["chai"]
+
+      lunch:
+        - primary: "rice"
+          accompaniments: ["dal", "sabzi", "fish_curry"]
+        - primary: "khichdi"
+          accompaniments: ["papad", "pickle"]
+        - primary: "dal"
+          accompaniments: ["rice", "bhaja"]
+        - primary: "fish_curry"
+          accompaniments: ["rice"]
+
+      dinner:
+        - primary: "rice"
+          accompaniments: ["dal", "sabzi"]
+        - primary: "roti"
+          accompaniments: ["sabzi", "dal"]
+        - primary: "luchi"
+          accompaniments: ["curry"]
+
+      snacks:
+        - primary: "singara"
+          accompaniments: ["chai"]
+        - primary: "phuchka"
+          accompaniments: []
+        - primary: "jhal_muri"
+          accompaniments: []
+        - primary: "mishti"
+          accompaniments: ["chai"]
+
+  - id: "west"
+    name: "West Indian"
+    states: ["Gujarat", "Maharashtra", "Goa"]
+
+    characteristics:
+      staple_grains: ["wheat", "jowar", "bajra", "rice"]
+      cooking_fats: ["groundnut_oil", "coconut_oil", "ghee"]
+      signature_spices: ["kokum", "coconut", "jaggery", "tamarind", "green_chili"]
+      protein_sources: ["dal", "beans", "sprouts"]
+
+    typical_pairings:
+      breakfast:
+        - primary: "thepla"
+          accompaniments: ["chai", "curd", "pickle", "chundo"]
+        - primary: "dhokla"
+          accompaniments: ["chutney", "chai"]
+        - primary: "poha"
+          accompaniments: ["chai", "sev"]
+        - primary: "fafda"
+          accompaniments: ["jalebi", "chai"]
+        - primary: "upma"
+          accompaniments: ["chutney", "chai"]
+        - primary: "misal_pav"
+          accompaniments: ["lassi"]
+
+      lunch:
+        - primary: "dal"
+          accompaniments: ["rice", "roti", "bhakri"]
+        - primary: "sabzi"
+          accompaniments: ["roti", "thepla", "bhakri"]
+        - primary: "undhiyu"
+          accompaniments: ["puri", "shrikhand"]
+        - primary: "kadhi"
+          accompaniments: ["rice", "khichdi"]
+        - primary: "pav_bhaji"
+          accompaniments: ["lassi", "buttermilk"]
+
+      dinner:
+        - primary: "dal"
+          accompaniments: ["roti", "rice"]
+        - primary: "sabzi"
+          accompaniments: ["roti", "bhakri"]
+        - primary: "khichdi"
+          accompaniments: ["kadhi", "papad"]
+
+      snacks:
+        - primary: "dhokla"
+          accompaniments: ["chutney", "chai"]
+        - primary: "khandvi"
+          accompaniments: ["chutney"]
+        - primary: "khakhra"
+          accompaniments: ["chai", "pickle"]
+        - primary: "vada_pav"
+          accompaniments: ["chai", "chutney"]
+        - primary: "pav_bhaji"
+          accompaniments: ["lassi"]
+        - primary: "sev_puri"
+          accompaniments: []
+
+# Category to cuisine mapping for recipe classification
+category_cuisine_hints:
+  # South Indian specific
+  idli: ["south"]
+  dosa: ["south"]
+  uttapam: ["south"]
+  sambar: ["south"]
+  rasam: ["south"]
+  appam: ["south"]
+  puttu: ["south"]
+  pongal: ["south"]
+  avial: ["south"]
+  kootu: ["south"]
+  poriyal: ["south"]
+  payasam: ["south"]
+
+  # North Indian specific
+  paratha: ["north", "west"]
+  naan: ["north"]
+  kulcha: ["north"]
+  chole: ["north"]
+  rajma: ["north"]
+  dal_makhani: ["north"]
+  paneer_dishes: ["north"]
+  tandoori: ["north"]
+  lassi: ["north"]
+
+  # East Indian specific
+  luchi: ["east"]
+  aloor_dom: ["east"]
+  shukto: ["east"]
+  cholar_dal: ["east"]
+  mishti: ["east"]
+  rasgulla: ["east"]
+  sandesh: ["east"]
+
+  # West Indian specific
+  thepla: ["west"]
+  dhokla: ["west"]
+  khandvi: ["west"]
+  fafda: ["west"]
+  khakhra: ["west"]
+  undhiyu: ["west"]
+  shrikhand: ["west"]
+  pav_bhaji: ["west"]
+  vada_pav: ["west"]
+  misal: ["west"]
+  puran_poli: ["west"]
+  modak: ["west"]
+
+  # Common across regions
+  dal: ["north", "south", "east", "west"]
+  rice: ["north", "south", "east", "west"]
+  roti: ["north", "east", "west"]
+  khichdi: ["north", "east", "west"]
+  biryani: ["north", "south", "west"]
+  pulao: ["north", "west"]
+  raita: ["north", "south", "west"]
+  pickle: ["north", "south", "east", "west"]
+  papad: ["north", "south", "west"]
+  chai: ["north", "south", "east", "west"]

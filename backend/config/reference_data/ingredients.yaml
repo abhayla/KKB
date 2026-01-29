@@ -1,0 +1,294 @@
+# Common Ingredients Reference Data
+# Used for chat suggestions, alias matching, and categorization
+
+ingredients:
+  # Vegetables
+  - name: "Karela"
+    aliases: ["bitter gourd", "bitter melon", "pavakkai", "kakarakaya"]
+    category: "vegetable"
+    common_in: ["north", "south", "east", "west"]
+
+  - name: "Baingan"
+    aliases: ["brinjal", "eggplant", "aubergine", "vangi", "begun", "kathirikai"]
+    category: "vegetable"
+    common_in: ["north", "south", "east", "west"]
+
+  - name: "Bhindi"
+    aliases: ["okra", "ladyfinger", "vendakkai", "bendakaya"]
+    category: "vegetable"
+    common_in: ["north", "south", "east", "west"]
+
+  - name: "Lauki"
+    aliases: ["bottle gourd", "doodhi", "ghiya", "sorakaya", "suraikkai"]
+    category: "vegetable"
+    common_in: ["north", "south", "west"]
+
+  - name: "Tinda"
+    aliases: ["indian round gourd", "apple gourd"]
+    category: "vegetable"
+    common_in: ["north"]
+
+  - name: "Tori"
+    aliases: ["ridge gourd", "jhinge", "peerkangai", "beerakaya"]
+    category: "vegetable"
+    common_in: ["north", "south", "east", "west"]
+
+  - name: "Palak"
+    aliases: ["spinach", "saag", "keerai", "pasalakura"]
+    category: "vegetable"
+    common_in: ["north", "south", "east", "west"]
+
+  - name: "Methi"
+    aliases: ["fenugreek", "venthayam", "menthikura"]
+    category: "vegetable"
+    common_in: ["north", "west"]
+
+  - name: "Sarson"
+    aliases: ["mustard greens", "sarson ka saag"]
+    category: "vegetable"
+    common_in: ["north"]
+
+  - name: "Aloo"
+    aliases: ["potato", "batata", "urulaikizhangu", "bangaladumpa"]
+    category: "vegetable"
+    common_in: ["north", "south", "east", "west"]
+
+  - name: "Gobi"
+    aliases: ["cauliflower", "phool gobi", "cauliflower"]
+    category: "vegetable"
+    common_in: ["north", "south", "east", "west"]
+
+  - name: "Bandh Gobi"
+    aliases: ["cabbage", "patta gobi"]
+    category: "vegetable"
+    common_in: ["north", "south", "east", "west"]
+
+  - name: "Gajar"
+    aliases: ["carrot", "gajjar"]
+    category: "vegetable"
+    common_in: ["north", "south", "east", "west"]
+
+  - name: "Matar"
+    aliases: ["peas", "green peas", "pattani"]
+    category: "vegetable"
+    common_in: ["north", "south", "east", "west"]
+
+  - name: "Shimla Mirch"
+    aliases: ["capsicum", "bell pepper", "green pepper"]
+    category: "vegetable"
+    common_in: ["north", "south", "west"]
+
+  - name: "Tamatar"
+    aliases: ["tomato", "thakkali", "tomato"]
+    category: "vegetable"
+    common_in: ["north", "south", "east", "west"]
+
+  - name: "Pyaz"
+    aliases: ["onion", "kanda", "vengayam", "ulli"]
+    category: "vegetable"
+    common_in: ["north", "south", "east", "west"]
+    note: "Excluded in SATTVIC diet"
+
+  - name: "Lahsun"
+    aliases: ["garlic", "lasun", "poondu", "vellulli"]
+    category: "spice"
+    common_in: ["north", "south", "east", "west"]
+    note: "Excluded in SATTVIC and JAIN diets"
+
+  - name: "Adrak"
+    aliases: ["ginger", "inji", "allam"]
+    category: "spice"
+    common_in: ["north", "south", "east", "west"]
+
+  # Dairy
+  - name: "Paneer"
+    aliases: ["cottage cheese", "indian cheese"]
+    category: "dairy"
+    common_in: ["north", "west"]
+
+  - name: "Dahi"
+    aliases: ["curd", "yogurt", "thayir", "perugu"]
+    category: "dairy"
+    common_in: ["north", "south", "east", "west"]
+
+  - name: "Ghee"
+    aliases: ["clarified butter", "nei", "neyyi"]
+    category: "dairy"
+    common_in: ["north", "south", "east", "west"]
+
+  - name: "Malai"
+    aliases: ["cream", "fresh cream"]
+    category: "dairy"
+    common_in: ["north"]
+
+  - name: "Makkhan"
+    aliases: ["butter", "white butter"]
+    category: "dairy"
+    common_in: ["north"]
+
+  - name: "Khoya"
+    aliases: ["mawa", "khoa", "evaporated milk solids"]
+    category: "dairy"
+    common_in: ["north", "west"]
+
+  # Nuts & Seeds
+  - name: "Peanut"
+    aliases: ["groundnut", "moongfali", "mungfali", "verkadalai"]
+    category: "nut"
+    common_in: ["north", "south", "west"]
+    allergy_risk: true
+
+  - name: "Cashew"
+    aliases: ["kaju", "caju", "munthiri"]
+    category: "nut"
+    common_in: ["north", "south", "east", "west"]
+    allergy_risk: true
+
+  - name: "Badam"
+    aliases: ["almond", "almonds"]
+    category: "nut"
+    common_in: ["north", "south", "east", "west"]
+    allergy_risk: true
+
+  - name: "Pista"
+    aliases: ["pistachio", "pistachios"]
+    category: "nut"
+    common_in: ["north"]
+    allergy_risk: true
+
+  - name: "Akhrot"
+    aliases: ["walnut", "walnuts"]
+    category: "nut"
+    common_in: ["north"]
+    allergy_risk: true
+
+  - name: "Nariyal"
+    aliases: ["coconut", "thengai", "kobbari"]
+    category: "nut"
+    common_in: ["south", "west", "east"]
+
+  - name: "Til"
+    aliases: ["sesame", "sesame seeds", "ellu", "nuvvulu"]
+    category: "seed"
+    common_in: ["north", "south", "east", "west"]
+
+  # Pulses & Lentils
+  - name: "Chana Dal"
+    aliases: ["bengal gram", "split chickpeas"]
+    category: "pulse"
+    common_in: ["north", "south", "east", "west"]
+
+  - name: "Moong Dal"
+    aliases: ["mung dal", "green gram", "paasi paruppu"]
+    category: "pulse"
+    common_in: ["north", "south", "east", "west"]
+
+  - name: "Toor Dal"
+    aliases: ["arhar dal", "pigeon pea", "tuvar dal", "kandi pappu"]
+    category: "pulse"
+    common_in: ["north", "south", "east", "west"]
+
+  - name: "Masoor Dal"
+    aliases: ["red lentil", "mysore paruppu"]
+    category: "pulse"
+    common_in: ["north", "east"]
+
+  - name: "Urad Dal"
+    aliases: ["black gram", "ulundu", "minapa pappu"]
+    category: "pulse"
+    common_in: ["north", "south"]
+
+  - name: "Rajma"
+    aliases: ["kidney beans", "red beans"]
+    category: "pulse"
+    common_in: ["north"]
+
+  - name: "Chole"
+    aliases: ["chickpeas", "kabuli chana", "garbanzo beans", "kondakadalai"]
+    category: "pulse"
+    common_in: ["north", "west"]
+
+  - name: "Lobiya"
+    aliases: ["black eyed peas", "cowpeas", "karamani"]
+    category: "pulse"
+    common_in: ["north", "south"]
+
+  # Grains
+  - name: "Chawal"
+    aliases: ["rice", "basmati", "arisi", "biyyam"]
+    category: "grain"
+    common_in: ["north", "south", "east", "west"]
+
+  - name: "Atta"
+    aliases: ["wheat flour", "whole wheat flour", "godumai maavu"]
+    category: "grain"
+    common_in: ["north", "west"]
+
+  - name: "Maida"
+    aliases: ["all purpose flour", "refined flour"]
+    category: "grain"
+    common_in: ["north", "south", "east", "west"]
+
+  - name: "Suji"
+    aliases: ["semolina", "rava", "sooji"]
+    category: "grain"
+    common_in: ["north", "south", "east", "west"]
+
+  - name: "Besan"
+    aliases: ["gram flour", "chickpea flour", "kadalai maavu"]
+    category: "grain"
+    common_in: ["north", "south", "east", "west"]
+
+  - name: "Jowar"
+    aliases: ["sorghum", "cholam"]
+    category: "grain"
+    common_in: ["west", "south"]
+
+  - name: "Bajra"
+    aliases: ["pearl millet", "kambu"]
+    category: "grain"
+    common_in: ["north", "west"]
+
+  - name: "Ragi"
+    aliases: ["finger millet", "nachni", "kezhvaragu"]
+    category: "grain"
+    common_in: ["south", "west"]
+
+  # Mushroom
+  - name: "Mushroom"
+    aliases: ["kumbh", "fungi", "champignon", "button mushroom"]
+    category: "vegetable"
+    common_in: ["north"]
+    note: "Some people avoid due to texture/taste"
+
+  # Seafood (for non-veg)
+  - name: "Fish"
+    aliases: ["machli", "meen", "chepa"]
+    category: "seafood"
+    common_in: ["east", "south", "west"]
+    dietary: "non_vegetarian"
+
+  - name: "Prawns"
+    aliases: ["shrimp", "jhinga", "eral", "royyalu"]
+    category: "seafood"
+    common_in: ["east", "south", "west"]
+    dietary: "non_vegetarian"
+
+  # Meat (for non-veg)
+  - name: "Chicken"
+    aliases: ["murgh", "kozhi", "kodi"]
+    category: "meat"
+    common_in: ["north", "south", "east", "west"]
+    dietary: "non_vegetarian"
+
+  - name: "Mutton"
+    aliases: ["lamb", "goat meat", "gosht", "aattukari"]
+    category: "meat"
+    common_in: ["north", "south", "east"]
+    dietary: "non_vegetarian"
+
+  - name: "Egg"
+    aliases: ["anda", "muttai", "guddu"]
+    category: "egg"
+    common_in: ["north", "south", "east", "west"]
+    dietary: "eggetarian"

@@ -49,6 +49,9 @@ class Collections:
     FESTIVALS = "festivals"
     COOKING_STREAKS = "cooking_streaks"
     ACHIEVEMENTS = "achievements"
+    # Config collections (synced from YAML)
+    SYSTEM_CONFIG = "system_config"
+    REFERENCE_DATA = "reference_data"
 
 
 async def init_firestore() -> None:

@@ -29,6 +29,17 @@ Backend runs on Firebase Firestore with a comprehensive recipe database imported
 | Vegetarian | 3,482 |
 | Vegan | 1,347 |
 
+**Recipe Categories (for pairing):**
+| Category | Count | % |
+|----------|-------|---|
+| snack | 705 | 19.6% |
+| other | 576 | 16.0% |
+| sweet | 365 | 10.2% |
+| sabzi | 357 | 9.9% |
+| curry | 307 | 8.6% |
+| bread | 141 | 3.9% |
+| dal | 116 | 3.2% |
+
 **To start backend:**
 ```bash
 cd backend
@@ -63,7 +74,7 @@ cd android
 
 ### Test Coverage Status
 
-~265 UI tests across 13 screens (Compose UI Testing):
+~400 UI tests across 15 screens (Compose UI Testing):
 
 | Phase | Screen | UI Tests | Status |
 |-------|--------|----------|--------|
@@ -83,24 +94,31 @@ cd android
 
 ### Remaining Work
 
-1. **GenerationScreenTest.kt** - Phase 3 (AI-powered meal plan generation)
-2. Integration tests for navigation flows
-3. Offline mode tests
-4. Edge cases and error handling tests
-5. Connect Android app to real backend API
-6. AI meal plan generation with Gemini/Claude
+**Meal Generation Config (All Phases Complete!):**
+1. ~~**Phase 2: Backend Updates** - Implement pairing logic in meal generation service~~ DONE
+2. ~~**Phase 3: Chat Integration** - LLM function calling for config updates via chat~~ DONE
+3. ~~**Phase 4: Testing** - Additional edge case and integration testing~~ DONE (92 backend tests)
+
+**Android/Testing:**
+4. **GenerationScreenTest.kt** - UI tests for meal plan generation screen
+5. Integration tests for navigation flows
+6. Offline mode tests
+7. Edge cases and error handling tests
+8. Connect Android app to real backend API
 
 ### Key Files Reference
 
 - Architecture: `CLAUDE.md`
 - E2E Testing Guide: `docs/testing/E2E-Testing-Prompt.md`
+- Meal Generation Config: `docs/design/Meal-Generation-Config-Architecture.md`
+- Config YAML files: `backend/config/`
 - Recipe Import: `backend/scripts/import_recipes_from_kkb.py`
 - Backend API: `backend/app/api/v1/endpoints/`
 ```
 
 ---
 
-## IMPORT SCRIPTS CREATED (Session 26)
+## BACKEND SCRIPTS
 
 ```
 backend/scripts/
@@ -109,7 +127,10 @@ backend/scripts/
 ├── verify_recipe_import.py        # Verifies import results
 ├── seed_firestore.py              # Seeds initial data
 ├── seed_recipes.py                # Original recipe seeds
-└── seed_festivals.py              # Festival data seeds
+├── seed_festivals.py              # Festival data seeds
+├── sync_config.py                 # Syncs YAML config → Firestore (Session 27)
+├── categorize_recipes.py          # Adds category field to recipes (Session 27)
+└── test_meal_generation.py        # Tests pairing logic (Session 28)
 ```
 
 **Recipe Import Usage:**
@@ -209,13 +230,75 @@ android/app/src/androidTest/java/com/rasoiai/app/presentation/
 
 ### Session 25: Complete UI Test Coverage
 - Created remaining screen tests (RecipeRules, CookingMode, RecipeDetail)
-- Total: ~265 UI tests across 13 screens
+- Total: ~400 UI tests across 15 screens (including E2E flows)
 
 ### Session 26: Recipe Import from khanakyabanega
 - Created inspection script to analyze source database
 - Built transformation pipeline for recipe data
 - Imported 3,580 recipes with structured ingredients/instructions
 - Verified import: 3,590 total recipes in RasoiAI
+
+### Session 27: Meal Generation Config (Phase 1 Complete)
+- Created config YAML files as source of truth:
+  - `backend/config/meal_generation.yaml` - Pairing rules, meal structure
+  - `backend/config/reference_data/ingredients.yaml` - 54 ingredients with aliases
+  - `backend/config/reference_data/dishes.yaml` - 68 common dishes
+  - `backend/config/reference_data/cuisines.yaml` - 4 regional cuisines
+- Created `scripts/sync_config.py` to sync YAML → Firestore
+- Created `scripts/categorize_recipes.py` to add category field to recipes
+- Categorized all 3,590 recipes (84% meaningful categories, 16% "other")
+- Firestore collections created: `system_config/meal_generation`, `reference_data/*`
+
+### Session 28: Meal Generation Service (Phase 2 Complete)
+- Created `ConfigService` to load pairing rules from Firestore
+- Updated `RecipeRepository` with category/pairing search methods:
+  - `search_by_category()`, `search_by_categories()`
+  - `get_pairing_recipe()`, `get_recipe_pair()`
+  - `search_by_ingredient()` with alias support
+- Created `MealGenerationService` with 2-item pairing logic:
+  - Each meal slot has 2 complementary items (Dal+Rice, Sabzi+Roti, Dosa+Chutney)
+  - INCLUDE rules force items with complementary pairs
+  - EXCLUDE rules, allergies, dislikes properly enforced
+  - Config-driven pairing by cuisine and meal type
+- Refactored `/generate` endpoint to use service (cleaned up ~150 lines)
+- All tests passing: 46 meal items, 23 paired slots, 0 single slots
+
+### Session 29: Chat Integration (Phase 3 Complete)
+- Added tool calling support to Claude client:
+  - `ToolCall` and `ChatCompletionResult` dataclasses
+  - `generate_with_tools()` function for initial tool calls
+  - `continue_with_tool_result()` function for multi-turn tool conversations
+- Created `PreferenceUpdateService` with full preference management:
+  - `update_recipe_rule()` - ADD/REMOVE/MODIFY INCLUDE/EXCLUDE rules
+  - `update_allergy()` - manage food allergies with severity
+  - `update_dislike()` - manage disliked ingredients
+  - `update_preference()` - cooking time, busy days, dietary tags, cuisine
+  - `undo_last_change()` - revert last preference change
+  - `show_config()` - display current configuration
+  - Conflict detection between INCLUDE and EXCLUDE rules
+- Created tool definitions in `app/ai/tools/preference_tools.py`:
+  - 6 tools: update_recipe_rule, update_allergy, update_dislike, update_preference, undo_last_change, show_config
+  - `CONFIG_CHAT_SYSTEM_PROMPT` for RasoiAI cooking assistant
+  - `format_config_for_display()` for readable config output
+- Created `ChatRepository` for Firestore-based chat storage
+- Updated chat endpoint to remove SQLAlchemy dependency
+- Created `scripts/test_chat_tools.py` - all tests passing
+
+### Session 30: Phase 4 Testing Complete
+- Created comprehensive test suite (92 backend tests total):
+  - `tests/test_preference_service.py` - 26 edge case tests for PreferenceUpdateService
+  - `tests/test_chat_integration.py` - 27 integration tests for chat tool flow
+  - `tests/test_meal_generation.py` - 22 tests for meal generation structures and logic
+  - `tests/test_chat_api.py` - 12 API endpoint tests for chat
+- Tests cover:
+  - INCLUDE/EXCLUDE rule enforcement
+  - Conflict detection between rules
+  - Allergy and dislike filtering
+  - Dietary tag validation (vegetarian, vegan, jain)
+  - Cooking time constraints
+  - Tool execution and error handling
+  - API authentication and validation
+- All phases of Meal Generation Config complete!
 
 ---
 
@@ -248,14 +331,28 @@ RECIPE DATA STRUCTURE:
 │  ├── cuisine_type: north | south | east | west              │
 │  ├── meal_types: [breakfast, lunch, dinner, snacks]         │
 │  ├── dietary_tags: [vegetarian, vegan, jain, ...]           │
+│  ├── category: dal | sabzi | curry | rice | snack | ...     │  ← NEW
 │  ├── prep_time_minutes, cook_time_minutes, servings         │
 │  ├── ingredients: [{name, quantity, unit, category}, ...]   │
 │  ├── instructions: [{step_number, instruction}, ...]        │
 │  └── nutrition: {calories, protein, carbs, fat, fiber}      │
 └─────────────────────────────────────────────────────────────┘
+
+MEAL GENERATION CONFIG (Phase 1 Complete):
+┌─────────────────────────────────────────────────────────────┐
+│  system_config/meal_generation                              │
+│  ├── meal_structure: {items_per_slot: 2, expandable: true}  │
+│  ├── pairing_rules_flat: {"north:dal": ["rice", "roti"]}    │
+│  ├── meal_type_pairs: {breakfast: ["paratha:chai", ...]}    │
+│  └── recipe_categories: [dal, rice, sabzi, curry, ...]      │
+│                                                             │
+│  reference_data/ingredients: 54 with aliases                │
+│  reference_data/dishes: 68 with pairing info                │
+│  reference_data/cuisines: 4 regional cuisines               │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-*Last Updated: January 28, 2026*
-*3,590 recipes imported. ~265 UI tests across 13 screens. Backend on Firestore.*
+*Last Updated: January 29, 2026*
+*3,590 recipes. 92 backend tests. ~400 UI tests. Meal Generation Config complete (all 4 phases).*

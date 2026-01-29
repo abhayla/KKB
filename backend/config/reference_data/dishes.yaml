@@ -1,0 +1,421 @@
+# Common Dishes Reference Data
+# Used for pairing rules, chat suggestions, and recipe categorization
+
+dishes:
+  # Dal varieties
+  - name: "Dal Fry"
+    category: "dal"
+    pairs_with: ["rice", "roti", "paratha"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north", "south", "east", "west"]
+
+  - name: "Dal Tadka"
+    category: "dal"
+    pairs_with: ["rice", "roti"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north"]
+
+  - name: "Dal Makhani"
+    category: "dal"
+    pairs_with: ["rice", "naan", "roti"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north"]
+
+  - name: "Sambar"
+    category: "sambar"
+    pairs_with: ["rice", "idli", "dosa", "vada"]
+    meal_types: ["breakfast", "lunch", "dinner"]
+    cuisines: ["south"]
+
+  - name: "Rasam"
+    category: "rasam"
+    pairs_with: ["rice"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["south"]
+
+  - name: "Cholar Dal"
+    category: "dal"
+    pairs_with: ["luchi", "rice"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["east"]
+
+  - name: "Gujarati Dal"
+    category: "dal"
+    pairs_with: ["rice", "roti", "khichdi"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["west"]
+
+  # Rice varieties
+  - name: "Jeera Rice"
+    category: "rice"
+    pairs_with: ["dal", "curry", "sabzi"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north", "west"]
+
+  - name: "Plain Rice"
+    category: "rice"
+    pairs_with: ["dal", "sambar", "rasam", "curry"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north", "south", "east", "west"]
+
+  - name: "Pulao"
+    category: "pulao"
+    pairs_with: ["raita", "dal", "curry"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north", "west"]
+
+  - name: "Biryani"
+    category: "biryani"
+    pairs_with: ["raita", "salad", "salan"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north", "south", "west"]
+
+  - name: "Khichdi"
+    category: "khichdi"
+    pairs_with: ["curd", "pickle", "papad", "kadhi"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north", "west", "east"]
+
+  - name: "Curd Rice"
+    category: "rice"
+    pairs_with: ["pickle", "papad"]
+    meal_types: ["lunch"]
+    cuisines: ["south"]
+
+  - name: "Lemon Rice"
+    category: "rice"
+    pairs_with: ["papad", "pickle", "curry"]
+    meal_types: ["lunch"]
+    cuisines: ["south"]
+
+  # Bread varieties
+  - name: "Roti"
+    category: "roti"
+    pairs_with: ["dal", "sabzi", "curry"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north", "east", "west"]
+
+  - name: "Paratha"
+    category: "paratha"
+    pairs_with: ["chai", "curd", "pickle", "dal", "sabzi"]
+    meal_types: ["breakfast", "lunch", "dinner"]
+    cuisines: ["north"]
+
+  - name: "Naan"
+    category: "naan"
+    pairs_with: ["curry", "dal", "paneer_dish"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north"]
+
+  - name: "Puri"
+    category: "bread"
+    pairs_with: ["halwa", "sabzi", "chole"]
+    meal_types: ["breakfast", "lunch"]
+    cuisines: ["north", "east"]
+
+  - name: "Bhatura"
+    category: "bread"
+    pairs_with: ["chole"]
+    meal_types: ["breakfast", "lunch"]
+    cuisines: ["north"]
+
+  - name: "Luchi"
+    category: "bread"
+    pairs_with: ["aloor_dom", "cholar_dal", "curry"]
+    meal_types: ["breakfast", "lunch"]
+    cuisines: ["east"]
+
+  - name: "Thepla"
+    category: "paratha"
+    pairs_with: ["chai", "curd", "pickle", "chundo"]
+    meal_types: ["breakfast", "snacks"]
+    cuisines: ["west"]
+
+  - name: "Bhakri"
+    category: "roti"
+    pairs_with: ["sabzi", "thecha", "dal"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["west"]
+
+  # South Indian breakfast
+  - name: "Idli"
+    category: "idli"
+    pairs_with: ["sambar", "chutney"]
+    meal_types: ["breakfast", "dinner"]
+    cuisines: ["south"]
+
+  - name: "Dosa"
+    category: "dosa"
+    pairs_with: ["sambar", "chutney"]
+    meal_types: ["breakfast", "dinner"]
+    cuisines: ["south"]
+
+  - name: "Masala Dosa"
+    category: "dosa"
+    pairs_with: ["sambar", "chutney"]
+    meal_types: ["breakfast", "dinner"]
+    cuisines: ["south"]
+
+  - name: "Uttapam"
+    category: "uttapam"
+    pairs_with: ["sambar", "chutney"]
+    meal_types: ["breakfast"]
+    cuisines: ["south"]
+
+  - name: "Vada"
+    category: "vada"
+    pairs_with: ["sambar", "chutney"]
+    meal_types: ["breakfast", "snacks"]
+    cuisines: ["south"]
+
+  - name: "Upma"
+    category: "upma"
+    pairs_with: ["chutney", "chai", "sambar"]
+    meal_types: ["breakfast"]
+    cuisines: ["south", "west"]
+
+  - name: "Pongal"
+    category: "breakfast_main"
+    pairs_with: ["sambar", "chutney"]
+    meal_types: ["breakfast"]
+    cuisines: ["south"]
+
+  # North Indian breakfast
+  - name: "Poha"
+    category: "poha"
+    pairs_with: ["chai", "sev", "jalebi"]
+    meal_types: ["breakfast"]
+    cuisines: ["north", "west"]
+
+  - name: "Aloo Paratha"
+    category: "paratha"
+    pairs_with: ["chai", "curd", "pickle"]
+    meal_types: ["breakfast"]
+    cuisines: ["north"]
+
+  - name: "Chole Bhature"
+    category: "one_pot"
+    pairs_with: ["lassi", "onion_salad"]
+    meal_types: ["breakfast", "lunch"]
+    cuisines: ["north"]
+
+  - name: "Halwa Puri"
+    category: "breakfast_main"
+    pairs_with: ["chole", "sabzi"]
+    meal_types: ["breakfast"]
+    cuisines: ["north"]
+
+  # Sabzi/Curry
+  - name: "Aloo Gobi"
+    category: "sabzi"
+    pairs_with: ["roti", "paratha", "rice"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north"]
+
+  - name: "Paneer Butter Masala"
+    category: "curry"
+    pairs_with: ["naan", "rice", "roti"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north"]
+
+  - name: "Palak Paneer"
+    category: "curry"
+    pairs_with: ["naan", "rice", "roti"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north"]
+
+  - name: "Matar Paneer"
+    category: "curry"
+    pairs_with: ["naan", "rice", "roti"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north"]
+
+  - name: "Baingan Bharta"
+    category: "sabzi"
+    pairs_with: ["roti", "paratha"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north"]
+
+  - name: "Bhindi Masala"
+    category: "sabzi"
+    pairs_with: ["roti", "paratha", "rice"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north"]
+
+  - name: "Mixed Veg"
+    category: "sabzi"
+    pairs_with: ["roti", "rice", "paratha"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north", "west"]
+
+  - name: "Kadhi"
+    category: "curry"
+    pairs_with: ["rice", "khichdi"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north", "west"]
+
+  - name: "Rajma Masala"
+    category: "curry"
+    pairs_with: ["rice", "roti"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north"]
+
+  - name: "Chole Masala"
+    category: "curry"
+    pairs_with: ["rice", "bhatura", "puri"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north"]
+
+  # Accompaniments
+  - name: "Raita"
+    category: "raita"
+    pairs_with: ["biryani", "pulao", "paratha"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north", "south", "west"]
+
+  - name: "Chutney"
+    category: "chutney"
+    pairs_with: ["idli", "dosa", "vada", "uttapam", "dhokla"]
+    meal_types: ["breakfast", "snacks"]
+    cuisines: ["south", "west"]
+
+  - name: "Pickle"
+    category: "pickle"
+    pairs_with: ["paratha", "curd_rice", "khichdi"]
+    meal_types: ["breakfast", "lunch", "dinner"]
+    cuisines: ["north", "south", "east", "west"]
+
+  - name: "Papad"
+    category: "accompaniment"
+    pairs_with: ["dal_rice", "khichdi"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north", "south", "west"]
+
+  # Beverages
+  - name: "Chai"
+    category: "chai"
+    pairs_with: ["paratha", "biscuit", "samosa", "pakora", "sandwich", "snack"]
+    meal_types: ["breakfast", "snacks"]
+    cuisines: ["north", "south", "east", "west"]
+
+  - name: "Masala Chai"
+    category: "chai"
+    pairs_with: ["paratha", "biscuit", "samosa", "pakora"]
+    meal_types: ["breakfast", "snacks"]
+    cuisines: ["north"]
+
+  - name: "Filter Coffee"
+    category: "coffee"
+    pairs_with: ["idli", "dosa", "biscuit"]
+    meal_types: ["breakfast", "snacks"]
+    cuisines: ["south"]
+
+  - name: "Lassi"
+    category: "lassi"
+    pairs_with: ["paratha", "chole_bhature"]
+    meal_types: ["breakfast", "lunch"]
+    cuisines: ["north"]
+
+  - name: "Buttermilk"
+    category: "buttermilk"
+    pairs_with: ["rice", "lunch_thali"]
+    meal_types: ["lunch"]
+    cuisines: ["south", "west"]
+
+  # Snacks
+  - name: "Samosa"
+    category: "snack"
+    pairs_with: ["chai", "chutney"]
+    meal_types: ["snacks"]
+    cuisines: ["north", "west"]
+
+  - name: "Pakora"
+    category: "snack"
+    pairs_with: ["chai", "chutney"]
+    meal_types: ["snacks"]
+    cuisines: ["north"]
+
+  - name: "Kachori"
+    category: "snack"
+    pairs_with: ["chai", "sabzi"]
+    meal_types: ["breakfast", "snacks"]
+    cuisines: ["north", "west"]
+
+  - name: "Dhokla"
+    category: "snack"
+    pairs_with: ["chutney", "chai"]
+    meal_types: ["breakfast", "snacks"]
+    cuisines: ["west"]
+
+  - name: "Khaman"
+    category: "snack"
+    pairs_with: ["chutney", "chai"]
+    meal_types: ["snacks"]
+    cuisines: ["west"]
+
+  - name: "Fafda"
+    category: "snack"
+    pairs_with: ["jalebi", "chai"]
+    meal_types: ["breakfast", "snacks"]
+    cuisines: ["west"]
+
+  - name: "Vada Pav"
+    category: "snack"
+    pairs_with: ["chai", "chutney"]
+    meal_types: ["snacks"]
+    cuisines: ["west"]
+
+  - name: "Pav Bhaji"
+    category: "snack"
+    pairs_with: ["lassi", "buttermilk"]
+    meal_types: ["snacks", "dinner"]
+    cuisines: ["west"]
+
+  # Sweets
+  - name: "Gulab Jamun"
+    category: "sweet"
+    pairs_with: ["meal", "chai"]
+    meal_types: ["lunch", "dinner", "snacks"]
+    cuisines: ["north"]
+
+  - name: "Rasgulla"
+    category: "sweet"
+    pairs_with: ["meal"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["east"]
+
+  - name: "Jalebi"
+    category: "sweet"
+    pairs_with: ["fafda", "rabri", "poha"]
+    meal_types: ["breakfast", "snacks"]
+    cuisines: ["north", "west"]
+
+  - name: "Kheer"
+    category: "sweet"
+    pairs_with: ["meal", "puri"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["north", "south", "east", "west"]
+
+  - name: "Halwa"
+    category: "sweet"
+    pairs_with: ["puri", "meal"]
+    meal_types: ["breakfast", "snacks"]
+    cuisines: ["north"]
+
+  - name: "Shrikhand"
+    category: "sweet"
+    pairs_with: ["puri", "meal"]
+    meal_types: ["lunch"]
+    cuisines: ["west"]
+
+  - name: "Payasam"
+    category: "sweet"
+    pairs_with: ["meal"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["south"]
+
+  - name: "Mishti Doi"
+    category: "sweet"
+    pairs_with: ["meal"]
+    meal_types: ["lunch", "dinner"]
+    cuisines: ["east"]

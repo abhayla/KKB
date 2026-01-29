@@ -1,0 +1,185 @@
+# Meal Generation System Configuration
+# This file is the source of truth - synced to Firestore via sync_config.py
+
+meal_structure:
+  items_per_slot: 2
+  expandable: true  # Allow 3+ items if multiple INCLUDE rules
+
+rule_behaviors:
+  include:
+    action: "adds_to_pair"
+    allows_duplicates: true
+    description: "INCLUDE item is guaranteed, paired with complementary item"
+  exclude:
+    action: "replaces_item_only"
+    keeps_pair: true
+    description: "Only excluded item replaced, pair remains"
+
+conflict_resolution:
+  strategy: "ask_user"
+  description: "When INCLUDE conflicts with EXCLUDE, ask user which to keep"
+
+# Recipe categories for pairing
+recipe_categories:
+  - dal
+  - rice
+  - roti
+  - paratha
+  - naan
+  - sabzi
+  - curry
+  - biryani
+  - pulao
+  - khichdi
+  - dosa
+  - idli
+  - uttapam
+  - vada
+  - upma
+  - poha
+  - chutney
+  - sambar
+  - rasam
+  - raita
+  - pickle
+  - salad
+  - soup
+  - chai
+  - coffee
+  - lassi
+  - buttermilk
+  - juice
+  - smoothie
+  - snack
+  - pakora
+  - samosa
+  - sweet
+  - dessert
+  - halwa
+  - kheer
+  - mithai
+  - egg_dish
+  - breakfast_main
+  - bread
+  - sandwich
+  - wrap
+  - rice_dish
+  - one_pot
+
+# Pairing rules - flattened structure for Firestore compatibility
+# Format: "cuisine:category" -> pairs_with list
+pairing_rules_flat:
+  # North Indian pairings
+  "north:dal": ["rice", "roti", "paratha", "naan"]
+  "north:sabzi": ["roti", "paratha", "rice", "naan"]
+  "north:curry": ["rice", "roti", "naan", "paratha"]
+  "north:biryani": ["raita", "salad"]
+  "north:pulao": ["raita", "dal", "curry"]
+  "north:paratha": ["chai", "curd", "pickle", "raita"]
+  "north:khichdi": ["curd", "pickle", "papad", "kadhi"]
+  "north:roti": ["dal", "sabzi", "curry"]
+  "north:naan": ["curry", "dal", "sabzi"]
+  "north:poha": ["chai", "sev"]
+  "north:upma": ["chai", "chutney"]
+  "north:samosa": ["chai", "chutney"]
+  "north:pakora": ["chai", "chutney"]
+  "north:chai": ["paratha", "biscuit", "samosa", "pakora", "sandwich"]
+  "north:sweet": ["chai", "milk"]
+
+  # South Indian pairings
+  "south:dosa": ["sambar", "chutney"]
+  "south:idli": ["sambar", "chutney"]
+  "south:uttapam": ["sambar", "chutney"]
+  "south:vada": ["sambar", "chutney"]
+  "south:upma": ["chutney", "sambar", "coffee"]
+  "south:rice": ["sambar", "rasam", "curry", "dal"]
+  "south:dal": ["rice", "appam", "dosa"]
+  "south:sambar": ["rice", "idli", "dosa", "vada"]
+  "south:rasam": ["rice"]
+  "south:curry": ["rice", "appam", "parotta"]
+  "south:biryani": ["raita", "salan"]
+  "south:coffee": ["idli", "dosa", "biscuit"]
+  "south:sweet": ["coffee", "meal"]
+
+  # East Indian pairings
+  "east:rice": ["dal", "curry", "sabzi"]
+  "east:dal": ["rice", "roti"]
+  "east:luchi": ["aloor_dom", "cholar_dal", "curry"]
+  "east:paratha": ["chai", "curry", "sabzi"]
+  "east:sabzi": ["rice", "roti", "luchi"]
+  "east:curry": ["rice", "roti", "luchi"]
+  "east:biryani": ["raita", "salad"]
+  "east:chai": ["singara", "snack", "mishti"]
+  "east:sweet": ["chai", "meal"]
+
+  # West Indian pairings
+  "west:dal": ["rice", "roti", "bhakri", "rotla"]
+  "west:sabzi": ["roti", "bhakri", "thepla", "rotla"]
+  "west:curry": ["rice", "roti", "puri"]
+  "west:thepla": ["chai", "pickle", "curd", "chundo"]
+  "west:dhokla": ["chutney", "chai"]
+  "west:khakhra": ["chai", "pickle"]
+  "west:fafda": ["jalebi", "chai"]
+  "west:poha": ["chai", "sev"]
+  "west:undhiyu": ["puri", "shrikhand"]
+  "west:biryani": ["raita", "salad"]
+  "west:pav_bhaji": ["lassi", "buttermilk"]
+  "west:chai": ["khakhra", "thepla", "biscuit"]
+  "west:sweet": ["shrikhand", "chai"]
+
+# Default pairings by meal type - flat string format "primary:accompaniment"
+meal_type_pairs:
+  breakfast:
+    - "paratha:chai"
+    - "poha:chai"
+    - "idli:sambar"
+    - "dosa:chutney"
+    - "upma:chutney"
+    - "thepla:chai"
+    - "luchi:aloor_dom"
+    - "dhokla:chutney"
+
+  lunch:
+    - "dal:rice"
+    - "sabzi:roti"
+    - "curry:rice"
+    - "biryani:raita"
+    - "khichdi:curd"
+    - "rice:sambar"
+
+  dinner:
+    - "dal:roti"
+    - "sabzi:paratha"
+    - "khichdi:curd"
+    - "pulao:raita"
+    - "dosa:sambar"
+
+  snacks:
+    - "samosa:chai"
+    - "pakora:chai"
+    - "sandwich:chai"
+    - "dhokla:chutney"
+    - "vada:sambar"
+
+# Meal type settings
+meal_type_settings:
+  breakfast_beverage_required: true
+  lunch_beverage_required: false
+  dinner_beverage_required: false
+  snacks_beverage_required: true
+
+# Ingredient aliases for matching
+ingredient_aliases:
+  baingan: ["brinjal", "eggplant", "aubergine", "vangi", "begun", "kathirikai"]
+  karela: ["bitter gourd", "bitter melon", "pavakkai", "kakarakaya"]
+  paneer: ["cottage cheese", "indian cheese"]
+  peanut: ["groundnut", "moongfali", "mungfali", "verkadalai"]
+  cashew: ["kaju", "caju", "munthiri"]
+  onion: ["pyaz", "pyaaz", "kanda", "vengayam", "ulli"]
+  garlic: ["lahsun", "lasun", "poondu", "vellulli"]
+  ginger: ["adrak", "inji", "allam"]
+  tomato: ["tamatar", "thakkali", "tomato"]
+  potato: ["aloo", "batata", "urulaikizhangu"]
+  curd: ["yogurt", "dahi", "thayir", "perugu"]
+  ghee: ["clarified butter", "nei", "neyyi"]
+  coconut: ["nariyal", "thengai", "kobbari"]

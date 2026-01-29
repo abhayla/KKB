@@ -17,14 +17,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 See `docs/CONTINUE_PROMPT.md` for session context and active work.
 
-**Test Coverage (last verified: Jan 28, 2026):**
-- ~400 tests total across all categories (Compose UI Testing)
+**Test Coverage (last verified: Jan 29, 2026):**
+
+| Platform | Tests | Details |
+|----------|-------|---------|
+| Android UI | ~400 | 15 screens + E2E flows (Compose UI Testing) |
+| Backend | 92 | 4 test files (pytest) |
+
+**Android Tests:**
 - UI Screen Tests: 15 screens (Auth, Onboarding, Generation, Home, RecipeDetail, Grocery, Chat, Favorites, Stats, Settings, Pantry, RecipeRules, CookingMode, Theme, Components)
 - E2E Flow Tests: 15 flow test files + database/validation/performance tests
 - Database Verification Tests: Room DB state validation
 - Recipe Constraint Tests: SATTVIC, allergy, timing constraints
 - Full User Journey Test: Complete Sharma Family profile flow
 - Offline/Edge Case/Performance Tests: Implemented
+
+**Backend Tests:**
+- `tests/test_preference_service.py` (26 tests) - PreferenceUpdateService edge cases
+- `tests/test_chat_integration.py` (27 tests) - Chat tool calling flow
+- `tests/test_meal_generation.py` (22 tests) - Meal generation structures/logic
+- `tests/test_chat_api.py` (12 tests) - Chat API endpoints
+
+**Meal Generation Config:** All 4 phases complete (Config YAML, Backend Service, Chat Integration, Testing)
 
 ## Quick Start
 
@@ -207,7 +221,7 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
 | Model | Key Fields |
 |-------|-----------|
-| `Recipe` | id, name, cuisineType, dietaryTags, prepTimeMinutes, cookTimeMinutes, ingredients, instructions, nutrition |
+| `Recipe` | id, name, cuisineType, dietaryTags, prepTimeMinutes, cookTimeMinutes, ingredients, instructions, nutrition, category |
 | `Ingredient` | id, name, quantity, unit, category (IngredientCategory), isOptional |
 | `Instruction` | stepNumber, instruction, durationMinutes, timerRequired, tips |
 | `MealPlan` | id, weekStartDate, weekEndDate, days |
@@ -282,8 +296,17 @@ See `android/gradle/libs.versions.toml` for exact dependency versions.
 | Backend | Python, FastAPI, Firebase Firestore |
 | Auth | Firebase Auth (Google OAuth only) |
 | Database | Firebase Firestore (backend), Room (Android local cache) |
-| LLM | Google Gemini API (primary), Claude API (fallback) |
-| Testing | JUnit5, MockK, Turbine, Compose UI Testing |
+| LLM | Claude API (with tool calling for chat) |
+| Testing | JUnit5, MockK, Turbine, Compose UI Testing, pytest |
+
+**Backend Key Files:**
+| File | Purpose |
+|------|---------|
+| `app/services/meal_generation_service.py` | 2-item pairing logic, rule enforcement |
+| `app/services/preference_update_service.py` | INCLUDE/EXCLUDE rules, allergies, dislikes |
+| `app/ai/chat_assistant.py` | Tool calling orchestration |
+| `app/ai/tools/preference_tools.py` | 6 chat tools definitions |
+| `app/repositories/chat_repository.py` | Firestore chat message storage |
 
 ## Key Design Decisions
 
@@ -365,10 +388,14 @@ uvicorn app.main:app --reload    # Server at http://localhost:8000/docs
 # Seed Firestore with initial data
 PYTHONPATH=. python scripts/seed_firestore.py
 
-# Testing
+# Testing (92 tests total)
 pytest                           # All tests
 pytest --cov=app                 # With coverage
 pytest tests/test_auth.py -v     # Single file
+pytest tests/test_preference_service.py -v    # Preference service (26 tests)
+pytest tests/test_chat_integration.py -v      # Chat tool calling (27 tests)
+pytest tests/test_meal_generation.py -v       # Meal generation (22 tests)
+pytest tests/test_chat_api.py -v              # Chat API (12 tests)
 ```
 
 **Firebase Setup:**
@@ -400,9 +427,16 @@ android/
 │           └── performance/             # Performance benchmarks
 ├── domain/src/test/                     # UseCase tests
 └── data/src/test/                       # Repository tests
+
+backend/
+└── tests/                               # Backend tests (pytest)
+    ├── test_preference_service.py       # PreferenceUpdateService (26 tests)
+    ├── test_chat_integration.py         # Chat tool calling flow (27 tests)
+    ├── test_meal_generation.py          # Meal generation logic (22 tests)
+    └── test_chat_api.py                 # Chat API endpoints (12 tests)
 ```
 
-**Test naming:** `ClassNameTest.kt` for unit tests, `ScreenNameTest.kt` for UI tests, `*FlowTest.kt` for E2E flows
+**Test naming:** `ClassNameTest.kt` for unit tests, `ScreenNameTest.kt` for UI tests, `*FlowTest.kt` for E2E flows, `test_*.py` for backend tests
 
 ## UI Testing (Compose UI Testing)
 
@@ -514,7 +548,7 @@ Use these as patterns for new screens:
 | GET | `/api/v1/grocery` | Get grocery list |
 | GET | `/api/v1/grocery/whatsapp` | WhatsApp formatted list |
 | GET | `/api/v1/festivals/upcoming` | Upcoming festivals |
-| POST | `/api/v1/chat/message` | AI chat |
+| POST | `/api/v1/chat/message` | AI chat with tool calling (preference updates) |
 | GET | `/api/v1/chat/history` | Chat history |
 | GET | `/api/v1/stats/streak` | Cooking streak |
 | GET | `/api/v1/stats/monthly` | Monthly stats |
@@ -541,6 +575,63 @@ python scripts/import_recipes_from_kkb.py --dry-run --limit 10
 python scripts/verify_recipe_import.py
 ```
 
+## Meal Generation Config
+
+Configuration-driven meal planning with YAML source of truth synced to Firestore. **All 4 phases complete.**
+
+**Config files** (in `backend/config/`):
+```
+backend/config/
+├── meal_generation.yaml         # Pairing rules, meal structure, categories
+└── reference_data/
+    ├── ingredients.yaml         # Ingredient aliases (baingan → brinjal, eggplant)
+    ├── dishes.yaml              # Common dishes with pairings
+    └── cuisines.yaml            # Regional cuisine info
+```
+
+**Key concepts:**
+| Concept | Description |
+|---------|-------------|
+| Items per slot | 2 minimum (e.g., Dal + Rice), expandable with multiple INCLUDE rules |
+| Pairing rules | By cuisine (north/south/east/west) and meal type (breakfast/lunch/dinner/snacks) |
+| INCLUDE rule | Forces item into meal slot, paired with complementary item |
+| EXCLUDE rule | Replaces only excluded item, keeps its pair |
+
+**Chat Tool Calling:**
+
+The chat endpoint supports tool calling for preference updates via natural language:
+
+| Tool | Description |
+|------|-------------|
+| `update_recipe_rule` | ADD/REMOVE/MODIFY INCLUDE/EXCLUDE rules |
+| `update_allergy` | Manage food allergies with severity |
+| `update_dislike` | Manage disliked ingredients |
+| `update_preference` | Cooking time, busy days, dietary tags, cuisine |
+| `undo_last_change` | Revert last preference change |
+| `show_config` | Display current configuration |
+
+Example user inputs:
+- "I want chai every morning" → `update_recipe_rule(INCLUDE, Chai, DAILY, BREAKFAST)`
+- "I'm allergic to peanuts" → `update_allergy(ADD, peanuts, SEVERE)`
+- "Never give me karela" → `update_recipe_rule(EXCLUDE, Karela, NEVER)`
+
+**Sync to Firestore:**
+```bash
+cd backend
+source venv/bin/activate
+
+# Preview changes
+python scripts/sync_config.py --dry-run
+
+# Sync all config
+python scripts/sync_config.py
+
+# Sync to specific environment
+python scripts/sync_config.py --env=production
+```
+
+See `docs/design/Meal-Generation-Config-Architecture.md` for full system design.
+
 ## Key Documentation
 
 | Document | Location |
@@ -548,6 +639,8 @@ python scripts/verify_recipe_import.py
 | Requirements | `docs/requirements/RasoiAI Requirements.md` |
 | Technical Design | `docs/design/RasoiAI Technical Design.md` |
 | Architecture Decisions | `docs/design/Android Architecture Decisions.md` |
+| Data Flow Diagram | `docs/design/Data-Flow-Diagram.md` |
+| Meal Generation Config | `docs/design/Meal-Generation-Config-Architecture.md` |
 | Wireframes | `docs/design/wireframes/` |
 | Audit Checklist | `docs/claude-docs/Android-Best-Practices-Audit-Guide.md` |
 | E2E Testing Guide | `docs/testing/E2E-Testing-Prompt.md` |

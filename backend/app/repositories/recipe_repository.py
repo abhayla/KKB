@@ -1,6 +1,7 @@
 """Recipe repository for Firestore operations."""
 
 import logging
+import random
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional
@@ -11,7 +12,10 @@ logger = logging.getLogger(__name__)
 
 
 class RecipeRepository:
-    """Repository for recipe-related Firestore operations."""
+    """Repository for recipe-related Firestore operations.
+
+    Supports category-based queries for meal pairing.
+    """
 
     def __init__(self):
         self.db = get_firestore_client()
@@ -144,3 +148,317 @@ class RecipeRepository:
         async for _ in self.collection.where("is_active", "==", True).stream():
             count += 1
         return count
+
+    async def search_by_category(
+        self,
+        category: str,
+        cuisine_type: Optional[str] = None,
+        dietary_tags: Optional[list[str]] = None,
+        meal_type: Optional[str] = None,
+        max_time_minutes: Optional[int] = None,
+        exclude_ids: Optional[set[str]] = None,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        """Search recipes by category (dal, sabzi, rice, etc.).
+
+        Args:
+            category: Recipe category to search for
+            cuisine_type: Optional cuisine filter
+            dietary_tags: Optional dietary restrictions
+            meal_type: Optional meal type filter
+            max_time_minutes: Optional max cooking time
+            exclude_ids: Recipe IDs to exclude
+            limit: Maximum results
+
+        Returns:
+            List of matching recipes
+        """
+        query = self.collection.where("is_active", "==", True)
+        query = query.where("category", "==", category)
+
+        if cuisine_type:
+            query = query.where("cuisine_type", "==", cuisine_type)
+
+        query = query.limit(limit * 2)  # Fetch more for client-side filtering
+
+        recipes = []
+        exclude_ids = exclude_ids or set()
+
+        async for doc in query.stream():
+            recipe = doc_to_dict(doc)
+
+            # Skip excluded recipes
+            if recipe.get("id") in exclude_ids:
+                continue
+
+            # Client-side filtering
+            if dietary_tags:
+                recipe_tags = recipe.get("dietary_tags", [])
+                if not any(tag in recipe_tags for tag in dietary_tags):
+                    continue
+
+            if meal_type:
+                recipe_meals = recipe.get("meal_types", [])
+                if meal_type not in recipe_meals:
+                    continue
+
+            if max_time_minutes:
+                total_time = recipe.get("total_time_minutes") or recipe.get("prep_time_minutes", 0) + recipe.get("cook_time_minutes", 0)
+                if total_time and total_time > max_time_minutes:
+                    continue
+
+            recipes.append(recipe)
+            if len(recipes) >= limit:
+                break
+
+        return recipes
+
+    async def search_by_categories(
+        self,
+        categories: list[str],
+        cuisine_type: Optional[str] = None,
+        dietary_tags: Optional[list[str]] = None,
+        meal_type: Optional[str] = None,
+        max_time_minutes: Optional[int] = None,
+        exclude_ids: Optional[set[str]] = None,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        """Search recipes matching any of the given categories.
+
+        Args:
+            categories: List of categories to search for
+            cuisine_type: Optional cuisine filter
+            dietary_tags: Optional dietary restrictions
+            meal_type: Optional meal type filter
+            max_time_minutes: Optional max cooking time
+            exclude_ids: Recipe IDs to exclude
+            limit: Maximum results
+
+        Returns:
+            List of matching recipes (combined from all categories)
+        """
+        all_recipes = []
+        seen_ids = set()
+        exclude_ids = exclude_ids or set()
+
+        for category in categories:
+            recipes = await self.search_by_category(
+                category=category,
+                cuisine_type=cuisine_type,
+                dietary_tags=dietary_tags,
+                meal_type=meal_type,
+                max_time_minutes=max_time_minutes,
+                exclude_ids=exclude_ids,
+                limit=limit,
+            )
+
+            for recipe in recipes:
+                recipe_id = recipe.get("id")
+                if recipe_id and recipe_id not in seen_ids:
+                    seen_ids.add(recipe_id)
+                    all_recipes.append(recipe)
+
+        return all_recipes[:limit]
+
+    async def get_pairing_recipe(
+        self,
+        primary_recipe: dict[str, Any],
+        pairing_categories: list[str],
+        cuisine_type: Optional[str] = None,
+        dietary_tags: Optional[list[str]] = None,
+        meal_type: Optional[str] = None,
+        max_time_minutes: Optional[int] = None,
+        exclude_ids: Optional[set[str]] = None,
+    ) -> Optional[dict[str, Any]]:
+        """Get a complementary recipe to pair with the primary recipe.
+
+        Args:
+            primary_recipe: The main recipe to find a pair for
+            pairing_categories: Categories that pair well with the primary
+            cuisine_type: Optional cuisine filter
+            dietary_tags: Optional dietary restrictions
+            meal_type: Optional meal type filter
+            max_time_minutes: Optional max cooking time
+            exclude_ids: Recipe IDs to exclude
+
+        Returns:
+            A complementary recipe or None if not found
+        """
+        exclude_ids = exclude_ids or set()
+        exclude_ids.add(primary_recipe.get("id", ""))
+
+        # Try each pairing category in order
+        for category in pairing_categories:
+            recipes = await self.search_by_category(
+                category=category,
+                cuisine_type=cuisine_type,
+                dietary_tags=dietary_tags,
+                meal_type=meal_type,
+                max_time_minutes=max_time_minutes,
+                exclude_ids=exclude_ids,
+                limit=10,
+            )
+            if recipes:
+                return random.choice(recipes)
+
+        return None
+
+    async def get_recipe_pair(
+        self,
+        primary_category: str,
+        accompaniment_category: str,
+        cuisine_type: Optional[str] = None,
+        dietary_tags: Optional[list[str]] = None,
+        meal_type: Optional[str] = None,
+        max_time_minutes: Optional[int] = None,
+        exclude_ids: Optional[set[str]] = None,
+    ) -> tuple[Optional[dict[str, Any]], Optional[dict[str, Any]]]:
+        """Get a pair of complementary recipes.
+
+        Args:
+            primary_category: Category for the main item (e.g., 'dal')
+            accompaniment_category: Category for the side (e.g., 'rice')
+            cuisine_type: Optional cuisine filter
+            dietary_tags: Optional dietary restrictions
+            meal_type: Optional meal type filter
+            max_time_minutes: Optional max cooking time
+            exclude_ids: Recipe IDs to exclude
+
+        Returns:
+            Tuple of (primary_recipe, accompaniment_recipe)
+        """
+        exclude_ids = exclude_ids or set()
+
+        # Get primary recipe
+        primary_recipes = await self.search_by_category(
+            category=primary_category,
+            cuisine_type=cuisine_type,
+            dietary_tags=dietary_tags,
+            meal_type=meal_type,
+            max_time_minutes=max_time_minutes,
+            exclude_ids=exclude_ids,
+            limit=10,
+        )
+
+        if not primary_recipes:
+            return None, None
+
+        primary = random.choice(primary_recipes)
+        exclude_ids.add(primary.get("id", ""))
+
+        # Get accompaniment recipe
+        accompaniment_recipes = await self.search_by_category(
+            category=accompaniment_category,
+            cuisine_type=cuisine_type,
+            dietary_tags=dietary_tags,
+            meal_type=meal_type,
+            max_time_minutes=max_time_minutes,
+            exclude_ids=exclude_ids,
+            limit=10,
+        )
+
+        if not accompaniment_recipes:
+            return primary, None
+
+        accompaniment = random.choice(accompaniment_recipes)
+        return primary, accompaniment
+
+    async def search_by_ingredient(
+        self,
+        ingredient: str,
+        ingredient_aliases: Optional[list[str]] = None,
+        cuisine_type: Optional[str] = None,
+        dietary_tags: Optional[list[str]] = None,
+        meal_type: Optional[str] = None,
+        max_time_minutes: Optional[int] = None,
+        exclude_ids: Optional[set[str]] = None,
+        limit: int = 20,
+    ) -> list[dict[str, Any]]:
+        """Search recipes containing a specific ingredient.
+
+        Args:
+            ingredient: Ingredient name to search for
+            ingredient_aliases: Alternative names for the ingredient
+            cuisine_type: Optional cuisine filter
+            dietary_tags: Optional dietary restrictions
+            meal_type: Optional meal type filter
+            max_time_minutes: Optional max cooking time
+            exclude_ids: Recipe IDs to exclude
+            limit: Maximum results
+
+        Returns:
+            List of recipes containing the ingredient
+        """
+        # Build search terms
+        search_terms = [ingredient.lower()]
+        if ingredient_aliases:
+            search_terms.extend([a.lower() for a in ingredient_aliases])
+        search_terms = list(set(search_terms))
+
+        # Build base query
+        query = self.collection.where("is_active", "==", True)
+
+        if cuisine_type:
+            query = query.where("cuisine_type", "==", cuisine_type)
+
+        query = query.limit(500)  # Need to scan more for ingredient search
+
+        recipes = []
+        exclude_ids = exclude_ids or set()
+
+        async for doc in query.stream():
+            recipe = doc_to_dict(doc)
+
+            # Skip excluded
+            if recipe.get("id") in exclude_ids:
+                continue
+
+            # Check if any search term matches recipe name or ingredients
+            matched = False
+
+            # Check recipe name
+            name = recipe.get("name", "").lower()
+            for term in search_terms:
+                if term in name:
+                    matched = True
+                    break
+
+            # Check ingredients
+            if not matched:
+                for ing in recipe.get("ingredients", []):
+                    if isinstance(ing, dict):
+                        ing_name = ing.get("name", "").lower()
+                    else:
+                        ing_name = str(ing).lower()
+
+                    for term in search_terms:
+                        if term in ing_name:
+                            matched = True
+                            break
+                    if matched:
+                        break
+
+            if not matched:
+                continue
+
+            # Additional filters
+            if dietary_tags:
+                recipe_tags = recipe.get("dietary_tags", [])
+                if not any(tag in recipe_tags for tag in dietary_tags):
+                    continue
+
+            if meal_type:
+                recipe_meals = recipe.get("meal_types", [])
+                if meal_type not in recipe_meals:
+                    continue
+
+            if max_time_minutes:
+                total_time = recipe.get("total_time_minutes") or recipe.get("prep_time_minutes", 0) + recipe.get("cook_time_minutes", 0)
+                if total_time and total_time > max_time_minutes:
+                    continue
+
+            recipes.append(recipe)
+            if len(recipes) >= limit:
+                break
+
+        return recipes
