@@ -22,7 +22,7 @@ See `docs/CONTINUE_PROMPT.md` for session context and active work.
 | Platform | Tests | Details |
 |----------|-------|---------|
 | Android UI | ~400 | 15 screens + E2E flows (Compose UI Testing) |
-| Backend | 92 | 4 test files (pytest) |
+| Backend | 136 | 8 test files (pytest) |
 
 **Android Tests:**
 - UI Screen Tests: 15 screens (Auth, Onboarding, Generation, Home, RecipeDetail, Grocery, Chat, Favorites, Stats, Settings, Pantry, RecipeRules, CookingMode, Theme, Components)
@@ -33,9 +33,13 @@ See `docs/CONTINUE_PROMPT.md` for session context and active work.
 - Offline/Edge Case/Performance Tests: Implemented
 
 **Backend Tests:**
+- `tests/test_health.py` (2 tests) - Health check endpoints
+- `tests/test_auth.py` (3 tests) - Firebase authentication
 - `tests/test_preference_service.py` (26 tests) - PreferenceUpdateService edge cases
 - `tests/test_chat_integration.py` (27 tests) - Chat tool calling flow
 - `tests/test_meal_generation.py` (22 tests) - Meal generation structures/logic
+- `tests/test_meal_generation_integration.py` (29 tests) - Meal generation rule enforcement
+- `tests/test_meal_generation_e2e.py` (15 tests) - E2E tests against real Firestore
 - `tests/test_chat_api.py` (12 tests) - Chat API endpoints
 
 **Meal Generation Config:** All 4 phases complete (Config YAML, Backend Service, Chat Integration, Testing)
@@ -388,7 +392,7 @@ uvicorn app.main:app --reload    # Server at http://localhost:8000/docs
 # Seed Firestore with initial data
 PYTHONPATH=. python scripts/seed_firestore.py
 
-# Testing (92 tests total)
+# Testing (136 tests total)
 pytest                           # All tests
 pytest --cov=app                 # With coverage
 pytest tests/test_auth.py -v     # Single file
@@ -399,6 +403,10 @@ pytest tests/test_chat_api.py -v              # Chat API (12 tests)
 
 # Single test method
 pytest tests/test_preference_service.py::test_add_include_rule -v
+
+# E2E Tests (CAUTION: hits real Firestore, watch daily quota ~50K reads)
+pytest tests/test_meal_generation_e2e.py -v -s
+# If you get "429 Quota exceeded", wait 24 hours or run integration tests instead
 ```
 
 **Firebase Setup:**
@@ -433,6 +441,8 @@ android/
 
 backend/
 └── tests/                               # Backend tests (pytest)
+    ├── test_health.py                   # Health check endpoints (2 tests)
+    ├── test_auth.py                     # Firebase authentication (3 tests)
     ├── test_preference_service.py       # PreferenceUpdateService (26 tests)
     ├── test_chat_integration.py         # Chat tool calling flow (27 tests)
     ├── test_meal_generation.py          # Meal generation logic (22 tests)

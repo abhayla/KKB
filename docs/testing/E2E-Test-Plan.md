@@ -1026,5 +1026,140 @@ Use this template to record test execution results:
 
 ---
 
-*Last Updated: January 28, 2026*
-*Document Version: 1.0*
+## Backend Meal Generation E2E Testing
+
+### Overview
+
+The backend has dedicated E2E tests that verify the meal generation algorithm works correctly against the **real Firestore database** (3,590 recipes).
+
+**Test File:** `backend/tests/test_meal_generation_e2e.py`
+
+### Test Categories
+
+| Test Class | Purpose |
+|------------|---------|
+| `TestMealGenerationE2E` | Sharma Family profile with all rules |
+| `TestEastIndianCuisine` | Limited recipes (23) - tests generic fallback |
+| `TestSouthIndianCuisine` | South Indian with Idli INCLUDE rule |
+| `TestVerificationReport` | Generates printable verification report |
+
+### Sharma Family Verification Checklist
+
+| Check | Expected | Pass Criteria |
+|-------|----------|---------------|
+| Peanut allergy | 0 peanut/groundnut recipes | CRITICAL - must be 0 |
+| Mushroom EXCLUDE | 0 mushroom recipes | Must be 0 |
+| Dislikes (karela/lauki/turai) | 0 recipes | Should be 0 |
+| Chai DAILY | 7 in breakfast | Count >= 7 |
+| Dal 4x/week | 4 in lunch/dinner | Count >= 4 |
+| Paneer 2x/week | 2 in lunch/dinner | Count >= 2 |
+| 2-item pairing | 28 slots × 2 items | Most slots have 2 |
+| No duplicate mains | Unique main recipes | No excessive repeats |
+
+### Prerequisites
+
+```bash
+# 1. Firebase credentials must be configured
+export FIREBASE_CREDENTIALS_PATH="./rasoiai-firebase-service-account.json"
+
+# 2. Verify recipe database has data
+cd backend
+PYTHONPATH=. python scripts/verify_recipe_import.py
+# Expected: Total recipes: 3,590
+```
+
+### Running Backend E2E Tests
+
+```bash
+cd backend
+source venv/bin/activate  # Linux/Mac/Git Bash
+# .\venv\Scripts\activate  # Windows PowerShell
+
+# Run all E2E tests (hits real Firestore)
+PYTHONPATH=. pytest tests/test_meal_generation_e2e.py -v -s
+
+# Run just the verification report
+PYTHONPATH=. pytest tests/test_meal_generation_e2e.py::TestVerificationReport -v -s
+
+# Run specific test
+PYTHONPATH=. pytest tests/test_meal_generation_e2e.py::TestMealGenerationE2E::test_sharma_family_no_peanuts -v -s
+```
+
+### Important Notes
+
+**Firestore Quota Limits:**
+- Free tier has daily read limits (~50K reads/day)
+- Each E2E test run makes ~100-200 Firestore reads
+- If you see `429 Quota exceeded`, wait 24 hours or use Blaze plan
+- Run E2E tests sparingly (once per day during development)
+
+**Test Output:**
+The verification report test prints a detailed summary:
+
+```
+================================================================================
+SHARMA FAMILY VERIFICATION REPORT
+================================================================================
+
+1. PEANUT ALLERGY CHECK:
+   Violations: 0
+   Status: ✅ PASS
+
+2. DISLIKE CHECK:
+   Violations: 0
+   Status: ✅ PASS
+
+3. MUSHROOM EXCLUDE CHECK:
+   Count: 0
+   Status: ✅ PASS
+
+4. INCLUDE RULES CHECK:
+   Chai in breakfast: 7/7 ✅
+   Dal in lunch/dinner: 5/4 ✅
+   Paneer in lunch/dinner: 2/2 ✅
+
+5. 2-ITEM PAIRING CHECK:
+   Slots with 2 items: 28/28
+   Status: ✅ PASS
+
+6. GENERIC SUGGESTIONS:
+   Count: 0
+   Status: ✅ All DB recipes
+
+--------------------------------------------------------------------------------
+OVERALL: ✅ ALL CRITICAL CHECKS PASS
+================================================================================
+```
+
+### When to Run E2E Tests
+
+| Scenario | Run E2E? |
+|----------|----------|
+| After changing meal generation algorithm | ✅ Yes |
+| After modifying pairing rules | ✅ Yes |
+| After updating allergen variants | ✅ Yes |
+| During regular development | ❌ No (use unit tests) |
+| Before release | ✅ Yes |
+| CI/CD pipeline | ⚠️ Only on merge to main |
+
+### Test Data Files
+
+| File | Purpose |
+|------|---------|
+| `tests/test_meal_generation.py` | Unit tests (22 tests, no Firestore) |
+| `tests/test_meal_generation_integration.py` | Integration tests (29 tests, no Firestore) |
+| `tests/test_meal_generation_e2e.py` | E2E tests (15 tests, real Firestore) |
+
+### Total Backend Test Coverage
+
+| Test Type | Count | Firestore |
+|-----------|-------|-----------|
+| Unit tests | 22 | No |
+| Integration tests | 29 | No |
+| E2E tests | 15 | **Yes** |
+| **Total** | **66** | |
+
+---
+
+*Last Updated: January 29, 2026*
+*Document Version: 1.1 - Added Backend E2E Testing section*

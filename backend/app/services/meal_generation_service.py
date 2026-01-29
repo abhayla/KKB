@@ -37,6 +37,7 @@ class MealItem:
     is_locked: bool = False
     dietary_tags: list[str] = field(default_factory=list)
     category: str = ""
+    is_generic: bool = False  # True if no database recipe (user makes their own)
 
 
 @dataclass
@@ -228,6 +229,58 @@ class MealGenerationService:
             }
         return tracker
 
+    def _calculate_items_for_slot(
+        self,
+        config: MealGenerationConfig,
+        max_cooking_time: int,
+        slot: str,
+    ) -> tuple[int, int]:
+        """Calculate number of main and total items based on cooking time.
+
+        Implements Design Decision #1: Variable items per meal.
+        - ≤30 min → 1 main + 1 complementary = 2 items
+        - 30-45 min → 2 mains + 1 complementary = 3 items (but we return 2 for now)
+        - >45 min → 2+ mains + complementary = 3+ items
+
+        For MVP, we keep total items at 2 but this structure allows expansion.
+
+        Args:
+            config: Meal generation config with time thresholds
+            max_cooking_time: Maximum cooking time for this slot/day
+            slot: Meal slot (breakfast, lunch, dinner, snacks)
+
+        Returns:
+            Tuple of (main_items_count, total_items_count)
+        """
+        # Check if time-based items is enabled in config
+        time_based = config.meal_structure.time_based_items if hasattr(config.meal_structure, 'time_based_items') else None
+
+        if not time_based or not time_based.get("enabled", False):
+            # Use default fixed items_per_slot
+            return (1, config.meal_structure.items_per_slot)
+
+        thresholds = time_based.get("thresholds", [])
+        if not thresholds:
+            return (1, config.meal_structure.items_per_slot)
+
+        # Find matching threshold (thresholds should be sorted by max_time ascending)
+        main_items = 1
+        for threshold in sorted(thresholds, key=lambda t: t.get("max_time", 0)):
+            if max_cooking_time <= threshold.get("max_time", 9999):
+                main_items = threshold.get("main_items", 1)
+                break
+
+        # For MVP: total items = main_items + 1 complementary
+        # But we cap at items_per_slot from config for backward compatibility
+        total_items = min(main_items + 1, config.meal_structure.items_per_slot)
+
+        logger.debug(
+            f"Slot {slot}: cooking_time={max_cooking_time}min → "
+            f"main_items={main_items}, total_items={total_items}"
+        )
+
+        return (main_items, total_items)
+
     async def _generate_day_meals(
         self,
         config: MealGenerationConfig,
@@ -259,6 +312,13 @@ class MealGenerationService:
             if slot == "dinner" and max_cooking_time < 45:
                 slot_max_time = 45  # Minimum 45 min for dinner to ensure good options
 
+            # Calculate items needed for this slot based on cooking time
+            main_items_count, items_per_slot = self._calculate_items_for_slot(
+                config=config,
+                max_cooking_time=slot_max_time,
+                slot=slot,
+            )
+
             # Check for INCLUDE rules that apply to this slot
             include_items = await self._process_include_rules(
                 slot=slot,
@@ -272,7 +332,7 @@ class MealGenerationService:
 
             if include_items:
                 # INCLUDE rules satisfied - add them plus any needed pairs
-                items_per_slot = config.meal_structure.items_per_slot
+                # Use calculated items_per_slot instead of fixed config value
 
                 if len(include_items) >= items_per_slot:
                     # Multiple INCLUDE rules fill the slot
@@ -314,6 +374,7 @@ class MealGenerationService:
                     exclude_ingredients=exclude_ingredients,
                     used_recipe_ids=used_recipe_ids,
                     used_ingredients_today=used_ingredients_today,
+                    items_per_slot=items_per_slot,
                 )
                 meals[slot] = paired_items
                 for item in paired_items:
@@ -444,63 +505,54 @@ class MealGenerationService:
             config = await self.config_service.get_config()
             aliases = self.config_service.get_ingredient_aliases(target)
 
-            # For DAILY rules like Chai, search broadly and allow reuse
-            # This avoids multiple API calls and ensures daily items are always found
+            # OPTIMIZATION: Single broader search, prefer user's cuisine in memory
+            # This reduces 2-4 API calls to 1 (with caching, subsequent calls are free)
             if frequency == "DAILY":
-                # Single broad search for DAILY items - no meal_type filter, allow reuse
+                # For DAILY items: search without cuisine filter, prefer matches in memory
+                # This avoids the 2-call pattern and ensures we always find daily items
                 recipes = await self.recipe_repo.search_by_ingredient(
                     ingredient=target,
                     ingredient_aliases=aliases,
-                    cuisine_type=prefs.cuisine_type,
+                    cuisine_type=None,  # Broader search
                     dietary_tags=prefs.dietary_tags,
                     meal_type=None,  # Don't filter by meal type for daily items
                     max_time_minutes=max_cooking_time,
                     exclude_ids=None,  # Allow reusing recipes for daily items
-                    limit=20,
+                    limit=40,  # Fetch more to have cuisine variety
                 )
                 recipes = self._filter_by_excludes(recipes, exclude_ingredients)
 
-                # If no results with cuisine filter, try without
-                if not recipes:
-                    recipes = await self.recipe_repo.search_by_ingredient(
-                        ingredient=target,
-                        ingredient_aliases=aliases,
-                        cuisine_type=None,
-                        dietary_tags=prefs.dietary_tags,
-                        meal_type=None,
-                        max_time_minutes=max_cooking_time,
-                        exclude_ids=None,
-                        limit=20,
-                    )
-                    recipes = self._filter_by_excludes(recipes, exclude_ingredients)
+                # Prefer user's cuisine but don't require it
+                if recipes and prefs.cuisine_type:
+                    cuisine_matches = [
+                        r for r in recipes
+                        if r.get("cuisine_type", "").lower() == prefs.cuisine_type.lower()
+                    ]
+                    if cuisine_matches:
+                        recipes = cuisine_matches
             else:
-                # For non-DAILY rules, prefer unique recipes
+                # For non-DAILY rules: single broader search without meal_type filter
+                # Filter/prefer meal_type matches in memory to reduce API calls
                 recipes = await self.recipe_repo.search_by_ingredient(
                     ingredient=target,
                     ingredient_aliases=aliases,
                     cuisine_type=prefs.cuisine_type,
                     dietary_tags=prefs.dietary_tags,
-                    meal_type=slot,
+                    meal_type=None,  # Broader search - filter in memory
                     max_time_minutes=max_cooking_time,
                     exclude_ids=used_recipe_ids,
-                    limit=10,
+                    limit=30,  # Fetch more to filter in memory
                 )
                 recipes = self._filter_by_excludes(recipes, exclude_ingredients)
 
-                # Fallback: If no recipes found, retry without meal_type filter
-                if not recipes:
-                    logger.debug(f"No recipes for '{target}' with meal_type={slot}, retrying without meal_type filter")
-                    recipes = await self.recipe_repo.search_by_ingredient(
-                        ingredient=target,
-                        ingredient_aliases=aliases,
-                        cuisine_type=prefs.cuisine_type,
-                        dietary_tags=prefs.dietary_tags,
-                        meal_type=None,
-                        max_time_minutes=max_cooking_time,
-                        exclude_ids=used_recipe_ids,
-                        limit=10,
-                    )
-                    recipes = self._filter_by_excludes(recipes, exclude_ingredients)
+                # Prefer recipes that match the slot's meal_type, but don't require it
+                if recipes:
+                    meal_matches = [
+                        r for r in recipes
+                        if slot in r.get("meal_types", [])
+                    ]
+                    if meal_matches:
+                        recipes = meal_matches
 
             if recipes:
                 recipe = random.choice(recipes)
@@ -520,10 +572,28 @@ class MealGenerationService:
         exclude_ingredients: set[str],
         used_recipe_ids: set[str],
         used_ingredients_today: set[str] = None,
+        items_per_slot: int = None,
     ) -> list[MealItem]:
-        """Generate a meal with complementary paired items."""
+        """Generate a meal with complementary paired items.
+
+        Args:
+            slot: Meal slot (breakfast, lunch, dinner, snacks)
+            config: Meal generation config
+            prefs: User preferences
+            max_cooking_time: Maximum cooking time for this slot
+            exclude_ingredients: Set of ingredients to exclude
+            used_recipe_ids: Set of recipe IDs already used this week
+            used_ingredients_today: Set of main ingredients used today
+            items_per_slot: Number of items to generate (if None, uses config default)
+
+        Returns:
+            List of MealItem objects for the slot
+        """
         if used_ingredients_today is None:
             used_ingredients_today = set()
+
+        # Use passed items_per_slot or fall back to config
+        target_items = items_per_slot if items_per_slot is not None else config.meal_structure.items_per_slot
 
         items = []
 
@@ -571,12 +641,12 @@ class MealGenerationService:
                     not self._recipe_uses_ingredient_today(accompaniment, used_ingredients_today)):
                     items.append(self._recipe_to_meal_item(accompaniment))
 
-            if len(items) >= config.meal_structure.items_per_slot:
+            if len(items) >= target_items:
                 break
 
         # If we still don't have enough items, fall back to any recipes
-        if len(items) < config.meal_structure.items_per_slot:
-            needed = config.meal_structure.items_per_slot - len(items)
+        if len(items) < target_items:
+            needed = target_items - len(items)
             fallback_recipes = await self.recipe_repo.search(
                 cuisine_type=prefs.cuisine_type,
                 dietary_tags=prefs.dietary_tags,
@@ -595,9 +665,9 @@ class MealGenerationService:
                 items.append(self._recipe_to_meal_item(recipe))
 
         # CRITICAL: If still empty, try again with relaxed time constraint (no time limit)
-        if len(items) < config.meal_structure.items_per_slot:
+        if len(items) < target_items:
             logger.warning(f"Slot {slot} has {len(items)} items, retrying with relaxed time constraint")
-            needed = config.meal_structure.items_per_slot - len(items)
+            needed = target_items - len(items)
 
             # Search without time limit
             fallback_recipes = await self.recipe_repo.search(
@@ -617,7 +687,26 @@ class MealGenerationService:
             for recipe in fallback_recipes[:needed]:
                 items.append(self._recipe_to_meal_item(recipe))
 
-        return items[:config.meal_structure.items_per_slot]
+        # FINAL FALLBACK: If still not enough items, use generic suggestions
+        # This happens when database lacks recipes for user's cuisine/preferences
+        if len(items) < target_items:
+            needed = target_items - len(items)
+            logger.warning(
+                f"Slot {slot} still needs {needed} items, using generic suggestions"
+            )
+
+            generic_dishes = self._get_generic_dishes_for_slot(
+                slot=slot,
+                cuisine_type=prefs.cuisine_type,
+                exclude_ingredients=exclude_ingredients,
+            )
+
+            # Add generic items
+            for dish in generic_dishes[:needed]:
+                items.append(self._create_generic_meal_item(dish, slot))
+                logger.info(f"Added generic suggestion: {dish['name']} to {slot}")
+
+        return items[:target_items]
 
     async def _get_complementary_item(
         self,
@@ -737,4 +826,175 @@ class MealGenerationService:
             is_locked=False,
             dietary_tags=recipe.get("dietary_tags", []),
             category=recipe.get("category", "other"),
+            is_generic=False,
+        )
+
+    def _get_generic_dishes_for_slot(
+        self,
+        slot: str,
+        cuisine_type: Optional[str],
+        exclude_ingredients: set[str],
+    ) -> list[dict]:
+        """Get generic dish suggestions when database recipes unavailable.
+
+        Returns dish information that can be shown as "make your own" suggestions.
+        Uses reference data from dishes.yaml.
+
+        Args:
+            slot: Meal slot (breakfast, lunch, dinner, snacks)
+            cuisine_type: User's preferred cuisine
+            exclude_ingredients: Set of ingredients to exclude
+
+        Returns:
+            List of dish info dicts with name, category, and pairs_with
+        """
+        # Generic dishes by slot and cuisine - used when no database recipes found
+        # These are common Indian dishes organized by meal type
+        generic_dishes = {
+            "breakfast": {
+                "north": [
+                    {"name": "Aloo Paratha", "category": "paratha", "pairs_with": ["chai", "curd"]},
+                    {"name": "Poha", "category": "poha", "pairs_with": ["chai", "sev"]},
+                    {"name": "Chole Bhature", "category": "one_pot", "pairs_with": ["lassi"]},
+                    {"name": "Halwa Puri", "category": "breakfast_main", "pairs_with": ["aloo sabzi"]},
+                ],
+                "south": [
+                    {"name": "Idli", "category": "idli", "pairs_with": ["sambar", "chutney"]},
+                    {"name": "Dosa", "category": "dosa", "pairs_with": ["sambar", "chutney"]},
+                    {"name": "Upma", "category": "upma", "pairs_with": ["chutney", "coffee"]},
+                    {"name": "Pongal", "category": "breakfast_main", "pairs_with": ["sambar", "chutney"]},
+                ],
+                "east": [
+                    {"name": "Luchi", "category": "bread", "pairs_with": ["aloor dom", "cholar dal"]},
+                    {"name": "Paratha", "category": "paratha", "pairs_with": ["chai", "curry"]},
+                ],
+                "west": [
+                    {"name": "Thepla", "category": "paratha", "pairs_with": ["chai", "curd", "pickle"]},
+                    {"name": "Dhokla", "category": "snack", "pairs_with": ["chutney", "chai"]},
+                    {"name": "Fafda", "category": "snack", "pairs_with": ["jalebi", "chai"]},
+                    {"name": "Poha", "category": "poha", "pairs_with": ["chai", "sev"]},
+                ],
+            },
+            "lunch": {
+                "north": [
+                    {"name": "Dal", "category": "dal", "pairs_with": ["rice", "roti"]},
+                    {"name": "Sabzi", "category": "sabzi", "pairs_with": ["roti", "rice"]},
+                    {"name": "Rajma Chawal", "category": "curry", "pairs_with": ["salad"]},
+                    {"name": "Chole Chawal", "category": "curry", "pairs_with": ["onion salad"]},
+                ],
+                "south": [
+                    {"name": "Sambar Rice", "category": "sambar", "pairs_with": ["papad", "pickle"]},
+                    {"name": "Rasam Rice", "category": "rasam", "pairs_with": ["papad"]},
+                    {"name": "Curd Rice", "category": "rice", "pairs_with": ["pickle"]},
+                    {"name": "Vegetable Curry", "category": "curry", "pairs_with": ["rice"]},
+                ],
+                "east": [
+                    {"name": "Dal Bhaat", "category": "dal", "pairs_with": ["rice", "sabzi"]},
+                    {"name": "Fish Curry", "category": "curry", "pairs_with": ["rice"]},
+                    {"name": "Shukto", "category": "sabzi", "pairs_with": ["rice"]},
+                ],
+                "west": [
+                    {"name": "Dal Dhokli", "category": "dal", "pairs_with": ["salad"]},
+                    {"name": "Undhiyu", "category": "sabzi", "pairs_with": ["puri"]},
+                    {"name": "Gujarati Kadhi", "category": "curry", "pairs_with": ["rice"]},
+                ],
+            },
+            "dinner": {
+                "north": [
+                    {"name": "Dal", "category": "dal", "pairs_with": ["roti", "paratha"]},
+                    {"name": "Paneer Curry", "category": "curry", "pairs_with": ["roti", "naan"]},
+                    {"name": "Mix Veg", "category": "sabzi", "pairs_with": ["roti"]},
+                    {"name": "Khichdi", "category": "khichdi", "pairs_with": ["curd", "papad"]},
+                ],
+                "south": [
+                    {"name": "Sambar", "category": "sambar", "pairs_with": ["rice", "dosa"]},
+                    {"name": "Vegetable Curry", "category": "curry", "pairs_with": ["rice", "appam"]},
+                    {"name": "Kootu", "category": "curry", "pairs_with": ["rice"]},
+                ],
+                "east": [
+                    {"name": "Dal", "category": "dal", "pairs_with": ["rice", "roti"]},
+                    {"name": "Sabzi", "category": "sabzi", "pairs_with": ["rice", "roti"]},
+                ],
+                "west": [
+                    {"name": "Dal", "category": "dal", "pairs_with": ["rice", "roti", "bhakri"]},
+                    {"name": "Sabzi", "category": "sabzi", "pairs_with": ["roti", "bhakri"]},
+                ],
+            },
+            "snacks": {
+                "north": [
+                    {"name": "Samosa", "category": "snack", "pairs_with": ["chai", "chutney"]},
+                    {"name": "Pakora", "category": "snack", "pairs_with": ["chai", "chutney"]},
+                    {"name": "Sandwich", "category": "snack", "pairs_with": ["chai"]},
+                ],
+                "south": [
+                    {"name": "Vada", "category": "vada", "pairs_with": ["sambar", "chutney"]},
+                    {"name": "Bonda", "category": "snack", "pairs_with": ["chutney"]},
+                    {"name": "Murukku", "category": "snack", "pairs_with": ["coffee"]},
+                ],
+                "east": [
+                    {"name": "Singara", "category": "snack", "pairs_with": ["chai"]},
+                    {"name": "Beguni", "category": "snack", "pairs_with": ["chai"]},
+                ],
+                "west": [
+                    {"name": "Kachori", "category": "snack", "pairs_with": ["chai"]},
+                    {"name": "Khaman", "category": "snack", "pairs_with": ["chutney"]},
+                    {"name": "Vada Pav", "category": "snack", "pairs_with": ["chai"]},
+                ],
+            },
+        }
+
+        # Get dishes for the slot
+        slot_dishes = generic_dishes.get(slot, {})
+
+        # Prefer user's cuisine, fall back to north
+        cuisine = (cuisine_type or "north").lower()
+        cuisine_dishes = slot_dishes.get(cuisine, slot_dishes.get("north", []))
+
+        # Filter out dishes that match excluded ingredients
+        filtered_dishes = []
+        for dish in cuisine_dishes:
+            name_lower = dish["name"].lower()
+            is_excluded = any(excl in name_lower for excl in exclude_ingredients)
+            if not is_excluded:
+                filtered_dishes.append(dish)
+
+        # If all dishes filtered out, try other cuisines
+        if not filtered_dishes:
+            for alt_cuisine in ["north", "south", "west", "east"]:
+                if alt_cuisine == cuisine:
+                    continue
+                alt_dishes = slot_dishes.get(alt_cuisine, [])
+                for dish in alt_dishes:
+                    name_lower = dish["name"].lower()
+                    is_excluded = any(excl in name_lower for excl in exclude_ingredients)
+                    if not is_excluded:
+                        filtered_dishes.append(dish)
+                        if len(filtered_dishes) >= 3:
+                            break
+                if filtered_dishes:
+                    break
+
+        return filtered_dishes
+
+    def _create_generic_meal_item(self, dish: dict, slot: str) -> MealItem:
+        """Create a MealItem for a generic dish suggestion.
+
+        Args:
+            dish: Dish info dict with name, category, pairs_with
+            slot: Meal slot
+
+        Returns:
+            MealItem with is_generic=True and recipe_id="GENERIC"
+        """
+        return MealItem(
+            id=str(uuid.uuid4()),
+            recipe_id="GENERIC",  # Special marker for generic items
+            recipe_name=f"{dish['name']} (make your own)",
+            recipe_image_url=None,
+            prep_time_minutes=30,  # Default estimate
+            calories=0,  # Unknown
+            is_locked=False,
+            dietary_tags=[],  # Unknown
+            category=dish.get("category", "other"),
+            is_generic=True,  # Mark as generic suggestion
         )

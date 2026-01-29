@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.v1.router import api_router
+from app.cache import warm_recipe_cache
 from app.config import settings
 from app.core.exceptions import (
     AuthenticationError,
@@ -39,6 +40,14 @@ async def lifespan(app: FastAPI):
     # Initialize Firestore connection
     await init_firestore()
     logger.info("Firestore connection initialized")
+
+    # Warm recipe cache with popular categories
+    # This reduces Firestore reads for the first meal plan generation
+    try:
+        await warm_recipe_cache()
+    except Exception as e:
+        # Cache warming is optional - don't fail startup if it fails
+        logger.warning(f"Cache warm-up failed (non-fatal): {e}")
 
     logger.info("RasoiAI Backend started successfully")
 

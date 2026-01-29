@@ -5,6 +5,20 @@ meal_structure:
   items_per_slot: 2
   expandable: true  # Allow 3+ items if multiple INCLUDE rules
 
+  # Variable items based on cooking time (per Design Decision #1)
+  time_based_items:
+    enabled: true
+    thresholds:
+      - max_time: 30
+        main_items: 1
+        description: "Simple meal - 1 main + complementary"
+      - max_time: 45
+        main_items: 2
+        description: "Full meal - 2 mains + complementary"
+      - max_time: 9999
+        main_items: 2
+        description: "Elaborate meal - 2+ mains + complementary"
+
 rule_behaviors:
   include:
     action: "adds_to_pair"

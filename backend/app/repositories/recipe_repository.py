@@ -6,6 +6,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional
 
+from app.cache.recipe_cache import RecipeCache, get_recipe_cache
 from app.db.firestore import Collections, get_firestore_client, doc_to_dict
 
 logger = logging.getLogger(__name__)
@@ -15,17 +16,31 @@ class RecipeRepository:
     """Repository for recipe-related Firestore operations.
 
     Supports category-based queries for meal pairing.
+    Uses caching to minimize Firestore reads.
     """
 
     def __init__(self):
         self.db = get_firestore_client()
         self.collection = self.db.collection(Collections.RECIPES)
+        self._cache = get_recipe_cache()
 
     async def get_by_id(self, recipe_id: str) -> Optional[dict[str, Any]]:
-        """Get recipe by ID."""
+        """Get recipe by ID.
+
+        Checks cache first, fetches from Firestore if not cached.
+        """
+        # Check cache first
+        cached = self._cache.get_recipe(recipe_id)
+        if cached is not None:
+            return cached
+
+        # Fetch from Firestore
         doc = await self.collection.document(recipe_id).get()
         if doc.exists:
-            return doc_to_dict(doc)
+            recipe = doc_to_dict(doc)
+            # Cache for future use
+            self._cache.set_recipe(recipe_id, recipe)
+            return recipe
         return None
 
     async def get_all(self, limit: int = 100) -> list[dict[str, Any]]:
@@ -46,7 +61,28 @@ class RecipeRepository:
         is_quick_meal: Optional[bool] = None,
         limit: int = 50,
     ) -> list[dict[str, Any]]:
-        """Search recipes with filters."""
+        """Search recipes with filters.
+
+        Uses caching to reduce Firestore reads for repeated searches.
+        """
+        # Build cache key params (exclude_ids filtered client-side)
+        cache_params = {
+            "method": "search",
+            "cuisine_type": cuisine_type,
+            "dietary_tags": sorted(dietary_tags) if dietary_tags else None,
+            "meal_type": meal_type,
+            "max_time_minutes": max_time_minutes,
+            "is_vegetarian": is_vegetarian,
+            "is_quick_meal": is_quick_meal,
+            "limit": limit,
+        }
+
+        # Check cache first
+        cached = self._cache.get_search_results(cache_params)
+        if cached is not None:
+            return cached
+
+        # Fetch from Firestore
         query = self.collection.where("is_active", "==", True)
 
         if cuisine_type:
@@ -84,6 +120,9 @@ class RecipeRepository:
 
             recipes.append(recipe)
 
+        # Cache results (also caches individual recipes)
+        self._cache.set_search_results(cache_params, recipes)
+
         return recipes
 
     async def create(self, recipe_data: dict[str, Any]) -> dict[str, Any]:
@@ -116,13 +155,52 @@ class RecipeRepository:
         return True
 
     async def get_by_ids(self, recipe_ids: list[str]) -> list[dict[str, Any]]:
-        """Get multiple recipes by IDs."""
-        recipes = []
-        for recipe_id in recipe_ids:
-            recipe = await self.get_by_id(recipe_id)
-            if recipe:
-                recipes.append(recipe)
-        return recipes
+        """Get multiple recipes by IDs using batch fetch.
+
+        Optimized to:
+        1. Check cache for all IDs first
+        2. Batch fetch missing IDs in a single Firestore read
+        3. Cache fetched recipes for future use
+
+        This fixes the N+1 query problem - previously made N individual reads,
+        now makes at most 1 batch read for uncached recipes.
+        """
+        if not recipe_ids:
+            return []
+
+        # Step 1: Check cache for all IDs
+        found_recipes, missing_ids = self._cache.get_recipes_batch(recipe_ids)
+
+        # Step 2: Batch fetch missing IDs from Firestore
+        if missing_ids:
+            # Create document references for batch fetch
+            doc_refs = [self.collection.document(rid) for rid in missing_ids]
+
+            # Batch fetch - single Firestore read for all documents
+            docs = await self.db.get_all(doc_refs)
+
+            # Process fetched documents
+            fetched_recipes = {}
+            for doc in docs:
+                if doc.exists:
+                    recipe = doc_to_dict(doc)
+                    recipe_id = recipe.get("id")
+                    if recipe_id:
+                        fetched_recipes[recipe_id] = recipe
+
+            # Step 3: Cache fetched recipes
+            if fetched_recipes:
+                self._cache.set_recipes_batch(fetched_recipes)
+                found_recipes.update(fetched_recipes)
+
+            logger.debug(
+                f"get_by_ids: {len(recipe_ids)} requested, "
+                f"{len(recipe_ids) - len(missing_ids)} cached, "
+                f"{len(fetched_recipes)} fetched"
+            )
+
+        # Return in original order, filtering out not found
+        return [found_recipes[rid] for rid in recipe_ids if rid in found_recipes]
 
     async def get_random(
         self,
@@ -161,18 +239,42 @@ class RecipeRepository:
     ) -> list[dict[str, Any]]:
         """Search recipes by category (dal, sabzi, rice, etc.).
 
+        Uses caching to reduce Firestore reads. Cache key excludes exclude_ids
+        since those are filtered client-side from cached results.
+
         Args:
             category: Recipe category to search for
             cuisine_type: Optional cuisine filter
             dietary_tags: Optional dietary restrictions
             meal_type: Optional meal type filter
             max_time_minutes: Optional max cooking time
-            exclude_ids: Recipe IDs to exclude
+            exclude_ids: Recipe IDs to exclude (filtered client-side)
             limit: Maximum results
 
         Returns:
             List of matching recipes
         """
+        # Build cache key params (exclude_ids filtered client-side)
+        cache_params = {
+            "method": "search_by_category",
+            "category": category,
+            "cuisine_type": cuisine_type,
+            "dietary_tags": sorted(dietary_tags) if dietary_tags else None,
+            "meal_type": meal_type,
+            "max_time_minutes": max_time_minutes,
+            "limit": limit * 2,  # Cache the full result set
+        }
+
+        exclude_ids = exclude_ids or set()
+
+        # Check cache first
+        cached = self._cache.get_search_results(cache_params)
+        if cached is not None:
+            # Filter out excluded IDs from cached results
+            filtered = [r for r in cached if r.get("id") not in exclude_ids]
+            return filtered[:limit]
+
+        # Fetch from Firestore
         query = self.collection.where("is_active", "==", True)
         query = query.where("category", "==", category)
 
@@ -182,16 +284,11 @@ class RecipeRepository:
         query = query.limit(limit * 2)  # Fetch more for client-side filtering
 
         recipes = []
-        exclude_ids = exclude_ids or set()
 
         async for doc in query.stream():
             recipe = doc_to_dict(doc)
 
-            # Skip excluded recipes
-            if recipe.get("id") in exclude_ids:
-                continue
-
-            # Client-side filtering
+            # Client-side filtering (but NOT exclude_ids - we cache the full result)
             if dietary_tags:
                 recipe_tags = recipe.get("dietary_tags", [])
                 if not any(tag in recipe_tags for tag in dietary_tags):
@@ -208,10 +305,13 @@ class RecipeRepository:
                     continue
 
             recipes.append(recipe)
-            if len(recipes) >= limit:
-                break
 
-        return recipes
+        # Cache the full results (before excluding IDs)
+        self._cache.set_search_results(cache_params, recipes)
+
+        # Now filter out excluded IDs and return
+        filtered = [r for r in recipes if r.get("id") not in exclude_ids]
+        return filtered[:limit]
 
     async def search_by_categories(
         self,
@@ -376,6 +476,9 @@ class RecipeRepository:
     ) -> list[dict[str, Any]]:
         """Search recipes containing a specific ingredient.
 
+        Uses caching to reduce Firestore reads. Cache key excludes exclude_ids
+        since those are filtered client-side from cached results.
+
         Args:
             ingredient: Ingredient name to search for
             ingredient_aliases: Alternative names for the ingredient
@@ -383,7 +486,7 @@ class RecipeRepository:
             dietary_tags: Optional dietary restrictions
             meal_type: Optional meal type filter
             max_time_minutes: Optional max cooking time
-            exclude_ids: Recipe IDs to exclude
+            exclude_ids: Recipe IDs to exclude (filtered client-side)
             limit: Maximum results
 
         Returns:
@@ -393,7 +496,26 @@ class RecipeRepository:
         search_terms = [ingredient.lower()]
         if ingredient_aliases:
             search_terms.extend([a.lower() for a in ingredient_aliases])
-        search_terms = list(set(search_terms))
+        search_terms = sorted(list(set(search_terms)))
+
+        exclude_ids = exclude_ids or set()
+
+        # Build cache key params (exclude_ids filtered client-side)
+        cache_params = {
+            "method": "search_by_ingredient",
+            "search_terms": search_terms,
+            "cuisine_type": cuisine_type,
+            "dietary_tags": sorted(dietary_tags) if dietary_tags else None,
+            "meal_type": meal_type,
+            "max_time_minutes": max_time_minutes,
+        }
+
+        # Check cache first
+        cached = self._cache.get_search_results(cache_params)
+        if cached is not None:
+            # Filter out excluded IDs from cached results
+            filtered = [r for r in cached if r.get("id") not in exclude_ids]
+            return filtered[:limit]
 
         # Build base query
         query = self.collection.where("is_active", "==", True)
@@ -404,14 +526,9 @@ class RecipeRepository:
         query = query.limit(500)  # Need to scan more for ingredient search
 
         recipes = []
-        exclude_ids = exclude_ids or set()
 
         async for doc in query.stream():
             recipe = doc_to_dict(doc)
-
-            # Skip excluded
-            if recipe.get("id") in exclude_ids:
-                continue
 
             # Check if any search term matches recipe name or ingredients
             matched = False
@@ -441,7 +558,7 @@ class RecipeRepository:
             if not matched:
                 continue
 
-            # Additional filters
+            # Additional filters (but NOT exclude_ids - we cache the full result)
             if dietary_tags:
                 recipe_tags = recipe.get("dietary_tags", [])
                 if not any(tag in recipe_tags for tag in dietary_tags):
@@ -458,7 +575,10 @@ class RecipeRepository:
                     continue
 
             recipes.append(recipe)
-            if len(recipes) >= limit:
-                break
 
-        return recipes
+        # Cache the full results (before excluding IDs)
+        self._cache.set_search_results(cache_params, recipes)
+
+        # Now filter out excluded IDs and return
+        filtered = [r for r in recipes if r.get("id") not in exclude_ids]
+        return filtered[:limit]

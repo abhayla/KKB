@@ -18,6 +18,7 @@ class MealStructure:
     """Meal structure configuration."""
     items_per_slot: int = 2
     expandable: bool = True
+    time_based_items: dict[str, Any] = field(default_factory=dict)  # Variable items per cooking time
 
 
 @dataclass
@@ -132,6 +133,7 @@ class ConfigService:
             meal_structure = MealStructure(
                 items_per_slot=meal_structure_data.get("items_per_slot", 2),
                 expandable=meal_structure_data.get("expandable", True),
+                time_based_items=meal_structure_data.get("time_based_items", {}),
             )
 
             # Parse rule behaviors

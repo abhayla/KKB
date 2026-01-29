@@ -6,6 +6,31 @@ This document describes the detailed implementation of RasoiAI's meal plan gener
 
 ---
 
+## Implementation Status (MVP)
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| 2-item pairing logic | ✅ Implemented | Default 2 items per slot |
+| Variable items per cooking time | ✅ Implemented | Config-driven, defaults to 2 |
+| INCLUDE rules (DAILY/TIMES_PER_WEEK) | ✅ Implemented | Full tracking across week |
+| EXCLUDE rules (NEVER frequency) | ✅ Implemented | Ingredient-level filtering |
+| Allergy exclusion with variants | ✅ Implemented | Peanut, dairy, gluten, etc. |
+| Dislike filtering | ✅ Implemented | Simple name matching |
+| Cooking time limits | ✅ Implemented | Weekday/weekend/busy day |
+| Weekly deduplication | ✅ Implemented | Main recipes don't repeat |
+| Daily ingredient tracking | ✅ Implemented | Same ingredient not in lunch AND dinner |
+| Generic suggestions fallback | ✅ Implemented | "Make your own" when no DB recipe |
+| Progressive fallbacks | ✅ Implemented | 4 levels implemented |
+| User-configurable dedup settings | 🔮 Future | Currently hardcoded |
+| Per meal-type item override | 🔮 Future | Uses global setting |
+| Nutrition goals enforcement | 🔮 Future | Not implemented |
+| Festival/fasting day integration | 🔮 Future | Not implemented |
+| Allergen expansion toggle | 🔮 Future | Currently auto-expanded |
+
+**Test Coverage:** 51 tests (22 structure + 29 integration)
+
+---
+
 ## Overview
 
 The algorithm generates a **7-day personalized meal plan** with 4 meal slots per day (breakfast, lunch, dinner, snacks), each containing **2 complementary items** (e.g., Dal + Rice).
@@ -35,7 +60,7 @@ The algorithm generates a **7-day personalized meal plan** with 4 meal slots per
 @dataclass
 class MealItem:
     id: str
-    recipe_id: str
+    recipe_id: str              # "GENERIC" for make-your-own suggestions
     recipe_name: str
     recipe_image_url: Optional[str]
     prep_time_minutes: int = 30
@@ -43,6 +68,7 @@ class MealItem:
     is_locked: bool = False
     dietary_tags: list[str]
     category: str
+    is_generic: bool = False    # True if no database recipe (user makes their own)
 ```
 
 ### UserPreferences
@@ -766,7 +792,21 @@ python test_meal_api_tabular.py
 3. **Leftovers handling** - Suggest using yesterday's dal for lunch
 4. **Seasonal ingredients** - Prefer in-season vegetables
 5. **Cost optimization** - Balance expensive and budget recipes
+6. **User-configurable deduplication** - Allow users to enable/disable recipe repeats
+7. **Per meal-type item counts** - Different item counts for breakfast vs dinner
+8. **Allergen expansion toggle** - Let users enable/disable variant expansion
+9. **6-level progressive fallbacks** - Currently 4 levels implemented
 
 ---
 
-*Last updated: January 29, 2026 - Key Design Decisions reviewed and approved*
+## Known Limitations
+
+1. **Recipe Distribution Imbalance** - Database has 3,124 North Indian recipes but only 23 East Indian recipes. East cuisine users may see more generic suggestions.
+
+2. **Allergen Variants Hardcoded** - Variant expansion is automatic, not user-configurable. Some users may want more control.
+
+3. **No Severity-Based Filtering** - All allergies treated as critical regardless of MILD/MODERATE/SEVERE setting.
+
+---
+
+*Last updated: January 29, 2026 - Implementation complete for MVP*
