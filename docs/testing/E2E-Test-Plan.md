@@ -40,7 +40,7 @@ This test plan validates the complete user journey through the RasoiAI app, from
 | In Scope | Out of Scope |
 |----------|--------------|
 | Android app (API 34) | iOS app |
-| Backend API integration | Direct Firestore manipulation |
+| Backend API integration | Direct PostgreSQL manipulation |
 | Compose UI Testing framework | Manual exploratory testing |
 | Sharma Family test profile | Other test profiles |
 
@@ -86,7 +86,7 @@ The E2E tests use a hybrid approach where most components are real, but Google O
 └─────────────────────────────────────────────────────────────────────────────┘
                                      ↓
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           PYTHON BACKEND (Firestore)                        │
+│                           PYTHON BACKEND (PostgreSQL)                        │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  5. Backend receives "fake-firebase-token"                                  │
@@ -95,7 +95,7 @@ The E2E tests use a hybrid approach where most components are real, but Google O
 │                          email: "test@example.com",                         │
 │                          name: "Test User" }                                │
 │                    ↓                                                        │
-│  6. Creates/finds user in Firestore                                         │
+│  6. Creates/finds user in PostgreSQL                                         │
 │                    ↓                                                        │
 │  7. Returns REAL JWT tokens:                                                │
 │     { access_token: "eyJ...", refresh_token: "eyJ...", user: {...} }        │
@@ -113,7 +113,7 @@ The E2E tests use a hybrid approach where most components are real, but Google O
 | Network Monitor | **FAKE** | `FakeNetworkMonitor` | For offline tests only |
 | Backend API | **REAL** | Python FastAPI at localhost:8000 | All API calls are real |
 | JWT Tokens | **REAL** | Backend generates | Actual JWT authentication |
-| Firestore Database | **REAL** | 3,590 recipes in `rasoiai-6dcdd` | Production-like data |
+| PostgreSQL Database | **REAL** | 3,580 recipes | Production-like data |
 | Repositories | **REAL** | All `*RepositoryImpl` classes | Real data layer |
 | ViewModels | **REAL** | All `*ViewModel` classes | Real presentation logic |
 | Room Database | **REAL** | Local SQLite cache | Real offline storage |
@@ -197,7 +197,7 @@ source venv/bin/activate
 python scripts/verify_recipe_import.py
 
 # Expected output:
-# Total recipes: 3,590
+# Total recipes: 3,580
 # North Indian: 3,124
 # South Indian: 358
 # West Indian: 85
@@ -1030,7 +1030,7 @@ Use this template to record test execution results:
 
 ### Overview
 
-The backend has dedicated E2E tests that verify the meal generation algorithm works correctly against the **real Firestore database** (3,590 recipes).
+The backend has dedicated E2E tests that verify the meal generation algorithm works correctly against the **real PostgreSQL database** (3,580 recipes).
 
 **Test File:** `backend/tests/test_meal_generation_e2e.py`
 
@@ -1065,7 +1065,7 @@ export FIREBASE_CREDENTIALS_PATH="./rasoiai-firebase-service-account.json"
 # 2. Verify recipe database has data
 cd backend
 PYTHONPATH=. python scripts/verify_recipe_import.py
-# Expected: Total recipes: 3,590
+# Expected: Total recipes: 3,580
 ```
 
 ### Running Backend E2E Tests
@@ -1075,7 +1075,7 @@ cd backend
 source venv/bin/activate  # Linux/Mac/Git Bash
 # .\venv\Scripts\activate  # Windows PowerShell
 
-# Run all E2E tests (hits real Firestore)
+# Run all E2E tests (hits real PostgreSQL)
 PYTHONPATH=. pytest tests/test_meal_generation_e2e.py -v -s
 
 # Run just the verification report
@@ -1087,9 +1087,9 @@ PYTHONPATH=. pytest tests/test_meal_generation_e2e.py::TestMealGenerationE2E::te
 
 ### Important Notes
 
-**Firestore Quota Limits:**
+**PostgreSQL Quota Limits:**
 - Free tier has daily read limits (~50K reads/day)
-- Each E2E test run makes ~100-200 Firestore reads
+- Each E2E test run makes ~100-200 PostgreSQL reads
 - If you see `429 Quota exceeded`, wait 24 hours or use Blaze plan
 - Run E2E tests sparingly (once per day during development)
 
@@ -1146,13 +1146,13 @@ OVERALL: ✅ ALL CRITICAL CHECKS PASS
 
 | File | Purpose |
 |------|---------|
-| `tests/test_meal_generation.py` | Unit tests (22 tests, no Firestore) |
-| `tests/test_meal_generation_integration.py` | Integration tests (29 tests, no Firestore) |
-| `tests/test_meal_generation_e2e.py` | E2E tests (15 tests, real Firestore) |
+| `tests/test_meal_generation.py` | Unit tests (22 tests, no PostgreSQL) |
+| `tests/test_meal_generation_integration.py` | Integration tests (29 tests, no PostgreSQL) |
+| `tests/test_meal_generation_e2e.py` | E2E tests (15 tests, real PostgreSQL) |
 
 ### Total Backend Test Coverage
 
-| Test Type | Count | Firestore |
+| Test Type | Count | PostgreSQL |
 |-----------|-------|-----------|
 | Unit tests | 22 | No |
 | Integration tests | 29 | No |

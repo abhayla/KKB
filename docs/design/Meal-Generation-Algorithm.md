@@ -40,9 +40,9 @@ The algorithm generates a **7-day personalized meal plan** with 4 meal slots per
 │                    MealGenerationService                             │
 ├─────────────────────────────────────────────────────────────────────┤
 │  Inputs:                                                            │
-│  ├── User Preferences (Firestore)                                   │
-│  ├── Recipe Database (3,590 recipes)                                │
-│  └── Config Rules (YAML → Firestore)                                │
+│  ├── User Preferences (PostgreSQL)                                   │
+│  ├── Recipe Database (3,580 recipes)                                │
+│  └── Config Rules (YAML → PostgreSQL)                                │
 │                                                                     │
 │  Outputs:                                                           │
 │  └── GeneratedMealPlan (7 days × 4 slots × 2 items = 56 items)     │
@@ -104,7 +104,7 @@ class GeneratedMealPlan:
 ### Phase 1: Initialization
 
 ```python
-# 1. Load config (pairing rules from YAML/Firestore)
+# 1. Load config (pairing rules from YAML/PostgreSQL)
 config = await self.config_service.get_config()
 
 # 2. Load user preferences
@@ -724,7 +724,7 @@ NEVER RELAX:
 
 | Aspect | Approach |
 |--------|----------|
-| **Recipe search** | Uses Firestore queries with filters, limited to needed results |
+| **Recipe search** | Uses PostgreSQL queries with filters, limited to needed results |
 | **Caching** | Config is loaded once per generation request |
 | **Deduplication** | `used_recipe_ids` set provides O(1) lookup |
 | **Ingredient tracking** | Simple string matching on recipe names |

@@ -89,7 +89,7 @@ This document defines the complete configuration architecture for RasoiAI's meal
 
 ---
 
-## Firestore Collections
+## PostgreSQL Collections
 
 ### 1. `system_config/meal_generation` (Global)
 
@@ -416,7 +416,7 @@ AI: "I'll add this rule:
 User: "Yes"
                 │
                 ▼
-Update Firestore → Show updated config summary
+Update PostgreSQL → Show updated config summary
 ```
 
 ### LLM Function Definitions
@@ -598,7 +598,7 @@ AI: "Done! I've:
 
 ```
 ┌─────────────────┐      ┌─────────────┐      ┌─────────────┐
-│  Config File    │ ───► │ Sync Script │ ───► │  Firestore  │
+│  Config File    │ ───► │ Sync Script │ ───► │  PostgreSQL  │
 │  (YAML/JSON)    │      │             │      │  (Runtime)  │
 │  in Git repo    │      │             │      │             │
 └─────────────────┘      └─────────────┘      └─────────────┘
@@ -617,13 +617,13 @@ backend/
 │       ├── dishes.yaml
 │       └── cuisines.yaml
 └── scripts/
-    └── sync_config.py            ← Sync to Firestore
+    └── sync_config.py            ← Sync to PostgreSQL
 ```
 
 ### Sync Commands
 
 ```bash
-# Sync all config to Firestore
+# Sync all config to PostgreSQL
 python scripts/sync_config.py
 
 # Sync specific environment
@@ -643,10 +643,10 @@ python scripts/sync_config.py --dry-run
 ### Flow (Summary)
 
 ```
-1. Load user preferences from Firestore
+1. Load user preferences from PostgreSQL
    └── recipe_rules, allergies, dislikes, dietary_tags, cooking_time, busy_days
 
-2. Load system config from Firestore
+2. Load system config from PostgreSQL
    └── meal_structure, pairing_rules, recipe_categories
 
 3. For each day (7 days):
@@ -681,7 +681,7 @@ python scripts/sync_config.py --dry-run
    │
    └── Build meal plan day
 
-4. Save meal plan to Firestore
+4. Save meal plan to PostgreSQL
 ```
 
 ### Pairing Selection Logic

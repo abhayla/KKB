@@ -5,7 +5,7 @@ This document describes the complete data flow from Onboarding through Generatio
 ## Overview
 
 ```
-Onboarding → DataStore → Generation API → Firestore → Room Cache → Home Screen → Other Screens
+Onboarding → DataStore → Generation API → PostgreSQL → Room Cache → Home Screen → Other Screens
 ```
 
 ---
@@ -88,14 +88,14 @@ Onboarding → DataStore → Generation API → Firestore → Room Cache → Hom
                         │
                         ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                      BACKEND API (Python FastAPI + Firestore)                   │
+│                      BACKEND API (Python FastAPI + PostgreSQL)                  │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
 │   meal_plans.py::generate()                                                     │
 │   ┌─────────────────────────────────────────────────────────────────────┐      │
 │   │  1. UserRepository.get_preferences(user_id)                          │      │
 │   │     └─ Fetches: dietary_tags, allergies, dislikes, recipe_rules,    │      │
-│   │        cooking_time, busy_days from Firestore                        │      │
+│   │        cooking_time, busy_days from PostgreSQL                       │      │
 │   │                                                                      │      │
 │   │  2. Parse Recipe Rules                                               │      │
 │   │     └─ INCLUDE rules (Chai daily, Moringa weekly)                   │      │
@@ -103,7 +103,7 @@ Onboarding → DataStore → Generation API → Firestore → Room Cache → Hom
 │   │     └─ NUTRITION_GOAL rules (Green leafy 5x/week)                   │      │
 │   │                                                                      │      │
 │   │  3. RecipeRepository.search(cuisine, dietary_tags, limit=500)       │      │
-│   │     └─ Queries 3,590 recipes from Firestore                         │      │
+│   │     └─ Queries 3,580 recipes from PostgreSQL                        │      │
 │   │                                                                      │      │
 │   │  4. _filter_by_exclude_rules(recipes, exclude_rules, allergies)     │      │
 │   │     └─ Removes Paneer, Peanuts, Baingan (with aliases)              │      │
@@ -116,16 +116,16 @@ Onboarding → DataStore → Generation API → Firestore → Room Cache → Hom
 │   │     └─ Apply INCLUDE rules first (Chai → breakfast/snacks)          │      │
 │   │     └─ Fill remaining slots with filtered recipes                    │      │
 │   │                                                                      │      │
-│   │  7. MealPlanRepository.create(plan_data) → Firestore                │      │
+│   │  7. MealPlanRepository.create(plan_data) → PostgreSQL               │      │
 │   └─────────────────────────────────────────────────────────────────────┘      │
 │                       │                                                         │
 │                       ▼                                                         │
 │   ┌─────────────────────────────────────────────────────────────────────┐      │
-│   │  FIRESTORE DATABASE (rasoiai-6dcdd)                                  │      │
+│   │  POSTGRESQL DATABASE                                                 │      │
 │   │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐      │      │
 │   │  │   users     │  │  recipes    │  │      meal_plans         │      │      │
 │   │  │ ─────────── │  │ ─────────── │  │ ───────────────────────  │      │      │
-│   │  │ preferences │  │ 3,590 docs  │  │ user_id, week_start     │      │      │
+│   │  │ preferences │  │ 3,580 rows  │  │ user_id, week_start     │      │      │
 │   │  │ onboarded   │  │ ingredients │  │ days[]: date, meals{}   │      │      │
 │   │  │ recipe_rules│  │ nutrition   │  │   breakfast, lunch,     │      │      │
 │   │  └─────────────┘  └─────────────┘  │   dinner, snacks        │      │      │
@@ -280,7 +280,7 @@ Onboarding → DataStore → Generation API → Firestore → Room Cache → Hom
                                                │                   │
                                                ▼                   │
                                         ┌─────────────┐            │
-                                        │  FIRESTORE  │            │
+                                        │ POSTGRESQL  │            │
                                         │  (Backend)  │            │
                                         └──────┬──────┘            │
                                                │                   │
@@ -456,4 +456,4 @@ filtered = _filter_by_exclude_rules(recipes, exclude_rules, allergies, dislikes)
 
 ---
 
-*Last updated: January 28, 2026*
+*Last updated: January 30, 2026*

@@ -124,8 +124,8 @@ Phase 13: OFFLINE ───► Phase 14: EDGE CASES ────► Phase 15: PE
 I need you to perform complete End-to-End testing of the RasoiAI Android app on an emulator.
 
 ## Backend Status
-- Firestore database: `rasoiai-6dcdd`
-- **3,590 recipes** (imported from khanakyabanega)
+- PostgreSQL database (configured via DATABASE_URL)
+- **3,580 recipes** (imported from khanakyabanega)
 - 12 festivals seeded
 - Auth accepts `fake-firebase-token` for testing
 
@@ -267,7 +267,7 @@ Cross-screen data validation:
 The E2E tests use **Option B: Real Backend + Fake Google Auth Only**. This means:
 - Google OAuth is bypassed using `FakeGoogleAuthClient`
 - All API calls go to the real Python backend
-- Database is Firebase Firestore (real, not emulated)
+- Database is Firebase PostgreSQL (real, not emulated)
 
 ### Flow Diagram
 
@@ -293,7 +293,7 @@ The E2E tests use **Option B: Real Backend + Fake Google Auth Only**. This means
 └─────────────────────────────────────────────────────────────────────────────┘
                                      ↓
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           PYTHON BACKEND (Firestore)                        │
+│                           PYTHON BACKEND (PostgreSQL)                        │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  5. Backend receives "fake-firebase-token"                                  │
@@ -302,7 +302,7 @@ The E2E tests use **Option B: Real Backend + Fake Google Auth Only**. This means
 │                          email: "test@example.com",                         │
 │                          name: "Test User" }                                │
 │                    ↓                                                        │
-│  6. Creates/finds user in Firestore                                         │
+│  6. Creates/finds user in PostgreSQL                                         │
 │                    ↓                                                        │
 │  7. Returns REAL JWT tokens:                                                │
 │     { access_token: "eyJ...", refresh_token: "eyJ...", user: {...} }        │
@@ -315,7 +315,7 @@ The E2E tests use **Option B: Real Backend + Fake Google Auth Only**. This means
 │                                                                             │
 │  8. App stores JWT in DataStore                                             │
 │  9. Navigation: Auth → Onboarding (if new user) → Home                      │
-│  10. All subsequent API calls use REAL JWT to Firestore backend             │
+│  10. All subsequent API calls use REAL JWT to PostgreSQL backend             │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -328,7 +328,7 @@ The E2E tests use **Option B: Real Backend + Fake Google Auth Only**. This means
 | Firebase Token | **FAKE** | Hardcoded `"fake-firebase-token"` |
 | Backend API | **REAL** | Python FastAPI at `localhost:8000` |
 | JWT Tokens | **REAL** | Backend generates real JWTs |
-| Database | **REAL** | Firebase Firestore |
+| Database | **REAL** | Firebase PostgreSQL |
 | All Repositories | **REAL** | Real implementations calling real APIs |
 
 ### Key Test Files
@@ -379,9 +379,9 @@ adb shell pm clear com.rasoiai.app.debug
 adb shell pm list packages | grep rasoiai
 ```
 
-### Backend Setup (Firestore)
+### Backend Setup (PostgreSQL)
 
-**Recipe Database Status:** 3,590 recipes already imported from khanakyabanega.
+**Recipe Database Status:** 3,580 recipes already imported from khanakyabanega.
 
 | Category | Count |
 |----------|-------|
@@ -402,13 +402,11 @@ source venv/bin/activate  # Linux/Mac
 # Install dependencies (first time only)
 pip install -r requirements.txt
 
-# Configure Firebase (choose one):
-# Option 1: Service Account (recommended for testing)
-export FIREBASE_CREDENTIALS_PATH="./rasoiai-firebase-service-account.json"
-
-# Option 2: Firebase Emulator (for local development)
-# export FIRESTORE_EMULATOR_HOST="localhost:8080"
-# firebase emulators:start --only firestore
+# Configure environment (create .env file with):
+# DATABASE_URL=postgresql+asyncpg://user:password@host:5432/rasoiai
+# FIREBASE_CREDENTIALS_PATH=./rasoiai-firebase-service-account.json  # For auth only
+# JWT_SECRET_KEY=your-secret-key
+# DEBUG=true
 
 # Start backend server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -416,19 +414,19 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 # Verify API is running
 curl http://localhost:8000/health
 
-# Verify recipe database (already seeded with 3,590 recipes)
-python scripts/verify_recipe_import.py
+# Verify recipe database (already seeded with 3,580 recipes)
+PYTHONPATH=. python scripts/import_recipes_postgres.py --dry-run
 
 # Only if you need to re-seed (normally not required):
-# PYTHONPATH=. python scripts/seed_firestore.py
+# PYTHONPATH=. python scripts/import_recipes_postgres.py --all
 ```
 
-### Firebase Service Account Setup
+### Environment Setup
 
-1. Go to Firebase Console → Project Settings → Service Accounts
-2. Click "Generate new private key"
-3. Save as `backend/rasoiai-firebase-service-account.json`
-4. Add to `.gitignore` (never commit credentials)
+1. Create `.env` file in `backend/` directory
+2. Set `DATABASE_URL` to your PostgreSQL connection string
+3. For Firebase Auth (optional): Set `FIREBASE_CREDENTIALS_PATH`
+4. Add `.env` to `.gitignore` (never commit credentials)
 
 ### Logging
 
@@ -509,7 +507,7 @@ Based on this profile, generated meal plans MUST:
 | Paneer | Ingredient Exclude | NEVER | REQUIRED |
 | Green Leafy | Nutrition Goal | 5x/week | PREFERRED |
 
-**Sample Valid Recipes (from 3,590 database):**
+**Sample Valid Recipes (from 3,580 database):**
 - Aloo Gobi, Dal Tadka, Vegetable Pulao (North)
 - Masala Dosa, Idli Sambar, Drumstick Sambar (South)
 - Khichdi, Poha, Upma, Chai (Breakfast options)
@@ -1482,7 +1480,7 @@ SELECT * FROM pantry_items ORDER BY category, name;
 2. On "Recipe" tab, tap "+ ADD RECIPE RULE"
 3. Create first rule:
    - Action: INCLUDE
-   - Search & select: "Chai" (from 3,590 recipes)
+   - Search & select: "Chai" (from 3,580 recipes)
    - Frequency: Daily
    - Meal Slot: Breakfast
    - Enforcement: REQUIRED
@@ -1903,7 +1901,7 @@ For thorough testing, verify each screen in these states:
 
 | Entity | Expected Count | Actual | Status |
 |--------|----------------|--------|--------|
-| recipes (Firestore) | 3,590 | | |
+| recipes (PostgreSQL) | 3,580 | | |
 | meal_plans | 1 | | |
 | meal_plan_items | 28 | | |
 | grocery_items | 40+ | | |
@@ -1918,7 +1916,7 @@ For thorough testing, verify each screen in these states:
 | /auth/firebase | POST | 200 OK | | |
 | /meal-plans/generate | POST | 201 Created | | |
 | /meal-plans/current | GET | 200 OK | | |
-| /recipes | GET | 3,590 recipes | | |
+| /recipes | GET | 3,580 recipes | | |
 | /recipes/{id} | GET | Recipe detail | | |
 | /grocery | GET | 40+ items | | |
 | /chat/message | POST | AI response | | |
@@ -1993,17 +1991,17 @@ sqlite3 local.db ".tables"
 sqlite3 local.db "SELECT * FROM meal_plans;"
 ```
 
-### Firestore Database (Backend)
+### PostgreSQL Database (Backend)
 ```bash
-# Use Firebase Console or Firebase CLI to verify data
-# https://console.firebase.google.com/project/rasoiai-6dcdd/firestore
+# Connect via psql or use verify script
+# psql -h <host> -U rasoiai_user -d rasoiai
 
-# Or use verify script to check recipe counts
+# Or use import script to verify recipe counts
 cd backend
-python scripts/verify_recipe_import.py
+PYTHONPATH=. python scripts/import_recipes_postgres.py --dry-run
 
 # Expected output:
-# Total recipes: 3,590
+# Total recipes: 3,580
 # North Indian: 3,124
 # South Indian: 358
 # West Indian: 85
@@ -2113,4 +2111,4 @@ Use API 34 for Espresso tests. API 36 has compatibility problems.
 ---
 
 *Last Updated: January 28, 2026*
-*Recipe Database: 3,590 recipes (imported from khanakyabanega)*
+*Recipe Database: 3,580 recipes (imported from khanakyabanega)*
