@@ -40,6 +40,9 @@ class Recipe(Base, TimestampMixin):
     course_type: Mapped[Optional[str]] = mapped_column(
         String(50), nullable=True
     )  # main, side, dessert, beverage
+    category: Mapped[Optional[str]] = mapped_column(
+        String(50), nullable=True, index=True
+    )  # dal, sabzi, rice, roti, paratha, snack, etc.
 
     # Timing
     prep_time_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=15)

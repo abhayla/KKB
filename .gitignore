@@ -79,6 +79,12 @@ service-account.json
 *-service-account.json
 *firebase*service*account*.json
 
+# Local PostgreSQL setup scripts (contain credentials)
+backend/scripts/setup_postgres.py
+backend/scripts/add_pg_hba_rule.py
+backend/scripts/append_pg_hba.py
+backend/scripts/update_pg_hba.py
+
 # Testing/Debug
 .playwright-mcp/
 docs/testing/screenshots/

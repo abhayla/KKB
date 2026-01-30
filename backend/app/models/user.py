@@ -119,7 +119,9 @@ class UserPreferences(Base, TimestampMixin):
     dietary_tags: Mapped[Optional[list[str]]] = mapped_column(
         JSONList, nullable=True
     )  # jain, sattvic, halal, etc.
-    allergies: Mapped[Optional[list[str]]] = mapped_column(JSONList, nullable=True)
+    allergies: Mapped[Optional[list]] = mapped_column(
+        JSONList, nullable=True
+    )  # List of dicts with ingredient and severity
     disliked_ingredients: Mapped[Optional[list[str]]] = mapped_column(
         JSONList, nullable=True
     )
@@ -134,6 +136,27 @@ class UserPreferences(Base, TimestampMixin):
     spice_level: Mapped[Optional[str]] = mapped_column(
         String(20), nullable=True
     )  # mild, medium, spicy
+
+    # Time-based cooking preferences
+    weekday_cooking_time_minutes: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True, default=30
+    )
+    weekend_cooking_time_minutes: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True, default=60
+    )
+    busy_days: Mapped[Optional[list[str]]] = mapped_column(
+        JSONList, nullable=True
+    )  # MONDAY, TUESDAY, etc.
+
+    # Recipe rules (INCLUDE/EXCLUDE)
+    recipe_rules: Mapped[Optional[dict]] = mapped_column(
+        JSONList, nullable=True
+    )  # {"include": [], "exclude": []}
+
+    # Undo support
+    last_change: Mapped[Optional[dict]] = mapped_column(
+        JSONList, nullable=True
+    )  # Stores previous state for undo
 
     # Household info
     family_size: Mapped[int] = mapped_column(Integer, default=2, nullable=False)

@@ -72,6 +72,10 @@ class MealPlanItem(Base, TimestampMixin):
     )  # breakfast, lunch, dinner, snacks
     servings: Mapped[int] = mapped_column(Integer, nullable=False, default=2)
     is_locked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_swapped: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    # Cached recipe name for display
+    recipe_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     # Optional festival info for this day
     festival_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)

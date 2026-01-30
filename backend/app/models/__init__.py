@@ -1,6 +1,7 @@
 """SQLAlchemy models package."""
 
 from app.models.chat import ChatMessage
+from app.models.config import ReferenceData, SystemConfig
 from app.models.festival import Festival
 from app.models.grocery import GroceryItem, GroceryList
 from app.models.meal_plan import MealPlan, MealPlanItem
@@ -26,4 +27,6 @@ __all__ = [
     "CookingDay",
     "Achievement",
     "UserAchievement",
+    "SystemConfig",
+    "ReferenceData",
 ]

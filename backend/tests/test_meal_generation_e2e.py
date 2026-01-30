@@ -1,12 +1,12 @@
-"""E2E tests for meal generation against real Firestore.
+"""E2E tests for meal generation against real PostgreSQL database.
 
-These tests hit the actual Firestore database with 3,590 recipes to validate
+These tests hit the actual PostgreSQL database with 3,000+ recipes to validate
 that the meal generation algorithm works correctly in production-like conditions.
 
 Prerequisites:
-- FIREBASE_CREDENTIALS_PATH must be set to valid service account
-- Firestore must be accessible
-- Recipe database must be populated (run verify_recipe_import.py to check)
+- DATABASE_URL must be set in .env to valid PostgreSQL connection
+- PostgreSQL must be accessible
+- Recipe database must be populated (run import_recipes_postgres.py to populate)
 
 Run with:
     cd backend
@@ -176,11 +176,11 @@ def print_meal_plan_summary(plan: GeneratedMealPlan):
 
 
 # =============================================================================
-# E2E TESTS WITH REAL FIRESTORE
+# E2E TESTS WITH REAL POSTGRESQL
 # =============================================================================
 
 class TestMealGenerationE2E:
-    """E2E tests for meal generation against real Firestore."""
+    """E2E tests for meal generation against real PostgreSQL."""
 
     @pytest.mark.asyncio
     async def test_sharma_family_generates_valid_plan(self, service, week_start):

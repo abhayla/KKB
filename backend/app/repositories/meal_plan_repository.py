@@ -1,88 +1,166 @@
-"""Meal plan repository for Firestore operations."""
+"""Meal plan repository for PostgreSQL operations."""
 
 import logging
 import uuid
 from datetime import datetime, timezone, date
 from typing import Any, Optional
 
-from app.db.firestore import Collections, get_firestore_client, doc_to_dict
+from sqlalchemy import select, and_
+from sqlalchemy.orm import selectinload
+
+from app.db.postgres import async_session_maker
+from app.models.meal_plan import MealPlan, MealPlanItem
 
 logger = logging.getLogger(__name__)
 
 
 class MealPlanRepository:
-    """Repository for meal plan-related Firestore operations."""
-
-    def __init__(self):
-        self.db = get_firestore_client()
-        self.collection = self.db.collection(Collections.MEAL_PLANS)
+    """Repository for meal plan-related PostgreSQL operations."""
 
     async def get_by_id(self, plan_id: str) -> Optional[dict[str, Any]]:
         """Get meal plan by ID."""
-        doc = await self.collection.document(plan_id).get()
-        if doc.exists:
-            return doc_to_dict(doc)
-        return None
+        async with async_session_maker() as session:
+            result = await session.execute(
+                select(MealPlan)
+                .options(selectinload(MealPlan.items))
+                .where(MealPlan.id == plan_id)
+            )
+            plan = result.scalar_one_or_none()
+            if plan:
+                return self._plan_to_dict(plan)
+            return None
 
     async def get_current_for_user(self, user_id: str) -> Optional[dict[str, Any]]:
         """Get current week's meal plan for user."""
         today = date.today()
-        query = (
-            self.collection
-            .where("user_id", "==", user_id)
-            .where("is_active", "==", True)
-            .order_by("week_start_date", direction="DESCENDING")
-            .limit(1)
-        )
-
-        async for doc in query.stream():
-            plan = doc_to_dict(doc)
-            # Check if plan is current (within this week)
-            week_end = plan.get("week_end_date")
-            if week_end and isinstance(week_end, datetime):
-                if week_end.date() >= today:
-                    return plan
-            return plan  # Return latest even if expired
-
-        return None
+        async with async_session_maker() as session:
+            result = await session.execute(
+                select(MealPlan)
+                .options(selectinload(MealPlan.items))
+                .where(
+                    MealPlan.user_id == user_id,
+                    MealPlan.is_active == True,
+                )
+                .order_by(MealPlan.week_start_date.desc())
+                .limit(1)
+            )
+            plan = result.scalar_one_or_none()
+            if plan:
+                # Check if plan is current (within this week)
+                if plan.week_end_date and plan.week_end_date >= today:
+                    return self._plan_to_dict(plan)
+                # Return latest even if expired
+                return self._plan_to_dict(plan)
+            return None
 
     async def get_history_for_user(
         self, user_id: str, limit: int = 10
     ) -> list[dict[str, Any]]:
         """Get meal plan history for user."""
-        plans = []
-        query = (
-            self.collection
-            .where("user_id", "==", user_id)
-            .order_by("week_start_date", direction="DESCENDING")
-            .limit(limit)
-        )
-
-        async for doc in query.stream():
-            plans.append(doc_to_dict(doc))
-
-        return plans
+        async with async_session_maker() as session:
+            result = await session.execute(
+                select(MealPlan)
+                .options(selectinload(MealPlan.items))
+                .where(MealPlan.user_id == user_id)
+                .order_by(MealPlan.week_start_date.desc())
+                .limit(limit)
+            )
+            plans = result.scalars().all()
+            return [self._plan_to_dict(p) for p in plans]
 
     async def create(self, plan_data: dict[str, Any]) -> dict[str, Any]:
         """Create a new meal plan."""
-        plan_id = plan_data.get("id") or str(uuid.uuid4())
-        now = datetime.now(timezone.utc)
+        async with async_session_maker() as session:
+            plan_id = plan_data.get("id") or str(uuid.uuid4())
+            now = datetime.now(timezone.utc)
 
-        plan_data["id"] = plan_id
-        plan_data["is_active"] = True
-        plan_data["created_at"] = now
-        plan_data["updated_at"] = now
+            plan = MealPlan(
+                id=plan_id,
+                user_id=plan_data.get("user_id"),
+                week_start_date=plan_data.get("week_start_date"),
+                week_end_date=plan_data.get("week_end_date"),
+                is_active=True,
+            )
+            session.add(plan)
 
-        await self.collection.document(plan_id).set(plan_data)
+            # Create meal plan items from days array
+            days = plan_data.get("days", [])
+            for day_index, day in enumerate(days):
+                day_date = day.get("date")
 
-        logger.info(f"Created meal plan: {plan_id} for user {plan_data.get('user_id')}")
-        return plan_data
+                # Create items for each meal type
+                for meal_type in ["breakfast", "lunch", "dinner", "snacks"]:
+                    meal_data = day.get(meal_type)
+                    if meal_data:
+                        item = MealPlanItem(
+                            id=str(uuid.uuid4()),
+                            meal_plan_id=plan_id,
+                            recipe_id=meal_data.get("recipe_id"),
+                            date=day_date,
+                            meal_type=meal_type,
+                            servings=meal_data.get("servings", 2),
+                            is_locked=meal_data.get("is_locked", False),
+                            is_swapped=meal_data.get("is_swapped", False),
+                            recipe_name=meal_data.get("recipe_name"),
+                            festival_name=day.get("festival"),
+                        )
+                        session.add(item)
+
+            await session.commit()
+            await session.refresh(plan)
+
+            logger.info(f"Created meal plan: {plan_id} for user {plan.user_id}")
+            return await self.get_by_id(plan_id)
 
     async def update(self, plan_id: str, data: dict[str, Any]) -> Optional[dict[str, Any]]:
         """Update meal plan data."""
-        data["updated_at"] = datetime.now(timezone.utc)
-        await self.collection.document(plan_id).update(data)
-        return await self.get_by_id(plan_id)
+        async with async_session_maker() as session:
+            result = await session.execute(
+                select(MealPlan)
+                .options(selectinload(MealPlan.items))
+                .where(MealPlan.id == plan_id)
+            )
+            plan = result.scalar_one_or_none()
+            if not plan:
+                return None
+
+            # Update basic fields
+            if "is_active" in data:
+                plan.is_active = data["is_active"]
+
+            # Update days if provided
+            if "days" in data:
+                # This is a full replacement of meal items
+                # First delete existing items
+                for item in plan.items:
+                    await session.delete(item)
+
+                # Then create new items
+                days = data["days"]
+                for day_index, day in enumerate(days):
+                    day_date = day.get("date")
+
+                    for meal_type in ["breakfast", "lunch", "dinner", "snacks"]:
+                        meal_data = day.get(meal_type)
+                        if meal_data:
+                            item = MealPlanItem(
+                                id=str(uuid.uuid4()),
+                                meal_plan_id=plan_id,
+                                recipe_id=meal_data.get("recipe_id"),
+                                date=day_date,
+                                meal_type=meal_type,
+                                servings=meal_data.get("servings", 2),
+                                is_locked=meal_data.get("is_locked", False),
+                                is_swapped=meal_data.get("is_swapped", False),
+                                recipe_name=meal_data.get("recipe_name"),
+                                festival_name=day.get("festival"),
+                            )
+                            session.add(item)
+
+            plan.updated_at = datetime.now(timezone.utc)
+            await session.commit()
+
+            return await self.get_by_id(plan_id)
 
     async def swap_meal(
         self,
@@ -130,27 +208,71 @@ class MealPlanRepository:
 
     async def delete(self, plan_id: str) -> bool:
         """Soft delete a meal plan."""
-        await self.collection.document(plan_id).update({
-            "is_active": False,
-            "updated_at": datetime.now(timezone.utc),
-        })
-        return True
+        async with async_session_maker() as session:
+            result = await session.execute(
+                select(MealPlan).where(MealPlan.id == plan_id)
+            )
+            plan = result.scalar_one_or_none()
+            if not plan:
+                return False
+
+            plan.is_active = False
+            plan.updated_at = datetime.now(timezone.utc)
+            await session.commit()
+            return True
 
     async def deactivate_old_plans(self, user_id: str, except_plan_id: str) -> int:
         """Deactivate all old plans for user except the specified one."""
-        count = 0
-        query = (
-            self.collection
-            .where("user_id", "==", user_id)
-            .where("is_active", "==", True)
-        )
+        async with async_session_maker() as session:
+            result = await session.execute(
+                select(MealPlan).where(
+                    MealPlan.user_id == user_id,
+                    MealPlan.is_active == True,
+                    MealPlan.id != except_plan_id,
+                )
+            )
+            plans = result.scalars().all()
 
-        async for doc in query.stream():
-            if doc.id != except_plan_id:
-                await doc.reference.update({
-                    "is_active": False,
-                    "updated_at": datetime.now(timezone.utc),
-                })
+            count = 0
+            for plan in plans:
+                plan.is_active = False
+                plan.updated_at = datetime.now(timezone.utc)
                 count += 1
 
-        return count
+            await session.commit()
+            return count
+
+    # Helper methods
+    def _plan_to_dict(self, plan: MealPlan) -> dict[str, Any]:
+        """Convert MealPlan model to dictionary with days structure."""
+        # Group items by date to create days array
+        days_map = {}
+        for item in plan.items:
+            day_key = item.date.isoformat() if item.date else "unknown"
+            if day_key not in days_map:
+                days_map[day_key] = {
+                    "date": item.date,
+                    "festival": item.festival_name,
+                }
+
+            days_map[day_key][item.meal_type] = {
+                "recipe_id": item.recipe_id,
+                "recipe_name": item.recipe_name,
+                "servings": item.servings,
+                "is_locked": item.is_locked,
+                "is_swapped": item.is_swapped,
+            }
+
+        # Sort days by date
+        days = sorted(days_map.values(), key=lambda d: d.get("date") or date.min)
+
+        return {
+            "id": plan.id,
+            "user_id": plan.user_id,
+            "week_start_date": plan.week_start_date,
+            "week_end_date": plan.week_end_date,
+            "is_active": plan.is_active,
+            "days": days,
+            "created_at": plan.created_at,
+            "updated_at": plan.updated_at,
+        }

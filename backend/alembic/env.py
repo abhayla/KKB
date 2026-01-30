@@ -14,6 +14,7 @@ from app.db.base import Base
 # Import all models to ensure they're registered
 from app.models import (  # noqa: F401
     chat,
+    config,
     festival,
     grocery,
     meal_plan,

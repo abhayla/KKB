@@ -14,6 +14,18 @@ from app.db.base import Base
 from app.db.database import get_db
 from app.main import app
 
+# Import all models to register them with SQLAlchemy
+from app.models import (  # noqa: F401
+    chat,
+    config,
+    festival,
+    grocery,
+    meal_plan,
+    recipe,
+    stats,
+    user,
+)
+
 # Test database URL (use SQLite for testing)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 

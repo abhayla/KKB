@@ -22,7 +22,7 @@ See `docs/CONTINUE_PROMPT.md` for session context and active work.
 | Platform | Tests | Details |
 |----------|-------|---------|
 | Android UI | ~400 | 15 screens + E2E flows (Compose UI Testing) |
-| Backend | 136 | 8 test files (pytest) |
+| Backend | 156 | 9 test files (pytest) |
 
 **Android Tests:**
 - UI Screen Tests: 15 screens (Auth, Onboarding, Generation, Home, RecipeDetail, Grocery, Chat, Favorites, Stats, Settings, Pantry, RecipeRules, CookingMode, Theme, Components)
@@ -39,8 +39,9 @@ See `docs/CONTINUE_PROMPT.md` for session context and active work.
 - `tests/test_chat_integration.py` (27 tests) - Chat tool calling flow
 - `tests/test_meal_generation.py` (22 tests) - Meal generation structures/logic
 - `tests/test_meal_generation_integration.py` (29 tests) - Meal generation rule enforcement
-- `tests/test_meal_generation_e2e.py` (15 tests) - E2E tests against real Firestore
+- `tests/test_meal_generation_e2e.py` (15 tests) - E2E tests against real PostgreSQL
 - `tests/test_chat_api.py` (12 tests) - Chat API endpoints
+- `tests/test_recipe_cache.py` (42 tests) - Recipe cache operations
 
 **Meal Generation Config:** All 4 phases complete (Config YAML, Backend Service, Chat Integration, Testing)
 
@@ -297,27 +298,28 @@ See `android/gradle/libs.versions.toml` for exact dependency versions.
 | Layer | Key Technologies |
 |-------|-----------------|
 | Android | Kotlin 1.9.22, Jetpack Compose, Hilt, Room, Retrofit, Navigation Compose |
-| Backend | Python, FastAPI, Firebase Firestore |
+| Backend | Python, FastAPI, PostgreSQL (asyncpg + SQLAlchemy) |
 | Auth | Firebase Auth (Google OAuth only) |
-| Database | Firebase Firestore (backend), Room (Android local cache) |
+| Database | PostgreSQL (backend), Room (Android local cache) |
 | LLM | Claude API (with tool calling for chat) |
 | Testing | JUnit5, MockK, Turbine, Compose UI Testing, pytest |
 
 **Backend Key Files:**
 | File | Purpose |
 |------|---------|
+| `app/db/postgres.py` | PostgreSQL connection pool and session management |
 | `app/services/meal_generation_service.py` | 2-item pairing logic, rule enforcement |
 | `app/services/preference_update_service.py` | INCLUDE/EXCLUDE rules, allergies, dislikes |
 | `app/ai/chat_assistant.py` | Tool calling orchestration |
 | `app/ai/tools/preference_tools.py` | 6 chat tools definitions |
-| `app/repositories/chat_repository.py` | Firestore chat message storage |
+| `app/repositories/chat_repository.py` | PostgreSQL chat message storage |
 
 ## Key Design Decisions
 
-1. **Offline-First**: Room DB (Android) caches meal plans, recipes, grocery lists. Firestore (backend) is source of truth.
-2. **Database Flexibility**: Backend uses repository pattern with Firestore - can swap to PostgreSQL/MongoDB later without Android changes.
+1. **Offline-First**: Room DB (Android) caches meal plans, recipes, grocery lists. PostgreSQL (backend) is source of truth.
+2. **Database**: Backend uses PostgreSQL with SQLAlchemy async ORM and repository pattern for clean separation.
 3. **LLM Cost Optimization**: Cache meal plans by preference hash (60-70% savings), store generated recipes for reuse.
-4. **Auth**: Google OAuth only (Phone OTP removed for MVP simplicity). Backend accepts `fake-firebase-token` in debug mode for testing.
+4. **Auth**: Google OAuth only via Firebase Auth (Phone OTP removed for MVP simplicity). Backend accepts `fake-firebase-token` in debug mode for testing.
 5. **Festival Intelligence**: 30+ festivals with fasting modes and auto-suggested menus.
 
 ## India-Specific Domain Knowledge
@@ -365,7 +367,7 @@ cd android
 ./gradlew clean && ./gradlew assembleDebug
 ```
 
-### Backend (Python + Firestore) - run from `backend/` folder
+### Backend (Python + PostgreSQL) - run from `backend/` folder
 ```bash
 cd backend
 
@@ -377,22 +379,27 @@ source venv/bin/activate         # Linux/Mac/Git Bash
 # Install dependencies
 pip install -r requirements.txt
 
-# Configure Firebase (required)
-# Option 1: Service account file (recommended)
-export FIREBASE_CREDENTIALS_PATH=./rasoiai-firebase-service-account.json  # Linux/Mac/Git Bash
-# $env:FIREBASE_CREDENTIALS_PATH = "./rasoiai-firebase-service-account.json"  # Windows PowerShell
-
-# Option 2: Firebase Emulator (for offline development)
-# export FIRESTORE_EMULATOR_HOST=localhost:8080
-# firebase emulators:start --only firestore
+# Configure environment (required)
+# Create .env file with:
+# DATABASE_URL=postgresql+asyncpg://rasoiai_user:password@host:5432/rasoiai
+# FIREBASE_CREDENTIALS_PATH=./rasoiai-firebase-service-account.json  # For auth only
 
 # Start server
 uvicorn app.main:app --reload    # Server at http://localhost:8000/docs
 
-# Seed Firestore with initial data
-PYTHONPATH=. python scripts/seed_firestore.py
+# Database migrations (if schema changes)
+cd backend
+alembic upgrade head
 
-# Testing (136 tests total)
+# Seed database with initial data
+PYTHONPATH=. python scripts/seed_festivals.py
+PYTHONPATH=. python scripts/seed_achievements.py
+PYTHONPATH=. python scripts/sync_config_postgres.py
+
+# Import recipes (if not already done)
+PYTHONPATH=. python scripts/import_recipes_postgres.py
+
+# Testing (156 tests total)
 pytest                           # All tests
 pytest --cov=app                 # With coverage
 pytest tests/test_auth.py -v     # Single file
@@ -404,12 +411,17 @@ pytest tests/test_chat_api.py -v              # Chat API (12 tests)
 # Single test method
 pytest tests/test_preference_service.py::test_add_include_rule -v
 
-# E2E Tests (CAUTION: hits real Firestore, watch daily quota ~50K reads)
+# E2E Tests (hits real PostgreSQL)
 pytest tests/test_meal_generation_e2e.py -v -s
-# If you get "429 Quota exceeded", wait 24 hours or run integration tests instead
 ```
 
-**Firebase Setup:**
+**PostgreSQL Setup:**
+1. Create database: `CREATE DATABASE rasoiai;`
+2. Create user: `CREATE USER rasoiai_user WITH PASSWORD 'your_password';`
+3. Grant privileges: `GRANT ALL PRIVILEGES ON DATABASE rasoiai TO rasoiai_user;`
+4. Set DATABASE_URL in `.env` file
+
+**Firebase Setup (for auth only):**
 1. Get service account key from Firebase Console → Project Settings → Service Accounts
 2. Save as `backend/rasoiai-firebase-service-account.json`
 3. Add to `.gitignore` (never commit credentials)
@@ -525,7 +537,7 @@ cd backend
 PYTHONPATH=. pytest tests/
 ```
 
-**Firestore connection issues:** Verify service account file path and that Firebase project `rasoiai-6dcdd` credentials are valid.
+**PostgreSQL connection issues:** Verify DATABASE_URL in `.env` file is correct and PostgreSQL server is accessible.
 
 ## Rules for Claude
 
@@ -578,10 +590,10 @@ API docs available at `http://localhost:8000/docs` when backend is running.
 
 ## Recipe Database
 
-**3,590 recipes** in Firestore (project: `rasoiai-6dcdd`):
-- 3,580 imported from khanakyabanega + 10 seed recipes
-- Distribution: North (3,124), South (358), West (85), East (23)
-- Dietary: Vegetarian (3,482), Vegan (1,347)
+**3,000+ recipes** in PostgreSQL:
+- Imported from khanakyabanega dataset
+- Distribution: North (majority), South, West, East
+- Dietary: Vegetarian, Vegan supported
 
 **Recipe import scripts** (in `backend/scripts/`):
 ```bash
@@ -589,16 +601,13 @@ cd backend
 source venv/bin/activate         # Linux/Mac/Git Bash
 # .\venv\Scripts\activate        # Windows PowerShell (use this instead)
 
-# Preview import
-python scripts/import_recipes_from_kkb.py --dry-run --limit 10
-
-# Verify current data
-python scripts/verify_recipe_import.py
+# Import recipes to PostgreSQL
+PYTHONPATH=. python scripts/import_recipes_postgres.py
 ```
 
 ## Meal Generation Config
 
-Configuration-driven meal planning with YAML source of truth synced to Firestore. **All 4 phases complete.**
+Configuration-driven meal planning with YAML source of truth synced to PostgreSQL. **All 4 phases complete.**
 
 **Config files** (in `backend/config/`):
 ```
@@ -636,19 +645,13 @@ Example user inputs:
 - "I'm allergic to peanuts" → `update_allergy(ADD, peanuts, SEVERE)`
 - "Never give me karela" → `update_recipe_rule(EXCLUDE, Karela, NEVER)`
 
-**Sync to Firestore:**
+**Sync to PostgreSQL:**
 ```bash
 cd backend
 source venv/bin/activate
 
-# Preview changes
-python scripts/sync_config.py --dry-run
-
-# Sync all config
-python scripts/sync_config.py
-
-# Sync to specific environment
-python scripts/sync_config.py --env=production
+# Sync all config to PostgreSQL
+PYTHONPATH=. python scripts/sync_config_postgres.py
 ```
 
 See `docs/design/Meal-Generation-Config-Architecture.md` for full system design.
@@ -675,7 +678,8 @@ See `docs/design/Meal-Generation-Config-Architecture.md` for full system design.
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `FIREBASE_CREDENTIALS_PATH` | Path to Firebase service account JSON | Yes |
+| `DATABASE_URL` | PostgreSQL connection URL (e.g., `postgresql+asyncpg://user:pass@host:5432/db`) | Yes |
+| `FIREBASE_CREDENTIALS_PATH` | Path to Firebase service account JSON (for auth only) | Yes |
 | `ANTHROPIC_API_KEY` | Claude API key for AI features | For meal generation/chat |
 | `DEBUG` | Enable debug mode (`fake-firebase-token` accepted) | No (default: false) |
 | `JWT_SECRET_KEY` | Secret for JWT signing | Yes |

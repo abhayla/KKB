@@ -1,13 +1,22 @@
-"""Seed script for Indian festival data."""
+"""Seed script for Indian festival data to PostgreSQL."""
 
 import asyncio
+import json
+import sys
 import uuid
 from datetime import date
+from pathlib import Path
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
-from app.db.database import async_session_maker
 from app.models.festival import Festival
+
+# PostgreSQL connection settings
+DATABASE_URL = "postgresql+asyncpg://rasoiai_user:RasoiAI2024Secure@103.118.16.189:5432/rasoiai"
 
 # Indian festivals for 2025
 FESTIVALS = [
@@ -233,7 +242,11 @@ FESTIVALS = [
 
 
 async def seed_festivals():
-    """Seed the database with festival data."""
+    """Seed the database with festival data to PostgreSQL."""
+    # Create engine and session
+    engine = create_async_engine(DATABASE_URL, echo=False)
+    async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
     async with async_session_maker() as session:
         # Check if festivals already exist
         result = await session.execute(select(Festival).limit(1))

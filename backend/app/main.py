@@ -17,7 +17,7 @@ from app.core.exceptions import (
     NotFoundError,
 )
 from app.core.firebase import initialize_firebase
-from app.db.firestore import init_firestore
+from app.db.postgres import init_db, close_db
 
 # Configure logging
 logging.basicConfig(
@@ -33,16 +33,16 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting RasoiAI Backend...")
 
-    # Initialize Firebase
+    # Initialize Firebase (for authentication only)
     initialize_firebase()
-    logger.info("Firebase initialized")
+    logger.info("Firebase initialized (authentication)")
 
-    # Initialize Firestore connection
-    await init_firestore()
-    logger.info("Firestore connection initialized")
+    # Initialize PostgreSQL connection
+    await init_db()
+    logger.info("PostgreSQL connection initialized")
 
     # Warm recipe cache with popular categories
-    # This reduces Firestore reads for the first meal plan generation
+    # This reduces database reads for the first meal plan generation
     try:
         await warm_recipe_cache()
     except Exception as e:
@@ -55,6 +55,8 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     logger.info("Shutting down RasoiAI Backend...")
+    await close_db()
+    logger.info("PostgreSQL connection pool closed")
 
 
 # Create FastAPI application

@@ -1,21 +1,20 @@
-"""Chat repository for Firestore operations."""
+"""Chat repository for PostgreSQL operations."""
 
 import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from app.db.firestore import Collections, get_firestore_client, doc_to_dict
+from sqlalchemy import select, delete
+
+from app.db.postgres import async_session_maker
+from app.models.chat import ChatMessage
 
 logger = logging.getLogger(__name__)
 
 
 class ChatRepository:
-    """Repository for chat message Firestore operations."""
-
-    def __init__(self):
-        self.db = get_firestore_client()
-        self.collection = self.db.collection(Collections.CHAT_MESSAGES)
+    """Repository for chat message PostgreSQL operations."""
 
     async def save_message(
         self,
@@ -39,27 +38,21 @@ class ChatRepository:
         Returns:
             Saved message data
         """
-        message_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc)
+        async with async_session_maker() as session:
+            message = ChatMessage(
+                id=str(uuid.uuid4()),
+                user_id=user_id,
+                role=role,
+                content=content,
+                message_type=message_type,
+                tool_calls=tool_calls,
+                tool_results=tool_results,
+            )
+            session.add(message)
+            await session.commit()
+            await session.refresh(message)
 
-        message_data = {
-            "user_id": user_id,
-            "role": role,
-            "content": content,
-            "message_type": message_type,
-            "created_at": now,
-        }
-
-        if tool_calls:
-            message_data["tool_calls"] = tool_calls
-
-        if tool_results:
-            message_data["tool_results"] = tool_results
-
-        await self.collection.document(message_id).set(message_data)
-
-        message_data["id"] = message_id
-        return message_data
+            return self._message_to_dict(message)
 
     async def get_recent_messages(
         self,
@@ -75,20 +68,17 @@ class ChatRepository:
         Returns:
             List of messages in chronological order
         """
-        # Note: Using a simple where query and sorting in memory to avoid
-        # requiring a composite index on (user_id, created_at)
-        query = self.collection.where("user_id", "==", user_id)
+        async with async_session_maker() as session:
+            result = await session.execute(
+                select(ChatMessage)
+                .where(ChatMessage.user_id == user_id)
+                .order_by(ChatMessage.created_at.desc())
+                .limit(limit)
+            )
+            messages = result.scalars().all()
 
-        messages = []
-        async for doc in query.stream():
-            messages.append(doc_to_dict(doc))
-
-        # Sort by created_at descending, then take limit
-        messages.sort(key=lambda x: x.get("created_at", ""), reverse=True)
-        messages = messages[:limit]
-
-        # Reverse to get chronological order
-        return list(reversed(messages))
+            # Reverse to get chronological order
+            return [self._message_to_dict(m) for m in reversed(messages)]
 
     async def get_history(
         self,
@@ -166,12 +156,33 @@ class ChatRepository:
         Returns:
             Number of messages deleted
         """
-        query = self.collection.where("user_id", "==", user_id)
+        async with async_session_maker() as session:
+            # Count messages first
+            count_result = await session.execute(
+                select(ChatMessage).where(ChatMessage.user_id == user_id)
+            )
+            count = len(count_result.scalars().all())
 
-        count = 0
-        async for doc in query.stream():
-            await doc.reference.delete()
-            count += 1
+            # Delete all messages
+            await session.execute(
+                delete(ChatMessage).where(ChatMessage.user_id == user_id)
+            )
+            await session.commit()
 
-        logger.info(f"Cleared {count} messages for user {user_id}")
-        return count
+            logger.info(f"Cleared {count} messages for user {user_id}")
+            return count
+
+    # Helper methods
+    def _message_to_dict(self, message: ChatMessage) -> dict[str, Any]:
+        """Convert ChatMessage model to dictionary."""
+        return {
+            "id": message.id,
+            "user_id": message.user_id,
+            "role": message.role,
+            "content": message.content,
+            "message_type": message.message_type,
+            "tool_calls": message.tool_calls,
+            "tool_results": message.tool_results,
+            "created_at": message.created_at,
+            "updated_at": message.updated_at,
+        }

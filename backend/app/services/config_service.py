@@ -1,14 +1,17 @@
-"""Configuration service for loading meal generation config from Firestore.
+"""Configuration service for loading meal generation config from PostgreSQL.
 
-This service loads config that was synced from YAML files by scripts/sync_config.py.
-Config is cached in memory to avoid repeated Firestore reads.
+This service loads config that was synced from YAML files by scripts/sync_config_postgres.py.
+Config is cached in memory to avoid repeated database reads.
 """
 
 import logging
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
-from app.db.firestore import Collections, get_firestore_client
+from sqlalchemy import select
+
+from app.db.postgres import async_session_maker
+from app.models.config import SystemConfig, ReferenceData as ReferenceDataModel
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +75,7 @@ class CuisineInfo:
 
 @dataclass
 class ReferenceData:
-    """Reference data from Firestore."""
+    """Reference data from PostgreSQL."""
     ingredients: list[IngredientInfo] = field(default_factory=list)
     dishes: list[DishInfo] = field(default_factory=list)
     cuisines: list[CuisineInfo] = field(default_factory=list)
@@ -81,8 +84,8 @@ class ReferenceData:
 class ConfigService:
     """Service for loading and caching meal generation configuration.
 
-    Configuration is loaded from Firestore and cached in memory.
-    Call refresh() to reload configuration from Firestore.
+    Configuration is loaded from PostgreSQL and cached in memory.
+    Call refresh() to reload configuration from the database.
     """
 
     _instance: Optional["ConfigService"] = None
@@ -96,133 +99,145 @@ class ConfigService:
         return cls._instance
 
     def __init__(self):
-        self.db = get_firestore_client()
+        pass  # No initialization needed for PostgreSQL
 
     async def get_config(self) -> MealGenerationConfig:
-        """Get meal generation config, loading from Firestore if not cached."""
+        """Get meal generation config, loading from PostgreSQL if not cached."""
         if self._config is None:
             await self._load_config()
         return self._config
 
     async def get_reference_data(self) -> ReferenceData:
-        """Get reference data, loading from Firestore if not cached."""
+        """Get reference data, loading from PostgreSQL if not cached."""
         if self._reference_data is None:
             await self._load_reference_data()
         return self._reference_data
 
     async def refresh(self) -> None:
-        """Force reload of all configuration from Firestore."""
+        """Force reload of all configuration from PostgreSQL."""
         await self._load_config()
         await self._load_reference_data()
-        logger.info("Configuration refreshed from Firestore")
+        logger.info("Configuration refreshed from PostgreSQL")
 
     async def _load_config(self) -> None:
-        """Load meal generation config from Firestore."""
+        """Load meal generation config from PostgreSQL."""
         try:
-            doc = await self.db.collection(Collections.SYSTEM_CONFIG).document("meal_generation").get()
+            async with async_session_maker() as session:
+                result = await session.execute(
+                    select(SystemConfig).where(SystemConfig.key == "meal_generation")
+                )
+                config_record = result.scalar_one_or_none()
 
-            if not doc.exists:
-                logger.warning("Meal generation config not found in Firestore, using defaults")
-                self._config = MealGenerationConfig()
-                return
+                if not config_record:
+                    logger.warning("Meal generation config not found in PostgreSQL, using defaults")
+                    self._config = MealGenerationConfig()
+                    return
 
-            data = doc.to_dict()
+                data = config_record.config_data
 
-            # Parse meal structure
-            meal_structure_data = data.get("meal_structure", {})
-            meal_structure = MealStructure(
-                items_per_slot=meal_structure_data.get("items_per_slot", 2),
-                expandable=meal_structure_data.get("expandable", True),
-                time_based_items=meal_structure_data.get("time_based_items", {}),
-            )
-
-            # Parse rule behaviors
-            rule_behaviors = {}
-            for rule_type, behavior_data in data.get("rule_behaviors", {}).items():
-                rule_behaviors[rule_type] = RuleBehavior(
-                    action=behavior_data.get("action", ""),
-                    description=behavior_data.get("description", ""),
-                    allows_duplicates=behavior_data.get("allows_duplicates", False),
-                    keeps_pair=behavior_data.get("keeps_pair", False),
+                # Parse meal structure
+                meal_structure_data = data.get("meal_structure", {})
+                meal_structure = MealStructure(
+                    items_per_slot=meal_structure_data.get("items_per_slot", 2),
+                    expandable=meal_structure_data.get("expandable", True),
+                    time_based_items=meal_structure_data.get("time_based_items", {}),
                 )
 
-            self._config = MealGenerationConfig(
-                meal_structure=meal_structure,
-                pairing_rules_flat=data.get("pairing_rules_flat", {}),
-                meal_type_pairs=data.get("meal_type_pairs", {}),
-                recipe_categories=data.get("recipe_categories", []),
-                ingredient_aliases=data.get("ingredient_aliases", {}),
-                rule_behaviors=rule_behaviors,
-                conflict_resolution=data.get("conflict_resolution", {}),
-                meal_type_settings=data.get("meal_type_settings", {}),
-            )
+                # Parse rule behaviors
+                rule_behaviors = {}
+                for rule_type, behavior_data in data.get("rule_behaviors", {}).items():
+                    rule_behaviors[rule_type] = RuleBehavior(
+                        action=behavior_data.get("action", ""),
+                        description=behavior_data.get("description", ""),
+                        allows_duplicates=behavior_data.get("allows_duplicates", False),
+                        keeps_pair=behavior_data.get("keeps_pair", False),
+                    )
 
-            logger.info(
-                f"Loaded meal generation config: "
-                f"{len(self._config.pairing_rules_flat)} pairing rules, "
-                f"{len(self._config.recipe_categories)} categories"
-            )
+                self._config = MealGenerationConfig(
+                    meal_structure=meal_structure,
+                    pairing_rules_flat=data.get("pairing_rules_flat", {}),
+                    meal_type_pairs=data.get("meal_type_pairs", {}),
+                    recipe_categories=data.get("recipe_categories", []),
+                    ingredient_aliases=data.get("ingredient_aliases", {}),
+                    rule_behaviors=rule_behaviors,
+                    conflict_resolution=data.get("conflict_resolution", {}),
+                    meal_type_settings=data.get("meal_type_settings", {}),
+                )
+
+                logger.info(
+                    f"Loaded meal generation config: "
+                    f"{len(self._config.pairing_rules_flat)} pairing rules, "
+                    f"{len(self._config.recipe_categories)} categories"
+                )
 
         except Exception as e:
             logger.error(f"Failed to load meal generation config: {e}")
             self._config = MealGenerationConfig()
 
     async def _load_reference_data(self) -> None:
-        """Load reference data from Firestore."""
+        """Load reference data from PostgreSQL."""
         try:
-            ref_collection = self.db.collection(Collections.REFERENCE_DATA)
+            async with async_session_maker() as session:
+                # Load ingredients
+                ingredients = []
+                result = await session.execute(
+                    select(ReferenceDataModel).where(ReferenceDataModel.category == "ingredients")
+                )
+                ing_record = result.scalar_one_or_none()
+                if ing_record:
+                    ing_data = ing_record.data
+                    for item in ing_data.get("ingredients", []):
+                        ingredients.append(IngredientInfo(
+                            name=item.get("name", ""),
+                            aliases=item.get("aliases", []),
+                            category=item.get("category", ""),
+                        ))
 
-            # Load ingredients
-            ingredients = []
-            ing_doc = await ref_collection.document("ingredients").get()
-            if ing_doc.exists:
-                ing_data = ing_doc.to_dict()
-                for item in ing_data.get("ingredients", []):
-                    ingredients.append(IngredientInfo(
-                        name=item.get("name", ""),
-                        aliases=item.get("aliases", []),
-                        category=item.get("category", ""),
-                    ))
+                # Load dishes
+                dishes = []
+                result = await session.execute(
+                    select(ReferenceDataModel).where(ReferenceDataModel.category == "dishes")
+                )
+                dish_record = result.scalar_one_or_none()
+                if dish_record:
+                    dish_data = dish_record.data
+                    for item in dish_data.get("dishes", []):
+                        dishes.append(DishInfo(
+                            name=item.get("name", ""),
+                            category=item.get("category", ""),
+                            pairs_with=item.get("pairs_with", []),
+                            meal_types=item.get("meal_types", []),
+                            cuisines=item.get("cuisines", []),
+                        ))
 
-            # Load dishes
-            dishes = []
-            dish_doc = await ref_collection.document("dishes").get()
-            if dish_doc.exists:
-                dish_data = dish_doc.to_dict()
-                for item in dish_data.get("dishes", []):
-                    dishes.append(DishInfo(
-                        name=item.get("name", ""),
-                        category=item.get("category", ""),
-                        pairs_with=item.get("pairs_with", []),
-                        meal_types=item.get("meal_types", []),
-                        cuisines=item.get("cuisines", []),
-                    ))
+                # Load cuisines
+                cuisines = []
+                result = await session.execute(
+                    select(ReferenceDataModel).where(ReferenceDataModel.category == "cuisines")
+                )
+                cuisine_record = result.scalar_one_or_none()
+                if cuisine_record:
+                    cuisine_data = cuisine_record.data
+                    for item in cuisine_data.get("cuisines", []):
+                        cuisines.append(CuisineInfo(
+                            id=item.get("id", ""),
+                            name=item.get("name", ""),
+                            typical_pairings=item.get("typical_pairings", {}),
+                            staple_ingredients=item.get("staple_ingredients", []),
+                        ))
 
-            # Load cuisines
-            cuisines = []
-            cuisine_doc = await ref_collection.document("cuisines").get()
-            if cuisine_doc.exists:
-                cuisine_data = cuisine_doc.to_dict()
-                for item in cuisine_data.get("cuisines", []):
-                    cuisines.append(CuisineInfo(
-                        id=item.get("id", ""),
-                        name=item.get("name", ""),
-                        typical_pairings=item.get("typical_pairings", {}),
-                        staple_ingredients=item.get("staple_ingredients", []),
-                    ))
+                self._reference_data = ReferenceData(
+                    ingredients=ingredients,
+                    dishes=dishes,
+                    cuisines=cuisines,
+                )
 
-            self._reference_data = ReferenceData(
-                ingredients=ingredients,
-                dishes=dishes,
-                cuisines=cuisines,
-            )
-
-            logger.info(
-                f"Loaded reference data: "
-                f"{len(ingredients)} ingredients, "
-                f"{len(dishes)} dishes, "
-                f"{len(cuisines)} cuisines"
-            )
+                logger.info(
+                    f"Loaded reference data: "
+                    f"{len(ingredients)} ingredients, "
+                    f"{len(dishes)} dishes, "
+                    f"{len(cuisines)} cuisines"
+                )
 
         except Exception as e:
             logger.error(f"Failed to load reference data: {e}")

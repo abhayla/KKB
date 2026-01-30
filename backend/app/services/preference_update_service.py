@@ -777,7 +777,7 @@ class PreferenceUpdateService:
         }
 
     def _get_pref_key(self, preference_type: str) -> str:
-        """Get the Firestore key for a preference type."""
+        """Get the database key for a preference type."""
         key_map = {
             "cooking_time": "weekday_cooking_time_minutes",
             "busy_days": "busy_days",
