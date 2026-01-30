@@ -18,6 +18,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -33,6 +35,13 @@ data class SettingsItem(
     val title: String,
     val value: String? = null,
     val onClick: () -> Unit
+)
+
+data class SettingsToggleItem(
+    val title: String,
+    val subtitle: String? = null,
+    val isChecked: Boolean,
+    val onToggle: (Boolean) -> Unit
 )
 
 @Composable
@@ -77,6 +86,115 @@ fun SettingsSection(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun SettingsSectionWithToggles(
+    title: String,
+    items: List<SettingsItem> = emptyList(),
+    toggleItems: List<SettingsToggleItem> = emptyList(),
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            letterSpacing = 1.sp
+        )
+
+        Spacer(modifier = Modifier.height(spacing.sm))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column {
+                val totalItems = items.size + toggleItems.size
+                var currentIndex = 0
+
+                items.forEach { item ->
+                    SettingsItemRow(
+                        title = item.title,
+                        value = item.value,
+                        onClick = item.onClick
+                    )
+                    currentIndex++
+                    if (currentIndex < totalItems) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = spacing.md),
+                            color = MaterialTheme.colorScheme.outlineVariant
+                        )
+                    }
+                }
+
+                toggleItems.forEach { toggleItem ->
+                    SettingsToggleRow(
+                        title = toggleItem.title,
+                        subtitle = toggleItem.subtitle,
+                        isChecked = toggleItem.isChecked,
+                        onToggle = toggleItem.onToggle
+                    )
+                    currentIndex++
+                    if (currentIndex < totalItems) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = spacing.md),
+                            color = MaterialTheme.colorScheme.outlineVariant
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsToggleRow(
+    title: String,
+    subtitle: String?,
+    isChecked: Boolean,
+    onToggle: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onToggle(!isChecked) }
+            .padding(spacing.md),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            if (subtitle != null) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.width(spacing.sm))
+
+        Switch(
+            checked = isChecked,
+            onCheckedChange = onToggle,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        )
     }
 }
 

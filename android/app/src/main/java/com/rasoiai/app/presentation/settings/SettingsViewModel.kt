@@ -58,6 +58,22 @@ data class SettingsUiState(
             val weekend = user?.preferences?.weekendCookingTimeMinutes ?: 60
             return "Weekday: ${weekday}min, Weekend: ${weekend}min"
         }
+
+    // Meal generation settings
+    val itemsPerMeal: Int
+        get() = user?.preferences?.itemsPerMeal ?: 2
+
+    val itemsPerMealDisplay: String
+        get() = "${itemsPerMeal} items"
+
+    val strictAllergenMode: Boolean
+        get() = user?.preferences?.strictAllergenMode ?: true
+
+    val strictDietaryMode: Boolean
+        get() = user?.preferences?.strictDietaryMode ?: true
+
+    val allowRecipeRepeat: Boolean
+        get() = user?.preferences?.allowRecipeRepeat ?: false
 }
 
 /**
@@ -263,6 +279,54 @@ class SettingsViewModel @Inject constructor(
 
     fun onTermsOfServiceClick() {
         _navigationEvent.trySend(SettingsNavigationEvent.NavigateToTermsOfService)
+    }
+
+    // endregion
+
+    // region Meal Generation Settings
+
+    fun onItemsPerMealClick() {
+        // TODO: Show dialog to select items per meal (1-4)
+        _uiState.update { it.copy(errorMessage = "Items per meal picker: Coming soon!") }
+    }
+
+    fun onStrictAllergenModeToggle(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.updateMealGenerationSettings(strictAllergenMode = enabled)
+                .onSuccess {
+                    Timber.i("Strict allergen mode updated: $enabled")
+                }
+                .onFailure { e ->
+                    Timber.e(e, "Failed to update strict allergen mode")
+                    _uiState.update { it.copy(errorMessage = "Failed to update setting") }
+                }
+        }
+    }
+
+    fun onStrictDietaryModeToggle(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.updateMealGenerationSettings(strictDietaryMode = enabled)
+                .onSuccess {
+                    Timber.i("Strict dietary mode updated: $enabled")
+                }
+                .onFailure { e ->
+                    Timber.e(e, "Failed to update strict dietary mode")
+                    _uiState.update { it.copy(errorMessage = "Failed to update setting") }
+                }
+        }
+    }
+
+    fun onAllowRecipeRepeatToggle(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.updateMealGenerationSettings(allowRecipeRepeat = enabled)
+                .onSuccess {
+                    Timber.i("Allow recipe repeat updated: $enabled")
+                }
+                .onFailure { e ->
+                    Timber.e(e, "Failed to update allow recipe repeat")
+                    _uiState.update { it.copy(errorMessage = "Failed to update setting") }
+                }
+        }
     }
 
     // endregion

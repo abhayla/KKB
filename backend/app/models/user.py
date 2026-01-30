@@ -164,6 +164,20 @@ class UserPreferences(Base, TimestampMixin):
         String(20), nullable=True
     )  # beginner, intermediate, advanced
 
+    # Meal generation settings
+    items_per_meal: Mapped[int] = mapped_column(
+        Integer, default=2, nullable=False
+    )  # Number of items per meal slot (1-4)
+    strict_allergen_mode: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False
+    )  # If True, strictly exclude allergens; if False, warn only
+    strict_dietary_mode: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False
+    )  # If True, strictly enforce dietary tags (JAIN, SATTVIC)
+    allow_recipe_repeat: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )  # If True, allow same recipe multiple times per week
+
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="preferences")
 

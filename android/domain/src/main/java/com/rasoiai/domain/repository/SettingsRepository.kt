@@ -66,4 +66,14 @@ interface SettingsRepository {
      * Get app version string.
      */
     fun getAppVersion(): String
+
+    /**
+     * Update meal generation settings.
+     */
+    suspend fun updateMealGenerationSettings(
+        itemsPerMeal: Int? = null,
+        strictAllergenMode: Boolean? = null,
+        strictDietaryMode: Boolean? = null,
+        allowRecipeRepeat: Boolean? = null
+    ): Result<Unit>
 }

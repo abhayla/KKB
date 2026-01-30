@@ -53,6 +53,12 @@ class UserPreferencesDataStore @Inject constructor(
         val WEEKDAY_COOKING_TIME = intPreferencesKey("weekday_cooking_time")
         val WEEKEND_COOKING_TIME = intPreferencesKey("weekend_cooking_time")
         val BUSY_DAYS = stringSetPreferencesKey("busy_days")
+
+        // Meal generation settings
+        val ITEMS_PER_MEAL = intPreferencesKey("items_per_meal")
+        val STRICT_ALLERGEN_MODE = booleanPreferencesKey("strict_allergen_mode")
+        val STRICT_DIETARY_MODE = booleanPreferencesKey("strict_dietary_mode")
+        val ALLOW_RECIPE_REPEAT = booleanPreferencesKey("allow_recipe_repeat")
     }
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -145,7 +151,12 @@ class UserPreferencesDataStore @Inject constructor(
             weekdayCookingTimeMinutes = preferences[PreferencesKeys.WEEKDAY_COOKING_TIME] ?: 30,
             weekendCookingTimeMinutes = preferences[PreferencesKeys.WEEKEND_COOKING_TIME] ?: 45,
             busyDays = preferences[PreferencesKeys.BUSY_DAYS]
-                ?.mapNotNull { DayOfWeek.fromValue(it) } ?: emptyList()
+                ?.mapNotNull { DayOfWeek.fromValue(it) } ?: emptyList(),
+            // Meal generation settings
+            itemsPerMeal = preferences[PreferencesKeys.ITEMS_PER_MEAL] ?: 2,
+            strictAllergenMode = preferences[PreferencesKeys.STRICT_ALLERGEN_MODE] ?: true,
+            strictDietaryMode = preferences[PreferencesKeys.STRICT_DIETARY_MODE] ?: true,
+            allowRecipeRepeat = preferences[PreferencesKeys.ALLOW_RECIPE_REPEAT] ?: false
         )
     }
 
@@ -166,6 +177,11 @@ class UserPreferencesDataStore @Inject constructor(
             prefs[PreferencesKeys.WEEKDAY_COOKING_TIME] = preferences.weekdayCookingTimeMinutes
             prefs[PreferencesKeys.WEEKEND_COOKING_TIME] = preferences.weekendCookingTimeMinutes
             prefs[PreferencesKeys.BUSY_DAYS] = preferences.busyDays.map { it.value }.toSet()
+            // Meal generation settings
+            prefs[PreferencesKeys.ITEMS_PER_MEAL] = preferences.itemsPerMeal
+            prefs[PreferencesKeys.STRICT_ALLERGEN_MODE] = preferences.strictAllergenMode
+            prefs[PreferencesKeys.STRICT_DIETARY_MODE] = preferences.strictDietaryMode
+            prefs[PreferencesKeys.ALLOW_RECIPE_REPEAT] = preferences.allowRecipeRepeat
         }
     }
 

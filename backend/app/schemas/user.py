@@ -14,6 +14,11 @@ class UserPreferencesDto(BaseModel):
     disliked_ingredients: list[str] = Field(default_factory=list)
     cooking_time_preference: str = "moderate"  # quick, moderate, elaborate
     spice_level: str = "medium"  # mild, medium, spicy
+    # Meal generation settings
+    items_per_meal: int = Field(default=2, ge=1, le=4)
+    strict_allergen_mode: bool = True
+    strict_dietary_mode: bool = True
+    allow_recipe_repeat: bool = False
 
     class Config:
         from_attributes = True
@@ -28,6 +33,11 @@ class UserPreferencesUpdate(BaseModel):
     disliked_ingredients: Optional[list[str]] = None
     cooking_time_preference: Optional[str] = None
     spice_level: Optional[str] = None
+    # Meal generation settings
+    items_per_meal: Optional[int] = Field(default=None, ge=1, le=4)
+    strict_allergen_mode: Optional[bool] = None
+    strict_dietary_mode: Optional[bool] = None
+    allow_recipe_repeat: Optional[bool] = None
 
 
 class UserResponse(BaseModel):

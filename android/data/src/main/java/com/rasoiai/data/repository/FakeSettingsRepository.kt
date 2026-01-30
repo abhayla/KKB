@@ -106,6 +106,24 @@ class FakeSettingsRepository @Inject constructor() : SettingsRepository {
 
     override fun getAppVersion(): String = "1.0.0"
 
+    override suspend fun updateMealGenerationSettings(
+        itemsPerMeal: Int?,
+        strictAllergenMode: Boolean?,
+        strictDietaryMode: Boolean?,
+        allowRecipeRepeat: Boolean?
+    ): Result<Unit> {
+        delay(300)
+        val currentPrefs = _currentUser.value?.preferences ?: return Result.failure(Exception("No user"))
+        val updatedPrefs = currentPrefs.copy(
+            itemsPerMeal = itemsPerMeal ?: currentPrefs.itemsPerMeal,
+            strictAllergenMode = strictAllergenMode ?: currentPrefs.strictAllergenMode,
+            strictDietaryMode = strictDietaryMode ?: currentPrefs.strictDietaryMode,
+            allowRecipeRepeat = allowRecipeRepeat ?: currentPrefs.allowRecipeRepeat
+        )
+        _currentUser.value = _currentUser.value?.copy(preferences = updatedPrefs)
+        return Result.success(Unit)
+    }
+
     private fun createMockUser(): User = User(
         id = "user-1",
         email = "priya.sharma@gmail.com",

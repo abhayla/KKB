@@ -109,7 +109,12 @@ class SettingsRepositoryImpl @Inject constructor(
                         "disliked_ingredients" to preferences.dislikedIngredients,
                         "weekday_cooking_time" to preferences.weekdayCookingTimeMinutes,
                         "weekend_cooking_time" to preferences.weekendCookingTimeMinutes,
-                        "busy_days" to preferences.busyDays.map { it.value }
+                        "busy_days" to preferences.busyDays.map { it.value },
+                        // Meal generation settings
+                        "items_per_meal" to preferences.itemsPerMeal,
+                        "strict_allergen_mode" to preferences.strictAllergenMode,
+                        "strict_dietary_mode" to preferences.strictDietaryMode,
+                        "allow_recipe_repeat" to preferences.allowRecipeRepeat
                     )
                     apiService.updateUserPreferences(prefsMap)
                     Timber.i("Synced preferences to server")
@@ -223,6 +228,31 @@ class SettingsRepositoryImpl @Inject constructor(
             packageInfo.versionName ?: "1.0.0"
         } catch (e: Exception) {
             "1.0.0"
+        }
+    }
+
+    override suspend fun updateMealGenerationSettings(
+        itemsPerMeal: Int?,
+        strictAllergenMode: Boolean?,
+        strictDietaryMode: Boolean?,
+        allowRecipeRepeat: Boolean?
+    ): Result<Unit> {
+        return try {
+            val currentPrefs = userPreferencesDataStore.userPreferences.first()
+                ?: return Result.failure(Exception("No user preferences found"))
+
+            val updatedPrefs = currentPrefs.copy(
+                itemsPerMeal = itemsPerMeal ?: currentPrefs.itemsPerMeal,
+                strictAllergenMode = strictAllergenMode ?: currentPrefs.strictAllergenMode,
+                strictDietaryMode = strictDietaryMode ?: currentPrefs.strictDietaryMode,
+                allowRecipeRepeat = allowRecipeRepeat ?: currentPrefs.allowRecipeRepeat
+            )
+
+            // Save locally and sync to server
+            updateUserPreferences(updatedPrefs)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to update meal generation settings")
+            Result.failure(e)
         }
     }
 }

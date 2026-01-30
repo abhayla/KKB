@@ -74,6 +74,11 @@ class UserPreferences:
     include_rules: list[dict] = field(default_factory=list)
     exclude_rules: list[dict] = field(default_factory=list)
     nutrition_goals: list[dict] = field(default_factory=list)
+    # Meal generation settings
+    items_per_meal: int = 2  # Number of items per meal slot (1-4)
+    strict_allergen_mode: bool = True  # Strictly exclude allergens
+    strict_dietary_mode: bool = True  # Strictly enforce dietary tags
+    allow_recipe_repeat: bool = False  # Allow same recipe multiple times per week
 
 
 class MealGenerationService:
@@ -112,11 +117,16 @@ class MealGenerationService:
             f"Preferences: cuisine={prefs.cuisine_type}, "
             f"dietary={prefs.dietary_tags}, "
             f"include_rules={len(prefs.include_rules)}, "
-            f"exclude_rules={len(prefs.exclude_rules)}"
+            f"exclude_rules={len(prefs.exclude_rules)}, "
+            f"items_per_meal={prefs.items_per_meal}, "
+            f"strict_allergen={prefs.strict_allergen_mode}, "
+            f"allow_repeat={prefs.allow_recipe_repeat}"
         )
 
-        # Track used recipes to avoid duplicates
+        # Track used recipes to avoid duplicates (unless allow_recipe_repeat is True)
         used_recipe_ids: set[str] = set()
+        # If allow_recipe_repeat is True, we pass empty set to exclude_ids to allow repetition
+        exclude_recipe_ids = set() if prefs.allow_recipe_repeat else used_recipe_ids
 
         # Pre-compute INCLUDE rule assignments for the week
         include_tracker = self._build_include_tracker(prefs.include_rules)
@@ -147,6 +157,7 @@ class MealGenerationService:
                 max_cooking_time=max_time,
                 include_tracker=include_tracker,
                 used_recipe_ids=used_recipe_ids,
+                exclude_recipe_ids=exclude_recipe_ids,
             )
 
             days.append(DayMeals(
@@ -210,6 +221,11 @@ class MealGenerationService:
             include_rules=include_rules,
             exclude_rules=exclude_rules,
             nutrition_goals=nutrition_goals,
+            # Meal generation settings
+            items_per_meal=prefs_data.get("items_per_meal", 2),
+            strict_allergen_mode=prefs_data.get("strict_allergen_mode", True),
+            strict_dietary_mode=prefs_data.get("strict_dietary_mode", True),
+            allow_recipe_repeat=prefs_data.get("allow_recipe_repeat", False),
         )
 
     def _build_include_tracker(self, include_rules: list[dict]) -> dict[str, dict]:
@@ -234,6 +250,7 @@ class MealGenerationService:
         config: MealGenerationConfig,
         max_cooking_time: int,
         slot: str,
+        user_items_per_meal: int = 2,
     ) -> tuple[int, int]:
         """Calculate number of main and total items based on cooking time.
 
@@ -242,26 +259,30 @@ class MealGenerationService:
         - 30-45 min → 2 mains + 1 complementary = 3 items (but we return 2 for now)
         - >45 min → 2+ mains + complementary = 3+ items
 
-        For MVP, we keep total items at 2 but this structure allows expansion.
+        User preference (items_per_meal) overrides the config default.
 
         Args:
             config: Meal generation config with time thresholds
             max_cooking_time: Maximum cooking time for this slot/day
             slot: Meal slot (breakfast, lunch, dinner, snacks)
+            user_items_per_meal: User's preferred items per meal (1-4)
 
         Returns:
             Tuple of (main_items_count, total_items_count)
         """
+        # Use user preference as the cap (1-4 items)
+        items_cap = max(1, min(4, user_items_per_meal))
+
         # Check if time-based items is enabled in config
         time_based = config.meal_structure.time_based_items if hasattr(config.meal_structure, 'time_based_items') else None
 
         if not time_based or not time_based.get("enabled", False):
-            # Use default fixed items_per_slot
-            return (1, config.meal_structure.items_per_slot)
+            # Use user's items_per_meal setting
+            return (1, items_cap)
 
         thresholds = time_based.get("thresholds", [])
         if not thresholds:
-            return (1, config.meal_structure.items_per_slot)
+            return (1, items_cap)
 
         # Find matching threshold (thresholds should be sorted by max_time ascending)
         main_items = 1
@@ -270,13 +291,12 @@ class MealGenerationService:
                 main_items = threshold.get("main_items", 1)
                 break
 
-        # For MVP: total items = main_items + 1 complementary
-        # But we cap at items_per_slot from config for backward compatibility
-        total_items = min(main_items + 1, config.meal_structure.items_per_slot)
+        # Total items = main_items + 1 complementary, capped at user preference
+        total_items = min(main_items + 1, items_cap)
 
         logger.debug(
             f"Slot {slot}: cooking_time={max_cooking_time}min → "
-            f"main_items={main_items}, total_items={total_items}"
+            f"main_items={main_items}, total_items={total_items} (user_cap={items_cap})"
         )
 
         return (main_items, total_items)
@@ -290,6 +310,7 @@ class MealGenerationService:
         max_cooking_time: int,
         include_tracker: dict[str, dict],
         used_recipe_ids: set[str],
+        exclude_recipe_ids: set[str] = None,
     ) -> dict[str, list[MealItem]]:
         """Generate all meals for a single day with pairing."""
         meals = {
@@ -298,6 +319,11 @@ class MealGenerationService:
             "dinner": [],
             "snacks": [],
         }
+
+        # Use exclude_recipe_ids for filtering (may be empty if allow_recipe_repeat is True)
+        # We still track used_recipe_ids for reference, but exclude_recipe_ids controls filtering
+        if exclude_recipe_ids is None:
+            exclude_recipe_ids = used_recipe_ids
 
         # Build exclusion set from EXCLUDE rules, allergies, and dislikes
         exclude_ingredients = self._build_exclude_list(prefs)
@@ -313,10 +339,12 @@ class MealGenerationService:
                 slot_max_time = 45  # Minimum 45 min for dinner to ensure good options
 
             # Calculate items needed for this slot based on cooking time
+            # User's items_per_meal preference overrides config default
             main_items_count, items_per_slot = self._calculate_items_for_slot(
                 config=config,
                 max_cooking_time=slot_max_time,
                 slot=slot,
+                user_items_per_meal=prefs.items_per_meal,
             )
 
             # Check for INCLUDE rules that apply to this slot
@@ -327,7 +355,7 @@ class MealGenerationService:
                 prefs=prefs,
                 max_cooking_time=slot_max_time,
                 exclude_ingredients=exclude_ingredients,
-                used_recipe_ids=used_recipe_ids,
+                used_recipe_ids=exclude_recipe_ids,  # Use exclude set (empty if allow_repeat)
             )
 
             if include_items:
@@ -350,14 +378,20 @@ class MealGenerationService:
                     if needed > 0 and include_items:
                         # Get pairing for the first include item
                         primary = include_items[0]
+                        # Infer category from recipe name if database category is "other" or empty
+                        primary_category = primary.category
+                        if not primary_category or primary_category == "other":
+                            primary_category = self._infer_category_from_name(
+                                primary.recipe_name, default_category="other"
+                            )
                         pair_item = await self._get_complementary_item(
-                            primary_category=primary.category,
+                            primary_category=primary_category,
                             config=config,
                             prefs=prefs,
                             meal_type=slot,
                             max_cooking_time=slot_max_time,
                             exclude_ingredients=exclude_ingredients,
-                            used_recipe_ids=used_recipe_ids,
+                            used_recipe_ids=exclude_recipe_ids,  # Use exclude set (empty if allow_repeat)
                             used_ingredients_today=used_ingredients_today,
                         )
                         if pair_item:
@@ -372,7 +406,7 @@ class MealGenerationService:
                     prefs=prefs,
                     max_cooking_time=slot_max_time,
                     exclude_ingredients=exclude_ingredients,
-                    used_recipe_ids=used_recipe_ids,
+                    used_recipe_ids=exclude_recipe_ids,  # Use exclude set (empty if allow_repeat)
                     used_ingredients_today=used_ingredients_today,
                     items_per_slot=items_per_slot,
                 )
@@ -382,6 +416,38 @@ class MealGenerationService:
                     self._track_main_ingredient(item.recipe_name, used_ingredients_today)
 
         return meals
+
+    def _infer_category_from_name(self, recipe_name: str, default_category: str = "other") -> str:
+        """Infer recipe category from name when database category is missing.
+
+        This is needed because the recipe database has category=NULL for most recipes.
+        We use the recipe name to determine the category for pairing purposes.
+        """
+        name_lower = recipe_name.lower()
+
+        # Category keywords in priority order (more specific first)
+        category_keywords = {
+            "chai": ["chai", "tea", "masala tea"],
+            "coffee": ["coffee", "kaapi"],
+            "paratha": ["paratha", "parantha"],
+            "roti": ["roti", "chapati", "phulka", "naan", "kulcha"],
+            "rice": ["rice", "chawal", "pulao", "biryani", "khichdi"],
+            "dal": ["dal", "daal", "sambhar", "sambar", "rasam"],
+            "sabzi": ["sabzi", "sabji", "curry", "bhaji", "fry"],
+            "dosa": ["dosa", "dosai"],
+            "idli": ["idli", "idly"],
+            "poha": ["poha", "pohe"],
+            "upma": ["upma", "uppuma"],
+            "samosa": ["samosa"],
+            "pakora": ["pakora", "pakoda", "bhajia", "bhaji"],
+        }
+
+        for category, keywords in category_keywords.items():
+            for keyword in keywords:
+                if keyword in name_lower:
+                    return category
+
+        return default_category
 
     def _track_main_ingredient(self, recipe_name: str, used_ingredients: set[str]) -> None:
         """Extract and track main ingredient from recipe name to avoid repetition."""
@@ -406,7 +472,12 @@ class MealGenerationService:
         return False
 
     def _build_exclude_list(self, prefs: UserPreferences) -> set[str]:
-        """Build set of ingredients to exclude from exclude rules, allergies, dislikes."""
+        """Build set of ingredients to exclude from exclude rules, allergies, dislikes.
+
+        Respects user preferences:
+        - strict_allergen_mode: If True (default), allergies are strictly excluded
+        - If False, allergies are not excluded (user accepts risk)
+        """
         exclude = set()
 
         # From EXCLUDE rules with NEVER frequency
@@ -421,31 +492,36 @@ class MealGenerationService:
                     else:
                         exclude.add(target + "s")  # peanut -> peanuts
 
-        # From allergies - CRITICAL: allergies must be strictly excluded
-        for allergy in prefs.allergies:
-            if isinstance(allergy, dict):
-                ingredient = allergy.get("ingredient", "").lower()
-            else:
-                ingredient = str(allergy).lower()
-            if ingredient:
-                exclude.add(ingredient)
-                # Also add singular/plural variants for allergies
-                if ingredient.endswith("s"):
-                    exclude.add(ingredient[:-1])  # peanuts -> peanut
+        # From allergies - respect strict_allergen_mode setting
+        if prefs.strict_allergen_mode:
+            for allergy in prefs.allergies:
+                if isinstance(allergy, dict):
+                    ingredient = allergy.get("ingredient", "").lower()
                 else:
-                    exclude.add(ingredient + "s")  # peanut -> peanuts
-                # Common allergen variants
-                allergen_variants = {
-                    "peanut": ["peanuts", "groundnut", "groundnuts", "moongphali"],
-                    "peanuts": ["peanut", "groundnut", "groundnuts", "moongphali"],
-                    "dairy": ["milk", "cheese", "paneer", "curd", "yogurt", "cream", "butter", "ghee"],
-                    "gluten": ["wheat", "maida", "atta", "bread", "roti", "naan"],
-                    "shellfish": ["shrimp", "prawn", "crab", "lobster"],
-                    "tree nuts": ["almond", "cashew", "walnut", "pistachio", "kaju", "badam"],
-                }
-                if ingredient in allergen_variants:
-                    for variant in allergen_variants[ingredient]:
-                        exclude.add(variant)
+                    ingredient = str(allergy).lower()
+                if ingredient:
+                    exclude.add(ingredient)
+                    # Also add singular/plural variants for allergies
+                    if ingredient.endswith("s"):
+                        exclude.add(ingredient[:-1])  # peanuts -> peanut
+                    else:
+                        exclude.add(ingredient + "s")  # peanut -> peanuts
+                    # Common allergen variants
+                    allergen_variants = {
+                        "peanut": ["peanuts", "groundnut", "groundnuts", "moongphali"],
+                        "peanuts": ["peanut", "groundnut", "groundnuts", "moongphali"],
+                        "dairy": ["milk", "cheese", "paneer", "curd", "yogurt", "cream", "butter", "ghee"],
+                        "gluten": ["wheat", "maida", "atta", "bread", "roti", "naan"],
+                        "shellfish": ["shrimp", "prawn", "crab", "lobster"],
+                        "tree nuts": ["almond", "cashew", "walnut", "pistachio", "kaju", "badam"],
+                    }
+                    if ingredient in allergen_variants:
+                        for variant in allergen_variants[ingredient]:
+                            exclude.add(variant)
+        else:
+            logger.warning(
+                f"strict_allergen_mode is OFF - allergies will NOT be excluded: {prefs.allergies}"
+            )
 
         # From dislikes
         for dislike in prefs.dislikes:
@@ -554,12 +630,64 @@ class MealGenerationService:
                     if meal_matches:
                         recipes = meal_matches
 
+                # FALLBACK: If no recipes found within time constraint, try without time limit
+                # This ensures INCLUDE rules can be satisfied even on busy days
+                if not recipes:
+                    logger.debug(f"INCLUDE rule '{target}': no recipes in {max_cooking_time}min, trying without time limit")
+                    recipes = await self.recipe_repo.search_by_ingredient(
+                        ingredient=target,
+                        ingredient_aliases=aliases,
+                        cuisine_type=prefs.cuisine_type,
+                        dietary_tags=prefs.dietary_tags,
+                        meal_type=None,
+                        max_time_minutes=None,  # No time limit
+                        exclude_ids=used_recipe_ids,
+                        limit=30,
+                    )
+                    recipes = self._filter_by_excludes(recipes, exclude_ingredients)
+
+                    # Prefer recipes that match the slot's meal_type
+                    if recipes:
+                        meal_matches = [
+                            r for r in recipes
+                            if slot in r.get("meal_types", [])
+                        ]
+                        if meal_matches:
+                            recipes = meal_matches
+
             if recipes:
-                recipe = random.choice(recipes)
+                # Prefer recipes with the target ingredient in the name
+                # This ensures "Paneer" rule picks recipes like "Paneer Tikka" over
+                # recipes that just have paneer as an ingredient
+                target_lower = target.lower()
+                name_matches = [r for r in recipes if target_lower in r.get("name", "").lower()]
+                if name_matches:
+                    recipe = random.choice(name_matches)
+                else:
+                    recipe = random.choice(recipes)
                 item = self._recipe_to_meal_item(recipe)
                 items.append(item)
                 tracker["times_assigned"] += 1
                 logger.debug(f"INCLUDE rule '{target}' assigned to {slot}")
+            else:
+                # FINAL FALLBACK: Create generic suggestion when no database recipe found
+                # This ensures INCLUDE rules are always satisfied, even if as a "make your own"
+                logger.info(f"INCLUDE rule '{target}': no database recipes, using generic suggestion")
+                generic_item = MealItem(
+                    id=str(uuid.uuid4()),
+                    recipe_id="GENERIC",
+                    recipe_name=target.title(),  # Use the target name (e.g., "Paneer", "Dal")
+                    recipe_image_url=None,
+                    prep_time_minutes=30,
+                    calories=0,
+                    is_locked=False,
+                    dietary_tags=prefs.dietary_tags or [],
+                    category="other",
+                    is_generic=True,
+                )
+                items.append(generic_item)
+                tracker["times_assigned"] += 1
+                logger.debug(f"INCLUDE rule '{target}' assigned as generic to {slot}")
 
         return items
 
@@ -739,8 +867,14 @@ class MealGenerationService:
                 "paratha": ["chai", "curd"],
                 "poha": ["chai"],
                 "rice": ["dal", "sambar"],
+                # Breakfast beverages - pair with snacks/breads
+                "chai": ["paratha", "poha", "toast", "biscuit", "samosa"],
+                "tea": ["paratha", "poha", "toast", "biscuit", "samosa"],
+                "coffee": ["toast", "dosa", "idli", "poha"],
+                # Fallback for unknown categories
+                "other": ["paratha", "roti", "rice"],
             }
-            pairing_categories = default_pairs.get(primary_category, ["rice", "roti"])
+            pairing_categories = default_pairs.get(primary_category, ["paratha", "roti", "rice"])
 
         # Search for recipes in pairing categories
         for category in pairing_categories:

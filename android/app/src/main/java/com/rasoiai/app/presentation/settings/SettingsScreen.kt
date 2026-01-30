@@ -42,6 +42,8 @@ import com.rasoiai.app.presentation.settings.components.FamilySection
 import com.rasoiai.app.presentation.settings.components.ProfileSection
 import com.rasoiai.app.presentation.settings.components.SettingsItem
 import com.rasoiai.app.presentation.settings.components.SettingsSection
+import com.rasoiai.app.presentation.settings.components.SettingsSectionWithToggles
+import com.rasoiai.app.presentation.settings.components.SettingsToggleItem
 import com.rasoiai.app.presentation.settings.components.SignOutButton
 import com.rasoiai.app.presentation.settings.components.SignOutConfirmDialog
 import com.rasoiai.app.presentation.theme.RasoiAITheme
@@ -112,6 +114,12 @@ fun SettingsScreen(
         onCookingTimeClick = viewModel::onCookingTimeClick,
         onSpiceLevelClick = viewModel::onSpiceLevelClick,
         onRecipeRulesClick = viewModel::onRecipeRulesClick,
+        // Meal generation settings
+        onItemsPerMealClick = viewModel::onItemsPerMealClick,
+        onStrictAllergenModeToggle = viewModel::onStrictAllergenModeToggle,
+        onStrictDietaryModeToggle = viewModel::onStrictDietaryModeToggle,
+        onAllowRecipeRepeatToggle = viewModel::onAllowRecipeRepeatToggle,
+        // App settings
         onNotificationsClick = viewModel::onNotificationsClick,
         onDarkModeClick = viewModel::showDarkModeDialog,
         onUnitsClick = viewModel::onUnitsClick,
@@ -158,6 +166,12 @@ internal fun SettingsScreenContent(
     onCookingTimeClick: () -> Unit,
     onSpiceLevelClick: () -> Unit,
     onRecipeRulesClick: () -> Unit,
+    // Meal generation settings
+    onItemsPerMealClick: () -> Unit,
+    onStrictAllergenModeToggle: (Boolean) -> Unit,
+    onStrictDietaryModeToggle: (Boolean) -> Unit,
+    onAllowRecipeRepeatToggle: (Boolean) -> Unit,
+    // App settings
     onNotificationsClick: () -> Unit,
     onDarkModeClick: () -> Unit,
     onUnitsClick: () -> Unit,
@@ -274,6 +288,47 @@ internal fun SettingsScreenContent(
                                 SettingsItem(
                                     title = "Recipe Rules",
                                     onClick = onRecipeRulesClick
+                                )
+                            ),
+                            modifier = Modifier.padding(horizontal = spacing.md)
+                        )
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(spacing.lg))
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = spacing.md))
+                        Spacer(modifier = Modifier.height(spacing.md))
+                    }
+
+                    // Meal Generation Section
+                    item {
+                        SettingsSectionWithToggles(
+                            title = "MEAL GENERATION",
+                            items = listOf(
+                                SettingsItem(
+                                    title = "Items per Meal",
+                                    value = uiState.itemsPerMealDisplay,
+                                    onClick = onItemsPerMealClick
+                                )
+                            ),
+                            toggleItems = listOf(
+                                SettingsToggleItem(
+                                    title = "Strict Allergen Mode",
+                                    subtitle = "Always exclude allergens from meals",
+                                    isChecked = uiState.strictAllergenMode,
+                                    onToggle = onStrictAllergenModeToggle
+                                ),
+                                SettingsToggleItem(
+                                    title = "Strict Dietary Mode",
+                                    subtitle = "Strictly enforce dietary restrictions",
+                                    isChecked = uiState.strictDietaryMode,
+                                    onToggle = onStrictDietaryModeToggle
+                                ),
+                                SettingsToggleItem(
+                                    title = "Allow Recipe Repeat",
+                                    subtitle = "Allow same recipe multiple times per week",
+                                    isChecked = uiState.allowRecipeRepeat,
+                                    onToggle = onAllowRecipeRepeatToggle
                                 )
                             ),
                             modifier = Modifier.padding(horizontal = spacing.md)
@@ -439,6 +494,10 @@ private fun SettingsScreenPreview() {
                 onCookingTimeClick = {},
                 onSpiceLevelClick = {},
                 onRecipeRulesClick = {},
+                onItemsPerMealClick = {},
+                onStrictAllergenModeToggle = {},
+                onStrictDietaryModeToggle = {},
+                onAllowRecipeRepeatToggle = {},
                 onNotificationsClick = {},
                 onDarkModeClick = {},
                 onUnitsClick = {},

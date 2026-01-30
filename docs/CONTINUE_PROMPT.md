@@ -9,16 +9,17 @@ Use this prompt to start a new conversation/context and continue the project fro
 ```
 I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 
-## Current State: PostgreSQL Migration Complete
+## Current State: E2E Tests Fixed & Meal Generation Verified
 
-Backend migrated from Firebase Firestore to PostgreSQL with SQLAlchemy async ORM. All repositories updated, 3,580 recipes imported.
+Backend running on PostgreSQL with SQLAlchemy async ORM. All 14 E2E tests passing. Meal generation algorithm fully functional with proper pairing logic.
 
 **Backend Status:**
 - Database: PostgreSQL (asyncpg + SQLAlchemy)
 - **3,580 recipes** (imported from khanakyabanega)
 - 12 festivals seeded
 - Auth accepts `fake-firebase-token` for testing
-- **156 backend tests** (9 test files)
+- **170 backend tests** (all passing)
+- **14 E2E tests** (all passing)
 
 **Key Documentation:**
 | Document | Path |
@@ -38,90 +39,71 @@ cd backend
 uvicorn app.main:app --reload --port 8000
 ```
 
-### Session 33 Completed Work: PostgreSQL Migration
+### Session 34 Completed Work: E2E Test Fixes
 
-**Migration Changes:**
-1. **Database Layer**
-   - Added `app/db/postgres.py` - Connection pool management
-   - Updated `app/db/database.py` - SQLAlchemy async session factory
-   - Added Alembic migration for PostgreSQL schema
+**Issue 1: SQLAlchemy MissingGreenlet Error (13 tests failing)**
+- Root Cause: Recipe queries didn't eagerly load `instructions` and `nutrition` relationships
+- Fix: Added `selectinload(Recipe.instructions)` and `selectinload(Recipe.nutrition)` to all repository methods:
+  - `get_all()`, `search()`, `search_by_category()`, `search_for_meal_generation()`
 
-2. **Repository Updates** (all now use SQLAlchemy)
-   - `recipe_repository.py` - Recipe CRUD with async queries
-   - `user_repository.py` - User preferences storage
-   - `meal_plan_repository.py` - Meal plan persistence
-   - `chat_repository.py` - Chat message storage
-   - `festival_repository.py` - Festival data
+**Issue 2: Breakfast Pairing Not Working**
+- Root Cause: All 3,580 recipes have `category=NULL`. `search_by_category()` filtered by category column returning nothing
+- Fixes:
+  1. Modified `search_by_category()` to search by name containing the category term
+  2. Added `_infer_category_from_name()` helper to determine category from recipe name
+  3. Added "chai", "tea", "coffee", "other" to default pairing categories
 
-3. **Scripts Added**
-   - `import_recipes_postgres.py` - Recipe import with `--missing-only` flag
-   - `sync_config_postgres.py` - YAML config → PostgreSQL sync
-   - `seed_achievements.py` - Achievement data seeding
+**Issue 3: Paneer INCLUDE Rule Not Satisfied (flaky test)**
+- Root Cause: `search_by_ingredient("Paneer")` returned recipes with paneer in ingredients but not in name
+- Fixes:
+  1. Added time constraint fallback for INCLUDE rules (try without time limit if no results)
+  2. Added generic fallback when no database recipe found
+  3. Added preference for recipes with target in name over ingredient-only matches
 
-4. **Security**
-   - Removed hardcoded credentials from scripts
-   - All scripts now use `DATABASE_URL` environment variable
-   - Added credential-containing setup scripts to `.gitignore`
-
-**Recipe Import:**
-```bash
-cd backend
-source venv/Scripts/activate  # Windows
-
-# Import only missing recipes
-PYTHONPATH=. python scripts/import_recipes_postgres.py --missing-only
-
-# Import all (fresh database)
-PYTHONPATH=. python scripts/import_recipes_postgres.py --all
-```
+**Files Modified:**
+- `backend/app/repositories/recipe_repository.py` - Eager loading and category search
+- `backend/app/services/meal_generation_service.py` - Pairing logic and INCLUDE rule improvements
 
 ### Running Tests
 
-**All Tests (156 total):**
+**All Tests (170 total):**
 ```bash
 cd backend
-pytest tests/ -q
-# 156 passed (14 E2E tests may fail - need investigation)
-```
-
-**Unit/Integration Tests (no database):**
-```bash
-pytest tests/test_meal_generation.py tests/test_meal_generation_integration.py -v
-# 51 tests, ~0.2 seconds
+source venv/Scripts/activate  # Windows
+PYTHONPATH=. pytest tests/ -q
+# 170 passed
 ```
 
 **E2E Tests (hits real PostgreSQL):**
 ```bash
-pytest tests/test_meal_generation_e2e.py -v -s
-# 15 tests - currently 14 failing, needs investigation
+PYTHONPATH=. pytest tests/test_meal_generation_e2e.py -v
+# 14 passed
 ```
 
-### Sharma Family Verification Checklist
+### Sharma Family Verification Results (All Passing)
 
-| Check | Expected | Status |
-|-------|----------|--------|
-| Peanut allergy | 0 peanut/groundnut recipes | CRITICAL |
-| Mushroom EXCLUDE | 0 mushroom recipes | Required |
-| Dislikes (karela/lauki/turai) | 0 recipes | Required |
-| Chai DAILY | 7 in breakfast | Required |
-| Dal 4x/week | 4+ in lunch/dinner | Required |
-| Paneer 2x/week | 2+ in lunch/dinner | Required |
-| 2-item pairing | Most slots have 2 items | Required |
-| No duplicate mains | Unique main recipes | Recommended |
+| Check | Expected | Actual | Status |
+|-------|----------|--------|--------|
+| Chai in breakfast (DAILY) | 7 | 7 | PASS |
+| Dal in lunch+dinner (4x/week) | >=4 | 7 | PASS |
+| Paneer in lunch+dinner (2x/week) | >=2 | 3 | PASS |
+| No peanut/groundnut (ALLERGY) | 0 | 0 | PASS |
+| No karela/lauki/turai (DISLIKES) | 0 | 0 | PASS |
+| No mushroom (EXCLUDE) | 0 | 0 | PASS |
+| 2 items per slot (<=4 exceptions) | <=4 | 0 | PASS |
 
 ### Remaining Work
 
 **High Priority:**
-1. Fix 14 failing E2E tests (PostgreSQL compatibility)
-2. Connect Android app to backend meal generation API
-3. User preference settings for:
+1. Connect Android app to backend meal generation API
+2. User preference settings for:
    - Items per meal, weekly deduplication
    - Allergen variant toggle, strict dietary toggle
 
 **Medium Priority:**
-4. Add user-configurable deduplication settings
-5. Implement per meal-type item counts
-6. Add fallback warning notifications for dislikes
+3. Add user-configurable deduplication settings
+4. Implement per meal-type item counts
+5. Add fallback warning notifications for dislikes
 
 **Future Scope:**
 - Nutrition goals enforcement
@@ -181,6 +163,9 @@ pytest tests/test_meal_generation_e2e.py -v -s
 | Daily ingredient tracking | ✅ Implemented | Same ingredient not in lunch AND dinner |
 | Generic suggestions fallback | ✅ Implemented | "Make your own" when no DB recipe |
 | Progressive fallbacks | ✅ Implemented | 4 levels implemented |
+| SQLAlchemy eager loading | ✅ Fixed | All relationships loaded properly |
+| Category-based pairing | ✅ Fixed | Works without category column |
+| INCLUDE rule name matching | ✅ Fixed | Prefers recipes with target in name |
 | User-configurable dedup settings | 🔮 Future | Currently hardcoded |
 | Per meal-type item override | 🔮 Future | Uses global setting |
 | Nutrition goals enforcement | 🔮 Future | Not implemented |
@@ -199,10 +184,10 @@ pytest tests/test_meal_generation_e2e.py -v -s
 | `test_chat_integration.py` | 27 | No | Chat tool calling |
 | `test_meal_generation.py` | 22 | No | Data structures |
 | `test_meal_generation_integration.py` | 29 | No | Rule enforcement |
-| `test_meal_generation_e2e.py` | 15 | **PostgreSQL** | Real database E2E |
+| `test_meal_generation_e2e.py` | 14 | **PostgreSQL** | Real database E2E |
 | `test_chat_api.py` | 12 | No | Chat API endpoints |
-| `test_recipe_cache.py` | 42 | No | Recipe cache operations |
-| **TOTAL** | **178** | | |
+| `test_recipe_cache.py` | 35 | No | Recipe cache operations |
+| **TOTAL** | **170** | | All passing |
 
 ---
 
@@ -282,12 +267,18 @@ PYTHONPATH=. python scripts/import_recipes_postgres.py --all
 - Generic suggestions fallback added
 - 29 integration tests + 15 E2E tests
 
-### Session 33: PostgreSQL Migration (Current)
+### Session 33: PostgreSQL Migration
 - Migrated from Firestore to PostgreSQL
 - All repositories updated for SQLAlchemy
 - Added recipe import with --missing-only flag
 - 3,580 recipes successfully imported
-- 156 backend tests passing
+
+### Session 34: E2E Test Fixes (Current)
+- Fixed SQLAlchemy eager loading (MissingGreenlet error)
+- Fixed breakfast pairing (category search by name)
+- Fixed INCLUDE rule satisfaction (name preference, fallbacks)
+- All 14 E2E tests now passing
+- Verified meal generation with Sharma Family profile
 
 ---
 
@@ -321,16 +312,33 @@ MEAL GENERATION FLOW:
 │  4. For each day (7 days):                                  │
 │     a. Determine cooking time (weekday/weekend/busy)        │
 │     b. Calculate items per slot (time-based)                │
-│     c. Process INCLUDE rules                                │
+│     c. Process INCLUDE rules (prefer name matches)          │
 │     d. Generate paired meals (main + complementary)         │
-│     e. Apply fallbacks if needed                            │
+│     e. Apply fallbacks if needed (time relaxation)          │
 │     f. Use generic suggestions as final fallback            │
 │  5. Return GeneratedMealPlan                                │
+└─────────────────────────────────────────────────────────────┘
+
+INCLUDE RULE PROCESSING:
+┌─────────────────────────────────────────────────────────────┐
+│  1. Search for recipes with target ingredient               │
+│  2. Prefer recipes with target in NAME (not just ingredient)│
+│  3. If no results within time limit → try without time limit│
+│  4. If still no results → create generic suggestion         │
+│  5. Track assignments to ensure weekly quotas met           │
+└─────────────────────────────────────────────────────────────┘
+
+PAIRING LOGIC:
+┌─────────────────────────────────────────────────────────────┐
+│  1. Infer category from recipe name (chai, dal, paratha...) │
+│  2. Look up pairing categories (chai → paratha, poha, toast)│
+│  3. Search by category term in recipe NAME (not column)     │
+│  4. All recipes have category=NULL, so name search required │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 *Last Updated: January 30, 2026*
-*Session 33: PostgreSQL Migration Complete*
-*3,580 recipes. 156 backend tests. ~400 UI tests.*
+*Session 34: E2E Tests Fixed & Verified*
+*3,580 recipes. 170 backend tests (all passing). 14 E2E tests (all passing). ~400 UI tests.*

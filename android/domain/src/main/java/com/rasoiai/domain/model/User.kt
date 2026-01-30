@@ -19,7 +19,12 @@ data class UserPreferences(
     val dislikedIngredients: List<String>,
     val weekdayCookingTimeMinutes: Int,
     val weekendCookingTimeMinutes: Int,
-    val busyDays: List<DayOfWeek>
+    val busyDays: List<DayOfWeek>,
+    // Meal generation settings
+    val itemsPerMeal: Int = 2,  // Number of items per meal slot (1-4)
+    val strictAllergenMode: Boolean = true,  // Strictly exclude allergens
+    val strictDietaryMode: Boolean = true,  // Strictly enforce dietary restrictions
+    val allowRecipeRepeat: Boolean = false  // Allow same recipe multiple times per week
 )
 
 data class FamilyMember(

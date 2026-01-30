@@ -62,6 +62,11 @@ class RecipeRepository:
         async with async_session_maker() as session:
             result = await session.execute(
                 select(Recipe)
+                .options(
+                    selectinload(Recipe.ingredients),
+                    selectinload(Recipe.instructions),
+                    selectinload(Recipe.nutrition),
+                )
                 .where(Recipe.is_active == True)
                 .limit(limit)
             )
@@ -101,7 +106,11 @@ class RecipeRepository:
 
         # Fetch from PostgreSQL
         async with async_session_maker() as session:
-            query = select(Recipe).where(Recipe.is_active == True)
+            query = select(Recipe).options(
+                selectinload(Recipe.ingredients),
+                selectinload(Recipe.instructions),
+                selectinload(Recipe.nutrition),
+            ).where(Recipe.is_active == True)
 
             if cuisine_type:
                 query = query.where(Recipe.cuisine_type == cuisine_type)
@@ -332,10 +341,20 @@ class RecipeRepository:
             return filtered[:limit]
 
         # Fetch from PostgreSQL
+        # Since most recipes don't have category set, search by name containing the category term
         async with async_session_maker() as session:
-            query = select(Recipe).where(
+            # Use OR: match category column OR name contains the term
+            from sqlalchemy import or_, func
+            query = select(Recipe).options(
+                selectinload(Recipe.ingredients),
+                selectinload(Recipe.instructions),
+                selectinload(Recipe.nutrition),
+            ).where(
                 Recipe.is_active == True,
-                Recipe.category == category
+                or_(
+                    Recipe.category == category,
+                    func.lower(Recipe.name).contains(category.lower())
+                )
             )
 
             if cuisine_type:
@@ -518,7 +537,9 @@ class RecipeRepository:
         # Fetch from PostgreSQL
         async with async_session_maker() as session:
             query = select(Recipe).options(
-                selectinload(Recipe.ingredients)
+                selectinload(Recipe.ingredients),
+                selectinload(Recipe.instructions),
+                selectinload(Recipe.nutrition),
             ).where(Recipe.is_active == True)
 
             if cuisine_type:

@@ -17,12 +17,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 See `docs/CONTINUE_PROMPT.md` for session context and active work.
 
-**Test Coverage (last verified: Jan 29, 2026):**
+**Test Coverage (last verified: Jan 30, 2026):**
 
 | Platform | Tests | Details |
 |----------|-------|---------|
 | Android UI | ~400 | 15 screens + E2E flows (Compose UI Testing) |
-| Backend | 156 | 9 test files (pytest) |
+| Backend | 170 | 9 test files (pytest) |
 
 **Android Tests:**
 - UI Screen Tests: 15 screens (Auth, Onboarding, Generation, Home, RecipeDetail, Grocery, Chat, Favorites, Stats, Settings, Pantry, RecipeRules, CookingMode, Theme, Components)
@@ -39,9 +39,9 @@ See `docs/CONTINUE_PROMPT.md` for session context and active work.
 - `tests/test_chat_integration.py` (27 tests) - Chat tool calling flow
 - `tests/test_meal_generation.py` (22 tests) - Meal generation structures/logic
 - `tests/test_meal_generation_integration.py` (29 tests) - Meal generation rule enforcement
-- `tests/test_meal_generation_e2e.py` (15 tests) - E2E tests against real PostgreSQL
+- `tests/test_meal_generation_e2e.py` (14 tests) - E2E tests against real PostgreSQL
 - `tests/test_chat_api.py` (12 tests) - Chat API endpoints
-- `tests/test_recipe_cache.py` (42 tests) - Recipe cache operations
+- `tests/test_recipe_cache.py` (35 tests) - Recipe cache operations
 
 **Meal Generation Config:** All 4 phases complete (Config YAML, Backend Service, Chat Integration, Testing)
 
@@ -399,7 +399,7 @@ PYTHONPATH=. python scripts/sync_config_postgres.py
 # Import recipes (if not already done)
 PYTHONPATH=. python scripts/import_recipes_postgres.py
 
-# Testing (156 tests total)
+# Testing (170 tests total)
 pytest                           # All tests
 pytest --cov=app                 # With coverage
 pytest tests/test_auth.py -v     # Single file
@@ -458,7 +458,10 @@ backend/
     ├── test_preference_service.py       # PreferenceUpdateService (26 tests)
     ├── test_chat_integration.py         # Chat tool calling flow (27 tests)
     ├── test_meal_generation.py          # Meal generation logic (22 tests)
-    └── test_chat_api.py                 # Chat API endpoints (12 tests)
+    ├── test_meal_generation_integration.py  # Rule enforcement (29 tests)
+    ├── test_meal_generation_e2e.py      # E2E against PostgreSQL (14 tests)
+    ├── test_chat_api.py                 # Chat API endpoints (12 tests)
+    └── test_recipe_cache.py             # Recipe cache operations (35 tests)
 ```
 
 **Test naming:** `ClassNameTest.kt` for unit tests, `ScreenNameTest.kt` for UI tests, `*FlowTest.kt` for E2E flows, `test_*.py` for backend tests
