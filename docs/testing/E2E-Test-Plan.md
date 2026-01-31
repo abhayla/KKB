@@ -18,6 +18,9 @@ This document provides an executable test plan for end-to-end testing of the Ras
 10. [Verification Checklists](#verification-checklists)
 11. [Execution Commands](#execution-commands)
 12. [Test Results Template](#test-results-template)
+13. [Backend Meal Generation E2E Testing](#backend-meal-generation-e2e-testing)
+14. [Meal Generation API & Screen Data Flow Tests](#meal-generation-api--screen-data-flow-tests)
+15. [Sequential Core Data Flow Test (Real API)](#section-15-sequential-core-data-flow-test-real-api)
 
 ---
 
@@ -1161,5 +1164,470 @@ OVERALL: ✅ ALL CRITICAL CHECKS PASS
 
 ---
 
-*Last Updated: January 29, 2026*
-*Document Version: 1.1 - Added Backend E2E Testing section*
+## Meal Generation API & Screen Data Flow Tests
+
+This section provides a comprehensive test plan for validating the meal generation API and verifying data flows correctly through downstream screens (Home → Grocery → Recipe Detail).
+
+### Overview
+
+| Component | Tests | Purpose |
+|-----------|-------|---------|
+| Backend pytest | 65 | Validate API generates correct data |
+| Android E2E | ~70 | Verify data flows to screens correctly |
+| Content verification | Checklist | Confirm constraints respected in UI |
+
+### Phase 1: Backend pytest Tests (65 tests)
+
+#### Prerequisites
+
+```bash
+cd D:\Abhay\VibeCoding\KKB\backend
+.\venv\Scripts\activate  # Windows
+# source venv/bin/activate  # Linux/Mac
+
+# Verify PostgreSQL connection
+PYTHONPATH=. python -c "from app.db.postgres import get_async_session; print('DB OK')"
+```
+
+#### Test Files
+
+| File | Tests | Purpose | PostgreSQL |
+|------|-------|---------|------------|
+| `test_meal_generation.py` | 22 | Data structures, filtering logic | No |
+| `test_meal_generation_integration.py` | 29 | Service unit tests, exclude/include logic | No |
+| `test_meal_generation_e2e.py` | 14 | Full generation against real DB | **Yes** |
+
+#### Run Commands
+
+```bash
+# Run all meal generation tests (65 total)
+PYTHONPATH=. pytest tests/test_meal_generation.py tests/test_meal_generation_integration.py tests/test_meal_generation_e2e.py -v
+
+# Run unit tests only (fast, no DB)
+PYTHONPATH=. pytest tests/test_meal_generation.py -v
+
+# Run integration tests only (fast, no DB)
+PYTHONPATH=. pytest tests/test_meal_generation_integration.py -v
+
+# Run E2E tests only (slow, hits PostgreSQL)
+PYTHONPATH=. pytest tests/test_meal_generation_e2e.py -v -s
+```
+
+#### Key Constraint Tests
+
+| Test | File | Verifies |
+|------|------|----------|
+| `test_sharma_family_no_peanuts` | E2E | Peanut allergy enforcement (SEVERE) |
+| `test_sharma_family_no_dislikes` | E2E | No karela/lauki/turai |
+| `test_sharma_family_no_mushroom` | E2E | EXCLUDE rule enforcement |
+| `test_sharma_family_chai_daily` | E2E | INCLUDE rule (7x breakfast) |
+| `test_sharma_family_2_items_per_slot` | E2E | 2-item pairing logic |
+| `test_allergen_filtering` | Integration | Allergen variants (peanut/groundnut/mungfali) |
+| `test_sattvic_filtering` | Integration | No onion/garlic recipes |
+
+#### Expected Results
+
+```
+tests/test_meal_generation.py .................... [22 passed]
+tests/test_meal_generation_integration.py ......................... [29 passed]
+tests/test_meal_generation_e2e.py .............. [14 passed]
+
+==================== 65 passed in X.XXs ====================
+```
+
+### Phase 2: Start Backend Server
+
+After backend tests pass, start the server for Android tests:
+
+```bash
+cd D:\Abhay\VibeCoding\KKB\backend
+.\venv\Scripts\activate
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Verify health endpoint
+curl http://localhost:8000/health
+# Expected: {"status": "healthy"}
+```
+
+### Phase 3: Android E2E Tests
+
+#### Prerequisites
+
+```bash
+# Start emulator (API 34, NOT 36)
+"C:/Users/itsab/AppData/Local/Android/Sdk/emulator/emulator.exe" -avd Pixel_6 -no-snapshot-load
+
+# Wait for boot
+adb wait-for-device shell getprop sys.boot_completed
+
+# Install app
+cd D:\Abhay\VibeCoding\KKB\android
+./gradlew installDebug
+```
+
+#### Core Flow Tests
+
+| Screen | Test File | Tests | Verifies |
+|--------|-----------|-------|----------|
+| Home | `HomeScreenTest.kt` | 22 | Meal cards, day navigation, lock state |
+| Grocery | `GroceryScreenTest.kt` | 21 | Ingredient list, categories, no prohibited items |
+| Recipe Detail | `RecipeDetailScreenTest.kt` | 26 | Recipe info, ingredients, instructions |
+
+#### Run Commands
+
+```bash
+cd D:\Abhay\VibeCoding\KKB\android
+
+# Run Home screen tests (22 tests)
+./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.presentation.home.HomeScreenTest
+
+# Run Grocery screen tests (21 tests)
+./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.presentation.grocery.GroceryScreenTest
+
+# Run Recipe Detail tests (26 tests)
+./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.presentation.recipedetail.RecipeDetailScreenTest
+
+# Run all core flow tests
+./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.package=com.rasoiai.app.e2e.flows
+```
+
+#### E2E Flow Tests
+
+| Test File | Tests | Purpose |
+|-----------|-------|---------|
+| `MealPlanGenerationTest.kt` | 3 | Progress animation, navigation |
+| `FullUserJourneyTest.kt` | 1 | Complete onboarding → generation → home |
+| `RecipeConstraintTest.kt` | 22 | SATTVIC, allergy, dislike constraints |
+
+```bash
+# Run meal plan generation flow
+./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.flows.MealPlanGenerationTest
+
+# Run recipe constraint validation
+./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.validation.RecipeConstraintTest
+```
+
+### Phase 4: Content Verification Checklist
+
+After running tests, verify the Sharma Family profile constraints:
+
+#### Critical Constraints (Must Pass)
+
+| Constraint | Backend Test | Android Verification | Pass |
+|------------|--------------|---------------------|------|
+| No Peanuts (SEVERE ALLERGY) | `test_sharma_family_no_peanuts` | RecipeConstraintTest | [ ] |
+| No Onion/Garlic (SATTVIC) | `test_sattvic_filtering` | RecipeConstraintTest | [ ] |
+| No Karela/Baingan/Mushroom | `test_sharma_family_no_dislikes` | RecipeConstraintTest | [ ] |
+| 100% VEGETARIAN | `test_vegetarian_only` | RecipeConstraintTest | [ ] |
+
+#### Preference Constraints
+
+| Constraint | Backend Test | Android Verification | Pass |
+|------------|--------------|---------------------|------|
+| Weekday ≤30min | Service logic | Verify prep time in UI | [ ] |
+| Weekend ≤60min | Service logic | Verify prep time in UI | [ ] |
+| 2 Items Per Slot | `test_sharma_family_2_items_per_slot` | Meal card count | [ ] |
+| Chai Daily (Breakfast) | `test_sharma_family_chai_daily` | Verify chai in breakfast | [ ] |
+
+#### UI Verification Points
+
+| Screen | Verification | TestTag |
+|--------|--------------|---------|
+| Home | 4 meal cards per day | `MEAL_CARD_*` |
+| Home | 7 day tabs | `HOME_DAY_TAB_*` |
+| Grocery | Items from meal plan | `GROCERY_ITEM_*` |
+| Grocery | No prohibited ingredients | Manual check |
+| Recipe Detail | Ingredients list | `RECIPE_INGREDIENTS_LIST` |
+| Recipe Detail | Instructions list | `RECIPE_INSTRUCTIONS_LIST` |
+
+### Execution Checklist
+
+#### Backend
+
+- [ ] PostgreSQL running with 3,580 recipes
+- [ ] `pytest tests/test_meal_generation.py -v` - 22 PASS
+- [ ] `pytest tests/test_meal_generation_integration.py -v` - 29 PASS
+- [ ] `pytest tests/test_meal_generation_e2e.py -v -s` - 14 PASS
+- [ ] Backend server started on port 8000
+
+#### Android
+
+- [ ] Emulator running (API 34)
+- [ ] Backend accessible at http://10.0.2.2:8000
+- [ ] HomeScreenTest (22) PASS
+- [ ] GroceryScreenTest (21) PASS
+- [ ] RecipeDetailScreenTest (26) PASS
+- [ ] MealPlanGenerationTest (3) PASS
+- [ ] RecipeConstraintTest (22) PASS
+
+### Critical Files
+
+| File | Purpose |
+|------|---------|
+| `backend/tests/test_meal_generation.py` | Unit tests (22) |
+| `backend/tests/test_meal_generation_integration.py` | Integration tests (29) |
+| `backend/tests/test_meal_generation_e2e.py` | E2E tests (14) |
+| `android/.../e2e/validation/RecipeConstraintTest.kt` | Constraint validation |
+| `android/.../e2e/flows/MealPlanGenerationTest.kt` | Generation flow |
+| `android/.../presentation/home/HomeScreenTest.kt` | Home UI tests |
+| `android/.../presentation/grocery/GroceryScreenTest.kt` | Grocery UI tests |
+| `android/.../presentation/recipedetail/RecipeDetailScreenTest.kt` | Recipe detail tests |
+
+### Execution Order
+
+1. **Backend Tests First** - Verify API generates correct data
+2. **Start Backend Server** - For Android tests
+3. **Android UI Tests** - Verify screens render correctly
+4. **Android E2E Tests** - Verify data flows through screens
+5. **Content Verification** - Confirm constraints respected in UI
+
+---
+
+## Section 15: Sequential Core Data Flow Test (Real API)
+
+This section describes a focused E2E test that validates the complete data flow from authentication through meal plan generation to downstream screens, using the **real backend API**.
+
+### Execution Approach
+
+**IMPORTANT: Use the automated Compose UI test, NOT manual adb tapping.**
+
+| Approach | Speed | Reliability | Use When |
+|----------|-------|-------------|----------|
+| **Automated Test (Recommended)** | Fast (~30s) | High | Always - primary execution method |
+| Manual Screenshot | Slow (~5min) | Low | Only for debugging failed tests |
+
+**Why automated tests are better:**
+1. **FakeGoogleAuthClient** auto-succeeds without real OAuth flow
+2. **Compose UI Testing** uses semantic TestTags, not coordinate tapping
+3. **Fast execution** - no sleep delays or screenshot pulls
+4. **Deterministic** - same result every run
+
+### Primary Execution Command
+
+```bash
+cd android
+
+# Run the automated sequential test (RECOMMENDED)
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.flows.FullUserJourneyTest
+
+# View results
+start app/build/reports/androidTests/connected/index.html
+```
+
+### Test Sequence
+
+| Step | Screen | Action | Content Verification |
+|------|--------|--------|---------------------|
+| 1 | Auth | Google Sign-In (FakeGoogleAuthClient) | Auth screen displayed, sign-in button works |
+| 2 | Onboarding | Complete Sharma Family profile (5 steps) | All 5 onboarding steps complete |
+| 3 | Generation | Trigger real API POST `/api/v1/meal-plans/generate` | Progress animation, auto-navigation to Home |
+| 4 | Home | View generated meal plan | 7 days visible, 2 items per meal slot |
+| 5 | RecipeDetail | Tap breakfast meal | Ingredients list, instructions list displayed |
+| 6 | Grocery | Navigate via bottom nav | Category grouping (Vegetables, Spices, etc.) |
+
+### Sharma Family Profile (Test Data)
+
+| Attribute | Value |
+|-----------|-------|
+| Members | 3 (Ramesh 45, Sunita 42, Aarav 12) |
+| Diet | VEGETARIAN + SATTVIC |
+| Cuisines | NORTH, SOUTH |
+| Dislikes | Karela, Baingan |
+| Cooking Time | Weekday 30min, Weekend 60min |
+| Busy Days | Monday, Wednesday, Friday |
+
+### How the Test Works (FakeGoogleAuthClient)
+
+```kotlin
+// The test uses FakeGoogleAuthClient which:
+// 1. Intercepts Google sign-in button tap
+// 2. Returns fake credentials instantly (no OAuth popup)
+// 3. Sends "fake-firebase-token" to backend
+// 4. Backend accepts in DEBUG mode and returns real JWT
+
+@HiltAndroidTest
+class FullUserJourneyTest : BaseE2ETest() {
+    @Inject lateinit var fakeGoogleAuthClient: FakeGoogleAuthClient
+
+    @Before
+    fun setup() {
+        fakeGoogleAuthClient.setSignInSuccess()  // Auto-succeed
+    }
+
+    @Test
+    fun completeJourney() {
+        // Taps are handled by Compose UI Testing with TestTags
+        // NOT by manual adb coordinate tapping
+        composeTestRule.onNodeWithTag(TestTags.GOOGLE_SIGN_IN_BUTTON).performClick()
+        // ... continues through onboarding, generation, home
+    }
+}
+```
+
+### Screenshot Verification Loop
+
+**For each screen, take a screenshot after the test step to verify pass/fail:**
+
+```
+FOR each screen in [Auth, Onboarding, Generation, Home, RecipeDetail, Grocery]:
+    1. Run automated test step (Compose UI Testing with TestTags)
+    2. Take screenshot: adb shell screencap -p /data/local/tmp/step_N.png
+    3. Pull screenshot: adb pull /data/local/tmp/step_N.png
+    4. Analyze screenshot visually to verify test passed
+    5. IF PASS: Move to next screen
+    6. IF FAIL:
+       a. Identify issue from screenshot
+       b. Fix the code/test
+       c. Clear app data: adb shell pm clear com.rasoiai.app
+       d. Retest from Step 1
+       e. Loop until pass
+```
+
+**Screenshot Commands:**
+```bash
+ADB="/c/Users/itsab/AppData/Local/Android/Sdk/platform-tools/adb.exe"
+
+# Take screenshot after each screen test
+"$ADB" shell screencap -p /data/local/tmp/screen_name.png
+MSYS_NO_PATHCONV=1 "$ADB" pull /data/local/tmp/screen_name.png ./docs/testing/screenshots/e2e-flow/
+
+# Clear app data for retest
+"$ADB" shell pm clear com.rasoiai.app
+```
+
+**Screenshot Checklist:**
+
+| Step | Screenshot | Pass Criteria |
+|------|------------|---------------|
+| 1 | `step1_auth.png` | Logo, "Continue with Google" button visible |
+| 2 | `step2_onboarding.png` | 5 steps completed, "Create My Meal Plan" tapped |
+| 3 | `step3_generation.png` | 4 progress steps with checkmarks, auto-nav to Home |
+| 4 | `step4_home.png` | 7 days, meal cards with 2 items per slot |
+| 5 | `step5_recipe.png` | Ingredients list, instructions list |
+| 6 | `step6_grocery.png` | Category headers, ingredient items |
+
+### Test Assertions (What the Automated Test Verifies)
+
+The `FullUserJourneyTest` uses TestTags to verify each screen:
+
+#### Step 1: Auth Screen
+```kotlin
+composeTestRule.onNodeWithTag(TestTags.AUTH_SCREEN).assertIsDisplayed()
+composeTestRule.onNodeWithTag(TestTags.GOOGLE_SIGN_IN_BUTTON).assertIsDisplayed()
+```
+
+#### Step 2: Onboarding (5 sub-steps)
+```kotlin
+// Step 1: Household
+composeTestRule.onNodeWithTag(TestTags.HOUSEHOLD_SIZE_DROPDOWN).assertIsDisplayed()
+// Step 2: Diet
+composeTestRule.onNodeWithTag(TestTags.PRIMARY_DIET_VEGETARIAN).assertIsSelected()
+// Step 3: Cuisine
+composeTestRule.onNodeWithTag(TestTags.CUISINE_CARD_NORTH).assertIsSelected()
+// Step 4: Dislikes
+composeTestRule.onNodeWithText("Karela").assertIsDisplayed()
+// Step 5: Schedule
+composeTestRule.onNodeWithTag(TestTags.WEEKDAY_TIME_DROPDOWN).assertIsDisplayed()
+```
+
+#### Step 3: Generation Screen
+```kotlin
+composeTestRule.onNodeWithTag(TestTags.GENERATING_SCREEN).assertIsDisplayed()
+// Waits for auto-navigation to Home
+composeTestRule.waitUntil { /* Home screen visible */ }
+```
+
+#### Step 4: Home Screen
+```kotlin
+composeTestRule.onNodeWithTag(TestTags.HOME_SCREEN).assertIsDisplayed()
+composeTestRule.onNodeWithTag(TestTags.MEAL_CARD_breakfast).assertIsDisplayed()
+composeTestRule.onNodeWithTag(TestTags.MEAL_CARD_lunch).assertIsDisplayed()
+composeTestRule.onNodeWithTag(TestTags.MEAL_CARD_dinner).assertIsDisplayed()
+```
+
+#### Step 5: RecipeDetail Screen
+```kotlin
+composeTestRule.onNodeWithTag(TestTags.RECIPE_DETAIL_SCREEN).assertIsDisplayed()
+composeTestRule.onNodeWithTag(TestTags.RECIPE_INGREDIENTS_LIST).assertIsDisplayed()
+composeTestRule.onNodeWithTag(TestTags.RECIPE_INSTRUCTIONS_LIST).assertIsDisplayed()
+```
+
+#### Step 6: Grocery Screen
+```kotlin
+composeTestRule.onNodeWithTag(TestTags.GROCERY_SCREEN).assertIsDisplayed()
+composeTestRule.onNodeWithTag(TestTags.GROCERY_CATEGORY_vegetables).assertIsDisplayed()
+```
+
+### Execution Commands
+
+```bash
+cd android
+
+# 1. Ensure backend is running (DEBUG=true for fake-firebase-token)
+# In another terminal: cd backend && uvicorn app.main:app --reload
+
+# 2. Run the automated E2E test (RECOMMENDED)
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.flows.FullUserJourneyTest
+
+# 3. View HTML report
+start app/build/reports/androidTests/connected/index.html
+```
+
+### Critical Files
+
+| File | Purpose |
+|------|---------|
+| `e2e/flows/CoreDataFlowTest.kt` | **Simplified core flow test (RECOMMENDED)** |
+| `e2e/flows/FullUserJourneyTest.kt` | Full journey test (more complex) |
+| `e2e/base/BaseE2ETest.kt` | Base class with Hilt setup, timeout helpers |
+| `e2e/di/FakeGoogleAuthClient.kt` | Auto-succeeds Google sign-in |
+| `e2e/di/FakeAuthModule.kt` | Hilt module replacing real GoogleAuthClient |
+| `e2e/robots/*.kt` | Robot classes for each screen |
+| `presentation/common/TestTags.kt` | All semantic test tags |
+
+### Latest Test Results (Jan 30, 2026)
+
+**CoreDataFlowTest - ✅ PASSED**
+
+| Step | Screen | Status | Notes |
+|------|--------|--------|-------|
+| 1 | Auth | ✅ PASS | Logo + Google button verified |
+| 2 | Sign In → Onboarding | ✅ PASS | FakeGoogleAuthClient worked |
+| 3 | Onboarding (5 steps) | ✅ PASS | All 5 steps completed with defaults |
+| 4 | Generation | ✅ PASS | GENERATING_SCREEN testTag found |
+| 5 | Home | ✅ PASS | HOME_SCREEN and BOTTOM_NAV verified |
+
+**Execution Command:**
+```bash
+cd android
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.flows.CoreDataFlowTest
+```
+
+### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Test stuck on Auth | Check `FakeGoogleAuthClient.setSignInSuccess()` in test setup |
+| Generation fails | Verify backend running at `http://10.0.2.2:8000` (emulator address) |
+| Home shows empty | Check `DEBUG=true` in backend `.env` file |
+| Test timeout | Increase timeout in `BaseE2ETest` or use `waitUntil` helper |
+| Emulator not found | Run `adb devices` and ensure emulator is running |
+| API 36 issues | Use API 34 emulator (API 36 has Espresso compatibility bugs) |
+
+### Common Mistakes to Avoid
+
+| Mistake | Correct Approach |
+|---------|------------------|
+| Manual `adb input tap` commands | Use Compose UI Testing with `performClick()` |
+| Taking screenshots for each step | Run automated test, only screenshot on failure |
+| Using real Google OAuth | Use `FakeGoogleAuthClient` which auto-succeeds |
+| Coordinate-based tapping | Use semantic `TestTags` for element selection |
+| Sleep-based waits | Use `waitUntil {}` with condition checks |
+
+---
+
+*Last Updated: January 30, 2026*
+*Document Version: 1.5 - Added CoreDataFlowTest results and simplified test execution*

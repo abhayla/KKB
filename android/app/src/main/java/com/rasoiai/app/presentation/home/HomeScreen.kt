@@ -227,7 +227,10 @@ private fun HomeScreenContent(
                             contentDescription = "Notifications"
                         )
                     }
-                    IconButton(onClick = onProfileClick) {
+                    IconButton(
+                        onClick = onProfileClick,
+                        modifier = Modifier.testTag(TestTags.HOME_PROFILE_BUTTON)
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Person,
                             contentDescription = "Profile"
@@ -283,7 +286,8 @@ private fun HomeScreenContent(
                     item {
                         WeekDateSelector(
                             weekDates = uiState.weekDates,
-                            onDateSelect = onDateSelect
+                            onDateSelect = onDateSelect,
+                            modifier = Modifier.testTag(TestTags.HOME_WEEK_SELECTOR)
                         )
                     }
 
@@ -334,22 +338,6 @@ private fun HomeScreenContent(
 
                         item {
                             MealSection(
-                                title = "Dinner",
-                                icon = "\uD83C\uDF19", // Moon emoji
-                                meals = dayMeals.dinner,
-                                mealType = MealType.DINNER,
-                                isMealLocked = uiState.isMealLocked(MealType.DINNER),
-                                isDayLocked = uiState.isSelectedDayLocked,
-                                onRecipeClick = onRecipeClick,
-                                onLockClick = { onMealLockClick(MealType.DINNER) },
-                                onAddClick = { /* TODO: Add recipe */ },
-                                onToggleRecipeLockDirect = onToggleRecipeLockDirect,
-                                onRemoveRecipeDirect = onRemoveRecipeDirect
-                            )
-                        }
-
-                        item {
-                            MealSection(
                                 title = "Snacks",
                                 icon = "\uD83C\uDF6A", // Cookie emoji
                                 meals = dayMeals.snacks,
@@ -358,6 +346,22 @@ private fun HomeScreenContent(
                                 isDayLocked = uiState.isSelectedDayLocked,
                                 onRecipeClick = onRecipeClick,
                                 onLockClick = { onMealLockClick(MealType.SNACKS) },
+                                onAddClick = { /* TODO: Add recipe */ },
+                                onToggleRecipeLockDirect = onToggleRecipeLockDirect,
+                                onRemoveRecipeDirect = onRemoveRecipeDirect
+                            )
+                        }
+
+                        item {
+                            MealSection(
+                                title = "Dinner",
+                                icon = "\uD83C\uDF19", // Moon emoji
+                                meals = dayMeals.dinner,
+                                mealType = MealType.DINNER,
+                                isMealLocked = uiState.isMealLocked(MealType.DINNER),
+                                isDayLocked = uiState.isSelectedDayLocked,
+                                onRecipeClick = onRecipeClick,
+                                onLockClick = { onMealLockClick(MealType.DINNER) },
                                 onAddClick = { /* TODO: Add recipe */ },
                                 onToggleRecipeLockDirect = onToggleRecipeLockDirect,
                                 onRemoveRecipeDirect = onRemoveRecipeDirect
@@ -486,10 +490,11 @@ private fun WeekHeader(dateRange: String) {
 @Composable
 private fun WeekDateSelector(
     weekDates: List<WeekDay>,
-    onDateSelect: (LocalDate) -> Unit
+    onDateSelect: (LocalDate) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     LazyRow(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(vertical = spacing.sm),
         horizontalArrangement = Arrangement.spacedBy(spacing.xs),
@@ -523,8 +528,12 @@ private fun DateItem(
         else -> MaterialTheme.colorScheme.onSurface
     }
 
+    // Get day name for testTag (e.g., "monday", "tuesday")
+    val dayTag = weekDay.date.dayOfWeek.name.lowercase()
+
     Column(
         modifier = Modifier
+            .testTag("${TestTags.HOME_DAY_TAB_PREFIX}$dayTag")
             .clip(RoundedCornerShape(spacing.sm))
             .background(backgroundColor)
             .clickable(onClick = onClick)
@@ -635,7 +644,8 @@ private fun MealSection(
     onLockClick: () -> Unit,
     onAddClick: () -> Unit,
     onToggleRecipeLockDirect: (MealItem, MealType) -> Unit,
-    onRemoveRecipeDirect: (MealItem, MealType) -> Unit
+    onRemoveRecipeDirect: (MealItem, MealType) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val totalTime = meals.sumOf { it.prepTimeMinutes }
     val totalCalories = meals.sumOf { it.calories }
@@ -643,9 +653,10 @@ private fun MealSection(
     val isEffectivelyLocked = isDayLocked || isMealLocked
 
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = spacing.md, vertical = spacing.sm),
+            .padding(horizontal = spacing.md, vertical = spacing.sm)
+            .testTag("${TestTags.MEAL_CARD_PREFIX}${mealType.name.lowercase()}"),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),

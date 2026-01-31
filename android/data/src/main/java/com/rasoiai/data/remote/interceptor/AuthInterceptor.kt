@@ -1,6 +1,6 @@
 package com.rasoiai.data.remote.interceptor
 
-import com.rasoiai.data.local.datastore.UserPreferencesDataStore
+import com.rasoiai.data.local.datastore.UserPreferencesDataStoreInterface
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
@@ -18,7 +18,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class AuthInterceptor @Inject constructor(
-    private val userPreferencesDataStore: UserPreferencesDataStore
+    private val userPreferencesDataStore: UserPreferencesDataStoreInterface
 ) : Interceptor {
 
     companion object {

@@ -4,6 +4,7 @@ import com.rasoiai.app.e2e.base.BaseE2ETest
 import com.rasoiai.app.e2e.base.TestDataFactory
 import com.rasoiai.app.e2e.robots.HomeRobot
 import com.rasoiai.app.e2e.robots.RecipeRulesRobot
+import com.rasoiai.app.e2e.robots.SettingsRobot
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Before
 import org.junit.Test
@@ -20,6 +21,7 @@ import org.junit.Test
 class RecipeRulesFlowTest : BaseE2ETest() {
 
     private lateinit var homeRobot: HomeRobot
+    private lateinit var settingsRobot: SettingsRobot
     private lateinit var recipeRulesRobot: RecipeRulesRobot
 
     @Before
@@ -29,11 +31,14 @@ class RecipeRulesFlowTest : BaseE2ETest() {
         setUpAuthenticatedState()
 
         homeRobot = HomeRobot(composeTestRule)
+        settingsRobot = SettingsRobot(composeTestRule)
         recipeRulesRobot = RecipeRulesRobot(composeTestRule)
 
-        // Navigate to recipe rules screen
+        // Navigate to recipe rules screen: Home → Settings → Recipe Rules
         homeRobot.waitForHomeScreen(LONG_TIMEOUT)
-        // Recipe rules navigation path depends on UI implementation
+        homeRobot.navigateToSettings()
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.navigateToRecipeRules()
     }
 
     /**

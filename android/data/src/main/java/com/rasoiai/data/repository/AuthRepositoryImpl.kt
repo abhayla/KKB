@@ -1,6 +1,6 @@
 package com.rasoiai.data.repository
 
-import com.rasoiai.data.local.datastore.UserPreferencesDataStore
+import com.rasoiai.data.local.datastore.UserPreferencesDataStoreInterface
 import com.rasoiai.data.remote.api.RasoiApiService
 import com.rasoiai.data.remote.dto.AuthRequest
 import com.rasoiai.data.remote.mapper.toDomain
@@ -25,7 +25,7 @@ import javax.inject.Singleton
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
     private val apiService: RasoiApiService,
-    private val userPreferencesDataStore: UserPreferencesDataStore
+    private val userPreferencesDataStore: UserPreferencesDataStoreInterface
 ) : AuthRepository {
 
     private val _currentUser = MutableStateFlow<User?>(null)

@@ -165,6 +165,16 @@ class HomeRobot(private val composeTestRule: ComposeContentTestRule) {
         composeTestRule.onNodeWithText(festivalName, substring = true).assertIsDisplayed()
     }
 
+    // ===================== Top Bar Actions =====================
+
+    /**
+     * Navigate to Settings via profile icon.
+     */
+    fun navigateToSettings() = apply {
+        composeTestRule.onNodeWithTag(TestTags.HOME_PROFILE_BUTTON).performClick()
+        composeTestRule.waitForIdle()
+    }
+
     // ===================== Bottom Navigation =====================
 
     /**

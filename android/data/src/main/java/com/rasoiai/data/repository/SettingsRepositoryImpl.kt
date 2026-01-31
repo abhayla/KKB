@@ -2,7 +2,7 @@ package com.rasoiai.data.repository
 
 import android.content.Context
 import com.rasoiai.core.network.NetworkMonitor
-import com.rasoiai.data.local.datastore.UserPreferencesDataStore
+import com.rasoiai.data.local.datastore.UserPreferencesDataStoreInterface
 import com.rasoiai.data.remote.api.RasoiApiService
 import com.rasoiai.domain.model.AppSettings
 import com.rasoiai.domain.model.DarkModePreference
@@ -33,7 +33,7 @@ import javax.inject.Singleton
 @Singleton
 class SettingsRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val userPreferencesDataStore: UserPreferencesDataStore,
+    private val userPreferencesDataStore: UserPreferencesDataStoreInterface,
     private val apiService: RasoiApiService,
     private val networkMonitor: NetworkMonitor
 ) : SettingsRepository {

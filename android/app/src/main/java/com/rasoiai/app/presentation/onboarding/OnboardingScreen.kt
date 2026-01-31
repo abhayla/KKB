@@ -188,7 +188,10 @@ private fun OnboardingContent(
                 title = { },
                 navigationIcon = {
                     if (!uiState.isFirstStep) {
-                        IconButton(onClick = onBackClick) {
+                        IconButton(
+                            onClick = onBackClick,
+                            modifier = Modifier.testTag(TestTags.ONBOARDING_BACK_BUTTON)
+                        ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.back)
@@ -200,7 +203,9 @@ private fun OnboardingContent(
                     Text(
                         text = "${uiState.currentStep.stepNumber} of 5",
                         style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(end = spacing.md)
+                        modifier = Modifier
+                            .padding(end = spacing.md)
+                            .testTag(TestTags.ONBOARDING_STEP_INDICATOR)
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -302,7 +307,8 @@ private fun OnboardingContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(spacing.md)
-                    .height(56.dp),
+                    .height(56.dp)
+                    .testTag(TestTags.ONBOARDING_NEXT_BUTTON),
                 shape = RoundedCornerShape(spacing.sm)
             ) {
                 Text(
@@ -370,7 +376,8 @@ private fun HouseholdSizeStep(
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor(),
+                    .menuAnchor()
+                    .testTag(TestTags.HOUSEHOLD_SIZE_DROPDOWN),
                 shape = RoundedCornerShape(spacing.sm)
             )
             ExposedDropdownMenu(
@@ -383,7 +390,8 @@ private fun HouseholdSizeStep(
                         onClick = {
                             onHouseholdSizeChange(size)
                             expanded = false
-                        }
+                        },
+                        modifier = Modifier.testTag("${TestTags.HOUSEHOLD_SIZE_OPTION_PREFIX}$size")
                     )
                 }
             }
@@ -401,16 +409,19 @@ private fun HouseholdSizeStep(
         Spacer(modifier = Modifier.height(spacing.sm))
 
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(TestTags.FAMILY_MEMBERS_LIST),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
             ),
             shape = RoundedCornerShape(spacing.md)
         ) {
             Column(modifier = Modifier.padding(spacing.sm)) {
-                familyMembers.forEach { member ->
+                familyMembers.forEachIndexed { index, member ->
                     FamilyMemberRow(
                         member = member,
+                        index = index,
                         onEditClick = { onEditMemberClick(member) },
                         onRemoveClick = { onRemoveMemberClick(member) }
                     )
@@ -421,7 +432,8 @@ private fun HouseholdSizeStep(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable(onClick = onAddMemberClick)
-                        .padding(spacing.md),
+                        .padding(spacing.md)
+                        .testTag(TestTags.ADD_FAMILY_MEMBER_BUTTON),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
@@ -444,12 +456,14 @@ private fun HouseholdSizeStep(
 @Composable
 private fun FamilyMemberRow(
     member: FamilyMember,
+    index: Int,
     onEditClick: () -> Unit,
     onRemoveClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .testTag("${TestTags.FAMILY_MEMBER_ROW_PREFIX}$index")
             .padding(spacing.sm),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -486,7 +500,10 @@ private fun FamilyMemberRow(
             )
         }
 
-        IconButton(onClick = onEditClick) {
+        IconButton(
+            onClick = onEditClick,
+            modifier = Modifier.testTag("${TestTags.FAMILY_MEMBER_EDIT_PREFIX}$index")
+        ) {
             Icon(
                 imageVector = Icons.Default.Edit,
                 contentDescription = "Edit",
@@ -494,7 +511,10 @@ private fun FamilyMemberRow(
             )
         }
 
-        IconButton(onClick = onRemoveClick) {
+        IconButton(
+            onClick = onRemoveClick,
+            modifier = Modifier.testTag("${TestTags.FAMILY_MEMBER_DELETE_PREFIX}$index")
+        ) {
             Icon(
                 imageVector = Icons.Default.Delete,
                 contentDescription = "Remove",
@@ -545,7 +565,9 @@ private fun FamilyMemberBottomSheet(
                 value = name,
                 onValueChange = { name = it },
                 label = { Text("Name") },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(TestTags.MEMBER_NAME_FIELD),
                 shape = RoundedCornerShape(spacing.sm),
                 singleLine = true
             )
@@ -563,7 +585,9 @@ private fun FamilyMemberBottomSheet(
             ExposedDropdownMenuBox(
                 expanded = typeExpanded,
                 onExpandedChange = { typeExpanded = it },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(TestTags.MEMBER_TYPE_DROPDOWN)
             ) {
                 OutlinedTextField(
                     value = memberType.displayName,
@@ -604,7 +628,9 @@ private fun FamilyMemberBottomSheet(
             ExposedDropdownMenuBox(
                 expanded = ageExpanded,
                 onExpandedChange = { ageExpanded = it },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(TestTags.MEMBER_AGE_DROPDOWN)
             ) {
                 OutlinedTextField(
                     value = "$age years",
@@ -644,9 +670,11 @@ private fun FamilyMemberBottomSheet(
             Spacer(modifier = Modifier.height(spacing.sm))
 
             SpecialDietaryNeed.entries.forEach { need ->
+                val needTag = need.name.lowercase()
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .testTag("${TestTags.MEMBER_DIETARY_NEED_PREFIX}$needTag")
                         .clickable {
                             if (need in specialNeeds) {
                                 specialNeeds.remove(need)
@@ -680,7 +708,9 @@ private fun FamilyMemberBottomSheet(
             ) {
                 OutlinedButton(
                     onClick = onDismiss,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag(TestTags.MEMBER_CANCEL_BUTTON),
                     shape = RoundedCornerShape(spacing.sm)
                 ) {
                     Text(stringResource(R.string.cancel))
@@ -692,7 +722,9 @@ private fun FamilyMemberBottomSheet(
                         }
                     },
                     enabled = name.isNotBlank(),
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag(TestTags.MEMBER_SAVE_BUTTON),
                     shape = RoundedCornerShape(spacing.sm)
                 ) {
                     Text(if (editingMember != null) "Update" else "Add Member")

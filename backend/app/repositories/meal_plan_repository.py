@@ -86,25 +86,38 @@ class MealPlanRepository:
             # Create meal plan items from days array
             days = plan_data.get("days", [])
             for day_index, day in enumerate(days):
-                day_date = day.get("date")
+                day_date_raw = day.get("date")
+                # Convert string date to date object if needed
+                if isinstance(day_date_raw, str):
+                    day_date = date.fromisoformat(day_date_raw)
+                else:
+                    day_date = day_date_raw
 
-                # Create items for each meal type
+                # Create items for each meal type (handles both single dict and list of dicts)
                 for meal_type in ["breakfast", "lunch", "dinner", "snacks"]:
                     meal_data = day.get(meal_type)
                     if meal_data:
-                        item = MealPlanItem(
-                            id=str(uuid.uuid4()),
-                            meal_plan_id=plan_id,
-                            recipe_id=meal_data.get("recipe_id"),
-                            date=day_date,
-                            meal_type=meal_type,
-                            servings=meal_data.get("servings", 2),
-                            is_locked=meal_data.get("is_locked", False),
-                            is_swapped=meal_data.get("is_swapped", False),
-                            recipe_name=meal_data.get("recipe_name"),
-                            festival_name=day.get("festival"),
-                        )
-                        session.add(item)
+                        # Handle list of items or single item
+                        items_list = meal_data if isinstance(meal_data, list) else [meal_data]
+                        for meal_item in items_list:
+                            # Convert "GENERIC" or invalid recipe_id to None
+                            recipe_id = meal_item.get("recipe_id")
+                            if recipe_id == "GENERIC":
+                                recipe_id = None
+
+                            item = MealPlanItem(
+                                id=str(uuid.uuid4()),
+                                meal_plan_id=plan_id,
+                                recipe_id=recipe_id,
+                                date=day_date,
+                                meal_type=meal_type,
+                                servings=meal_item.get("servings", 2),
+                                is_locked=meal_item.get("is_locked", False),
+                                is_swapped=meal_item.get("is_swapped", False),
+                                recipe_name=meal_item.get("recipe_name"),
+                                festival_name=day.get("festival"),
+                            )
+                            session.add(item)
 
             await session.commit()
             await session.refresh(plan)
@@ -138,15 +151,25 @@ class MealPlanRepository:
                 # Then create new items
                 days = data["days"]
                 for day_index, day in enumerate(days):
-                    day_date = day.get("date")
+                    day_date_raw = day.get("date")
+                    # Convert string date to date object if needed
+                    if isinstance(day_date_raw, str):
+                        day_date = date.fromisoformat(day_date_raw)
+                    else:
+                        day_date = day_date_raw
 
                     for meal_type in ["breakfast", "lunch", "dinner", "snacks"]:
                         meal_data = day.get(meal_type)
                         if meal_data:
+                            # Convert "GENERIC" or invalid recipe_id to None
+                            recipe_id = meal_data.get("recipe_id")
+                            if recipe_id == "GENERIC":
+                                recipe_id = None
+
                             item = MealPlanItem(
                                 id=str(uuid.uuid4()),
                                 meal_plan_id=plan_id,
-                                recipe_id=meal_data.get("recipe_id"),
+                                recipe_id=recipe_id,
                                 date=day_date,
                                 meal_type=meal_type,
                                 servings=meal_data.get("servings", 2),
@@ -251,17 +274,29 @@ class MealPlanRepository:
             day_key = item.date.isoformat() if item.date else "unknown"
             if day_key not in days_map:
                 days_map[day_key] = {
-                    "date": item.date,
+                    "date": item.date.isoformat() if item.date else "",
+                    "day_name": item.date.strftime("%A") if item.date else "",
                     "festival": item.festival_name,
+                    "meals": {
+                        "breakfast": [],
+                        "lunch": [],
+                        "dinner": [],
+                        "snacks": [],
+                    },
                 }
 
-            days_map[day_key][item.meal_type] = {
-                "recipe_id": item.recipe_id,
+            # Append to list for this meal type
+            days_map[day_key]["meals"][item.meal_type].append({
+                "id": item.id,
+                "recipe_id": item.recipe_id or "",
                 "recipe_name": item.recipe_name,
                 "servings": item.servings,
                 "is_locked": item.is_locked,
                 "is_swapped": item.is_swapped,
-            }
+                "prep_time_minutes": 30,  # Default value
+                "calories": 0,  # Default value
+                "dietary_tags": [],
+            })
 
         # Sort days by date
         days = sorted(days_map.values(), key=lambda d: d.get("date") or date.min)

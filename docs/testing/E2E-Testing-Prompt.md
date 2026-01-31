@@ -1417,6 +1417,79 @@ Response: 200 OK
 - [ ] Settings saved locally
 - [ ] Notification permissions requested if needed
 
+### Test 9.5: Meal Generation Settings
+
+**New Section: Meal Generation Settings (4 toggles)**
+
+The Settings screen includes a "MEAL GENERATION" section with configurable options that affect how the AI generates meal plans.
+
+**UI Verification:**
+- [ ] Section header "MEAL GENERATION" displayed
+- [ ] Items per meal row with current value (default: 2 items)
+- [ ] Strict Allergen Mode toggle (default: ON)
+- [ ] Strict Dietary Mode toggle (default: ON)
+- [ ] Allow Recipe Repeat toggle (default: OFF)
+
+**Test 9.5.1: Items Per Meal Display**
+- Navigate to Settings
+- Verify "Items per meal" shows "2 items" by default
+- (Future: Tap to show picker dialog)
+
+**Test 9.5.2: Strict Allergen Mode Toggle**
+Steps:
+1. Navigate to Settings → Meal Generation section
+2. Verify toggle is ON by default
+3. Toggle OFF
+4. Verify change persists after navigation away and back
+
+Expected:
+- Toggle switches smoothly
+- Setting syncs to backend API
+- Affects next meal plan generation (allergens warned vs blocked)
+
+**Test 9.5.3: Strict Dietary Mode Toggle**
+Steps:
+1. Navigate to Settings → Meal Generation section
+2. Verify toggle is ON by default (SATTVIC/JAIN strictly enforced)
+3. Toggle OFF
+4. Verify change persists
+
+Expected:
+- Toggle state saved to DataStore
+- API syncs preference
+- Next generation may include recipes with minor dietary violations
+
+**Test 9.5.4: Allow Recipe Repeat Toggle**
+Steps:
+1. Navigate to Settings → Meal Generation section
+2. Verify toggle is OFF by default
+3. Toggle ON
+4. Verify change persists
+
+Expected:
+- Toggle state saved locally
+- API syncs preference
+- Same recipe can appear multiple times in weekly plan
+
+**API Verification:**
+```
+PUT /api/v1/users/preferences
+Request: {
+  "items_per_meal": 2,
+  "strict_allergen_mode": false,
+  "strict_dietary_mode": true,
+  "allow_recipe_repeat": true
+}
+Response: 200 OK
+```
+
+**Database Verification (PostgreSQL):**
+```sql
+SELECT items_per_meal, strict_allergen_mode, strict_dietary_mode, allow_recipe_repeat
+FROM user_preferences
+WHERE user_id = 'fake-user-id';
+```
+
 ---
 
 ## Phase 10: Pantry Screen Testing
@@ -2110,5 +2183,56 @@ Use API 34 for Espresso tests. API 36 has compatibility problems.
 
 ---
 
-*Last Updated: January 28, 2026*
+*Last Updated: January 30, 2026*
 *Recipe Database: 3,580 recipes (imported from khanakyabanega)*
+
+---
+
+## Quick Reference: How to Run Tests
+
+**ALWAYS use automated Compose UI tests, NOT manual adb tapping:**
+
+```bash
+cd android
+
+# Run full E2E journey test (uses FakeGoogleAuthClient for instant auth)
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.flows.FullUserJourneyTest
+
+# Run all E2E flow tests (~100 tests)
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.package=com.rasoiai.app.e2e.flows
+
+# View results
+start app/build/reports/androidTests/connected/index.html
+```
+
+**Why automated tests over manual adb coordinate tapping?**
+| Manual adb tap | Automated Test |
+|----------------|----------------|
+| Slow (coordinate guessing, sleeps) | Fast (semantic TestTags) |
+| Unreliable (screens vary) | Reliable (element-based) |
+| Requires real Google OAuth | FakeGoogleAuthClient auto-succeeds |
+
+**Screenshot Verification Loop (Required):**
+
+After each screen test, take a screenshot to verify pass/fail:
+
+```
+FOR each screen in [Auth, Onboarding, Generation, Home, RecipeDetail, Grocery]:
+    1. Run automated test step
+    2. Take screenshot: adb shell screencap
+    3. Analyze screenshot to verify pass
+    4. IF PASS: Move to next screen
+    5. IF FAIL: Fix issue → Clear app data → Retest from start
+    6. Loop until all screens pass
+```
+
+| Step | Screenshot | Pass Criteria |
+|------|------------|---------------|
+| 1 | `step1_auth.png` | Logo, Google button visible |
+| 2 | `step2_onboarding.png` | All 5 steps complete |
+| 3 | `step3_generation.png` | 4 checkmarks, auto-nav to Home |
+| 4 | `step4_home.png` | 7 days, 2 items per meal slot |
+| 5 | `step5_recipe.png` | Ingredients, instructions lists |
+| 6 | `step6_grocery.png` | Category headers, items |

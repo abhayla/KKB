@@ -453,7 +453,7 @@ functions = [
                     "type": "array",
                     "items": {
                         "type": "string",
-                        "enum": ["BREAKFAST", "LUNCH", "DINNER", "SNACKS", "ALL"]
+                        "enum": ["BREAKFAST", "LUNCH", "SNACKS", "DINNER", "ALL"]
                     }
                 },
                 "reason": {
@@ -654,7 +654,7 @@ python scripts/sync_config.py --dry-run
    ├── Determine day type (weekday/weekend/busy)
    │   └── Set max_cooking_time accordingly
    │
-   ├── For each meal slot (breakfast, lunch, dinner, snacks):
+   ├── For each meal slot (breakfast, lunch, snacks, dinner):
    │   │
    │   ├── Count INCLUDE rules for this slot
    │   │   │

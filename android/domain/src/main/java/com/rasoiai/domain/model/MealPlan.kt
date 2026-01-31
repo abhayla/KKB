@@ -20,7 +20,7 @@ data class MealPlanDay(
     val snacks: List<MealItem>,
     val festival: Festival?
 ) {
-    fun getAllMeals(): List<MealItem> = breakfast + lunch + dinner + snacks
+    fun getAllMeals(): List<MealItem> = breakfast + lunch + snacks + dinner
 
     fun getMealsByType(mealType: MealType): List<MealItem> = when (mealType) {
         MealType.BREAKFAST -> breakfast
@@ -45,8 +45,8 @@ data class MealItem(
 enum class MealType(val value: String) {
     BREAKFAST("breakfast"),
     LUNCH("lunch"),
-    DINNER("dinner"),
-    SNACKS("snacks");
+    SNACKS("snacks"),
+    DINNER("dinner");
 
     companion object {
         fun fromValue(value: String): MealType? = entries.find { it.value == value }

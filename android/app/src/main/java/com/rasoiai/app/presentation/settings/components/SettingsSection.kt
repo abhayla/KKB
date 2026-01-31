@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -34,6 +35,7 @@ import com.rasoiai.app.presentation.theme.spacing
 data class SettingsItem(
     val title: String,
     val value: String? = null,
+    val testTag: String? = null,
     val onClick: () -> Unit
 )
 
@@ -41,6 +43,7 @@ data class SettingsToggleItem(
     val title: String,
     val subtitle: String? = null,
     val isChecked: Boolean,
+    val testTag: String? = null,
     val onToggle: (Boolean) -> Unit
 )
 
@@ -94,9 +97,14 @@ fun SettingsSectionWithToggles(
     title: String,
     items: List<SettingsItem> = emptyList(),
     toggleItems: List<SettingsToggleItem> = emptyList(),
+    sectionTestTag: String? = null,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(if (sectionTestTag != null) Modifier.testTag(sectionTestTag) else Modifier)
+    ) {
         Text(
             text = title,
             style = MaterialTheme.typography.labelMedium,
@@ -122,6 +130,7 @@ fun SettingsSectionWithToggles(
                     SettingsItemRow(
                         title = item.title,
                         value = item.value,
+                        testTag = item.testTag,
                         onClick = item.onClick
                     )
                     currentIndex++
@@ -138,6 +147,7 @@ fun SettingsSectionWithToggles(
                         title = toggleItem.title,
                         subtitle = toggleItem.subtitle,
                         isChecked = toggleItem.isChecked,
+                        testTag = toggleItem.testTag,
                         onToggle = toggleItem.onToggle
                     )
                     currentIndex++
@@ -158,11 +168,13 @@ private fun SettingsToggleRow(
     title: String,
     subtitle: String?,
     isChecked: Boolean,
+    testTag: String? = null,
     onToggle: (Boolean) -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .then(if (testTag != null) Modifier.testTag(testTag) else Modifier)
             .clickable { onToggle(!isChecked) }
             .padding(spacing.md),
         verticalAlignment = Alignment.CenterVertically
@@ -202,11 +214,13 @@ private fun SettingsToggleRow(
 private fun SettingsItemRow(
     title: String,
     value: String?,
+    testTag: String? = null,
     onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .then(if (testTag != null) Modifier.testTag(testTag) else Modifier)
             .clickable(onClick = onClick)
             .padding(spacing.md),
         verticalAlignment = Alignment.CenterVertically

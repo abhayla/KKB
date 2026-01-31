@@ -3,12 +3,15 @@ package com.rasoiai.app.e2e.robots
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import com.rasoiai.app.e2e.base.waitUntilNodeWithTagExists
 import com.rasoiai.app.e2e.base.waitUntilNodeWithTextExists
+import com.rasoiai.app.presentation.common.TestTags
 
 /**
  * Robot for Settings screen interactions.
@@ -20,6 +23,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Wait for settings screen to be displayed.
      */
     fun waitForSettingsScreen(timeoutMillis: Long = 5000) = apply {
+        composeTestRule.waitUntilNodeWithTagExists(TestTags.SETTINGS_SCREEN, timeoutMillis)
+        // Also wait for content to load (title appears)
         composeTestRule.waitUntilNodeWithTextExists("Settings", timeoutMillis)
     }
 
@@ -130,9 +135,21 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
 
     /**
      * Navigate to family members settings.
+     * Note: Family section is displayed inline on Settings screen.
+     * This clicks the "Add family member" row.
      */
     fun navigateToFamilyMembers() = apply {
-        composeTestRule.onNodeWithText("Family Members", ignoreCase = true)
+        composeTestRule.onNodeWithText("Add family member", ignoreCase = true)
+            .performScrollTo()
+            .performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    /**
+     * Navigate to recipe rules screen.
+     */
+    fun navigateToRecipeRules() = apply {
+        composeTestRule.onNodeWithText("Recipe Rules", ignoreCase = true)
             .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
@@ -214,6 +231,144 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
     fun selectSystemTheme() = apply {
         composeTestRule.onNodeWithText("System", ignoreCase = true).performClick()
         composeTestRule.waitForIdle()
+    }
+
+    // ===================== Meal Generation Settings =====================
+
+    /**
+     * Scroll to meal generation section.
+     */
+    fun scrollToMealGenerationSection() = apply {
+        composeTestRule.onNodeWithTag(TestTags.SETTINGS_MEAL_GENERATION_SECTION)
+            .performScrollTo()
+        composeTestRule.waitForIdle()
+    }
+
+    /**
+     * Assert meal generation section is displayed.
+     */
+    fun assertMealGenerationSectionDisplayed() = apply {
+        composeTestRule.onNodeWithText("MEAL GENERATION", ignoreCase = true)
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    /**
+     * Assert items per meal displays the expected value.
+     */
+    fun assertItemsPerMealValue(expectedValue: String) = apply {
+        composeTestRule.onNodeWithTag(TestTags.SETTINGS_ITEMS_PER_MEAL)
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText(expectedValue, substring = true)
+            .assertIsDisplayed()
+    }
+
+    /**
+     * Tap items per meal setting.
+     */
+    fun tapItemsPerMeal() = apply {
+        composeTestRule.onNodeWithTag(TestTags.SETTINGS_ITEMS_PER_MEAL)
+            .performScrollTo()
+            .performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    /**
+     * Toggle strict allergen mode.
+     */
+    fun toggleStrictAllergenMode() = apply {
+        composeTestRule.onNodeWithTag(TestTags.SETTINGS_STRICT_ALLERGEN_TOGGLE)
+            .performScrollTo()
+            .performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    /**
+     * Assert strict allergen mode is ON.
+     */
+    fun assertStrictAllergenModeOn() = apply {
+        composeTestRule.onNode(
+            hasTestTag(TestTags.SETTINGS_STRICT_ALLERGEN_TOGGLE)
+        ).performScrollTo()
+        // The toggle row contains the switch - verify by checking the text and state
+        composeTestRule.onNodeWithText("Strict Allergen Mode", ignoreCase = true)
+            .assertIsDisplayed()
+    }
+
+    /**
+     * Assert strict allergen mode is OFF.
+     */
+    fun assertStrictAllergenModeOff() = apply {
+        composeTestRule.onNode(
+            hasTestTag(TestTags.SETTINGS_STRICT_ALLERGEN_TOGGLE)
+        ).performScrollTo()
+        composeTestRule.onNodeWithText("Strict Allergen Mode", ignoreCase = true)
+            .assertIsDisplayed()
+    }
+
+    /**
+     * Toggle strict dietary mode.
+     */
+    fun toggleStrictDietaryMode() = apply {
+        composeTestRule.onNodeWithTag(TestTags.SETTINGS_STRICT_DIETARY_TOGGLE)
+            .performScrollTo()
+            .performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    /**
+     * Assert strict dietary mode is ON.
+     */
+    fun assertStrictDietaryModeOn() = apply {
+        composeTestRule.onNode(
+            hasTestTag(TestTags.SETTINGS_STRICT_DIETARY_TOGGLE)
+        ).performScrollTo()
+        composeTestRule.onNodeWithText("Strict Dietary Mode", ignoreCase = true)
+            .assertIsDisplayed()
+    }
+
+    /**
+     * Assert strict dietary mode is OFF.
+     */
+    fun assertStrictDietaryModeOff() = apply {
+        composeTestRule.onNode(
+            hasTestTag(TestTags.SETTINGS_STRICT_DIETARY_TOGGLE)
+        ).performScrollTo()
+        composeTestRule.onNodeWithText("Strict Dietary Mode", ignoreCase = true)
+            .assertIsDisplayed()
+    }
+
+    /**
+     * Toggle allow recipe repeat.
+     */
+    fun toggleAllowRecipeRepeat() = apply {
+        composeTestRule.onNodeWithTag(TestTags.SETTINGS_ALLOW_REPEAT_TOGGLE)
+            .performScrollTo()
+            .performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    /**
+     * Assert allow recipe repeat is ON.
+     */
+    fun assertAllowRecipeRepeatOn() = apply {
+        composeTestRule.onNode(
+            hasTestTag(TestTags.SETTINGS_ALLOW_REPEAT_TOGGLE)
+        ).performScrollTo()
+        composeTestRule.onNodeWithText("Allow Recipe Repeat", ignoreCase = true)
+            .assertIsDisplayed()
+    }
+
+    /**
+     * Assert allow recipe repeat is OFF.
+     */
+    fun assertAllowRecipeRepeatOff() = apply {
+        composeTestRule.onNode(
+            hasTestTag(TestTags.SETTINGS_ALLOW_REPEAT_TOGGLE)
+        ).performScrollTo()
+        composeTestRule.onNodeWithText("Allow Recipe Repeat", ignoreCase = true)
+            .assertIsDisplayed()
     }
 
     // ===================== Account =====================

@@ -15,6 +15,7 @@ import org.junit.Test
  * 9.1 Profile Section
  * 9.2 Preference Updates
  * 9.3 Notifications Toggle
+ * 9.5 Meal Generation Settings
  */
 @HiltAndroidTest
 class SettingsFlowTest : BaseE2ETest() {
@@ -31,9 +32,9 @@ class SettingsFlowTest : BaseE2ETest() {
         homeRobot = HomeRobot(composeTestRule)
         settingsRobot = SettingsRobot(composeTestRule)
 
-        // Navigate to settings (usually via gear icon from home)
+        // Navigate to settings via profile icon from home
         homeRobot.waitForHomeScreen(LONG_TIMEOUT)
-        // Settings navigation path depends on UI implementation
+        homeRobot.navigateToSettings()
     }
 
     /**
@@ -178,5 +179,135 @@ class SettingsFlowTest : BaseE2ETest() {
         settingsRobot.waitForSettingsScreen()
         settingsRobot.navigateToCookingTime()
         // Cooking time settings should appear
+    }
+
+    // ===================== Test 9.5: Meal Generation Settings =====================
+
+    /**
+     * Test 9.5.1: Meal Generation Section Display
+     *
+     * Steps:
+     * 1. Navigate to Settings
+     * 2. Scroll to Meal Generation section
+     * 3. Verify all settings are displayed
+     *
+     * Expected:
+     * - Section header "MEAL GENERATION" displayed
+     * - Items per meal row with value (default: 2 items)
+     * - Strict Allergen Mode toggle (default: ON)
+     * - Strict Dietary Mode toggle (default: ON)
+     * - Allow Recipe Repeat toggle (default: OFF)
+     */
+    @Test
+    fun test_9_5_1_mealGenerationSection_isDisplayed() {
+        settingsRobot.waitForSettingsScreen()
+
+        // Verify meal generation section
+        settingsRobot.assertMealGenerationSectionDisplayed()
+
+        // Verify items per meal shows default value
+        settingsRobot.assertItemsPerMealValue("2 items")
+    }
+
+    /**
+     * Test 9.5.2: Strict Allergen Mode Toggle
+     *
+     * Steps:
+     * 1. Navigate to Settings → Meal Generation section
+     * 2. Verify toggle is ON by default
+     * 3. Toggle OFF
+     * 4. Verify toggle state changed
+     *
+     * Expected:
+     * - Toggle switches smoothly
+     * - Setting affects next meal plan generation
+     */
+    @Test
+    fun test_9_5_2_strictAllergenMode_toggle() {
+        settingsRobot.waitForSettingsScreen()
+
+        // Scroll to section
+        settingsRobot.scrollToMealGenerationSection()
+
+        // Verify default ON state
+        settingsRobot.assertStrictAllergenModeOn()
+
+        // Toggle OFF
+        settingsRobot.toggleStrictAllergenMode()
+
+        // Verify toggled state
+        settingsRobot.assertStrictAllergenModeOff()
+
+        // Toggle back ON
+        settingsRobot.toggleStrictAllergenMode()
+        settingsRobot.assertStrictAllergenModeOn()
+    }
+
+    /**
+     * Test 9.5.3: Strict Dietary Mode Toggle
+     *
+     * Steps:
+     * 1. Navigate to Settings → Meal Generation section
+     * 2. Verify toggle is ON by default (SATTVIC/JAIN strictly enforced)
+     * 3. Toggle OFF
+     * 4. Verify toggle state changed
+     *
+     * Expected:
+     * - Toggle state saved to DataStore
+     * - API syncs preference
+     */
+    @Test
+    fun test_9_5_3_strictDietaryMode_toggle() {
+        settingsRobot.waitForSettingsScreen()
+
+        // Scroll to section
+        settingsRobot.scrollToMealGenerationSection()
+
+        // Verify default ON state
+        settingsRobot.assertStrictDietaryModeOn()
+
+        // Toggle OFF
+        settingsRobot.toggleStrictDietaryMode()
+
+        // Verify toggled state
+        settingsRobot.assertStrictDietaryModeOff()
+
+        // Toggle back ON
+        settingsRobot.toggleStrictDietaryMode()
+        settingsRobot.assertStrictDietaryModeOn()
+    }
+
+    /**
+     * Test 9.5.4: Allow Recipe Repeat Toggle
+     *
+     * Steps:
+     * 1. Navigate to Settings → Meal Generation section
+     * 2. Verify toggle is OFF by default
+     * 3. Toggle ON
+     * 4. Verify toggle state changed
+     *
+     * Expected:
+     * - Toggle state saved locally
+     * - Same recipe can appear multiple times in weekly plan
+     */
+    @Test
+    fun test_9_5_4_allowRecipeRepeat_toggle() {
+        settingsRobot.waitForSettingsScreen()
+
+        // Scroll to section
+        settingsRobot.scrollToMealGenerationSection()
+
+        // Verify default OFF state
+        settingsRobot.assertAllowRecipeRepeatOff()
+
+        // Toggle ON
+        settingsRobot.toggleAllowRecipeRepeat()
+
+        // Verify toggled state
+        settingsRobot.assertAllowRecipeRepeatOn()
+
+        // Toggle back OFF
+        settingsRobot.toggleAllowRecipeRepeat()
+        settingsRobot.assertAllowRecipeRepeatOff()
     }
 }

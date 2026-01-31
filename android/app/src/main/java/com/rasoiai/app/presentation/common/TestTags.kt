@@ -67,6 +67,7 @@ object TestTags {
 
     // Home Screen
     const val HOME_SCREEN = "home_screen"
+    const val HOME_PROFILE_BUTTON = "home_profile_button"
     const val HOME_WEEK_SELECTOR = "home_week_selector"
     const val HOME_DAY_TAB_PREFIX = "home_day_tab_"
     const val MEAL_CARD_PREFIX = "meal_card_"
@@ -112,6 +113,11 @@ object TestTags {
 
     // Settings Screen
     const val SETTINGS_SCREEN = "settings_screen"
+    const val SETTINGS_MEAL_GENERATION_SECTION = "settings_meal_generation_section"
+    const val SETTINGS_ITEMS_PER_MEAL = "settings_items_per_meal"
+    const val SETTINGS_STRICT_ALLERGEN_TOGGLE = "settings_strict_allergen_toggle"
+    const val SETTINGS_STRICT_DIETARY_TOGGLE = "settings_strict_dietary_toggle"
+    const val SETTINGS_ALLOW_REPEAT_TOGGLE = "settings_allow_repeat_toggle"
 
     // Cooking Mode Screen
     const val COOKING_MODE_SCREEN = "cooking_mode_screen"

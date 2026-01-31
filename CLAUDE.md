@@ -240,7 +240,7 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 - `IngredientCategory`: VEGETABLES, FRUITS, DAIRY, GRAINS, PULSES, SPICES, OILS, MEAT, SEAFOOD, NUTS, SWEETENERS, OTHER
 - `DietaryTag`: VEGETARIAN, NON_VEGETARIAN, VEGAN, JAIN, SATTVIC, HALAL, EGGETARIAN
 - `CuisineType`: NORTH, SOUTH, EAST, WEST
-- `MealType`: BREAKFAST, LUNCH, DINNER, SNACKS (in MealPlan.kt)
+- `MealType`: BREAKFAST, LUNCH, SNACKS, DINNER (in MealPlan.kt) - ordered chronologically
 
 **Key Enums in RecipeRule.kt:**
 - `RuleType`: RECIPE, INGREDIENT, MEAL_SLOT, NUTRITION

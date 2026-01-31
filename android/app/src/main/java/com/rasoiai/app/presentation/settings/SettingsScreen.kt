@@ -308,6 +308,7 @@ internal fun SettingsScreenContent(
                                 SettingsItem(
                                     title = "Items per Meal",
                                     value = uiState.itemsPerMealDisplay,
+                                    testTag = TestTags.SETTINGS_ITEMS_PER_MEAL,
                                     onClick = onItemsPerMealClick
                                 )
                             ),
@@ -316,21 +317,25 @@ internal fun SettingsScreenContent(
                                     title = "Strict Allergen Mode",
                                     subtitle = "Always exclude allergens from meals",
                                     isChecked = uiState.strictAllergenMode,
+                                    testTag = TestTags.SETTINGS_STRICT_ALLERGEN_TOGGLE,
                                     onToggle = onStrictAllergenModeToggle
                                 ),
                                 SettingsToggleItem(
                                     title = "Strict Dietary Mode",
                                     subtitle = "Strictly enforce dietary restrictions",
                                     isChecked = uiState.strictDietaryMode,
+                                    testTag = TestTags.SETTINGS_STRICT_DIETARY_TOGGLE,
                                     onToggle = onStrictDietaryModeToggle
                                 ),
                                 SettingsToggleItem(
                                     title = "Allow Recipe Repeat",
                                     subtitle = "Allow same recipe multiple times per week",
                                     isChecked = uiState.allowRecipeRepeat,
+                                    testTag = TestTags.SETTINGS_ALLOW_REPEAT_TOGGLE,
                                     onToggle = onAllowRecipeRepeatToggle
                                 )
                             ),
+                            sectionTestTag = TestTags.SETTINGS_MEAL_GENERATION_SECTION,
                             modifier = Modifier.padding(horizontal = spacing.md)
                         )
                     }

@@ -80,10 +80,18 @@ def _build_response_from_firestore(plan: dict[str, Any]) -> MealPlanResponse:
     created_at = plan.get("created_at")
     updated_at = plan.get("updated_at")
 
+    # Convert date objects to ISO strings for response
+    week_start = plan.get("week_start_date", "")
+    week_end = plan.get("week_end_date", "")
+    if isinstance(week_start, date):
+        week_start = week_start.isoformat()
+    if isinstance(week_end, date):
+        week_end = week_end.isoformat()
+
     return MealPlanResponse(
         id=plan.get("id", ""),
-        week_start_date=plan.get("week_start_date", ""),
-        week_end_date=plan.get("week_end_date", ""),
+        week_start_date=week_start,
+        week_end_date=week_end,
         days=days,
         created_at=created_at.isoformat() if isinstance(created_at, datetime) else str(created_at),
         updated_at=updated_at.isoformat() if isinstance(updated_at, datetime) else str(updated_at),
@@ -110,55 +118,59 @@ async def generate(
     - Cooking time limits (weekday vs weekend, busy days)
     - Pairing rules from config (by cuisine and meal type)
     """
-    user_id = current_user.get("id")
-    logger.info(f"Generating meal plan for user {user_id}")
-
-    # Parse week start date
+    import traceback
     try:
-        week_start = date.fromisoformat(request.week_start_date)
-    except ValueError:
-        week_start = date.today()
-        week_start = week_start - timedelta(days=week_start.weekday())
+        user_id = current_user.get("id")
+        logger.info(f"Generating meal plan for user {user_id}")
 
-    # Generate meal plan using the service
-    generation_service = MealGenerationService()
-    generated_plan = await generation_service.generate_meal_plan(
-        user_id=user_id,
-        week_start_date=week_start,
-    )
+        # Parse week start date
+        try:
+            week_start = date.fromisoformat(request.week_start_date)
+        except ValueError:
+            week_start = date.today()
+            week_start = week_start - timedelta(days=week_start.weekday())
 
-    # Convert to Firestore format and save
-    days = []
-    for day in generated_plan.days:
-        day_meals = {
-            "breakfast": [_meal_item_to_dict(item) for item in day.breakfast],
-            "lunch": [_meal_item_to_dict(item) for item in day.lunch],
-            "dinner": [_meal_item_to_dict(item) for item in day.dinner],
-            "snacks": [_meal_item_to_dict(item) for item in day.snacks],
+        # Generate meal plan using the service
+        generation_service = MealGenerationService()
+        generated_plan = await generation_service.generate_meal_plan(
+            user_id=user_id,
+            week_start_date=week_start,
+        )
+
+        # Convert to repository format
+        # Repository expects lists of items per meal type
+        days = []
+        for day in generated_plan.days:
+            days.append({
+                "date": day.date,
+                "day_name": day.day_name,
+                "festival": day.festival,
+                "breakfast": [_meal_item_to_dict(item) for item in day.breakfast],
+                "lunch": [_meal_item_to_dict(item) for item in day.lunch],
+                "dinner": [_meal_item_to_dict(item) for item in day.dinner],
+                "snacks": [_meal_item_to_dict(item) for item in day.snacks],
+            })
+
+        # Save to PostgreSQL
+        meal_plan_repo = MealPlanRepository()
+        await meal_plan_repo.deactivate_old_plans(user_id, "")
+
+        plan_data = {
+            "user_id": user_id,
+            "week_start_date": date.fromisoformat(generated_plan.week_start_date),
+            "week_end_date": date.fromisoformat(generated_plan.week_end_date),
+            "days": days,
+            "rules_applied": generated_plan.rules_applied,
         }
-        days.append({
-            "date": day.date,
-            "day_name": day.day_name,
-            "meals": day_meals,
-            "festival": day.festival,
-        })
 
-    # Save to Firestore
-    meal_plan_repo = MealPlanRepository()
-    await meal_plan_repo.deactivate_old_plans(user_id, "")
+        created_plan = await meal_plan_repo.create(plan_data)
+        logger.info(f"Created meal plan {created_plan.get('id')} for user {user_id}")
 
-    plan_data = {
-        "user_id": user_id,
-        "week_start_date": generated_plan.week_start_date,
-        "week_end_date": generated_plan.week_end_date,
-        "days": days,
-        "rules_applied": generated_plan.rules_applied,
-    }
-
-    created_plan = await meal_plan_repo.create(plan_data)
-    logger.info(f"Created meal plan {created_plan.get('id')} for user {user_id}")
-
-    return _build_response_from_firestore(created_plan)
+        return _build_response_from_firestore(created_plan)
+    except Exception as e:
+        logger.error(f"Error generating meal plan: {e}")
+        logger.error(traceback.format_exc())
+        raise
 
 
 def _meal_item_to_dict(item) -> dict:

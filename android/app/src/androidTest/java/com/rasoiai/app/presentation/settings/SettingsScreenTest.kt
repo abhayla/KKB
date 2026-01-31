@@ -278,6 +278,12 @@ private fun SettingsTestContent(
     onCookingTimeClick: () -> Unit = {},
     onSpiceLevelClick: () -> Unit = {},
     onRecipeRulesClick: () -> Unit = {},
+    // Meal generation settings
+    onItemsPerMealClick: () -> Unit = {},
+    onStrictAllergenModeToggle: (Boolean) -> Unit = {},
+    onStrictDietaryModeToggle: (Boolean) -> Unit = {},
+    onAllowRecipeRepeatToggle: (Boolean) -> Unit = {},
+    // App settings
     onNotificationsClick: () -> Unit = {},
     onDarkModeClick: () -> Unit = {},
     onUnitsClick: () -> Unit = {},
@@ -306,6 +312,12 @@ private fun SettingsTestContent(
         onCookingTimeClick = onCookingTimeClick,
         onSpiceLevelClick = onSpiceLevelClick,
         onRecipeRulesClick = onRecipeRulesClick,
+        // Meal generation settings
+        onItemsPerMealClick = onItemsPerMealClick,
+        onStrictAllergenModeToggle = onStrictAllergenModeToggle,
+        onStrictDietaryModeToggle = onStrictDietaryModeToggle,
+        onAllowRecipeRepeatToggle = onAllowRecipeRepeatToggle,
+        // App settings
         onNotificationsClick = onNotificationsClick,
         onDarkModeClick = onDarkModeClick,
         onUnitsClick = onUnitsClick,

@@ -33,8 +33,8 @@ class OnboardingRobot(private val composeTestRule: ComposeContentTestRule) {
      */
     fun assertStepIndicator(step: Int, total: Int = 5) = apply {
         composeTestRule.onNodeWithTag(TestTags.ONBOARDING_STEP_INDICATOR).assertIsDisplayed()
-        // Verify text contains step/total
-        composeTestRule.onNodeWithText("$step/$total", substring = true).assertIsDisplayed()
+        // Verify text contains step of total (e.g., "1 of 5")
+        composeTestRule.onNodeWithText("$step of $total", substring = true).assertIsDisplayed()
     }
 
     /**
