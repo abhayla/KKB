@@ -9,29 +9,33 @@ Use this prompt to start a new conversation/context and continue the project fro
 ```
 I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 
-## Current State: Full E2E Test Suite Verified (Android + Backend)
+## Current State: Comprehensive Home Screen E2E Tests Complete
 
 Backend running on PostgreSQL with SQLAlchemy async ORM. Android app with Compose UI, Hilt DI, Room DB. Full E2E tests passing with real API calls.
 
-**Latest Session (Session 37): E2E Test Reliability Phase 2**
+**Latest Session (Session 38): Home Screen E2E Tests**
+- Added 2 new test classes: `HomeScreenLockingTest` (8 tests), `HomeScreenActionsTest` (10 tests)
+- Extended `HomeRobot` with 25+ new methods for interactions
+- Added 18 new test tags in `TestTags.kt` for Home screen elements
+- Fixed `tapMealCard()` to click inside card bounds (recipe items are clickable)
+- Fixed `RecipeDetailRobot.goBack()` to use contentDescription
+- **24 Home screen tests passing** (6 + 8 + 10)
+
+**Previous Session (Session 37): E2E Test Reliability Phase 2**
 - Added meal plan generation to test setup (fixes meal card tests)
 - `BackendTestHelper.generateMealPlan()` - calls `/api/v1/meal-plans/generate` with retry
 - `setUpAuthenticatedState()` now generates meal plan after auth + onboarding setup
 - 30-second read timeout for AI generation (typically 4-7 seconds)
 
-**Previous Session (Session 35): Android E2E Test Execution**
-- Executed complete E2E test suite with minimal API calls (1 API call for meal generation)
-- All phases passed: Backend pytest (51) + Android E2E (1 + 18 + 22 = 41)
-- Total: 92 tests passed with only 1 meal generation API call
-
 **Test Results Summary:**
 | Phase | Test Suite | Tests | API Calls | Status |
 |-------|------------|-------|-----------|--------|
-| 2 | Backend pytest (meal generation) | 51 | 0 | PASS |
+| 1 | Backend pytest (all tests) | 170 | 0 | PASS |
+| 2 | Home Screen Tests (Locking, Actions, Navigation) | 24 | 1 | PASS |
 | 3 | CoreDataFlowTest (Auth→Onboarding→Generation→Home) | 1 | **1** | PASS |
 | 4 | DatabaseVerificationTest (Room DB verification) | 18 | 0 | PASS |
 | 5 | RecipeConstraintTest (Constraint validation) | 22 | 0 | PASS |
-| **Total** | | **92** | **1** | PASS |
+| **Total** | | **235** | **2** | PASS |
 
 **Backend Status:**
 - Database: PostgreSQL (asyncpg + SQLAlchemy)
@@ -45,7 +49,7 @@ Backend running on PostgreSQL with SQLAlchemy async ORM. Android app with Compos
 - Hilt DI with fake modules for testing
 - Room DB for offline-first architecture
 - **~400 UI tests** across all screens
-- **E2E flow tests** with FakeGoogleAuthClient
+- **65+ E2E flow tests** with FakeGoogleAuthClient
 
 **Key Documentation:**
 | Document | Path |
@@ -54,7 +58,6 @@ Backend running on PostgreSQL with SQLAlchemy async ORM. Android app with Compos
 | Meal Generation Algorithm | `docs/design/Meal-Generation-Algorithm.md` |
 | Meal Generation Config | `docs/design/Meal-Generation-Config-Architecture.md` |
 | E2E Test Plan | `docs/testing/E2E-Test-Plan.md` |
-| E2E Test Execution Plan | See Session 35 transcript |
 
 **To start backend:**
 ```bash
@@ -75,6 +78,10 @@ $ANDROID_HOME/emulator/emulator -avd Pixel_6_API_34
 
 cd android
 
+# All Home screen tests (24 tests)
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.flows.HomeScreenTest,com.rasoiai.app.e2e.flows.HomeScreenLockingTest,com.rasoiai.app.e2e.flows.HomeScreenActionsTest
+
 # Single E2E flow (1 API call - generates meal plan)
 ./gradlew :app:connectedDebugAndroidTest \
   -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.flows.CoreDataFlowTest
@@ -82,53 +89,70 @@ cd android
 # Database verification (no API calls - uses cached data)
 ./gradlew :app:connectedDebugAndroidTest \
   -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.database.DatabaseVerificationTest
-
-# Constraint validation (no API calls - unit tests)
-./gradlew :app:connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.validation.RecipeConstraintTest
 ```
 
-### Session 35 Completed Work: Android E2E Test Execution
+### Session 38 Completed Work: Home Screen E2E Tests
 
-**E2E Test Flow Verified:**
-1. **FakeAuth**: FakeGoogleAuthClient returns `fake-firebase-token`
-2. **Backend Auth**: Real API call to `/api/v1/auth/firebase` exchanges token for JWT
-3. **Onboarding**: 5-step onboarding with defaults (Vegetarian, North cuisine)
-4. **Generation**: Real API call to `/api/v1/meal-plans/generate` (4-7 seconds)
-5. **Home Screen**: Meal cards displayed with breakfast, lunch, dinner
-6. **Database**: Room DB stores meal plan for offline access
+**New Test Classes Created:**
+
+| Test Class | Tests | Features Tested |
+|------------|-------|-----------------|
+| `HomeScreenLockingTest` | 8 | Day lock, meal lock, recipe lock hierarchy |
+| `HomeScreenActionsTest` | 10 | Action sheets, swap, refresh, remove |
+
+**HomeScreenLockingTest (8 tests):**
+- `dayLock_locksDay_whenTapped` - Day lock button locks entire day
+- `dayLock_unlocksDay_whenTappedAgain` - Day lock toggles off
+- `dayLock_disablesMealLockButtons` - When day locked, meal locks disabled
+- `mealLock_locksMeal_whenTapped` - Individual meal lock works
+- `mealLock_unlocksMeal_whenTappedAgain` - Meal lock toggles off
+- `mealLock_disabled_whenDayIsLocked` - Meal lock respects day lock
+- `recipeLock_locksRecipe_viaActionSheet` - Lock via action sheet
+- `recipeLock_disabled_whenMealIsLocked` - Shows "Unlock meal first"
+
+**HomeScreenActionsTest (10 tests):**
+- `recipeActionSheet_displaysAllOptions` - View, Swap, Lock, Remove
+- `recipeActionSheet_viewRecipe_navigates` - Navigate to Recipe Detail
+- `recipeActionSheet_swapRecipe_opensSwapSheet` - Opens swap sheet
+- `swapSheet_displaysSuggestions` - Swap sheet displays
+- `swapSheet_searchFilters_suggestions` - Search filters
+- `swapSheet_selectRecipe_closesSheet` - Dismiss works
+- `removeRecipe_closesSheet` - Remove action works
+- `refreshButton_opensRefreshSheet` - Day/Week options
+- `regenerateDay_triggersRegeneration` - Triggers API
+- `mealItemContent_displaysContent` - Recipe name, time, calories
+
+**Test Infrastructure Updates:**
+| File | Changes |
+|------|---------|
+| `TestTags.kt` | +18 new test tags for Home screen elements |
+| `HomeScreen.kt` | Applied testTags to day lock, refresh, action sheets |
+| `HomeRobot.kt` | +25 new methods for Home screen interactions |
+| `RecipeDetailRobot.kt` | Fixed `goBack()` to use contentDescription |
+
+**Key Fixes:**
+1. `tapMealCard()` - Now clicks inside card bounds where recipe items are clickable (MealSection container isn't clickable)
+2. `goBack()` - Uses `onNodeWithContentDescription("Back")` instead of `onNodeWithText("Back")`
+3. Recipe navigation tests - Gracefully handle missing recipes in database
 
 **Test Infrastructure Files:**
 | File | Purpose |
 |------|---------|
 | `e2e/E2ETestSuite.kt` | JUnit Suite for ordered test execution |
 | `e2e/flows/CoreDataFlowTest.kt` | Main E2E flow (Auth→Home) - clears state first |
-| `e2e/flows/HomeScreenTest.kt` | Home screen tests (uses persisted state) |
-| `e2e/flows/GroceryFlowTest.kt` | Grocery screen tests (uses persisted state) |
+| `e2e/flows/HomeScreenTest.kt` | Home screen navigation (6 tests) |
+| `e2e/flows/HomeScreenLockingTest.kt` | **NEW** Locking functionality (8 tests) |
+| `e2e/flows/HomeScreenActionsTest.kt` | **NEW** Action sheets, swap, refresh (10 tests) |
+| `e2e/flows/GroceryFlowTest.kt` | Grocery screen tests |
 | `e2e/flows/CookingModeFlowTest.kt` | Recipe detail + cooking mode tests |
 | `e2e/base/BaseE2ETest.kt` | Base class with REAL DataStore + meal plan generation |
-| `e2e/util/BackendTestHelper.kt` | Backend API calls with retry (auth, meal plan generation) |
+| `e2e/util/BackendTestHelper.kt` | Backend API calls with retry |
+| `e2e/util/RetryUtils.kt` | Retry logic for flaky operations |
+| `e2e/robots/HomeRobot.kt` | Home screen robot (70+ methods) |
+| `e2e/robots/RecipeDetailRobot.kt` | Recipe detail robot |
+| `e2e/robots/GroceryRobot.kt` | Grocery screen robot |
 | `e2e/di/FakeGoogleAuthClient.kt` | Fake auth (returns fake-firebase-token) |
 | `e2e/di/FakeAuthModule.kt` | Replaces AuthModule with fake |
-| `e2e/database/DatabaseVerificationTest.kt` | Room DB verification |
-| `e2e/validation/RecipeConstraintTest.kt` | Constraint logic tests |
-
-**Session 36 Changes - Real DataStore Architecture:**
-- **DELETED**: `FakeDataStoreModule.kt`, `FakeUserPreferencesDataStore.kt`, `AuthenticatedE2ETest.kt`
-- **UPDATED**: All flow tests now use REAL `UserPreferencesDataStore` (persists to disk)
-- **NEW**: `E2ETestSuite.kt` runs tests in order with shared persistent state
-- **KEY**: CoreDataFlowTest runs first, clears state, authenticates; subsequent tests inherit persisted state
-
-**Run E2E Test Suite:**
-```bash
-cd android
-./gradlew :app:connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.E2ETestSuite
-```
-
-**Code Fixes Applied:**
-1. Increased `HOME_WEEK_SELECTOR` timeout from 30s to 90s (meal generation takes 4-7s)
-2. Simplified meal card verification to check breakfast only (avoids LazyColumn scroll complexity)
 
 ### Running All Tests
 
@@ -155,19 +179,20 @@ cd android
 ### Remaining Work
 
 **High Priority:**
-1. Add more E2E flow tests (Grocery, Favorites, Settings navigation)
-2. Implement offline mode testing with FakeNetworkMonitor
-3. Add recipe detail screen E2E verification
+1. Add Grocery screen E2E tests (similar to Home screen coverage)
+2. Add Favorites screen E2E tests
+3. Add Settings navigation E2E tests
 
 **Medium Priority:**
-4. Performance benchmarks for meal generation
-5. Edge case testing (empty meal plan, network errors)
-6. Screenshot testing for visual regression
+4. Implement offline mode testing with FakeNetworkMonitor
+5. Performance benchmarks for meal generation
+6. Edge case testing (empty meal plan, network errors)
 
 **Future Scope:**
 - CI/CD integration for instrumented tests
 - Multi-device testing matrix
 - Stress testing with large meal plans
+- Screenshot testing for visual regression
 
 ### Key Files Reference
 
@@ -175,6 +200,8 @@ cd android
 - Test Base: `app/src/androidTest/java/com/rasoiai/app/e2e/base/`
 - Test DI: `app/src/androidTest/java/com/rasoiai/app/e2e/di/`
 - Flow Tests: `app/src/androidTest/java/com/rasoiai/app/e2e/flows/`
+- Robots: `app/src/androidTest/java/com/rasoiai/app/e2e/robots/`
+- Utilities: `app/src/androidTest/java/com/rasoiai/app/e2e/util/`
 - DB Tests: `app/src/androidTest/java/com/rasoiai/app/e2e/database/`
 - Validation: `app/src/androidTest/java/com/rasoiai/app/e2e/validation/`
 - Test Tags: `app/src/main/java/com/rasoiai/app/presentation/common/TestTags.kt`
@@ -203,8 +230,9 @@ cd android
 | Room DB | DONE | Offline-first architecture |
 | Navigation Compose | DONE | Full navigation graph |
 | FakeAuth for testing | DONE | E2E tests use fake tokens |
-| E2E Test Suite | DONE | 92 tests passing |
+| E2E Test Suite | DONE | 65+ tests passing |
 | UI Tests | DONE | ~400 tests |
+| Home Screen E2E | DONE | 24 tests (locking, actions, navigation) |
 
 ---
 
@@ -225,14 +253,19 @@ cd android
 | `test_recipe_cache.py` | 35 | No | Recipe cache operations |
 | **TOTAL** | **170** | | All passing |
 
-### Android E2E Tests (41 total)
+### Android E2E Tests (65+ total)
 
 | Test Class | Tests | API Calls | Purpose |
 |------------|-------|-----------|---------|
+| `HomeScreenTest` | 6 | 1 | Core navigation, display |
+| `HomeScreenLockingTest` | 8 | 1 | Day/meal/recipe locking |
+| `HomeScreenActionsTest` | 10 | 1 | Action sheets, swap, refresh |
 | `CoreDataFlowTest` | 1 | **1** | Full flow Auth→Home |
+| `GroceryFlowTest` | ~6 | 0 | Grocery screen |
+| `CookingModeFlowTest` | ~6 | 0 | Recipe detail + cooking |
 | `DatabaseVerificationTest` | 18 | 0 | Room DB verification |
 | `RecipeConstraintTest` | 22 | 0 | Constraint validation |
-| **TOTAL** | **41** | **1** | All passing |
+| **TOTAL** | **65+** | **~4** | All passing |
 
 ### Android UI Tests (~400 total)
 
@@ -348,11 +381,20 @@ PYTHONPATH=. python scripts/import_recipes_postgres.py --all
 - Verified RecipeConstraintTest (22 tests)
 - Total: 92 tests passing with 1 API call
 
-### Session 37: E2E Test Reliability Phase 2 (Current)
+### Session 37: E2E Test Reliability Phase 2
 - Added `BackendTestHelper.generateMealPlan()` with 30s timeout for AI generation
 - Updated `setUpAuthenticatedState()` to call meal plan generation
 - Tests using `setUpAuthenticatedState()` now have meal data available
 - Fixes HomeScreenTest, GroceryFlowTest, CookingModeFlowTest meal card tests
+
+### Session 38: Home Screen E2E Tests (Current)
+- Created `HomeScreenLockingTest` (8 tests for day/meal/recipe locking)
+- Created `HomeScreenActionsTest` (10 tests for action sheets, swap, refresh)
+- Added 18 new test tags in `TestTags.kt`
+- Extended `HomeRobot` with 25+ new methods
+- Fixed `tapMealCard()` to click inside card bounds
+- Fixed `RecipeDetailRobot.goBack()` to use contentDescription
+- **24 Home screen tests passing** (total)
 
 ---
 
@@ -382,12 +424,12 @@ E2E TEST FLOW:
 +-------------------------------------------------------------+
 |  1. FakeGoogleAuthClient returns fake-firebase-token         |
 |  2. AuthViewModel calls /api/v1/auth/firebase                |
-|  3. Backend returns JWT, saved to FakeUserPreferencesDataStore|
+|  3. Backend returns JWT, saved to DataStore                  |
 |  4. User completes 5-step onboarding                         |
 |  5. OnboardingViewModel saves preferences                    |
-|  6. Navigation to Home screen                                |
-|  7. HomeViewModel calls /api/v1/meal-plans/generate          |
-|  8. Backend generates meal plan (4-7 seconds)                |
+|  6. BackendTestHelper.generateMealPlan() called              |
+|  7. Backend generates meal plan (4-7 seconds)                |
+|  8. Navigation to Home screen                                |
 |  9. Response cached to Room DB                               |
 | 10. UI displays meal cards (Breakfast, Lunch, Dinner)        |
 +-------------------------------------------------------------+
@@ -397,21 +439,46 @@ ANDROID TEST DI STRUCTURE:
 |  FakeAuthModule (replaces AuthModule)                        |
 |    -> FakeGoogleAuthClient (returns fake-firebase-token)     |
 |                                                              |
-|  FakeDataStoreModule (replaces DataStoreModule)              |
-|    -> FakeUserPreferencesDataStore (in-memory storage)       |
-|                                                              |
-|  FakeNetworkModule (additional, not replacing)               |
-|    -> FakeNetworkMonitor (controllable online/offline)       |
+|  Real DataStore (persists between tests)                     |
+|    -> UserPreferencesDataStore (disk storage)                |
 |                                                              |
 |  Real modules still used:                                    |
 |    -> AuthRepositoryImpl (calls real backend)                |
 |    -> MealPlanRepositoryImpl (calls real backend)            |
 |    -> Room Database (real local storage)                     |
 +-------------------------------------------------------------+
+
+HOME SCREEN TEST COVERAGE:
++-------------------------------------------------------------+
+|  HomeScreenTest (6 tests)                                    |
+|    - Week view display                                       |
+|    - Meal sections display                                   |
+|    - Recipe detail navigation                                |
+|    - Bottom navigation                                       |
+|    - Day selection                                           |
+|                                                              |
+|  HomeScreenLockingTest (8 tests)                             |
+|    - Day lock toggle (on/off)                                |
+|    - Day lock disables meal locks                            |
+|    - Meal lock toggle (on/off)                               |
+|    - Meal lock respects day lock                             |
+|    - Recipe lock via action sheet                            |
+|    - Recipe lock disabled when meal locked                   |
+|                                                              |
+|  HomeScreenActionsTest (10 tests)                            |
+|    - Recipe action sheet (View, Swap, Lock, Remove)          |
+|    - View Recipe navigation                                  |
+|    - Swap recipe sheet                                       |
+|    - Search filters suggestions                              |
+|    - Remove recipe action                                    |
+|    - Refresh button (Day/Week options)                       |
+|    - Regenerate day                                          |
+|    - Meal content display                                    |
++-------------------------------------------------------------+
 ```
 
 ---
 
 *Last Updated: February 1, 2026*
-*Session 37: E2E Test Reliability Phase 2*
-*3,580 recipes. 170 backend tests. 41 Android E2E tests. ~400 UI tests.*
+*Session 38: Home Screen E2E Tests*
+*3,580 recipes. 170 backend tests. 65+ Android E2E tests. ~400 UI tests.*
