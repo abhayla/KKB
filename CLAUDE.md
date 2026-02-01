@@ -2,15 +2,25 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Quick Orientation
+## Quick Reference
 
-For active development context, check `docs/CONTINUE_PROMPT.md` first.
+```bash
+# Android (from android/)
+./gradlew build                    # Build with tests
+./gradlew assembleDebug            # Quick build (no tests)
+./gradlew test                     # Unit tests
+./gradlew :app:connectedDebugAndroidTest  # UI tests (requires emulator API 34)
 
-**Key numbers to know:**
-- 3,580 recipes in PostgreSQL
-- 170 backend tests (pytest)
-- ~400 Android UI tests (Compose)
-- 15 screens implemented
+# Backend (from backend/)
+source venv/bin/activate           # Linux/Mac/Git Bash
+# .\venv\Scripts\activate          # Windows PowerShell
+uvicorn app.main:app --reload      # Start server → http://localhost:8000/docs
+PYTHONPATH=. pytest                # Run all 170 tests
+```
+
+**Key numbers:** 3,580 recipes | 170 backend tests | ~400 Android UI tests | 15 screens
+
+**Session context:** Check `docs/CONTINUE_PROMPT.md` for active work between sessions.
 
 ## Project Overview
 
@@ -19,154 +29,43 @@ For active development context, check `docs/CONTINUE_PROMPT.md` first.
 | Attribute | Details |
 |-----------|---------|
 | **Platform** | Android Native (Kotlin 1.9.22 + Jetpack Compose BOM 2024.02) |
-| **Backend** | Python (FastAPI) |
+| **Backend** | Python (FastAPI + PostgreSQL) |
 | **Target SDK** | 34 (Min SDK 24 / Android 7.0) |
 | **Target Market** | Pan-India (Tier 1, 2, 3 cities) |
 
-## Current Project State
+## Architecture
 
-See `docs/CONTINUE_PROMPT.md` for session context and active work.
+### Module Structure
 
-**Test Coverage (last verified: Feb 1, 2026):**
+Four-layer architecture under `android/`:
 
-| Platform | Tests | Details |
-|----------|-------|---------|
-| Android UI | ~400 | 15 screens + E2E flows (Compose UI Testing) |
-| Backend | 170 | 9 test files (pytest) |
+| Module | Package | Purpose |
+|--------|---------|---------|
+| `app` | `com.rasoiai.app.*` | Screens, ViewModels, Hilt modules, navigation |
+| `domain` | `com.rasoiai.domain.*` | Models, repository interfaces, use cases |
+| `data` | `com.rasoiai.data.*` | Room (local), Retrofit (remote), repository impls |
+| `core` | `com.rasoiai.core.*` | Shared UI components, utilities, NetworkMonitor |
 
-**Android Tests:**
-- UI Screen Tests: 15 screens (Auth, Onboarding, Generation, Home, RecipeDetail, Grocery, Chat, Favorites, Stats, Settings, Pantry, RecipeRules, CookingMode, Theme, Components)
-- E2E Flow Tests: 15 flow test files + database/validation/performance tests
-- Database Verification Tests: Room DB state validation
-- Recipe Constraint Tests: SATTVIC, allergy, timing constraints
-- Full User Journey Test: Complete Sharma Family profile flow
-- Offline/Edge Case/Performance Tests: Implemented
-
-**Backend Tests:**
-- `tests/test_health.py` (2 tests) - Health check endpoints
-- `tests/test_auth.py` (3 tests) - Firebase authentication
-- `tests/test_preference_service.py` (26 tests) - PreferenceUpdateService edge cases
-- `tests/test_chat_integration.py` (27 tests) - Chat tool calling flow
-- `tests/test_meal_generation.py` (22 tests) - Meal generation structures/logic
-- `tests/test_meal_generation_integration.py` (29 tests) - Meal generation rule enforcement
-- `tests/test_meal_generation_e2e.py` (14 tests) - E2E tests against real PostgreSQL
-- `tests/test_chat_api.py` (12 tests) - Chat API endpoints
-- `tests/test_recipe_cache.py` (35 tests) - Recipe cache operations
-
-**Meal Generation Config:** All 4 phases complete (Config YAML, Backend Service, Chat Integration, Testing)
-
-## Quick Start
-
-```bash
-cd android
-./gradlew build          # Build
-./gradlew test           # Run tests
-./gradlew installDebug   # Install on device/emulator
+```
+app ─────┬──────> core
+         ├──────> domain  <────┐
+         └──────> data ────────┴──────> core
 ```
 
-**Prerequisites:** Android Studio, JDK 17+, Android SDK 34
-
-**Firebase Setup:** Add `google-services.json` to `android/app/` from Firebase Console, or create a placeholder for build-only testing:
-```bash
-echo '{"project_info":{"project_number":"000000000000","project_id":"rasoiai-debug","storage_bucket":"rasoiai-debug.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:000000000000:android:0000000000000000000000","android_client_info":{"package_name":"com.rasoiai.app.debug"}},"oauth_client":[],"api_key":[{"current_key":"fake-api-key-for-ci"}],"services":{}}],"configuration_version":"1"}' > app/google-services.json
-```
-
-## Key Architecture Decisions
+### Key Architecture Decisions
 
 | Area | Decision |
 |------|----------|
 | Dependency Injection | Hilt |
-| Annotation Processing | KSP |
 | State Management | StateFlow + Single UiState Data Class |
 | Navigation | Navigation Compose |
-| Build Configuration | Kotlin DSL + Version Catalog (TOML) |
-| Minimum SDK | API 24 (Android 7.0) |
-| Testing Strategy | 70% Unit / 20% Integration / 10% UI |
-| Modularization | By-Layer (app, core, data, domain) → Hybrid later |
+| Database | Room (Android cache), PostgreSQL (backend source of truth) |
+| Auth | Firebase Auth (Google OAuth only) |
+| LLM | Claude API (with tool calling for chat) |
+| Offline Support | Room as source of truth with sync to backend |
 
-## ViewModel Pattern
+### Data Flow
 
-All ViewModels follow this structure:
-
-```kotlin
-// 1. UiState data class - all screen state in one place
-data class FeatureUiState(
-    val isLoading: Boolean = true,
-    val errorMessage: String? = null,
-    // ... computed properties via get() for derived state
-)
-
-// 2. NavigationEvent sealed class - one-time navigation events
-sealed class FeatureNavigationEvent {
-    data class NavigateToDetail(val id: String) : FeatureNavigationEvent()
-    data object NavigateToSettings : FeatureNavigationEvent()
-}
-
-// 3. ViewModel with Hilt injection
-@HiltViewModel
-class FeatureViewModel @Inject constructor(
-    private val repository: Repository
-) : ViewModel() {
-    private val _uiState = MutableStateFlow(FeatureUiState())
-    val uiState: StateFlow<FeatureUiState> = _uiState.asStateFlow()
-
-    // Use Channel for one-time navigation events (prevents replay on config change)
-    private val _navigationEvent = Channel<FeatureNavigationEvent>()
-    val navigationEvent: Flow<FeatureNavigationEvent> = _navigationEvent.receiveAsFlow()
-
-    // Update state with copy()
-    fun doSomething() {
-        _uiState.update { it.copy(isLoading = true) }
-    }
-
-    // Send navigation event (use trySend for non-suspend context)
-    fun navigateToDetail(id: String) {
-        _navigationEvent.trySend(FeatureNavigationEvent.NavigateToDetail(id))
-    }
-}
-```
-
-## Repository Pattern (Offline-First)
-
-Real repository implementations follow this architecture:
-
-```kotlin
-@Singleton
-class FeatureRepositoryImpl @Inject constructor(
-    private val apiService: RasoiApiService,
-    private val featureDao: FeatureDao,
-    private val networkMonitor: NetworkMonitor
-) : FeatureRepository {
-
-    // Always return from local DB (single source of truth)
-    override fun getData(): Flow<Data?> {
-        return featureDao.getData().map { entity ->
-            if (entity != null) {
-                entity.toDomain()
-            } else {
-                // Fetch from API if online
-                if (networkMonitor.isOnline.first()) {
-                    fetchAndCache()
-                }
-                null
-            }
-        }
-    }
-
-    // Mutations: update local immediately, sync to server when online
-    override suspend fun updateData(data: Data): Result<Unit> {
-        featureDao.update(data.toEntity())
-        if (networkMonitor.isOnline.first()) {
-            apiService.update(data.toDto())
-        } else {
-            featureDao.markUnsynced(data.id)
-        }
-        return Result.success(Unit)
-    }
-}
-```
-
-**Data flow:**
 ```
 UI → ViewModel → UseCase → Repository
                               ↓
@@ -185,313 +84,214 @@ UI → ViewModel → UseCase → Repository
 - `data/local/mapper/EntityMappers.kt` - Room Entity ↔ Domain
 - `data/remote/mapper/DtoMappers.kt` - API DTO → Domain & Entity
 
-## Navigation Routes
+## Patterns
+
+### ViewModel Pattern
+
+All ViewModels follow this structure:
+
+```kotlin
+// 1. UiState data class - all screen state in one place
+data class FeatureUiState(
+    val isLoading: Boolean = true,
+    val errorMessage: String? = null,
+    // ... computed properties via get() for derived state
+)
+
+// 2. NavigationEvent sealed class - one-time navigation events
+sealed class FeatureNavigationEvent {
+    data class NavigateToDetail(val id: String) : FeatureNavigationEvent()
+}
+
+// 3. ViewModel with Hilt injection
+@HiltViewModel
+class FeatureViewModel @Inject constructor(
+    private val repository: Repository
+) : ViewModel() {
+    private val _uiState = MutableStateFlow(FeatureUiState())
+    val uiState: StateFlow<FeatureUiState> = _uiState.asStateFlow()
+
+    // Use Channel for one-time navigation events
+    private val _navigationEvent = Channel<FeatureNavigationEvent>()
+    val navigationEvent: Flow<FeatureNavigationEvent> = _navigationEvent.receiveAsFlow()
+
+    fun doSomething() {
+        _uiState.update { it.copy(isLoading = true) }
+    }
+}
+```
+
+### Repository Pattern (Offline-First)
+
+```kotlin
+@Singleton
+class FeatureRepositoryImpl @Inject constructor(
+    private val apiService: RasoiApiService,
+    private val featureDao: FeatureDao,
+    private val networkMonitor: NetworkMonitor
+) : FeatureRepository {
+
+    // Always return from local DB (single source of truth)
+    override fun getData(): Flow<Data?> {
+        return featureDao.getData().map { entity ->
+            entity?.toDomain() ?: run {
+                if (networkMonitor.isOnline.first()) fetchAndCache()
+                null
+            }
+        }
+    }
+
+    // Mutations: update local immediately, sync to server when online
+    override suspend fun updateData(data: Data): Result<Unit> {
+        featureDao.update(data.toEntity())
+        if (networkMonitor.isOnline.first()) {
+            apiService.update(data.toDto())
+        } else {
+            featureDao.markUnsynced(data.id)
+        }
+        return Result.success(Unit)
+    }
+}
+```
+
+### Navigation Routes
 
 Routes with arguments use `createRoute()` helper pattern:
 
 ```kotlin
-// In Screen.kt
-data object RecipeDetail : Screen("recipe/{recipeId}?isLocked={isLocked}&fromMealPlan={fromMealPlan}") {
-    fun createRoute(recipeId: String, isLocked: Boolean = false, fromMealPlan: Boolean = false) =
-        "recipe/$recipeId?isLocked=$isLocked&fromMealPlan=$fromMealPlan"
+data object RecipeDetail : Screen("recipe/{recipeId}?isLocked={isLocked}") {
+    fun createRoute(recipeId: String, isLocked: Boolean = false) =
+        "recipe/$recipeId?isLocked=$isLocked"
     const val ARG_RECIPE_ID = "recipeId"
-    const val ARG_IS_LOCKED = "isLocked"
-    const val ARG_FROM_MEAL_PLAN = "fromMealPlan"
 }
 
-// Usage in navigation
-navController.navigate(Screen.RecipeDetail.createRoute(recipeId))
-navController.navigate(Screen.RecipeDetail.createRoute(recipeId, isLocked = true, fromMealPlan = true))
+// Usage
+navController.navigate(Screen.RecipeDetail.createRoute(recipeId, isLocked = true))
 ```
 
-## Bottom Navigation Integration
+### Bottom Navigation
 
-Screens with bottom navigation use `RasoiBottomNavigation` component from `home/components/`:
+Screens with bottom navigation use `RasoiBottomNavigation` from `home/components/`:
 
 ```kotlin
-// In any bottom nav screen composable:
 Scaffold(
     bottomBar = {
         RasoiBottomNavigation(
-            selectedItem = NavigationItem.GROCERY,  // Current screen
-            onItemSelected = { item ->
-                when (item) {
-                    NavigationItem.HOME -> onNavigateToHome()
-                    NavigationItem.GROCERY -> { /* Already here */ }
-                    NavigationItem.CHAT -> onNavigateToChat()
-                    NavigationItem.FAVORITES -> onNavigateToFavorites()
-                    NavigationItem.STATS -> onNavigateToStats()
-                }
-            }
+            selectedItem = NavigationItem.GROCERY,
+            onItemSelected = { /* handle navigation */ }
         )
     }
-) { paddingValues -> /* Screen content */ }
+) { /* content */ }
 ```
 
 **Bottom nav items:** HOME, GROCERY, CHAT, FAVORITES, STATS
 
-## Key Domain Models
-
-Located in `domain/src/main/java/com/rasoiai/domain/model/`:
-
-| Model | Key Fields |
-|-------|-----------|
-| `Recipe` | id, name, cuisineType, dietaryTags, prepTimeMinutes, cookTimeMinutes, ingredients, instructions, nutrition, category |
-| `Ingredient` | id, name, quantity, unit, category (IngredientCategory), isOptional |
-| `Instruction` | stepNumber, instruction, durationMinutes, timerRequired, tips |
-| `MealPlan` | id, weekStartDate, weekEndDate, days |
-| `MealPlanDay` | date, breakfast, lunch, dinner, snacks, festival |
-| `MealItem` | recipeId, recipeName, isLocked, servings |
-| `Nutrition` | calories, proteinGrams, carbohydratesGrams, fatGrams, fiberGrams |
-| `RecipeRule` | id, type, action, targetId, targetName, frequency, enforcement, mealSlot, isActive |
-| `NutritionGoal` | id, foodCategory, weeklyTarget, currentProgress, isActive |
-
-**Key Enums in Recipe.kt:**
-- `IngredientCategory`: VEGETABLES, FRUITS, DAIRY, GRAINS, PULSES, SPICES, OILS, MEAT, SEAFOOD, NUTS, SWEETENERS, OTHER
-- `DietaryTag`: VEGETARIAN, NON_VEGETARIAN, VEGAN, JAIN, SATTVIC, HALAL, EGGETARIAN
-- `CuisineType`: NORTH, SOUTH, EAST, WEST
-- `MealType`: BREAKFAST, LUNCH, SNACKS, DINNER (in MealPlan.kt) - ordered chronologically
-
-**Key Enums in RecipeRule.kt:**
-- `RuleType`: RECIPE, INGREDIENT, MEAL_SLOT, NUTRITION
-- `RuleAction`: INCLUDE, EXCLUDE
-- `RuleEnforcement`: REQUIRED, PREFERRED
-- `FrequencyType`: DAILY, TIMES_PER_WEEK, SPECIFIC_DAYS, NEVER
-- `FoodCategory`: GREEN_LEAFY, CITRUS_VITAMIN_C, IRON_RICH, HIGH_PROTEIN, CALCIUM_RICH, FIBER_RICH, OMEGA_3, ANTIOXIDANT
-
-## Design System
-
-| Element | Light | Dark |
-|---------|-------|------|
-| Primary | `#FF6838` (Orange) | `#FFB59C` |
-| Secondary | `#5A822B` (Green) | `#A8D475` |
-| Background | `#FDFAF4` (Cream) | `#1C1B1F` |
-| Surface | `#FFFFFF` | `#2B2930` |
-
-| Token | Value |
-|-------|-------|
-| Typography | Roboto (System Default) |
-| Spacing | 8dp grid (4, 8, 16, 24, 32, 48dp) |
-| Shapes | Rounded corners (8dp small, 16dp medium, 24dp large) |
-| Dark Mode | System-follow (auto-switch) |
-
-## Module Structure
-
-Four-layer architecture under `android/`:
-
-| Module | Package | Purpose |
-|--------|---------|---------|
-| `app` | `com.rasoiai.app.*` | Screens, ViewModels, Hilt modules, navigation |
-| `domain` | `com.rasoiai.domain.*` | Models, repository interfaces, use cases |
-| `data` | `com.rasoiai.data.*` | Room (local), Retrofit (remote), repository impls |
-| `core` | `com.rasoiai.core.*` | Shared UI components, utilities, NetworkMonitor |
-
-**Key locations:**
-- Screens: `app/presentation/{feature}/` (e.g., `home/`, `recipedetail/`)
-- Domain models: `domain/model/`
-- Mappers: `data/local/mapper/EntityMappers.kt`, `data/remote/mapper/DtoMappers.kt`
-- Dependencies: `gradle/libs.versions.toml`
-
-**Module Dependencies:**
-```
-app ─────┬──────> core
-         │
-         ├──────> domain  <────┐
-         │                     │
-         └──────> data ────────┴──────> core
-```
-
-## Technical Stack
-
-See `android/gradle/libs.versions.toml` for exact dependency versions.
-
-| Layer | Key Technologies |
-|-------|-----------------|
-| Android | Kotlin 1.9.22, Jetpack Compose, Hilt, Room, Retrofit, Navigation Compose |
-| Backend | Python, FastAPI, PostgreSQL (asyncpg + SQLAlchemy) |
-| Auth | Firebase Auth (Google OAuth only) |
-| Database | PostgreSQL (backend), Room (Android local cache) |
-| LLM | Claude API (with tool calling for chat) |
-| Testing | JUnit5, MockK, Turbine, Compose UI Testing, pytest |
-
-**Backend Key Files:**
-| File | Purpose |
-|------|---------|
-| `app/db/postgres.py` | PostgreSQL connection pool and session management |
-| `app/services/meal_generation_service.py` | 2-item pairing logic, rule enforcement |
-| `app/services/preference_update_service.py` | INCLUDE/EXCLUDE rules, allergies, dislikes |
-| `app/ai/chat_assistant.py` | Tool calling orchestration |
-| `app/ai/tools/preference_tools.py` | 6 chat tools definitions |
-| `app/repositories/chat_repository.py` | PostgreSQL chat message storage |
-
-## Key Design Decisions
-
-1. **Offline-First**: Room DB (Android) caches meal plans, recipes, grocery lists. PostgreSQL (backend) is source of truth.
-2. **Database**: Backend uses PostgreSQL with SQLAlchemy async ORM and repository pattern for clean separation.
-3. **LLM Cost Optimization**: Cache meal plans by preference hash (60-70% savings), store generated recipes for reuse.
-4. **Auth**: Google OAuth only via Firebase Auth (Phone OTP removed for MVP simplicity). Backend accepts `fake-firebase-token` in debug mode for testing.
-5. **Festival Intelligence**: 30+ festivals with fasting modes and auto-suggested menus.
-
-## India-Specific Domain Knowledge
-
-| Aspect | Details |
-|--------|---------|
-| **Dietary Tags** | `VEGETARIAN`, `VEGAN`, `JAIN` (no root vegetables), `SATTVIC` (no onion/garlic), `HALAL`, `EGGETARIAN` |
-| **Cuisine Zones** | `NORTH`, `SOUTH`, `EAST`, `WEST` with distinct ingredients |
-| **Measurements** | Support both metric and traditional: katori (bowl), chammach (spoon), glass |
-| **Family Size** | 3-8 members, multi-generational support |
-| **Connectivity** | Offline-first essential (tier 2-3 cities) |
-
 ## Development Commands
 
-### Android App (run from `android/` folder)
-```bash
-cd android
+### Android (run from `android/`)
 
+```bash
 # Build & Test
 ./gradlew build                  # Full build with tests
 ./gradlew assembleDebug          # Quick compilation (no tests)
 ./gradlew test                   # All unit tests
-./gradlew :domain:test           # Module-specific tests
-./gradlew :data:test
-./gradlew :app:test
+./gradlew :app:test              # App module tests only
 
-# Single test class or method
+# Single test
 ./gradlew test --tests "com.rasoiai.app.ClassName"
-./gradlew test --tests "com.rasoiai.app.ClassName.testMethodName"
 ./gradlew :app:testDebugUnitTest --tests "*.HomeViewModelTest"
 
-# Compose UI Tests (requires emulator/device - use API 34, not 36)
-./gradlew :app:connectedDebugAndroidTest          # All instrumented tests
-./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.presentation.auth.AuthScreenTest  # Single class
-./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.package=com.rasoiai.app.presentation  # All presentation tests
+# UI Tests (requires emulator API 34, NOT 36)
+./gradlew :app:connectedDebugAndroidTest
+./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.presentation.auth.AuthScreenTest
 
-# Lint
-./gradlew lint                   # Report: app/build/reports/lint-results-debug.html
-
-# Install & Launch
+# Lint & Install
+./gradlew lint
 ./gradlew installDebug
-"$ANDROID_HOME/platform-tools/adb" shell am start -n com.rasoiai.app/com.rasoiai.app.MainActivity
 
-# Clean build (when you encounter strange build issues)
+# Clean build (for strange build issues)
 ./gradlew clean && ./gradlew assembleDebug
 ```
 
-### Backend (Python + PostgreSQL) - run from `backend/` folder
-```bash
-cd backend
+### Backend (run from `backend/`)
 
-# Setup virtual environment
+```bash
+# Setup
 python -m venv venv
 source venv/bin/activate         # Linux/Mac/Git Bash
-# .\venv\Scripts\activate        # Windows PowerShell (use this instead on Windows)
-
-# Install dependencies
+# .\venv\Scripts\activate        # Windows PowerShell
 pip install -r requirements.txt
 
-# Configure environment (required)
-# Create .env file with:
-# DATABASE_URL=postgresql+asyncpg://rasoiai_user:password@host:5432/rasoiai
-# FIREBASE_CREDENTIALS_PATH=./rasoiai-firebase-service-account.json  # For auth only
-
 # Start server
-uvicorn app.main:app --reload    # Server at http://localhost:8000/docs
+uvicorn app.main:app --reload    # → http://localhost:8000/docs
 
-# Database migrations (if schema changes)
-cd backend
-alembic upgrade head
+# Testing
+PYTHONPATH=. pytest              # All tests
+PYTHONPATH=. pytest --cov=app    # With coverage
+PYTHONPATH=. pytest tests/test_auth.py -v                    # Single file
+PYTHONPATH=. pytest tests/test_preference_service.py::test_add_include_rule -v  # Single test
 
-# Seed database with initial data
+# Database
+alembic upgrade head             # Run migrations
 PYTHONPATH=. python scripts/seed_festivals.py
-PYTHONPATH=. python scripts/seed_achievements.py
-PYTHONPATH=. python scripts/sync_config_postgres.py
-
-# Import recipes (if not already done)
 PYTHONPATH=. python scripts/import_recipes_postgres.py
-
-# Testing (170 tests total)
-pytest                           # All tests
-pytest --cov=app                 # With coverage
-pytest tests/test_auth.py -v     # Single file
-pytest tests/test_preference_service.py -v    # Preference service (26 tests)
-pytest tests/test_chat_integration.py -v      # Chat tool calling (27 tests)
-pytest tests/test_meal_generation.py -v       # Meal generation (22 tests)
-pytest tests/test_chat_api.py -v              # Chat API (12 tests)
-
-# Single test method
-pytest tests/test_preference_service.py::test_add_include_rule -v
-
-# E2E Tests (hits real PostgreSQL)
-pytest tests/test_meal_generation_e2e.py -v -s
+PYTHONPATH=. python scripts/sync_config_postgres.py
 ```
 
-**PostgreSQL Setup:**
-1. Create database: `CREATE DATABASE rasoiai;`
-2. Create user: `CREATE USER rasoiai_user WITH PASSWORD 'your_password';`
-3. Grant privileges: `GRANT ALL PRIVILEGES ON DATABASE rasoiai TO rasoiai_user;`
-4. Set DATABASE_URL in `.env` file
+### Environment Setup
 
-**Firebase Setup (for auth only):**
-1. Get service account key from Firebase Console → Project Settings → Service Accounts
-2. Save as `backend/rasoiai-firebase-service-account.json`
-3. Add to `.gitignore` (never commit credentials)
-
-## Test Structure
-
+**Backend `.env` file:**
 ```
-android/
-├── app/src/test/                        # Unit tests (JUnit5, MockK)
-│   └── java/com/rasoiai/app/
-│       └── presentation/                # ViewModel tests (*ViewModelTest.kt)
-├── app/src/androidTest/                 # Instrumented tests (Compose UI Testing)
-│   └── java/com/rasoiai/app/
-│       ├── presentation/                # UI Screen tests (*ScreenTest.kt)
-│       │   ├── auth/, onboarding/, generation/, home/
-│       │   ├── recipedetail/, grocery/, chat/, favorites/
-│       │   ├── stats/, settings/, pantry/, reciperules/, cookingmode/
-│       │   ├── theme/                   # ThemeTest.kt
-│       │   └── common/                  # TestTags.kt, ComponentsTest.kt
-│       └── e2e/                         # End-to-end tests
-│           ├── base/BaseE2ETest.kt      # Base class with Hilt setup
-│           ├── di/                      # FakeGoogleAuthClient, FakeAuthModule
-│           ├── flows/                   # Complete user flow tests (15 files)
-│           ├── database/                # Room DB verification
-│           ├── validation/              # Recipe constraint tests
-│           └── performance/             # Performance benchmarks
-├── domain/src/test/                     # UseCase tests
-└── data/src/test/                       # Repository tests
-
-backend/
-└── tests/                               # Backend tests (pytest)
-    ├── test_health.py                   # Health check endpoints (2 tests)
-    ├── test_auth.py                     # Firebase authentication (3 tests)
-    ├── test_preference_service.py       # PreferenceUpdateService (26 tests)
-    ├── test_chat_integration.py         # Chat tool calling flow (27 tests)
-    ├── test_meal_generation.py          # Meal generation logic (22 tests)
-    ├── test_meal_generation_integration.py  # Rule enforcement (29 tests)
-    ├── test_meal_generation_e2e.py      # E2E against PostgreSQL (14 tests)
-    ├── test_chat_api.py                 # Chat API endpoints (12 tests)
-    └── test_recipe_cache.py             # Recipe cache operations (35 tests)
+DATABASE_URL=postgresql+asyncpg://rasoiai_user:password@localhost:5432/rasoiai
+FIREBASE_CREDENTIALS_PATH=./rasoiai-firebase-service-account.json
+ANTHROPIC_API_KEY=sk-ant-...
+JWT_SECRET_KEY=your-secret-key
+DEBUG=true
 ```
 
-**Test naming:** `ClassNameTest.kt` for unit tests, `ScreenNameTest.kt` for UI tests, `*FlowTest.kt` for E2E flows, `test_*.py` for backend tests
+**PostgreSQL:**
+```sql
+CREATE DATABASE rasoiai;
+CREATE USER rasoiai_user WITH PASSWORD 'your_password';
+GRANT ALL PRIVILEGES ON DATABASE rasoiai TO rasoiai_user;
+```
 
-## UI Testing (Compose UI Testing)
+## Testing
 
-Tests use **Compose UI Testing** (not Espresso) for native Compose support. Located in `app/src/androidTest/`.
+### Test Distribution
 
-**Current coverage:** ~400 tests across 15 screens + E2E flows:
-- **UI Screen Tests:** Auth (18), Onboarding (41), Generation, Home (22), RecipeDetail (26), Grocery (21), Chat (17), Favorites (17), Stats (21), Settings (15), Pantry (18), RecipeRules (22), CookingMode (27), Theme, Components
-- **E2E Flow Tests:** 15 test files in `e2e/flows/` directory
-- **Other:** Database verification, Recipe constraints, Full user journey, Performance tests
+| Platform | Tests | Framework |
+|----------|-------|-----------|
+| Backend | 170 | pytest |
+| Android UI | ~400 | Compose UI Testing |
+| Android E2E | 65+ | Compose UI Testing + Hilt |
+
+### Backend Tests (170 total)
+
+| Test File | Tests | Purpose |
+|-----------|-------|---------|
+| `test_health.py` | 2 | Health check endpoints |
+| `test_auth.py` | 3 | Firebase authentication |
+| `test_preference_service.py` | 26 | PreferenceUpdateService |
+| `test_chat_integration.py` | 27 | Chat tool calling flow |
+| `test_meal_generation.py` | 22 | Meal generation structures |
+| `test_meal_generation_integration.py` | 29 | Rule enforcement |
+| `test_meal_generation_e2e.py` | 14 | E2E against PostgreSQL |
+| `test_chat_api.py` | 12 | Chat API endpoints |
+| `test_recipe_cache.py` | 35 | Recipe cache operations |
+
+### Android UI Tests
+
+Tests use **Compose UI Testing** (not Espresso). Located in `app/src/androidTest/`.
 
 | Test Type | Pattern | Purpose |
 |-----------|---------|---------|
-| UI Tests | `*ScreenTest.kt` | Test wrapper composable with mock UiState, no ViewModel |
-| Integration Tests | `*IntegrationTest.kt` | Full app with Hilt DI + FakeGoogleAuthClient |
+| UI Tests | `*ScreenTest.kt` | Test composable with mock UiState |
+| Integration Tests | `*IntegrationTest.kt` | Full app with Hilt DI |
+| E2E Tests | `*FlowTest.kt` | Complete user flows |
 
 ```kotlin
-// UI Test pattern - fast, isolated
+// UI Test pattern
 class FeatureScreenTest {
     @get:Rule val composeTestRule = createComposeRule()
 
@@ -500,93 +300,47 @@ class FeatureScreenTest {
         composeTestRule.onNodeWithTag(TestTags.FEATURE_ELEMENT).assertIsDisplayed()
     }
 }
-
-// Integration Test pattern - tests navigation flows
-@HiltAndroidTest
-class FeatureIntegrationTest : BaseE2ETest() {
-    @Inject lateinit var fakeGoogleAuthClient: FakeGoogleAuthClient
-    // Uses real navigation, fake auth
-}
 ```
 
-**Key test files:**
-- `e2e/base/BaseE2ETest.kt` - Base class with Hilt setup, waitUntil helpers
-- `e2e/di/FakeGoogleAuthClient.kt` - Fake auth (configurable success/failure)
-- `presentation/common/TestTags.kt` - All semantic test tags
+### E2E Test Infrastructure
 
-**Important:** Use API 34 emulator (API 36 has Espresso compatibility issues).
+**Key files** in `app/src/androidTest/java/com/rasoiai/app/e2e/`:
 
-See `docs/testing/E2E-Testing-Prompt.md` for the full testing guide.
+| File | Purpose |
+|------|---------|
+| `base/BaseE2ETest.kt` | Base class with Hilt setup, meal plan generation |
+| `util/BackendTestHelper.kt` | Backend API calls with retry |
+| `di/FakeGoogleAuthClient.kt` | Fake auth (returns `fake-firebase-token`) |
+| `robots/` | Robot pattern classes (HomeRobot, GroceryRobot, etc.) |
+| `presentation/common/TestTags.kt` | All semantic test tags |
 
-## CI/CD
+**E2E Test Flow:**
+1. FakeGoogleAuthClient returns fake-firebase-token
+2. AuthViewModel calls `/api/v1/auth/firebase` (real API)
+3. Backend returns JWT, saved to DataStore
+4. User completes 5-step onboarding
+5. BackendTestHelper.generateMealPlan() calls AI (4-7 seconds)
+6. Home screen displays meal cards
+7. Room DB caches meal plan for offline access
 
-GitHub Actions runs on push/PR to `main`/`develop` branches (see `.github/workflows/android-ci.yml`):
-- Lint → Unit Tests → Build Debug APK
-- Instrumented tests run on PRs only (uses Android emulator)
+## Domain Models
 
-Artifacts uploaded: lint results, test results, debug APK.
+Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
-## Troubleshooting
+| Model | Key Fields |
+|-------|-----------|
+| `Recipe` | id, name, cuisineType, dietaryTags, prepTimeMinutes, ingredients, instructions |
+| `MealPlan` | id, weekStartDate, weekEndDate, days |
+| `MealPlanDay` | date, breakfast, lunch, dinner, snacks, festival |
+| `RecipeRule` | id, type, action, targetId, frequency, enforcement, mealSlot |
 
-**Gradle sync fails:** Ensure JDK 17+ and `JAVA_HOME` set. Kotlin/KSP must be 1.9.22 / 1.9.22-1.0.17 (see `gradle/libs.versions.toml`). AGP 8.13.2 requires Android Studio Ladybug (2024.2) or newer.
+**Key Enums:**
+- `DietaryTag`: VEGETARIAN, NON_VEGETARIAN, VEGAN, JAIN, SATTVIC, HALAL, EGGETARIAN
+- `CuisineType`: NORTH, SOUTH, EAST, WEST
+- `MealType`: BREAKFAST, LUNCH, SNACKS, DINNER
+- `RuleAction`: INCLUDE, EXCLUDE
 
-**Emulator not detected:** Set `ANDROID_HOME` and verify with `adb devices`.
-
-**Memory leaks:** LeakCanary is included in debug builds. Check logcat for leak traces during development.
-
-**Gradle daemon issues (Windows):** If builds hang or fail mysteriously, stop existing daemons:
-```bash
-./gradlew --stop
-```
-
-**KSP/Hilt errors after code changes:** Clean and rebuild:
-```bash
-./gradlew clean :app:kspDebugKotlin
-```
-
-**Backend tests fail with import errors:** Ensure you're running from the backend directory with PYTHONPATH set:
-```bash
-cd backend
-PYTHONPATH=. pytest tests/
-```
-
-**PostgreSQL connection issues:** Verify DATABASE_URL in `.env` file is correct and PostgreSQL server is accessible.
-
-## Rules for Claude
-
-1. **Bash Syntax (CRITICAL)**: Use forward slashes `/` (not `\`), use `./gradlew` (not `.\gradlew`), quote paths with spaces. Shell is Unix-style bash even on Windows. For Windows PowerShell-specific commands (like venv activation), use the commented alternative. This applies to ALL bash commands in this file and any commands Claude generates.
-
-2. **Document Output**:
-   - Generated documents → `docs/claude-docs/`
-   - Test screenshots/artifacts → `docs/testing/screenshots/` (gitignored)
-   - Audit reports → `docs/claude-docs/`
-
-3. **Offline-First**: All features must use Room as source of truth with offline support.
-
-## Common Pitfalls
-
-- **API 36 emulator**: Use API 34 - API 36 has Espresso compatibility issues
-- **Backend tests without PYTHONPATH**: Always run `cd backend && PYTHONPATH=. pytest`
-- **Fake vs Real DataStore in E2E tests**: E2E tests use REAL DataStore with persistent state, not fakes
-- **MissingGreenlet errors**: SQLAlchemy async requires proper eager loading with `selectinload()`
-- **Gradle daemon issues on Windows**: Run `./gradlew --stop` if builds hang mysteriously
-- **KSP/Hilt errors after code changes**: Run `./gradlew clean :app:kspDebugKotlin`
-- **Meal plan generation timeout**: AI generation takes 4-7 seconds; E2E tests use 30-second timeout via `BackendTestHelper.generateMealPlan()`
-
-## Reference Implementations
-
-Use these as patterns for new screens:
-
-| Pattern | Reference | Key Features |
-|---------|-----------|--------------|
-| Tabs + Bottom Sheets | `presentation/reciperules/` | 4-tab layout, modal sheets |
-| Form-based Settings | `presentation/settings/` | Sections, toggles, navigation |
-| Bottom Navigation | `presentation/home/` | RasoiBottomNavigation integration |
-| List with Filtering | `presentation/favorites/` | Tab/list pattern |
-| Camera Integration | `presentation/pantry/` | ScanResultsSheet component |
-| Charts/Gamification | `presentation/stats/` | CuisineBreakdownSection |
-
-## Backend API Endpoints
+## Backend API
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -595,89 +349,104 @@ Use these as patterns for new screens:
 | PUT | `/api/v1/users/preferences` | Update preferences |
 | POST | `/api/v1/meal-plans/generate` | Generate meal plan (AI) |
 | GET | `/api/v1/meal-plans/current` | Get current week's plan |
-| GET | `/api/v1/meal-plans/{id}` | Get specific plan |
 | POST | `/api/v1/meal-plans/{planId}/items/{itemId}/swap` | Swap meal |
-| PUT | `/api/v1/meal-plans/{planId}/items/{itemId}/lock` | Lock/unlock meal |
 | GET | `/api/v1/recipes/{id}` | Get recipe details |
-| GET | `/api/v1/recipes/{id}/scale` | Scale recipe servings |
-| GET | `/api/v1/recipes/search` | Search recipes |
 | GET | `/api/v1/grocery` | Get grocery list |
-| GET | `/api/v1/grocery/whatsapp` | WhatsApp formatted list |
-| GET | `/api/v1/festivals/upcoming` | Upcoming festivals |
-| POST | `/api/v1/chat/message` | AI chat with tool calling (preference updates) |
-| GET | `/api/v1/chat/history` | Chat history |
-| GET | `/api/v1/stats/streak` | Cooking streak |
-| GET | `/api/v1/stats/monthly` | Monthly stats |
+| POST | `/api/v1/chat/message` | AI chat with tool calling |
 
-API docs available at `http://localhost:8000/docs` when backend is running.
+API docs: `http://localhost:8000/docs`
 
-## Recipe Database
+**Backend Key Files:**
+| File | Purpose |
+|------|---------|
+| `app/db/postgres.py` | PostgreSQL connection pool |
+| `app/services/meal_generation_service.py` | 2-item pairing logic |
+| `app/services/preference_update_service.py` | INCLUDE/EXCLUDE rules |
+| `app/ai/chat_assistant.py` | Tool calling orchestration |
 
-**3,580 recipes** in PostgreSQL:
-- Imported from khanakyabanega dataset
-- Distribution: North (majority), South, West, East
-- Dietary: Vegetarian, Vegan supported
+## Meal Generation
 
-**Recipe import scripts** (in `backend/scripts/`):
-```bash
-cd backend
-source venv/bin/activate         # Linux/Mac/Git Bash
-# .\venv\Scripts\activate        # Windows PowerShell (use this instead)
+Configuration-driven meal planning with YAML source of truth synced to PostgreSQL.
 
-# Import recipes to PostgreSQL
-PYTHONPATH=. python scripts/import_recipes_postgres.py
-```
-
-## Meal Generation Config
-
-Configuration-driven meal planning with YAML source of truth synced to PostgreSQL. **All 4 phases complete.**
-
-**Config files** (in `backend/config/`):
-```
-backend/config/
-├── meal_generation.yaml         # Pairing rules, meal structure, categories
-└── reference_data/
-    ├── ingredients.yaml         # Ingredient aliases (baingan → brinjal, eggplant)
-    ├── dishes.yaml              # Common dishes with pairings
-    └── cuisines.yaml            # Regional cuisine info
-```
+**Config files** in `backend/config/`:
+- `meal_generation.yaml` - Pairing rules, meal structure
+- `reference_data/ingredients.yaml` - Ingredient aliases
+- `reference_data/dishes.yaml` - Common dishes with pairings
 
 **Key concepts:**
 | Concept | Description |
 |---------|-------------|
-| Items per slot | 2 minimum (e.g., Dal + Rice), expandable with multiple INCLUDE rules |
-| Pairing rules | By cuisine (north/south/east/west) and meal type (breakfast/lunch/dinner/snacks) |
+| Items per slot | 2 minimum (e.g., Dal + Rice) |
 | INCLUDE rule | Forces item into meal slot, paired with complementary item |
 | EXCLUDE rule | Replaces only excluded item, keeps its pair |
 
 **Chat Tool Calling:**
-
-The chat endpoint supports tool calling for preference updates via natural language:
-
 | Tool | Description |
 |------|-------------|
-| `update_recipe_rule` | ADD/REMOVE/MODIFY INCLUDE/EXCLUDE rules |
-| `update_allergy` | Manage food allergies with severity |
+| `update_recipe_rule` | ADD/REMOVE INCLUDE/EXCLUDE rules |
+| `update_allergy` | Manage food allergies |
 | `update_dislike` | Manage disliked ingredients |
-| `update_preference` | Cooking time, busy days, dietary tags, cuisine |
-| `undo_last_change` | Revert last preference change |
-| `show_config` | Display current configuration |
+| `update_preference` | Cooking time, dietary tags, cuisine |
 
-Example user inputs:
-- "I want chai every morning" → `update_recipe_rule(INCLUDE, Chai, DAILY, BREAKFAST)`
-- "I'm allergic to peanuts" → `update_allergy(ADD, peanuts, SEVERE)`
-- "Never give me karela" → `update_recipe_rule(EXCLUDE, Karela, NEVER)`
+## Design System
 
-**Sync to PostgreSQL:**
-```bash
-cd backend
-source venv/bin/activate
+| Element | Light | Dark |
+|---------|-------|------|
+| Primary | `#FF6838` (Orange) | `#FFB59C` |
+| Secondary | `#5A822B` (Green) | `#A8D475` |
+| Background | `#FDFAF4` (Cream) | `#1C1B1F` |
 
-# Sync all config to PostgreSQL
-PYTHONPATH=. python scripts/sync_config_postgres.py
-```
+| Token | Value |
+|-------|-------|
+| Spacing | 8dp grid (4, 8, 16, 24, 32, 48dp) |
+| Shapes | Rounded corners (8dp small, 16dp medium, 24dp large) |
 
-See `docs/design/Meal-Generation-Config-Architecture.md` for full system design.
+## India-Specific Domain Knowledge
+
+| Aspect | Details |
+|--------|---------|
+| **Dietary Tags** | JAIN (no root vegetables), SATTVIC (no onion/garlic) |
+| **Cuisine Zones** | NORTH, SOUTH, EAST, WEST with distinct ingredients |
+| **Measurements** | Support metric and traditional: katori (bowl), chammach (spoon) |
+| **Family Size** | 3-8 members, multi-generational support |
+
+## Reference Implementations
+
+| Pattern | Reference | Key Features |
+|---------|-----------|--------------|
+| Tabs + Bottom Sheets | `presentation/reciperules/` | 4-tab layout, modal sheets |
+| Form-based Settings | `presentation/settings/` | Sections, toggles |
+| Bottom Navigation | `presentation/home/` | RasoiBottomNavigation |
+| List with Filtering | `presentation/favorites/` | Tab/list pattern |
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Gradle sync fails | Ensure JDK 17+, `JAVA_HOME` set. Check `gradle/libs.versions.toml` for versions. |
+| API 36 emulator issues | Use API 34 - API 36 has Espresso compatibility issues |
+| Gradle daemon hangs (Windows) | Run `./gradlew --stop` |
+| KSP/Hilt errors | Run `./gradlew clean :app:kspDebugKotlin` |
+| Backend import errors | Run from backend dir: `cd backend && PYTHONPATH=. pytest` |
+| MissingGreenlet errors | SQLAlchemy async requires `selectinload()` for eager loading |
+| Meal generation timeout | AI takes 4-7 seconds; E2E tests use 30-second timeout |
+
+## Rules for Claude
+
+1. **Bash Syntax (CRITICAL)**: Use forward slashes `/`, use `./gradlew` (not `.\gradlew`), quote paths with spaces. Shell is Unix-style bash even on Windows.
+
+2. **Document Output**:
+   - Generated documents → `docs/claude-docs/`
+   - Test screenshots → `docs/testing/screenshots/` (gitignored)
+
+3. **Offline-First**: All features must use Room as source of truth with offline support.
+
+4. **Bug & Feature Tracking**:
+   - **Before starting work**: Check GitHub Issues for related bugs/features with `gh issue list`
+   - **Finding TODOs**: When you find `/* TODO: ... */` comments, consider creating a GitHub Issue
+   - **After fixing**: Reference issue number in commit: `Fix #123: description`
+   - **Use `/fix-issue <number>`**: To implement a fix for a specific GitHub Issue
+   - **Labels**: `bug`, `enhancement`, `not-implemented`, `home-screen`, etc.
 
 ## Key Documentation
 
@@ -685,61 +454,6 @@ See `docs/design/Meal-Generation-Config-Architecture.md` for full system design.
 |----------|----------|
 | Requirements | `docs/requirements/RasoiAI Requirements.md` |
 | Technical Design | `docs/design/RasoiAI Technical Design.md` |
-| Architecture Decisions | `docs/design/Android Architecture Decisions.md` |
-| Data Flow Diagram | `docs/design/Data-Flow-Diagram.md` |
-| Meal Generation Config | `docs/design/Meal-Generation-Config-Architecture.md` |
 | Meal Generation Algorithm | `docs/design/Meal-Generation-Algorithm.md` |
-| Wireframes | `docs/design/wireframes/` |
-| Audit Checklist | `docs/claude-docs/Android-Best-Practices-Audit-Guide.md` |
 | E2E Testing Guide | `docs/testing/E2E-Testing-Prompt.md` |
-| E2E Test Status | `docs/testing/E2E-Test-Status.md` |
 | Session Context | `docs/CONTINUE_PROMPT.md` |
-
-## Environment Variables
-
-**Backend** (set in shell or `.env` file):
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `DATABASE_URL` | PostgreSQL connection URL (e.g., `postgresql+asyncpg://user:pass@host:5432/db`) | Yes |
-| `FIREBASE_CREDENTIALS_PATH` | Path to Firebase service account JSON (for auth only) | Yes |
-| `ANTHROPIC_API_KEY` | Claude API key for AI features | For meal generation/chat |
-| `DEBUG` | Enable debug mode (`fake-firebase-token` accepted) | No (default: false) |
-| `JWT_SECRET_KEY` | Secret for JWT signing | Yes |
-
-## E2E Test Infrastructure
-
-**Key E2E test files** (in `app/src/androidTest/java/com/rasoiai/app/e2e/`):
-
-| File | Purpose |
-|------|---------|
-| `E2ETestSuite.kt` | JUnit Suite for ordered test execution |
-| `base/BaseE2ETest.kt` | Base class with Hilt setup, meal plan generation |
-| `base/ComposeTestExtensions.kt` | Custom waitUntil helpers, test utilities |
-| `util/BackendTestHelper.kt` | Backend API calls with retry (auth, meal plan generation) |
-| `di/FakeGoogleAuthClient.kt` | Fake auth (returns `fake-firebase-token`) |
-| `di/FakeAuthModule.kt` | Replaces AuthModule with fake for testing |
-| `rules/` | Custom JUnit test rules |
-| `robots/` | Robot pattern classes (HomeRobot, GroceryRobot, RecipeDetailRobot) |
-
-**E2E Test Flow:**
-```
-1. FakeGoogleAuthClient returns fake-firebase-token
-2. AuthViewModel calls /api/v1/auth/firebase (real API)
-3. Backend returns JWT, saved to DataStore
-4. User completes 5-step onboarding
-5. BackendTestHelper.generateMealPlan() calls AI (4-7 seconds)
-6. Home screen displays meal cards
-7. Room DB caches meal plan for offline access
-```
-
-**Running E2E tests:**
-```bash
-# Full E2E suite (ordered execution)
-./gradlew :app:connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.E2ETestSuite
-
-# Single flow test
-./gradlew :app:connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.flows.CoreDataFlowTest
-```

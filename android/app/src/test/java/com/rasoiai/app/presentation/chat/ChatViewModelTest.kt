@@ -2,9 +2,9 @@ package com.rasoiai.app.presentation.chat
 
 import app.cash.turbine.test
 import com.rasoiai.domain.model.ChatMessage
-import com.rasoiai.domain.model.MessageSender
 import com.rasoiai.domain.repository.ChatRepository
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -23,7 +23,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import java.time.LocalDateTime
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatViewModelTest {
@@ -35,20 +34,20 @@ class ChatViewModelTest {
         ChatMessage(
             id = "msg-1",
             content = "Hello! How can I help you today?",
-            sender = MessageSender.AI,
-            timestamp = LocalDateTime.now().minusMinutes(5)
+            isFromUser = false,
+            timestamp = System.currentTimeMillis() - 300000
         ),
         ChatMessage(
             id = "msg-2",
             content = "I want a quick dinner recipe",
-            sender = MessageSender.USER,
-            timestamp = LocalDateTime.now().minusMinutes(4)
+            isFromUser = true,
+            timestamp = System.currentTimeMillis() - 240000
         ),
         ChatMessage(
             id = "msg-3",
             content = "Here's a quick Paneer Bhurji recipe...",
-            sender = MessageSender.AI,
-            timestamp = LocalDateTime.now().minusMinutes(3)
+            isFromUser = false,
+            timestamp = System.currentTimeMillis() - 180000
         )
     )
 
@@ -139,9 +138,10 @@ class ChatViewModelTest {
         }
 
         @Test
-        @DisplayName("sendMessage should clear input and set isSending")
-        fun `sendMessage should clear input and set isSending`() = runTest {
-            coEvery { mockChatRepository.sendMessage(any()) } returns Result.success(Unit)
+        @DisplayName("sendMessage should clear input and send message")
+        fun `sendMessage should clear input and send message`() = runTest {
+            val responseMessage = ChatMessage(id = "msg-response", content = "Test response", isFromUser = false, timestamp = System.currentTimeMillis())
+            coEvery { mockChatRepository.sendMessage(any()) } returns Result.success(responseMessage)
 
             val viewModel = ChatViewModel(mockChatRepository)
 
@@ -152,12 +152,15 @@ class ChatViewModelTest {
                 awaitItem()
 
                 viewModel.sendMessage()
+                testDispatcher.scheduler.advanceUntilIdle()
 
-                val sendingState = awaitItem()
-                assertTrue(sendingState.isSending)
-                assertEquals("", sendingState.inputText)
+                val state = expectMostRecentItem()
+                assertEquals("", state.inputText)
+                assertFalse(state.isSending) // Sending completed
                 cancelAndIgnoreRemainingEvents()
             }
+
+            coVerify { mockChatRepository.sendMessage("Test message") }
         }
 
         @Test
@@ -179,7 +182,8 @@ class ChatViewModelTest {
         @Test
         @DisplayName("onQuickActionClick should send quick action as message")
         fun `onQuickActionClick should send quick action as message`() = runTest {
-            coEvery { mockChatRepository.sendMessage(any()) } returns Result.success(Unit)
+            val responseMessage = ChatMessage(id = "msg-response", content = "Here is a suggestion", isFromUser = false, timestamp = System.currentTimeMillis())
+            coEvery { mockChatRepository.sendMessage(any()) } returns Result.success(responseMessage)
 
             val viewModel = ChatViewModel(mockChatRepository)
 
@@ -187,11 +191,14 @@ class ChatViewModelTest {
                 awaitItem() // Initial
 
                 viewModel.onQuickActionClick("Suggest a quick breakfast")
+                testDispatcher.scheduler.advanceUntilIdle()
 
-                val state = awaitItem()
-                assertTrue(state.isSending)
+                val state = expectMostRecentItem()
+                assertFalse(state.isSending) // Sending completed
                 cancelAndIgnoreRemainingEvents()
             }
+
+            coVerify { mockChatRepository.sendMessage("Suggest a quick breakfast") }
         }
     }
 
@@ -246,8 +253,9 @@ class ChatViewModelTest {
                 awaitItem() // Menu shown
 
                 viewModel.showClearChatDialog()
+                testDispatcher.scheduler.advanceUntilIdle()
 
-                val state = awaitItem()
+                val state = expectMostRecentItem()
                 assertTrue(state.showClearChatDialog)
                 assertFalse(state.showMenu)
                 cancelAndIgnoreRemainingEvents()
@@ -284,11 +292,12 @@ class ChatViewModelTest {
                 awaitItem() // Initial
 
                 viewModel.showClearChatDialog()
-                awaitItem()
+                awaitItem() // Dialog shown
 
                 viewModel.clearChatHistory()
+                testDispatcher.scheduler.advanceUntilIdle()
 
-                val state = awaitItem()
+                val state = expectMostRecentItem()
                 assertFalse(state.showClearChatDialog)
                 cancelAndIgnoreRemainingEvents()
             }
@@ -304,9 +313,8 @@ class ChatViewModelTest {
         fun `navigateBack should emit back event`() = runTest {
             val viewModel = ChatViewModel(mockChatRepository)
 
-            viewModel.navigateBack()
-
             viewModel.navigationEvent.test {
+                viewModel.navigateBack()
                 val event = awaitItem()
                 assertEquals(ChatNavigationEvent.NavigateBack, event)
                 cancelAndIgnoreRemainingEvents()
@@ -318,9 +326,8 @@ class ChatViewModelTest {
         fun `navigateToHome should emit home event`() = runTest {
             val viewModel = ChatViewModel(mockChatRepository)
 
-            viewModel.navigateToHome()
-
             viewModel.navigationEvent.test {
+                viewModel.navigateToHome()
                 val event = awaitItem()
                 assertEquals(ChatNavigationEvent.NavigateToHome, event)
                 cancelAndIgnoreRemainingEvents()
@@ -332,9 +339,8 @@ class ChatViewModelTest {
         fun `navigateToRecipeDetail should emit recipe detail event`() = runTest {
             val viewModel = ChatViewModel(mockChatRepository)
 
-            viewModel.navigateToRecipeDetail("recipe-123")
-
             viewModel.navigationEvent.test {
+                viewModel.navigateToRecipeDetail("recipe-123")
                 val event = awaitItem()
                 assertTrue(event is ChatNavigationEvent.NavigateToRecipeDetail)
                 assertEquals("recipe-123", (event as ChatNavigationEvent.NavigateToRecipeDetail).recipeId)
@@ -347,9 +353,8 @@ class ChatViewModelTest {
         fun `navigateToGrocery should emit grocery event`() = runTest {
             val viewModel = ChatViewModel(mockChatRepository)
 
-            viewModel.navigateToGrocery()
-
             viewModel.navigationEvent.test {
+                viewModel.navigateToGrocery()
                 val event = awaitItem()
                 assertEquals(ChatNavigationEvent.NavigateToGrocery, event)
                 cancelAndIgnoreRemainingEvents()
@@ -361,9 +366,8 @@ class ChatViewModelTest {
         fun `navigateToFavorites should emit favorites event`() = runTest {
             val viewModel = ChatViewModel(mockChatRepository)
 
-            viewModel.navigateToFavorites()
-
             viewModel.navigationEvent.test {
+                viewModel.navigateToFavorites()
                 val event = awaitItem()
                 assertEquals(ChatNavigationEvent.NavigateToFavorites, event)
                 cancelAndIgnoreRemainingEvents()
@@ -421,8 +425,9 @@ class ChatViewModelTest {
                 awaitItem() // Initial
 
                 viewModel.clearError()
+                testDispatcher.scheduler.advanceUntilIdle()
 
-                val state = awaitItem()
+                val state = expectMostRecentItem()
                 assertNull(state.errorMessage)
                 cancelAndIgnoreRemainingEvents()
             }
@@ -442,11 +447,9 @@ class ChatViewModelTest {
                 awaitItem()
 
                 viewModel.sendMessage()
-                awaitItem() // Sending
-
                 testDispatcher.scheduler.advanceUntilIdle()
 
-                val state = awaitItem()
+                val state = expectMostRecentItem()
                 assertFalse(state.isSending)
                 assertTrue(state.errorMessage?.contains("Failed to send") == true)
                 cancelAndIgnoreRemainingEvents()

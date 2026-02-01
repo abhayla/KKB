@@ -40,19 +40,22 @@ class CookingModeViewModelTest {
         id = "test-recipe-1",
         name = "Paneer Tikka",
         description = "Grilled paneer cubes with spices",
-        cuisineType = CuisineType.NORTH,
-        dietaryTags = listOf(DietaryTag.VEGETARIAN),
+        imageUrl = null,
         prepTimeMinutes = 15,
         cookTimeMinutes = 20,
         servings = 4,
         difficulty = Difficulty.MEDIUM,
+        cuisineType = CuisineType.NORTH,
+        mealTypes = listOf(com.rasoiai.domain.model.MealType.SNACKS),
+        dietaryTags = listOf(DietaryTag.VEGETARIAN),
         ingredients = emptyList(),
         instructions = listOf(
-            Instruction(stepNumber = 1, instruction = "Cut paneer into cubes", durationMinutes = null),
-            Instruction(stepNumber = 2, instruction = "Marinate with spices", durationMinutes = 30),
-            Instruction(stepNumber = 3, instruction = "Grill until golden", durationMinutes = 10),
-            Instruction(stepNumber = 4, instruction = "Serve hot with chutney", durationMinutes = null)
+            Instruction(stepNumber = 1, instruction = "Cut paneer into cubes", durationMinutes = null, tips = null),
+            Instruction(stepNumber = 2, instruction = "Marinate with spices", durationMinutes = 30, tips = null),
+            Instruction(stepNumber = 3, instruction = "Grill until golden", durationMinutes = 10, tips = null),
+            Instruction(stepNumber = 4, instruction = "Serve hot with chutney", durationMinutes = null, tips = null)
         ),
+        nutrition = null,
         isFavorite = false
     )
 
@@ -446,9 +449,8 @@ class CookingModeViewModelTest {
 
             val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
 
-            viewModel.confirmExit()
-
             viewModel.navigationEvent.test {
+                viewModel.confirmExit()
                 val event = awaitItem()
                 assertEquals(CookingModeNavigationEvent.NavigateBack, event)
                 cancelAndIgnoreRemainingEvents()
@@ -498,9 +500,8 @@ class CookingModeViewModelTest {
 
             val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
 
-            viewModel.skipRating()
-
             viewModel.navigationEvent.test {
+                viewModel.skipRating()
                 val event = awaitItem()
                 assertEquals(CookingModeNavigationEvent.NavigateToHome, event)
                 cancelAndIgnoreRemainingEvents()

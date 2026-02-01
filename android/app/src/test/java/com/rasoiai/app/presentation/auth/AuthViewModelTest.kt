@@ -86,10 +86,11 @@ class AuthViewModelTest {
 
         val viewModel = AuthViewModel(mockGoogleAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
 
-        // Advance to allow init coroutine to complete
-        testDispatcher.scheduler.advanceUntilIdle()
-
+        // Subscribe to navigation events BEFORE advancing, so we don't miss the event
         viewModel.navigationEvent.test {
+            // Advance to allow init coroutine to complete
+            testDispatcher.scheduler.advanceUntilIdle()
+
             val event = awaitItem()
             // Not onboarded, so should navigate to onboarding
             assertEquals(AuthNavigationEvent.NavigateToOnboarding, event)
@@ -107,10 +108,11 @@ class AuthViewModelTest {
 
         val viewModel = AuthViewModel(mockGoogleAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
 
-        // Advance to allow init coroutine to complete
-        testDispatcher.scheduler.advanceUntilIdle()
-
+        // Subscribe to navigation events BEFORE advancing, so we don't miss the event
         viewModel.navigationEvent.test {
+            // Advance to allow init coroutine to complete
+            testDispatcher.scheduler.advanceUntilIdle()
+
             val event = awaitItem()
             assertEquals(AuthNavigationEvent.NavigateToHome, event)
             cancelAndIgnoreRemainingEvents()
@@ -126,11 +128,11 @@ class AuthViewModelTest {
         val viewModel = AuthViewModel(mockGoogleAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
 
         viewModel.uiState.test {
-            awaitItem() // Initial state
-
             viewModel.clearError()
+            testDispatcher.scheduler.advanceUntilIdle()
 
-            val state = awaitItem()
+            // Use expectMostRecentItem since state may not emit if errorMessage was already null
+            val state = expectMostRecentItem()
             assertNull(state.errorMessage)
             cancelAndIgnoreRemainingEvents()
         }

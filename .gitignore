@@ -90,11 +90,14 @@ backend/scripts/update_pg_hba.py
 docs/testing/screenshots/
 screenshot*.png
 screen*.png
+home_*.png
+home_test*.png
 ui*.xml
 *.db
 local.db
 test_*.log
 test_*.txt
+logcat*.txt
 
 # Claude Code
 .claude/

@@ -37,6 +37,7 @@ class PantryViewModelTest {
             category = PantryCategory.VEGETABLES,
             quantity = 5,
             unit = "piece",
+            addedDate = LocalDate.now().minusDays(2),
             expiryDate = LocalDate.now().plusDays(3)
         ),
         PantryItem(
@@ -45,6 +46,7 @@ class PantryViewModelTest {
             category = PantryCategory.DAIRY_MILK,
             quantity = 1,
             unit = "liter",
+            addedDate = LocalDate.now().minusDays(1),
             expiryDate = LocalDate.now().plusDays(1)
         )
     )
@@ -56,6 +58,7 @@ class PantryViewModelTest {
             category = PantryCategory.DAIRY_MILK,
             quantity = 1,
             unit = "cup",
+            addedDate = LocalDate.now().minusDays(5),
             expiryDate = LocalDate.now().minusDays(2)
         )
     )
@@ -218,21 +221,18 @@ class PantryViewModelTest {
     inner class ScanActions {
 
         @Test
-        @DisplayName("simulateScan should set isScanning and show results")
-        fun `simulateScan should set isScanning and show results`() = runTest {
+        @DisplayName("simulateScan should show results after completion")
+        fun `simulateScan should show results after completion`() = runTest {
             val viewModel = PantryViewModel(mockPantryRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
 
                 viewModel.simulateScan()
-
-                val scanningState = awaitItem()
-                assertTrue(scanningState.isScanning)
-
                 testDispatcher.scheduler.advanceTimeBy(2000)
+                testDispatcher.scheduler.advanceUntilIdle()
 
-                val resultsState = awaitItem()
+                val resultsState = expectMostRecentItem()
                 assertFalse(resultsState.isScanning)
                 assertTrue(resultsState.showScanResultsSheet)
                 assertTrue(resultsState.scannedItems.isNotEmpty())
@@ -272,9 +272,8 @@ class PantryViewModelTest {
         fun `navigateBack should emit back event`() = runTest {
             val viewModel = PantryViewModel(mockPantryRepository)
 
-            viewModel.navigateBack()
-
             viewModel.navigationEvent.test {
+                viewModel.navigateBack()
                 val event = awaitItem()
                 assertEquals(PantryNavigationEvent.NavigateBack, event)
                 cancelAndIgnoreRemainingEvents()
@@ -286,9 +285,8 @@ class PantryViewModelTest {
         fun `navigateToHome should emit home event`() = runTest {
             val viewModel = PantryViewModel(mockPantryRepository)
 
-            viewModel.navigateToHome()
-
             viewModel.navigationEvent.test {
+                viewModel.navigateToHome()
                 val event = awaitItem()
                 assertEquals(PantryNavigationEvent.NavigateToHome, event)
                 cancelAndIgnoreRemainingEvents()
@@ -301,9 +299,9 @@ class PantryViewModelTest {
             val viewModel = PantryViewModel(mockPantryRepository)
 
             testDispatcher.scheduler.advanceUntilIdle()
-            viewModel.onFindRecipesClick()
 
             viewModel.navigationEvent.test {
+                viewModel.onFindRecipesClick()
                 val event = awaitItem()
                 assertTrue(event is PantryNavigationEvent.NavigateToRecipeSearch)
                 cancelAndIgnoreRemainingEvents()

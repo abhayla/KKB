@@ -120,6 +120,9 @@ android {
         // Disabled Test Orchestrator temporarily to fix Compose test issues
         // execution = "ANDROIDX_TEST_ORCHESTRATOR"
         animationsDisabled = true
+        unitTests.all {
+            it.useJUnitPlatform()
+        }
     }
 }
 
@@ -211,6 +214,7 @@ dependencies {
     androidTestImplementation(libs.hilt.android.testing)
     androidTestImplementation(libs.coroutines.test)
     androidTestImplementation(libs.mockk.android)
+    androidTestImplementation(libs.uiautomator)
     kspAndroidTest(libs.hilt.compiler)
 
     // Test Orchestrator (prevents TransactionTooLargeException)

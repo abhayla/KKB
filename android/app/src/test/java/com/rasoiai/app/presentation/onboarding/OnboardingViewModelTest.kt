@@ -337,14 +337,16 @@ class OnboardingViewModelTest {
             val viewModel = OnboardingViewModel(mockUserPreferencesDataStore)
 
             viewModel.uiState.test {
-                awaitItem() // Initial (only NORTH selected)
+                val initialState = awaitItem() // Initial (only NORTH selected)
+                assertTrue(initialState.selectedCuisines.contains(CuisineType.NORTH))
 
                 viewModel.toggleCuisine(CuisineType.NORTH) // Try to remove
 
                 // No state change expected - still has NORTH
-                val state = expectMostRecentItem()
-                assertTrue(state.selectedCuisines.contains(CuisineType.NORTH))
-                assertEquals(1, state.selectedCuisines.size)
+                expectNoEvents() // Verify no new emissions
+
+                // Verify current state is unchanged
+                assertEquals(1, initialState.selectedCuisines.size)
                 cancelAndIgnoreRemainingEvents()
             }
         }
@@ -357,10 +359,10 @@ class OnboardingViewModelTest {
             viewModel.uiState.test {
                 awaitItem() // Initial (MEDIUM)
 
-                viewModel.updateSpiceLevel(SpiceLevel.HOT)
+                viewModel.updateSpiceLevel(SpiceLevel.SPICY)
 
                 val state = awaitItem()
-                assertEquals(SpiceLevel.HOT, state.spiceLevel)
+                assertEquals(SpiceLevel.SPICY, state.spiceLevel)
                 cancelAndIgnoreRemainingEvents()
             }
         }
@@ -501,17 +503,16 @@ class OnboardingViewModelTest {
             val viewModel = OnboardingViewModel(mockUserPreferencesDataStore)
 
             viewModel.uiState.test {
-                awaitItem() // Initial
+                var currentState = awaitItem() // Initial (step 0)
 
-                // Navigate to last step
+                // Navigate to last step (5 steps total: 0,1,2,3,4 - we need to go 4 times)
                 repeat(4) {
                     viewModel.goToNextStep()
-                    awaitItem()
+                    currentState = awaitItem()
                 }
 
-                // Confirm we're on last step
-                val lastStepState = expectMostRecentItem()
-                assertTrue(lastStepState.isLastStep)
+                // Confirm we're on last step (step 4)
+                assertTrue(currentState.isLastStep)
 
                 // Try to proceed - should start generation
                 viewModel.goToNextStep()
@@ -527,14 +528,14 @@ class OnboardingViewModelTest {
         fun `completion should emit navigation event`() = runTest {
             val viewModel = OnboardingViewModel(mockUserPreferencesDataStore)
 
-            // Navigate to last step and complete
-            repeat(4) { viewModel.goToNextStep() }
-            viewModel.goToNextStep() // Trigger completion
-
-            // Advance time to allow simulation to complete
-            testDispatcher.scheduler.advanceTimeBy(5000)
-
             viewModel.navigationEvent.test {
+                // Navigate to last step and complete
+                repeat(4) { viewModel.goToNextStep() }
+                viewModel.goToNextStep() // Trigger completion
+
+                // Advance time to allow simulation to complete
+                testDispatcher.scheduler.advanceTimeBy(5000)
+
                 val event = awaitItem()
                 assertEquals(OnboardingNavigationEvent.NavigateToHome, event)
                 cancelAndIgnoreRemainingEvents()
@@ -593,8 +594,9 @@ class OnboardingViewModelTest {
 
                 viewModel.clearError()
 
-                val state = awaitItem()
-                assertNull(state.errorMessage)
+                // clearError may not emit if errorMessage was already null
+                // Verify state has null errorMessage
+                assertNull(viewModel.uiState.value.errorMessage)
                 cancelAndIgnoreRemainingEvents()
             }
         }

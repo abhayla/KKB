@@ -33,12 +33,15 @@ class SettingsViewModelTest {
 
     private val testUser = User(
         id = "user-1",
+        email = "test@example.com",
         name = "Test User",
-        email = "test@example.com"
+        profileImageUrl = null,
+        isOnboarded = true,
+        preferences = null
     )
 
     private val testAppSettings = AppSettings(
-        darkModePreference = DarkModePreference.SYSTEM,
+        darkMode = DarkModePreference.SYSTEM,
         notificationsEnabled = true
     )
 
@@ -237,14 +240,16 @@ class SettingsViewModelTest {
 
                 viewModel.onSignOutConfirmed()
 
-                val signingOutState = awaitItem()
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                val signingOutState = expectMostRecentItem()
                 assertTrue(signingOutState.isSigningOut)
                 cancelAndIgnoreRemainingEvents()
             }
 
-            testDispatcher.scheduler.advanceUntilIdle()
-
             viewModel.navigationEvent.test {
+                viewModel.onSignOutConfirmed()
+                testDispatcher.scheduler.advanceUntilIdle()
                 val event = awaitItem()
                 assertEquals(SettingsNavigationEvent.NavigateToAuth, event)
                 cancelAndIgnoreRemainingEvents()
@@ -261,9 +266,8 @@ class SettingsViewModelTest {
         fun `navigateBack should emit back event`() = runTest {
             val viewModel = SettingsViewModel(mockSettingsRepository)
 
-            viewModel.navigateBack()
-
             viewModel.navigationEvent.test {
+                viewModel.navigateBack()
                 val event = awaitItem()
                 assertEquals(SettingsNavigationEvent.NavigateBack, event)
                 cancelAndIgnoreRemainingEvents()
@@ -275,9 +279,8 @@ class SettingsViewModelTest {
         fun `onEditProfileClick should emit edit profile event`() = runTest {
             val viewModel = SettingsViewModel(mockSettingsRepository)
 
-            viewModel.onEditProfileClick()
-
             viewModel.navigationEvent.test {
+                viewModel.onEditProfileClick()
                 val event = awaitItem()
                 assertEquals(SettingsNavigationEvent.NavigateToEditProfile, event)
                 cancelAndIgnoreRemainingEvents()
@@ -289,9 +292,8 @@ class SettingsViewModelTest {
         fun `onRecipeRulesClick should emit recipe rules event`() = runTest {
             val viewModel = SettingsViewModel(mockSettingsRepository)
 
-            viewModel.onRecipeRulesClick()
-
             viewModel.navigationEvent.test {
+                viewModel.onRecipeRulesClick()
                 val event = awaitItem()
                 assertEquals(SettingsNavigationEvent.NavigateToRecipeRules, event)
                 cancelAndIgnoreRemainingEvents()
@@ -303,9 +305,8 @@ class SettingsViewModelTest {
         fun `onPrivacyPolicyClick should emit privacy policy event`() = runTest {
             val viewModel = SettingsViewModel(mockSettingsRepository)
 
-            viewModel.onPrivacyPolicyClick()
-
             viewModel.navigationEvent.test {
+                viewModel.onPrivacyPolicyClick()
                 val event = awaitItem()
                 assertEquals(SettingsNavigationEvent.NavigateToPrivacyPolicy, event)
                 cancelAndIgnoreRemainingEvents()
@@ -317,9 +318,8 @@ class SettingsViewModelTest {
         fun `onEditFamilyMemberClick should emit edit member event with id`() = runTest {
             val viewModel = SettingsViewModel(mockSettingsRepository)
 
-            viewModel.onEditFamilyMemberClick("member-123")
-
             viewModel.navigationEvent.test {
+                viewModel.onEditFamilyMemberClick("member-123")
                 val event = awaitItem()
                 assertTrue(event is SettingsNavigationEvent.NavigateToEditFamilyMember)
                 assertEquals("member-123", (event as SettingsNavigationEvent.NavigateToEditFamilyMember).memberId)

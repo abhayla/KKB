@@ -36,7 +36,7 @@ class StatsViewModelTest {
 
     private val testStreak = CookingStreak(
         currentStreak = 5,
-        longestStreak = 12,
+        bestStreak = 12,
         lastCookingDate = java.time.LocalDate.now()
     )
 
@@ -63,13 +63,14 @@ class StatsViewModelTest {
         description = "Cook 5 South Indian dishes this week",
         targetCount = 5,
         currentProgress = 2,
+        rewardBadge = "🏆",
         isJoined = false
     )
 
     private val testLeaderboard = listOf(
-        LeaderboardEntry(rank = 1, userName = "Chef Master", points = 1500),
-        LeaderboardEntry(rank = 2, userName = "Spice King", points = 1200),
-        LeaderboardEntry(rank = 3, userName = "You", points = 800, isCurrentUser = true)
+        LeaderboardEntry(rank = 1, userName = "Chef Master", mealsCount = 150, isCurrentUser = false),
+        LeaderboardEntry(rank = 2, userName = "Spice King", mealsCount = 120, isCurrentUser = false),
+        LeaderboardEntry(rank = 3, userName = "You", mealsCount = 80, isCurrentUser = true)
     )
 
     @BeforeEach
@@ -79,7 +80,7 @@ class StatsViewModelTest {
         every { mockStatsRepository.getCookingStreak() } returns flowOf(testStreak)
         every { mockStatsRepository.getAchievements() } returns flowOf(testAchievements)
         every { mockStatsRepository.getWeeklyChallenge() } returns flowOf(testChallenge)
-        coEvery { mockStatsRepository.getMonthlyStats(any()) } returns Result.success(MonthlyStats(mealsCooked = 20, recipesExplored = 15))
+        coEvery { mockStatsRepository.getMonthlyStats(any()) } returns Result.success(MonthlyStats(mealsCooked = 20, newRecipes = 15, averageRating = 4.5f))
         coEvery { mockStatsRepository.getCookingDays(any()) } returns Result.success(emptyList())
         coEvery { mockStatsRepository.getLeaderboard(any()) } returns Result.success(testLeaderboard)
     }
@@ -244,9 +245,8 @@ class StatsViewModelTest {
         fun `navigateBack should emit back event`() = runTest {
             val viewModel = StatsViewModel(mockStatsRepository)
 
-            viewModel.navigateBack()
-
             viewModel.navigationEvent.test {
+                viewModel.navigateBack()
                 val event = awaitItem()
                 assertEquals(StatsNavigationEvent.NavigateBack, event)
                 cancelAndIgnoreRemainingEvents()
@@ -258,9 +258,8 @@ class StatsViewModelTest {
         fun `navigateToHome should emit home event`() = runTest {
             val viewModel = StatsViewModel(mockStatsRepository)
 
-            viewModel.navigateToHome()
-
             viewModel.navigationEvent.test {
+                viewModel.navigateToHome()
                 val event = awaitItem()
                 assertEquals(StatsNavigationEvent.NavigateToHome, event)
                 cancelAndIgnoreRemainingEvents()
@@ -272,9 +271,8 @@ class StatsViewModelTest {
         fun `onViewAllAchievements should emit achievements event`() = runTest {
             val viewModel = StatsViewModel(mockStatsRepository)
 
-            viewModel.onViewAllAchievements()
-
             viewModel.navigationEvent.test {
+                viewModel.onViewAllAchievements()
                 val event = awaitItem()
                 assertEquals(StatsNavigationEvent.NavigateToAllAchievements, event)
                 cancelAndIgnoreRemainingEvents()
@@ -286,9 +284,8 @@ class StatsViewModelTest {
         fun `onViewFullLeaderboard should emit leaderboard event`() = runTest {
             val viewModel = StatsViewModel(mockStatsRepository)
 
-            viewModel.onViewFullLeaderboard()
-
             viewModel.navigationEvent.test {
+                viewModel.onViewFullLeaderboard()
                 val event = awaitItem()
                 assertEquals(StatsNavigationEvent.NavigateToFullLeaderboard, event)
                 cancelAndIgnoreRemainingEvents()

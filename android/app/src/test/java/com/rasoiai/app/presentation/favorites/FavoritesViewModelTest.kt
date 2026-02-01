@@ -38,14 +38,18 @@ class FavoritesViewModelTest {
         FavoriteCollection(
             id = FavoriteCollection.COLLECTION_ALL,
             name = "All Favorites",
-            recipeCount = 5,
-            isSystem = true
+            recipeIds = listOf("recipe-1", "recipe-2", "recipe-3", "recipe-4", "recipe-5"),
+            coverImageUrl = null,
+            isDefault = true,
+            createdAt = System.currentTimeMillis()
         ),
         FavoriteCollection(
             id = "collection-1",
             name = "Quick Meals",
-            recipeCount = 3,
-            isSystem = false
+            recipeIds = listOf("recipe-1", "recipe-2", "recipe-3"),
+            coverImageUrl = null,
+            isDefault = false,
+            createdAt = System.currentTimeMillis()
         )
     )
 
@@ -54,28 +58,34 @@ class FavoritesViewModelTest {
             id = "recipe-1",
             name = "Poha",
             description = "Quick breakfast",
-            cuisineType = CuisineType.WEST,
-            dietaryTags = listOf(DietaryTag.VEGETARIAN),
+            imageUrl = null,
             prepTimeMinutes = 5,
             cookTimeMinutes = 10,
             servings = 2,
             difficulty = Difficulty.EASY,
+            cuisineType = CuisineType.WEST,
+            mealTypes = listOf(com.rasoiai.domain.model.MealType.BREAKFAST),
+            dietaryTags = listOf(DietaryTag.VEGETARIAN),
             ingredients = emptyList(),
             instructions = emptyList(),
+            nutrition = null,
             isFavorite = true
         ),
         Recipe(
             id = "recipe-2",
             name = "Dal Tadka",
             description = "Comfort food",
-            cuisineType = CuisineType.NORTH,
-            dietaryTags = listOf(DietaryTag.VEGETARIAN, DietaryTag.VEGAN),
+            imageUrl = null,
             prepTimeMinutes = 10,
             cookTimeMinutes = 25,
             servings = 4,
             difficulty = Difficulty.EASY,
+            cuisineType = CuisineType.NORTH,
+            mealTypes = listOf(com.rasoiai.domain.model.MealType.LUNCH, com.rasoiai.domain.model.MealType.DINNER),
+            dietaryTags = listOf(DietaryTag.VEGETARIAN, DietaryTag.VEGAN),
             ingredients = emptyList(),
             instructions = emptyList(),
+            nutrition = null,
             isFavorite = true
         )
     )
@@ -371,9 +381,8 @@ class FavoritesViewModelTest {
         fun `onRecipeClick should emit navigation event`() = runTest {
             val viewModel = FavoritesViewModel(mockFavoritesRepository, mockRecipeRepository)
 
-            viewModel.onRecipeClick("recipe-1")
-
             viewModel.navigationEvent.test {
+                viewModel.onRecipeClick("recipe-1")
                 val event = awaitItem()
                 assertTrue(event is FavoritesNavigationEvent.NavigateToRecipeDetail)
                 assertEquals("recipe-1", (event as FavoritesNavigationEvent.NavigateToRecipeDetail).recipeId)
@@ -386,9 +395,8 @@ class FavoritesViewModelTest {
         fun `navigateBack should emit back event`() = runTest {
             val viewModel = FavoritesViewModel(mockFavoritesRepository, mockRecipeRepository)
 
-            viewModel.navigateBack()
-
             viewModel.navigationEvent.test {
+                viewModel.navigateBack()
                 val event = awaitItem()
                 assertEquals(FavoritesNavigationEvent.NavigateBack, event)
                 cancelAndIgnoreRemainingEvents()
@@ -400,9 +408,8 @@ class FavoritesViewModelTest {
         fun `navigateToHome should emit home event`() = runTest {
             val viewModel = FavoritesViewModel(mockFavoritesRepository, mockRecipeRepository)
 
-            viewModel.navigateToHome()
-
             viewModel.navigationEvent.test {
+                viewModel.navigateToHome()
                 val event = awaitItem()
                 assertEquals(FavoritesNavigationEvent.NavigateToHome, event)
                 cancelAndIgnoreRemainingEvents()

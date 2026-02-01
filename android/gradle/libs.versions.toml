@@ -79,6 +79,7 @@ androidx-test-runner = "1.6.2"
 androidx-test-rules = "1.6.1"
 androidx-test-orchestrator = "1.5.1"
 espresso = "3.6.1"
+uiautomator = "2.3.0"
 
 [libraries]
 # Core
@@ -182,6 +183,7 @@ androidx-test-orchestrator = { group = "androidx.test", name = "orchestrator", v
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
 espresso-intents = { group = "androidx.test.espresso", name = "espresso-intents", version.ref = "espresso" }
 espresso-contrib = { group = "androidx.test.espresso", name = "espresso-contrib", version.ref = "espresso" }
+uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "uiautomator" }
 
 # Memory Leak Detection
 leakcanary = { group = "com.squareup.leakcanary", name = "leakcanary-android", version.ref = "leakcanary" }

@@ -1,13 +1,13 @@
 # RasoiAI Backend
 
-AI-powered Indian meal planning API built with FastAPI and Firebase Firestore.
+AI-powered Indian meal planning API built with FastAPI and PostgreSQL.
 
 ## Quick Start
 
 ### Prerequisites
 
 - Python 3.11+
-- Firebase project with Firestore enabled
+- PostgreSQL database
 - Anthropic API key (for AI features)
 
 ### Local Development
@@ -24,58 +24,38 @@ AI-powered Indian meal planning API built with FastAPI and Firebase Firestore.
    pip install -r requirements.txt
    ```
 
-3. **Configure Firebase**
+3. **Configure environment**
    ```bash
-   # Download service account key from Firebase Console
-   # Save as rasoiai-firebase-service-account.json
-
-   export FIREBASE_CREDENTIALS_PATH=./rasoiai-firebase-service-account.json  # Linux/Mac/Git Bash
-   # $env:FIREBASE_CREDENTIALS_PATH = "./rasoiai-firebase-service-account.json"  # Windows PowerShell
+   # Create .env file with:
+   DATABASE_URL=postgresql+asyncpg://rasoiai_user:password@localhost:5432/rasoiai
+   FIREBASE_CREDENTIALS_PATH=./rasoiai-firebase-service-account.json
+   ANTHROPIC_API_KEY=sk-ant-...
+   JWT_SECRET_KEY=your-secret-key
+   DEBUG=true
    ```
 
-4. **Seed Firestore with initial data**
-   ```bash
-   PYTHONPATH=. python scripts/seed_firestore.py
+4. **Setup PostgreSQL**
+   ```sql
+   CREATE DATABASE rasoiai;
+   CREATE USER rasoiai_user WITH PASSWORD 'your_password';
+   GRANT ALL PRIVILEGES ON DATABASE rasoiai TO rasoiai_user;
    ```
 
-5. **Start server**
+5. **Run migrations and seed data**
+   ```bash
+   alembic upgrade head
+   PYTHONPATH=. python scripts/seed_festivals.py
+   PYTHONPATH=. python scripts/seed_achievements.py
+   PYTHONPATH=. python scripts/import_recipes_postgres.py
+   PYTHONPATH=. python scripts/sync_config_postgres.py
+   ```
+
+6. **Start server**
    ```bash
    uvicorn app.main:app --reload
    ```
 
-6. **Open API docs**: http://localhost:8000/docs
-
-## API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/auth/firebase` | Exchange Firebase token for JWT |
-| GET | `/api/v1/users/me` | Get current user |
-| PUT | `/api/v1/users/preferences` | Update preferences |
-| POST | `/api/v1/meal-plans/generate` | Generate meal plan (AI) |
-| GET | `/api/v1/meal-plans/current` | Get current week's plan |
-| GET | `/api/v1/meal-plans/{id}` | Get specific plan |
-| POST | `/api/v1/meal-plans/{planId}/items/{itemId}/swap` | Swap meal |
-| PUT | `/api/v1/meal-plans/{planId}/items/{itemId}/lock` | Lock/unlock meal |
-| GET | `/api/v1/recipes/{id}` | Get recipe details |
-| GET | `/api/v1/recipes/{id}/scale` | Scale recipe servings |
-| GET | `/api/v1/recipes/search` | Search recipes |
-| GET | `/api/v1/grocery` | Get grocery list |
-| GET | `/api/v1/grocery/whatsapp` | WhatsApp formatted list |
-| GET | `/api/v1/festivals/upcoming` | Upcoming festivals |
-| POST | `/api/v1/chat/message` | AI chat with tool calling |
-| GET | `/api/v1/chat/history` | Chat history |
-| GET | `/api/v1/stats/streak` | Cooking streak |
-| GET | `/api/v1/stats/monthly` | Monthly stats |
-
-## Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `FIREBASE_CREDENTIALS_PATH` | Path to Firebase service account JSON | Yes |
-| `JWT_SECRET_KEY` | Secret for JWT signing | Yes |
-| `ANTHROPIC_API_KEY` | Claude API key | For AI features |
-| `DEBUG` | Enable debug mode (`fake-firebase-token` accepted) | No (default: false) |
+7. **Open API docs**: http://localhost:8000/docs
 
 ## Project Structure
 
@@ -86,7 +66,8 @@ backend/
 │   ├── config.py                # Settings
 │   ├── api/v1/                  # API endpoints
 │   ├── core/                    # Security, exceptions
-│   ├── repositories/            # Firestore data access
+│   ├── db/                      # PostgreSQL connection
+│   ├── repositories/            # Data access layer
 │   ├── schemas/                 # Pydantic schemas
 │   ├── services/                # Business logic
 │   │   ├── meal_generation_service.py  # 2-item pairing logic
@@ -99,50 +80,42 @@ backend/
 │   ├── meal_generation.yaml     # Pairing rules, meal structure
 │   └── reference_data/          # Ingredients, dishes, cuisines
 ├── scripts/                     # Utility scripts
-├── tests/                       # Test suite (92 tests)
+├── tests/                       # Test suite (170 tests)
 └── requirements.txt
 ```
 
 ## Testing
 
 ```bash
-# Run all tests (92 total)
-pytest
+# Run all tests (170 total)
+PYTHONPATH=. pytest
 
 # Run with coverage
-pytest --cov=app
+PYTHONPATH=. pytest --cov=app
 
 # Run specific test file
-pytest tests/test_auth.py -v
-pytest tests/test_preference_service.py -v
-pytest tests/test_chat_integration.py -v
-pytest tests/test_meal_generation.py -v
-pytest tests/test_chat_api.py -v
+PYTHONPATH=. pytest tests/test_auth.py -v
+PYTHONPATH=. pytest tests/test_preference_service.py -v
+PYTHONPATH=. pytest tests/test_chat_integration.py -v
+PYTHONPATH=. pytest tests/test_meal_generation.py -v
 
 # Run single test method
-pytest tests/test_preference_service.py::test_add_include_rule -v
+PYTHONPATH=. pytest tests/test_preference_service.py::test_add_include_rule -v
 ```
 
-**Note:** Run tests from the backend directory with PYTHONPATH set:
-```bash
-cd backend
-PYTHONPATH=. pytest tests/
-```
+**Note:** Always run tests from the backend directory with PYTHONPATH set.
 
 ## Recipe Database
 
-- **3,590 recipes** in Firestore (project: `rasoiai-6dcdd`)
-- 3,580 imported from khanakyabanega + 10 seed recipes
-- Distribution: North (3,124), South (358), West (85), East (23)
+- **3,580 recipes** in PostgreSQL
+- Imported from khanakyabanega dataset
+- Distribution: North (majority), South, West, East
 
 ## Config Sync
 
-Meal generation configuration is stored in YAML files and synced to Firestore:
+Meal generation configuration is stored in YAML files and synced to PostgreSQL:
 
 ```bash
-# Preview changes
-python scripts/sync_config.py --dry-run
-
 # Sync all config
-python scripts/sync_config.py
+PYTHONPATH=. python scripts/sync_config_postgres.py
 ```

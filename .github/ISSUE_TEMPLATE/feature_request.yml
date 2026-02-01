@@ -1,0 +1,71 @@
+name: Missing Feature / TODO
+description: Track unimplemented features or TODOs in code
+title: "[FEATURE] "
+labels: ["enhancement", "not-implemented"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of the application is this feature for?
+      options:
+        - Android - Home Screen
+        - Android - Auth/Onboarding
+        - Android - Recipe Detail
+        - Android - Grocery
+        - Android - Chat
+        - Android - Favorites
+        - Android - Settings
+        - Android - Cooking Mode
+        - Android - Stats
+        - Android - Navigation
+        - Backend - API
+        - Backend - AI/Claude
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature?
+      options:
+        - High - Core functionality
+        - Medium - Important but not blocking
+        - Low - Nice to have
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What feature is missing or marked as TODO?
+      placeholder: Describe the feature that needs to be implemented
+    validations:
+      required: true
+  - type: textarea
+    id: code-location
+    attributes:
+      label: Code Location
+      description: Where the TODO comment or stub implementation exists
+      placeholder: |
+        android/app/src/main/.../HomeScreen.kt:323
+        // TODO: Add recipe functionality
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: How do we know when this is complete?
+      placeholder: |
+        - [ ] User can...
+        - [ ] System should...
+  - type: textarea
+    id: implementation-notes
+    attributes:
+      label: Implementation Notes
+      description: Any relevant context, existing components to reuse, or approach suggestions
+  - type: textarea
+    id: related
+    attributes:
+      label: Related Issues
+      description: Links to related issues or PRs
+      placeholder: "#123, #456"

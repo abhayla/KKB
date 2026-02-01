@@ -78,7 +78,8 @@ def verify_firebase_token(id_token: str) -> dict:
         raise ServiceUnavailableError("Firebase authentication not available")
 
     try:
-        decoded_token = auth.verify_id_token(id_token)
+        # Allow 60 seconds of clock skew to handle emulator/server time differences
+        decoded_token = auth.verify_id_token(id_token, clock_skew_seconds=60)
         return {
             "uid": decoded_token["uid"],
             "email": decoded_token.get("email"),

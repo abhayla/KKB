@@ -1,8 +1,9 @@
 package com.rasoiai.app.presentation.splash
 
 import app.cash.turbine.test
+import com.rasoiai.app.presentation.auth.GoogleAuthClientInterface
 import com.rasoiai.core.network.NetworkMonitor
-import com.rasoiai.data.local.datastore.UserPreferencesDataStore
+import com.rasoiai.data.local.datastore.UserPreferencesDataStoreInterface
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -26,14 +27,17 @@ class SplashViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var fakeNetworkMonitor: FakeNetworkMonitor
-    private lateinit var mockUserPreferencesDataStore: UserPreferencesDataStore
+    private lateinit var mockUserPreferencesDataStore: UserPreferencesDataStoreInterface
+    private lateinit var mockGoogleAuthClient: GoogleAuthClientInterface
 
     @BeforeEach
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         fakeNetworkMonitor = FakeNetworkMonitor()
         mockUserPreferencesDataStore = mockk(relaxed = true)
+        mockGoogleAuthClient = mockk(relaxed = true)
         every { mockUserPreferencesDataStore.isOnboarded } returns flowOf(false)
+        every { mockGoogleAuthClient.isSignedIn } returns false
     }
 
     @AfterEach
@@ -44,7 +48,7 @@ class SplashViewModelTest {
     @Test
     @DisplayName("Initial state should be loading")
     fun `initial state should be loading`() = runTest {
-        val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore)
+        val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore, mockGoogleAuthClient)
 
         viewModel.uiState.test {
             val initialState = awaitItem()
@@ -56,7 +60,7 @@ class SplashViewModelTest {
     @Test
     @DisplayName("isOnline should reflect network state")
     fun `isOnline should reflect network state`() = runTest {
-        val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore)
+        val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore, mockGoogleAuthClient)
 
         viewModel.isOnline.test {
             // Initial state is online
@@ -77,7 +81,7 @@ class SplashViewModelTest {
     @Test
     @DisplayName("After delay, isLoading should be false")
     fun `after delay isLoading should be false`() = runTest {
-        val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore)
+        val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore, mockGoogleAuthClient)
 
         viewModel.uiState.test {
             // Initial state
@@ -96,7 +100,7 @@ class SplashViewModelTest {
     @Test
     @DisplayName("Navigation event should be emitted after delay")
     fun `navigation event should be emitted after delay`() = runTest {
-        val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore)
+        val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore, mockGoogleAuthClient)
 
         // Advance time to trigger navigation
         testDispatcher.scheduler.advanceTimeBy(2500)

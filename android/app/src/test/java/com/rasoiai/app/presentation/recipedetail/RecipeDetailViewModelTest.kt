@@ -44,23 +44,24 @@ class RecipeDetailViewModelTest {
         name = "Paneer Butter Masala",
         description = "A rich and creamy curry dish",
         imageUrl = "https://example.com/paneer.jpg",
-        cuisineType = CuisineType.NORTH,
-        dietaryTags = listOf(DietaryTag.VEGETARIAN),
         prepTimeMinutes = 15,
         cookTimeMinutes = 30,
         servings = 4,
         difficulty = Difficulty.MEDIUM,
+        cuisineType = CuisineType.NORTH,
+        mealTypes = listOf(com.rasoiai.domain.model.MealType.LUNCH, com.rasoiai.domain.model.MealType.DINNER),
+        dietaryTags = listOf(DietaryTag.VEGETARIAN),
         ingredients = listOf(
             Ingredient(id = "ing-1", name = "Paneer", quantity = "200", unit = "g", category = IngredientCategory.DAIRY),
             Ingredient(id = "ing-2", name = "Tomatoes", quantity = "3", unit = "medium", category = IngredientCategory.VEGETABLES),
             Ingredient(id = "ing-3", name = "Cream", quantity = "100", unit = "ml", category = IngredientCategory.DAIRY)
         ),
         instructions = listOf(
-            Instruction(stepNumber = 1, instruction = "Cut paneer into cubes"),
-            Instruction(stepNumber = 2, instruction = "Blend tomatoes"),
-            Instruction(stepNumber = 3, instruction = "Cook with spices and add cream")
+            Instruction(stepNumber = 1, instruction = "Cut paneer into cubes", durationMinutes = 5, tips = null),
+            Instruction(stepNumber = 2, instruction = "Blend tomatoes", durationMinutes = 2, tips = null),
+            Instruction(stepNumber = 3, instruction = "Cook with spices and add cream", durationMinutes = 20, tips = "Stir frequently")
         ),
-        nutrition = Nutrition(calories = 350, proteinGrams = 15, carbohydratesGrams = 12, fatGrams = 28),
+        nutrition = Nutrition(calories = 350, proteinGrams = 15, carbohydratesGrams = 12, fatGrams = 28, fiberGrams = 2, sugarGrams = 4, sodiumMg = 600),
         isFavorite = false
     )
 
@@ -277,9 +278,8 @@ class RecipeDetailViewModelTest {
 
             val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository)
 
-            viewModel.startCookingMode()
-
             viewModel.navigationEvent.test {
+                viewModel.startCookingMode()
                 val event = awaitItem()
                 assertTrue(event is RecipeDetailNavigationEvent.NavigateToCookingMode)
                 assertEquals("test-recipe-1", (event as RecipeDetailNavigationEvent.NavigateToCookingMode).recipeId)
@@ -294,9 +294,8 @@ class RecipeDetailViewModelTest {
 
             val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository)
 
-            viewModel.navigateBack()
-
             viewModel.navigationEvent.test {
+                viewModel.navigateBack()
                 val event = awaitItem()
                 assertEquals(RecipeDetailNavigationEvent.NavigateBack, event)
                 cancelAndIgnoreRemainingEvents()
@@ -311,9 +310,9 @@ class RecipeDetailViewModelTest {
             val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository)
 
             testDispatcher.scheduler.advanceUntilIdle()
-            viewModel.modifyWithAI()
 
             viewModel.navigationEvent.test {
+                viewModel.modifyWithAI()
                 val event = awaitItem()
                 assertTrue(event is RecipeDetailNavigationEvent.NavigateToChat)
                 assertTrue((event as RecipeDetailNavigationEvent.NavigateToChat).recipeContext.contains("Paneer Butter Masala"))

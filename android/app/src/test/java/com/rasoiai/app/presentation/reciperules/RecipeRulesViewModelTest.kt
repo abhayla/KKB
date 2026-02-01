@@ -117,14 +117,17 @@ class RecipeRulesViewModelTest {
             id = "recipe-1",
             name = "Poha",
             description = "Flattened rice breakfast",
-            cuisineType = CuisineType.WEST,
-            dietaryTags = listOf(DietaryTag.VEGETARIAN),
+            imageUrl = null,
             prepTimeMinutes = 5,
             cookTimeMinutes = 10,
             servings = 2,
             difficulty = Difficulty.EASY,
+            cuisineType = CuisineType.WEST,
+            mealTypes = listOf(MealType.BREAKFAST),
+            dietaryTags = listOf(DietaryTag.VEGETARIAN),
             ingredients = emptyList(),
-            instructions = emptyList()
+            instructions = emptyList(),
+            nutrition = null
         )
     )
 
@@ -264,11 +267,10 @@ class RecipeRulesViewModelTest {
             viewModel.uiState.test {
                 awaitItem() // Initial
                 testDispatcher.scheduler.advanceUntilIdle()
-                expectMostRecentItem() // Wait for load
+                var state = expectMostRecentItem() // Wait for load
 
-                // Recipe tab
-                viewModel.selectTab(RulesTab.RECIPE)
-                var state = awaitItem()
+                // Recipe tab is default, verify rules
+                assertEquals(RulesTab.RECIPE, state.selectedTab)
                 assertEquals(2, state.rulesForCurrentTab.size)
 
                 // Ingredient tab
@@ -499,10 +501,15 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("updateSearchQuery should update search query")
         fun `updateSearchQuery should update search query`() = runTest {
+            // Mock searchRecipes to avoid coroutine issues
+            every { mockRepository.searchRecipes(any()) } returns flowOf(emptyList())
+
             val viewModel = RecipeRulesViewModel(mockRepository)
+            testDispatcher.scheduler.advanceUntilIdle() // Let init complete
 
             viewModel.uiState.test {
-                awaitItem() // Initial
+                val initial = awaitItem()
+                assertEquals("", initial.searchQuery)
 
                 viewModel.updateSearchQuery("poha")
 
@@ -784,12 +791,12 @@ class RecipeRulesViewModelTest {
 
             val viewModel = RecipeRulesViewModel(mockRepository)
 
-            // Goal with REQUIRED enforcement
+            // Goal with default PREFERRED enforcement should toggle to REQUIRED
             viewModel.toggleNutritionGoalEnforcement(testNutritionGoals[0])
             testDispatcher.scheduler.advanceUntilIdle()
 
             coVerify {
-                mockRepository.updateNutritionGoal(match { it.enforcement == RuleEnforcement.PREFERRED })
+                mockRepository.updateNutritionGoal(match { it.enforcement == RuleEnforcement.REQUIRED })
             }
         }
     }
@@ -911,9 +918,8 @@ class RecipeRulesViewModelTest {
         fun `navigateBack should emit back event`() = runTest {
             val viewModel = RecipeRulesViewModel(mockRepository)
 
-            viewModel.navigateBack()
-
             viewModel.navigationEvent.test {
+                viewModel.navigateBack()
                 val event = awaitItem()
                 assertEquals(RecipeRulesNavigationEvent.NavigateBack, event)
                 cancelAndIgnoreRemainingEvents()

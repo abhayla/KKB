@@ -63,7 +63,8 @@ class GroceryViewModelTest {
         id = "list-1",
         weekStartDate = LocalDate.now().minusDays(LocalDate.now().dayOfWeek.ordinal.toLong()),
         weekEndDate = LocalDate.now().plusDays(6 - LocalDate.now().dayOfWeek.ordinal.toLong()),
-        items = testGroceryItems
+        items = testGroceryItems,
+        mealPlanId = "meal-plan-1"
     )
 
     @BeforeEach
@@ -290,9 +291,9 @@ class GroceryViewModelTest {
             testDispatcher.scheduler.advanceUntilIdle()
 
             viewModel.showWhatsAppDialog()
-            viewModel.shareViaWhatsApp()
 
             viewModel.navigationEvent.test {
+                viewModel.shareViaWhatsApp()
                 val event = awaitItem()
                 assertTrue(event is GroceryNavigationEvent.ShareViaWhatsApp)
                 cancelAndIgnoreRemainingEvents()
@@ -355,9 +356,8 @@ class GroceryViewModelTest {
 
             val viewModel = GroceryViewModel(mockGroceryRepository)
 
-            viewModel.navigateBack()
-
             viewModel.navigationEvent.test {
+                viewModel.navigateBack()
                 val event = awaitItem()
                 assertEquals(GroceryNavigationEvent.NavigateBack, event)
                 cancelAndIgnoreRemainingEvents()
@@ -371,9 +371,8 @@ class GroceryViewModelTest {
 
             val viewModel = GroceryViewModel(mockGroceryRepository)
 
-            viewModel.navigateToHome()
-
             viewModel.navigationEvent.test {
+                viewModel.navigateToHome()
                 val event = awaitItem()
                 assertEquals(GroceryNavigationEvent.NavigateToHome, event)
                 cancelAndIgnoreRemainingEvents()
@@ -387,9 +386,8 @@ class GroceryViewModelTest {
 
             val viewModel = GroceryViewModel(mockGroceryRepository)
 
-            viewModel.navigateToChat()
-
             viewModel.navigationEvent.test {
+                viewModel.navigateToChat()
                 val event = awaitItem()
                 assertEquals(GroceryNavigationEvent.NavigateToChat, event)
                 cancelAndIgnoreRemainingEvents()
