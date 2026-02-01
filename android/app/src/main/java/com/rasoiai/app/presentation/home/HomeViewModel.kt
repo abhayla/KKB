@@ -45,7 +45,10 @@ data class HomeUiState(
     val swapSuggestions: List<MealItem> = emptyList(),
     // 3-level locking system state
     val dayLockStates: Map<LocalDate, Boolean> = emptyMap(),
-    val mealLockStates: Map<Pair<LocalDate, MealType>, Boolean> = emptyMap()
+    val mealLockStates: Map<Pair<LocalDate, MealType>, Boolean> = emptyMap(),
+    // Add Recipe Sheet state
+    val showAddRecipeSheet: Boolean = false,
+    val addRecipeMealType: MealType? = null
 ) {
     /** Check if the selected day is locked */
     val isSelectedDayLocked: Boolean
@@ -147,11 +150,13 @@ class HomeViewModel @Inject constructor(
                 mealPlanRepository.getMealPlanForDate(LocalDate.now()).collect { mealPlan ->
                     if (mealPlan != null) {
                         updateStateWithMealPlan(mealPlan)
+                        _uiState.update { it.copy(isLoading = false) }
                     } else {
                         // Generate a new meal plan if none exists
+                        // Keep isLoading = true during generation
+                        // generateNewMealPlan will set isLoading = false on success/failure
                         generateNewMealPlan()
                     }
-                    _uiState.update { it.copy(isLoading = false) }
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error loading meal plan")
@@ -184,8 +189,21 @@ class HomeViewModel @Inject constructor(
     private suspend fun generateNewMealPlan() {
         val weekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         mealPlanRepository.generateMealPlan(weekStart)
-            .onSuccess { Timber.i("Generated new meal plan") }
-            .onFailure { e -> Timber.e(e, "Failed to generate meal plan") }
+            .onSuccess { mealPlan ->
+                Timber.i("Generated new meal plan: ${mealPlan.id}")
+                // Room Flow should emit automatically, but force UI update just in case
+                updateStateWithMealPlan(mealPlan)
+                _uiState.update { it.copy(isLoading = false) }
+            }
+            .onFailure { e ->
+                Timber.e(e, "Failed to generate meal plan")
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = "Failed to generate meal plan. Please check your connection and try again."
+                    )
+                }
+            }
     }
 
     private fun generateWeekDates(weekStart: LocalDate, selectedDate: LocalDate): List<WeekDay> {
@@ -434,6 +452,35 @@ class HomeViewModel @Inject constructor(
 
         // TODO: Implement actual removal via repository
         Timber.i("Remove recipe directly: ${mealItem.recipeName} from $mealType")
+    }
+
+    // endregion
+
+    // region Add Recipe Actions
+
+    /**
+     * Show the Add Recipe sheet for a specific meal type
+     */
+    fun showAddRecipeSheet(mealType: MealType) {
+        _uiState.update {
+            it.copy(
+                showAddRecipeSheet = true,
+                addRecipeMealType = mealType
+            )
+        }
+        Timber.i("Show Add Recipe sheet for $mealType")
+    }
+
+    /**
+     * Dismiss the Add Recipe sheet
+     */
+    fun dismissAddRecipeSheet() {
+        _uiState.update {
+            it.copy(
+                showAddRecipeSheet = false,
+                addRecipeMealType = null
+            )
+        }
     }
 
     // endregion

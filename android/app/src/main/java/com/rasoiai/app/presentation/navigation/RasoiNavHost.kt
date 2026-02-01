@@ -13,6 +13,7 @@ import com.rasoiai.app.presentation.cookingmode.CookingModeScreen
 import com.rasoiai.app.presentation.favorites.FavoritesScreen
 import com.rasoiai.app.presentation.grocery.GroceryScreen
 import com.rasoiai.app.presentation.home.HomeScreen
+import com.rasoiai.app.presentation.notifications.NotificationsScreen
 import com.rasoiai.app.presentation.onboarding.OnboardingScreen
 import com.rasoiai.app.presentation.pantry.PantryScreen
 import com.rasoiai.app.presentation.recipedetail.RecipeDetailScreen
@@ -98,7 +99,17 @@ fun RasoiNavHost(
                 },
                 onNavigateToStats = {
                     navController.navigate(Screen.Stats.route)
+                },
+                onNavigateToNotifications = {
+                    navController.navigate(Screen.Notifications.route)
                 }
+            )
+        }
+
+        // Notifications
+        composable(route = Screen.Notifications.route) {
+            NotificationsScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 

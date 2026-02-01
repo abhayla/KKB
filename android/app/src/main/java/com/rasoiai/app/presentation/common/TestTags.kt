@@ -62,12 +62,18 @@ object TestTags {
 
     // Auth Screen
     const val AUTH_SCREEN = "auth_screen"
-    const val GOOGLE_SIGN_IN_BUTTON = "google_sign_in_button"
+    const val AUTH_SIGN_IN_BUTTON = "google_sign_in_button"
+    const val GOOGLE_SIGN_IN_BUTTON = "google_sign_in_button" // Alias for AUTH_SIGN_IN_BUTTON
     const val AUTH_WELCOME_TEXT = "auth_welcome_text"
+
+    // Onboarding Screen (container)
+    const val ONBOARDING_SCREEN = "onboarding_screen"
 
     // Home Screen
     const val HOME_SCREEN = "home_screen"
     const val HOME_LOADING = "home_loading"
+    const val HOME_MENU_BUTTON = "home_menu_button"
+    const val HOME_NOTIFICATIONS_BUTTON = "home_notifications_button"
     const val HOME_PROFILE_BUTTON = "home_profile_button"
     const val HOME_WEEK_SELECTOR = "home_week_selector"
     const val HOME_DAY_TAB_PREFIX = "home_day_tab_"
@@ -75,6 +81,7 @@ object TestTags {
     const val MEAL_CARD_PREFIX = "meal_card_"
     const val MEAL_LOCK_BUTTON_PREFIX = "meal_lock_"
     const val MEAL_SWAP_BUTTON_PREFIX = "meal_swap_"
+    const val MEAL_ADD_BUTTON_PREFIX = "meal_add_"
 
     // Home Screen - Day Header
     const val HOME_DAY_LOCK_BUTTON = "home_day_lock_button"
@@ -97,6 +104,20 @@ object TestTags {
     const val SWAP_SEARCH_FIELD = "swap_search_field"
     const val SWAP_RECIPE_GRID = "swap_recipe_grid"
     const val SWAP_RECIPE_ITEM_PREFIX = "swap_recipe_item_"
+
+    // Home Screen - Add Recipe Sheet
+    const val ADD_RECIPE_SHEET = "add_recipe_sheet"
+
+    // Navigation Drawer
+    const val NAVIGATION_DRAWER = "navigation_drawer"
+    const val DRAWER_SETTINGS_ITEM = "drawer_settings_item"
+    const val DRAWER_PROFILE_ITEM = "drawer_profile_item"
+    const val DRAWER_LOGOUT_ITEM = "drawer_logout_item"
+
+    // Notifications Screen
+    const val NOTIFICATIONS_SCREEN = "notifications_screen"
+    const val NOTIFICATIONS_LIST = "notifications_list"
+    const val NOTIFICATION_ITEM_PREFIX = "notification_item_"
 
     // Home Screen - Festival Banner
     const val HOME_FESTIVAL_BANNER = "home_festival_banner"

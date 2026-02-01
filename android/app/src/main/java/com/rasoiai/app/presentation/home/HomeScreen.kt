@@ -110,6 +110,7 @@ fun HomeScreen(
     onNavigateToChat: () -> Unit,
     onNavigateToFavorites: () -> Unit,
     onNavigateToStats: () -> Unit,
+    onNavigateToNotifications: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -127,7 +128,7 @@ fun HomeScreen(
                 HomeNavigationEvent.NavigateToChat -> onNavigateToChat()
                 HomeNavigationEvent.NavigateToFavorites -> onNavigateToFavorites()
                 HomeNavigationEvent.NavigateToStats -> onNavigateToStats()
-                HomeNavigationEvent.NavigateToNotifications -> { /* TODO: Navigate to notifications */ }
+                HomeNavigationEvent.NavigateToNotifications -> onNavigateToNotifications()
             }
         }
     }
@@ -143,7 +144,7 @@ fun HomeScreen(
     HomeScreenContent(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
-        onMenuClick = { /* TODO: Open drawer */ },
+        onMenuClick = viewModel::navigateToSettings,  // Hamburger menu opens Settings (Issue #5)
         onNotificationsClick = viewModel::navigateToNotifications,
         onProfileClick = viewModel::navigateToSettings,
         onDateSelect = viewModel::selectDate,
@@ -163,6 +164,8 @@ fun HomeScreen(
         onConfirmSwap = { viewModel.swapRecipe() },
         onToggleRecipeLockDirect = viewModel::toggleRecipeLockDirect,
         onRemoveRecipeDirect = viewModel::removeRecipeFromMealDirect,
+        onAddRecipeClick = viewModel::showAddRecipeSheet,  // Add Recipe button (Issue #4)
+        onDismissAddRecipeSheet = viewModel::dismissAddRecipeSheet,
         onBottomNavItemClick = { screen ->
             when (screen) {
                 Screen.Home -> { /* Already on Home */ }
@@ -201,6 +204,8 @@ private fun HomeScreenContent(
     onConfirmSwap: () -> Unit,
     onToggleRecipeLockDirect: (MealItem, MealType) -> Unit,
     onRemoveRecipeDirect: (MealItem, MealType) -> Unit,
+    onAddRecipeClick: (MealType) -> Unit,
+    onDismissAddRecipeSheet: () -> Unit,
     onBottomNavItemClick: (Screen) -> Unit
 ) {
     Scaffold(
@@ -215,7 +220,10 @@ private fun HomeScreenContent(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onMenuClick) {
+                    IconButton(
+                        onClick = onMenuClick,
+                        modifier = Modifier.testTag(TestTags.HOME_MENU_BUTTON)
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Menu,
                             contentDescription = "Menu"
@@ -223,7 +231,10 @@ private fun HomeScreenContent(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onNotificationsClick) {
+                    IconButton(
+                        onClick = onNotificationsClick,
+                        modifier = Modifier.testTag(TestTags.HOME_NOTIFICATIONS_BUTTON)
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Notifications,
                             contentDescription = "Notifications"
@@ -320,7 +331,7 @@ private fun HomeScreenContent(
                                 isDayLocked = uiState.isSelectedDayLocked,
                                 onRecipeClick = onRecipeClick,
                                 onLockClick = { onMealLockClick(MealType.BREAKFAST) },
-                                onAddClick = { /* TODO: Add recipe */ },
+                                onAddClick = { onAddRecipeClick(MealType.BREAKFAST) },
                                 onToggleRecipeLockDirect = onToggleRecipeLockDirect,
                                 onRemoveRecipeDirect = onRemoveRecipeDirect
                             )
@@ -336,7 +347,7 @@ private fun HomeScreenContent(
                                 isDayLocked = uiState.isSelectedDayLocked,
                                 onRecipeClick = onRecipeClick,
                                 onLockClick = { onMealLockClick(MealType.LUNCH) },
-                                onAddClick = { /* TODO: Add recipe */ },
+                                onAddClick = { onAddRecipeClick(MealType.LUNCH) },
                                 onToggleRecipeLockDirect = onToggleRecipeLockDirect,
                                 onRemoveRecipeDirect = onRemoveRecipeDirect
                             )
@@ -352,7 +363,7 @@ private fun HomeScreenContent(
                                 isDayLocked = uiState.isSelectedDayLocked,
                                 onRecipeClick = onRecipeClick,
                                 onLockClick = { onMealLockClick(MealType.SNACKS) },
-                                onAddClick = { /* TODO: Add recipe */ },
+                                onAddClick = { onAddRecipeClick(MealType.SNACKS) },
                                 onToggleRecipeLockDirect = onToggleRecipeLockDirect,
                                 onRemoveRecipeDirect = onRemoveRecipeDirect
                             )
@@ -368,7 +379,7 @@ private fun HomeScreenContent(
                                 isDayLocked = uiState.isSelectedDayLocked,
                                 onRecipeClick = onRecipeClick,
                                 onLockClick = { onMealLockClick(MealType.DINNER) },
-                                onAddClick = { /* TODO: Add recipe */ },
+                                onAddClick = { onAddRecipeClick(MealType.DINNER) },
                                 onToggleRecipeLockDirect = onToggleRecipeLockDirect,
                                 onRemoveRecipeDirect = onRemoveRecipeDirect
                             )
@@ -426,6 +437,15 @@ private fun HomeScreenContent(
             swapSuggestions = uiState.swapSuggestions,
             onDismiss = onDismissSwapSheet,
             onSelectRecipe = { selectedRecipe -> onConfirmSwap() }
+        )
+    }
+
+    // Add Recipe Sheet
+    if (uiState.showAddRecipeSheet && uiState.addRecipeMealType != null) {
+        AddRecipeSheet(
+            mealType = uiState.addRecipeMealType,
+            onDismiss = onDismissAddRecipeSheet,
+            onSelectRecipe = { /* TODO: Implement recipe selection */ }
         )
     }
 }
@@ -1384,6 +1404,104 @@ private fun SwapRecipeGridItem(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        }
+    }
+}
+
+/**
+ * Bottom sheet for adding a recipe to a meal slot
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddRecipeSheet(
+    mealType: MealType,
+    onDismiss: () -> Unit,
+    onSelectRecipe: (String) -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+
+    val mealTypeName = when (mealType) {
+        MealType.BREAKFAST -> "Breakfast"
+        MealType.LUNCH -> "Lunch"
+        MealType.SNACKS -> "Snacks"
+        MealType.DINNER -> "Dinner"
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        modifier = Modifier.testTag(TestTags.ADD_RECIPE_SHEET)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = spacing.md)
+        ) {
+            Text(
+                text = "Add to $mealTypeName",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(bottom = spacing.sm)
+            )
+
+            Text(
+                text = "Search for a recipe to add",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = spacing.md)
+            )
+
+            // Search Bar
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Search recipes...") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null
+                    )
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(spacing.sm)
+            )
+
+            Spacer(modifier = Modifier.height(spacing.lg))
+
+            // Placeholder for recipe suggestions
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = spacing.xl),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Recipe search coming soon",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Use AI Chat to add specific recipes",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(top = spacing.xs)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(spacing.md))
+
+            // Cancel Button
+            OutlinedButton(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(spacing.sm)
+            ) {
+                Text("Cancel")
+            }
+
+            Spacer(modifier = Modifier.height(spacing.xl))
         }
     }
 }
