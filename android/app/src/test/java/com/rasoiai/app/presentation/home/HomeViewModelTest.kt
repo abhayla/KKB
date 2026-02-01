@@ -728,6 +728,7 @@ class HomeViewModelTest {
         @DisplayName("removeRecipeFromMeal should dismiss sheet when not locked")
         fun `removeRecipeFromMeal should dismiss sheet when not locked`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
+            coEvery { mockMealPlanRepository.removeRecipeFromMeal(any(), any(), any(), any()) } returns Result.success(Unit)
 
             val viewModel = HomeViewModel(mockMealPlanRepository)
 

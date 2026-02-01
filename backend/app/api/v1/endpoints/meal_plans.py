@@ -333,3 +333,49 @@ async def toggle_lock(
 
     updated_plan = await meal_plan_repo.update(plan_id, {"days": days})
     return _build_response_from_firestore(updated_plan)
+
+
+@router.delete("/{plan_id}/items/{item_id}", response_model=MealPlanResponse)
+async def remove_item(
+    plan_id: str,
+    item_id: str,
+    current_user: CurrentUser,
+) -> MealPlanResponse:
+    """Remove a meal item from the plan.
+
+    Locked meals cannot be removed.
+    """
+    user_id = current_user.get("id")
+
+    meal_plan_repo = MealPlanRepository()
+    plan = await meal_plan_repo.get_by_id(plan_id)
+
+    if not plan or plan.get("user_id") != user_id:
+        raise NotFoundError("Meal plan not found")
+
+    # Find and remove the item
+    days = plan.get("days", [])
+    found = False
+
+    for day_idx, day in enumerate(days):
+        for meal_type in ["breakfast", "lunch", "dinner", "snacks"]:
+            meals = day.get("meals", {}).get(meal_type, [])
+            for meal_idx, meal in enumerate(meals):
+                if meal.get("id") == item_id:
+                    if meal.get("is_locked"):
+                        raise NotFoundError("Cannot remove a locked meal")
+                    # Remove the item from the list
+                    days[day_idx]["meals"][meal_type].pop(meal_idx)
+                    found = True
+                    break
+            if found:
+                break
+        if found:
+            break
+
+    if not found:
+        raise NotFoundError("Meal item not found")
+
+    updated_plan = await meal_plan_repo.update(plan_id, {"days": days})
+    logger.info(f"Removed meal item {item_id} from plan {plan_id}")
+    return _build_response_from_firestore(updated_plan)

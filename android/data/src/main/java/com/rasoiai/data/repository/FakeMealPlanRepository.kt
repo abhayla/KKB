@@ -108,9 +108,48 @@ class FakeMealPlanRepository @Inject constructor() : MealPlanRepository {
         }
     }
 
+    override suspend fun removeRecipeFromMeal(
+        mealPlanId: String,
+        date: LocalDate,
+        mealType: MealType,
+        recipeId: String
+    ): Result<Unit> {
+        return try {
+            val updatedPlans = mealPlans.value.map { plan ->
+                if (plan.id == mealPlanId) {
+                    plan.copy(
+                        days = plan.days.map { day ->
+                            if (day.date == date) {
+                                removeMealFromDay(day, mealType, recipeId)
+                            } else day
+                        },
+                        updatedAt = System.currentTimeMillis()
+                    )
+                } else plan
+            }
+            mealPlans.value = updatedPlans
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun syncMealPlans(): Result<Unit> {
         // Fake sync - always succeeds
         return Result.success(Unit)
+    }
+
+    private fun removeMealFromDay(day: MealPlanDay, mealType: MealType, recipeId: String): MealPlanDay {
+        fun removeMeal(meals: List<MealItem>): List<MealItem> {
+            return meals.filter { meal -> meal.recipeId != recipeId || meal.isLocked }
+        }
+
+        return when (mealType) {
+            MealType.BREAKFAST -> day.copy(breakfast = removeMeal(day.breakfast))
+            MealType.LUNCH -> day.copy(lunch = removeMeal(day.lunch))
+            MealType.DINNER -> day.copy(dinner = removeMeal(day.dinner))
+            MealType.SNACKS -> day.copy(snacks = removeMeal(day.snacks))
+        }
     }
 
     private fun getWeekStartDate(date: LocalDate): LocalDate {

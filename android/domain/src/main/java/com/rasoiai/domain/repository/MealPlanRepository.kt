@@ -39,6 +39,16 @@ interface MealPlanRepository {
     ): Result<Unit>
 
     /**
+     * Remove a recipe from a meal slot.
+     */
+    suspend fun removeRecipeFromMeal(
+        mealPlanId: String,
+        date: LocalDate,
+        mealType: MealType,
+        recipeId: String
+    ): Result<Unit>
+
+    /**
      * Sync local changes to the server.
      */
     suspend fun syncMealPlans(): Result<Unit>

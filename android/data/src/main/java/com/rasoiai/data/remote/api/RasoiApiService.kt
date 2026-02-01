@@ -8,6 +8,7 @@ import com.rasoiai.data.remote.dto.UserResponse
 import com.rasoiai.data.remote.dto.AuthRequest
 import com.rasoiai.data.remote.dto.AuthResponse
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
@@ -46,6 +47,12 @@ interface RasoiApiService {
 
     @PUT("api/v1/meal-plans/{planId}/items/{itemId}/lock")
     suspend fun lockMealItem(
+        @Path("planId") planId: String,
+        @Path("itemId") itemId: String
+    ): MealPlanResponse
+
+    @DELETE("api/v1/meal-plans/{planId}/items/{itemId}")
+    suspend fun removeMealItem(
         @Path("planId") planId: String,
         @Path("itemId") itemId: String
     ): MealPlanResponse

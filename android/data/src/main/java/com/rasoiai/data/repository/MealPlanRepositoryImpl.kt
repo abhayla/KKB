@@ -184,6 +184,52 @@ class MealPlanRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun removeRecipeFromMeal(
+        mealPlanId: String,
+        date: LocalDate,
+        mealType: MealType,
+        recipeId: String
+    ): Result<Unit> {
+        return try {
+            val dateStr = date.format(dateFormatter)
+
+            Timber.d("Removing recipe: $mealPlanId, $dateStr, ${mealType.value}, $recipeId")
+
+            // Update local database immediately
+            mealPlanDao.deleteMealPlanItem(
+                mealPlanId = mealPlanId,
+                date = dateStr,
+                mealType = mealType.value,
+                recipeId = recipeId
+            )
+
+            // Sync to server if online
+            if (networkMonitor.isOnline.first()) {
+                try {
+                    val itemId = "${mealPlanId}-${dateStr}-${mealType.value}-${recipeId}"
+                    apiService.removeMealItem(
+                        planId = mealPlanId,
+                        itemId = itemId
+                    )
+                    Timber.d("Recipe removal synced to server")
+                } catch (e: Exception) {
+                    // Mark as unsynced for later
+                    mealPlanDao.updateSyncStatus(mealPlanId, false)
+                    Timber.w(e, "Failed to sync recipe removal, queued for later")
+                }
+            } else {
+                // Mark as unsynced
+                mealPlanDao.updateSyncStatus(mealPlanId, false)
+                Timber.d("Offline - recipe removal queued for sync")
+            }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to remove recipe from meal")
+            Result.failure(e)
+        }
+    }
+
     override suspend fun syncMealPlans(): Result<Unit> {
         return try {
             if (!networkMonitor.isOnline.first()) {

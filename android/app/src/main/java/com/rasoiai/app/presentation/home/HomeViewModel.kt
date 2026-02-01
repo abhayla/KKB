@@ -394,6 +394,7 @@ class HomeViewModel @Inject constructor(
         val state = _uiState.value
         val mealItem = state.selectedMealItem ?: return
         val mealType = state.selectedMealType ?: return
+        val mealPlan = state.mealPlan ?: return
 
         // Check if removal is allowed (not locked at any level)
         if (state.isRecipeEffectivelyLocked(mealItem, mealType)) {
@@ -402,8 +403,19 @@ class HomeViewModel @Inject constructor(
             return
         }
 
-        // TODO: Implement actual removal via repository
-        Timber.i("Remove recipe ${mealItem.recipeName} from $mealType")
+        viewModelScope.launch {
+            mealPlanRepository.removeRecipeFromMeal(
+                mealPlanId = mealPlan.id,
+                date = state.selectedDate,
+                mealType = mealType,
+                recipeId = mealItem.recipeId
+            ).onSuccess {
+                Timber.i("Recipe removed: ${mealItem.recipeName} from $mealType")
+            }.onFailure { e ->
+                Timber.e(e, "Failed to remove recipe")
+                _uiState.update { it.copy(errorMessage = "Failed to remove recipe") }
+            }
+        }
         dismissRecipeActionSheet()
     }
 
@@ -443,6 +455,7 @@ class HomeViewModel @Inject constructor(
      */
     fun removeRecipeFromMealDirect(mealItem: MealItem, mealType: MealType) {
         val state = _uiState.value
+        val mealPlan = state.mealPlan ?: return
 
         // Check if removal is allowed (not locked at any level)
         if (state.isRecipeEffectivelyLocked(mealItem, mealType)) {
@@ -450,8 +463,19 @@ class HomeViewModel @Inject constructor(
             return
         }
 
-        // TODO: Implement actual removal via repository
-        Timber.i("Remove recipe directly: ${mealItem.recipeName} from $mealType")
+        viewModelScope.launch {
+            mealPlanRepository.removeRecipeFromMeal(
+                mealPlanId = mealPlan.id,
+                date = state.selectedDate,
+                mealType = mealType,
+                recipeId = mealItem.recipeId
+            ).onSuccess {
+                Timber.i("Recipe removed directly: ${mealItem.recipeName} from $mealType")
+            }.onFailure { e ->
+                Timber.e(e, "Failed to remove recipe")
+                _uiState.update { it.copy(errorMessage = "Failed to remove recipe") }
+            }
+        }
     }
 
     // endregion
