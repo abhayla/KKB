@@ -79,6 +79,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -258,11 +260,15 @@ private fun HomeScreenContent(
         ) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center)
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .testTag(TestTags.HOME_LOADING)
                 )
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .testTag(TestTags.HOME_MEAL_LIST),
                     contentPadding = PaddingValues(bottom = spacing.md)
                 ) {
                     // Festival Banner
@@ -433,7 +439,8 @@ private fun FestivalBanner(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = spacing.md, vertical = spacing.sm)
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .testTag(TestTags.HOME_FESTIVAL_BANNER),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         ),
@@ -606,7 +613,12 @@ private fun SelectedDayHeader(
             // Day Lock Button - icon shows current state (🔒 locked, 🔓 unlocked)
             IconButton(
                 onClick = onLockClick,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier
+                    .size(32.dp)
+                    .testTag(TestTags.HOME_DAY_LOCK_BUTTON)
+                    .semantics {
+                        stateDescription = if (isDayLocked) "locked" else "unlocked"
+                    }
             ) {
                 Icon(
                     imageVector = if (isDayLocked) Icons.Default.Lock else Icons.Default.LockOpen,
@@ -618,6 +630,7 @@ private fun SelectedDayHeader(
         }
         TextButton(
             onClick = onRefreshClick,
+            modifier = Modifier.testTag(TestTags.HOME_REFRESH_BUTTON),
             contentPadding = PaddingValues(horizontal = spacing.sm)
         ) {
             Icon(
@@ -693,7 +706,13 @@ private fun MealSection(
                     // Disabled if day is already locked (inherits day lock)
                     IconButton(
                         onClick = onLockClick,
-                        modifier = Modifier.size(32.dp),
+                        modifier = Modifier
+                            .size(32.dp)
+                            .testTag("${TestTags.MEAL_LOCK_BUTTON_PREFIX}${mealType.name.lowercase()}")
+                            .semantics {
+                                // Set stateDescription for reliable test assertions
+                                stateDescription = if (isEffectivelyLocked) "locked" else "unlocked"
+                            },
                         enabled = !isDayLocked
                     ) {
                         Icon(
@@ -836,7 +855,8 @@ private fun SwipeActionBackground(
 private fun MealItemRow(
     mealItem: MealItem,
     isEffectivelyLocked: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val dietaryColor = when {
         mealItem.dietaryTags.contains(DietaryTag.VEGETARIAN) -> DietaryColors.Vegetarian
@@ -846,11 +866,12 @@ private fun MealItemRow(
     }
 
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
-            .padding(horizontal = spacing.md, vertical = spacing.sm),
+            .padding(horizontal = spacing.md, vertical = spacing.sm)
+            .testTag("${TestTags.MEAL_ITEM_PREFIX}${mealItem.recipeId}"),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Dietary indicator
@@ -944,7 +965,8 @@ private fun RecipeActionSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState
+        sheetState = sheetState,
+        modifier = Modifier.testTag(TestTags.RECIPE_ACTION_SHEET)
     ) {
         Column(
             modifier = Modifier
@@ -985,7 +1007,8 @@ private fun RecipeActionSheet(
             ActionSheetItem(
                 icon = Icons.Default.Visibility,
                 text = "View Recipe",
-                onClick = onViewRecipe
+                onClick = onViewRecipe,
+                modifier = Modifier.testTag(TestTags.ACTION_VIEW_RECIPE)
             )
 
             // Swap Recipe - disabled when locked
@@ -994,7 +1017,8 @@ private fun RecipeActionSheet(
                 text = "Swap Recipe",
                 subtitle = if (isEffectivelyLocked) "Unlock to swap" else "Replace with similar",
                 enabled = !isEffectivelyLocked,
-                onClick = onSwapRecipe
+                onClick = onSwapRecipe,
+                modifier = Modifier.testTag(TestTags.ACTION_SWAP_RECIPE)
             )
 
             // Lock/Unlock Recipe - shows different options based on lock level
@@ -1008,7 +1032,8 @@ private fun RecipeActionSheet(
                     else -> "Protect from regenerate"
                 },
                 enabled = !isDayLocked && !isMealLocked,
-                onClick = onToggleLock
+                onClick = onToggleLock,
+                modifier = Modifier.testTag(TestTags.ACTION_LOCK_RECIPE)
             )
 
             // Remove from Meal - disabled when locked
@@ -1021,7 +1046,8 @@ private fun RecipeActionSheet(
                 else
                     MaterialTheme.colorScheme.error,
                 enabled = !isEffectivelyLocked,
-                onClick = onRemove
+                onClick = onRemove,
+                modifier = Modifier.testTag(TestTags.ACTION_REMOVE_RECIPE)
             )
 
             Spacer(modifier = Modifier.height(spacing.lg))
@@ -1046,13 +1072,14 @@ private fun ActionSheetItem(
     subtitle: String? = null,
     textColor: Color = MaterialTheme.colorScheme.onSurface,
     enabled: Boolean = true,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val alpha = if (enabled) 1f else 0.38f
     val effectiveTextColor = textColor.copy(alpha = if (enabled) textColor.alpha else 0.38f)
 
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(enabled = enabled, onClick = onClick)
             .padding(vertical = spacing.md),
@@ -1095,7 +1122,8 @@ private fun RefreshOptionsSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState
+        sheetState = sheetState,
+        modifier = Modifier.testTag(TestTags.REFRESH_OPTIONS_SHEET)
     ) {
         Column(
             modifier = Modifier
@@ -1113,14 +1141,16 @@ private fun RefreshOptionsSheet(
                 icon = Icons.Outlined.CalendarToday,
                 text = "This Day Only",
                 subtitle = "Regenerate $selectedDay",
-                onClick = onRegenerateDay
+                onClick = onRegenerateDay,
+                modifier = Modifier.testTag(TestTags.REFRESH_DAY_OPTION)
             )
 
             ActionSheetItem(
                 icon = Icons.Outlined.CalendarMonth,
                 text = "Entire Week",
                 subtitle = "Regenerate $dateRange",
-                onClick = onRegenerateWeek
+                onClick = onRegenerateWeek,
+                modifier = Modifier.testTag(TestTags.REFRESH_WEEK_OPTION)
             )
 
             Spacer(modifier = Modifier.height(spacing.sm))
@@ -1171,7 +1201,8 @@ private fun SwapRecipeSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState
+        sheetState = sheetState,
+        modifier = Modifier.testTag(TestTags.SWAP_RECIPE_SHEET)
     ) {
         Column(
             modifier = Modifier
@@ -1196,7 +1227,9 @@ private fun SwapRecipeSheet(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(TestTags.SWAP_SEARCH_FIELD),
                 placeholder = { Text("Search recipes...") },
                 leadingIcon = {
                     Icon(
@@ -1242,6 +1275,7 @@ private fun SwapRecipeSheet(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(400.dp) // Fixed height for the grid
+                        .testTag(TestTags.SWAP_RECIPE_GRID)
                 ) {
                     items(
                         items = filteredSuggestions,
@@ -1249,7 +1283,8 @@ private fun SwapRecipeSheet(
                     ) { suggestion ->
                         SwapRecipeGridItem(
                             mealItem = suggestion,
-                            onClick = { onSelectRecipe(suggestion) }
+                            onClick = { onSelectRecipe(suggestion) },
+                            modifier = Modifier.testTag("${TestTags.SWAP_RECIPE_ITEM_PREFIX}${suggestion.recipeId}")
                         )
                     }
                 }
@@ -1277,13 +1312,14 @@ private fun SwapRecipeSheet(
 @Composable
 private fun SwapRecipeGridItem(
     mealItem: MealItem,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val isVegetarian = mealItem.dietaryTags.contains(DietaryTag.VEGETARIAN) ||
                       mealItem.dietaryTags.contains(DietaryTag.VEGAN)
 
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(spacing.md),

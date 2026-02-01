@@ -37,10 +37,9 @@ class AuthIntegrationTest : BaseE2ETest() {
     @Before
     override fun setUp() {
         super.setUp()
-        // Reset fake implementations to known state
-        // Ensure user is NOT signed in so we go to Auth screen
-        fakeGoogleAuthClient.reset()
-        fakeUserPreferencesDataStore.reset()
+        // Reset to known state - ensure user is NOT signed in so we go to Auth screen
+        // Uses clearAllState() which resets both FakeGoogleAuthClient and real DataStore
+        clearAllState()
     }
 
     /**
@@ -49,7 +48,10 @@ class AuthIntegrationTest : BaseE2ETest() {
      */
     private fun waitForAuthScreen() {
         // Wait for splash delay + navigation
-        waitUntil(SPLASH_DURATION + MEDIUM_TIMEOUT, "auth screen to appear") {
+        waitUntil(
+            timeoutMillis = SPLASH_DURATION + MEDIUM_TIMEOUT,
+            conditionDescription = "auth screen to appear"
+        ) {
             try {
                 composeTestRule.onNodeWithTag(TestTags.AUTH_SCREEN).assertIsDisplayed()
                 true
@@ -104,7 +106,10 @@ class AuthIntegrationTest : BaseE2ETest() {
 
         // Verify we navigated to onboarding (check for onboarding-specific element)
         // The onboarding screen shows "How many people are you cooking for?"
-        waitUntil(MEDIUM_TIMEOUT, "onboarding screen to appear") {
+        waitUntil(
+            timeoutMillis = MEDIUM_TIMEOUT,
+            conditionDescription = "onboarding screen to appear"
+        ) {
             try {
                 composeTestRule.onNodeWithText("How many people are", substring = true)
                     .assertIsDisplayed()

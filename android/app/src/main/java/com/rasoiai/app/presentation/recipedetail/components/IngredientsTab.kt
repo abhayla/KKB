@@ -31,9 +31,11 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import com.rasoiai.app.presentation.common.TestTags
 import com.rasoiai.app.presentation.theme.spacing
 import com.rasoiai.domain.model.Ingredient
 import kotlinx.collections.immutable.ImmutableList
@@ -117,7 +119,9 @@ private fun ServingsSelector(
 
         OutlinedButton(
             onClick = { expanded = true },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(TestTags.RECIPE_SERVINGS_SELECTOR),
             shape = RoundedCornerShape(spacing.sm),
             colors = ButtonDefaults.outlinedButtonColors(
                 contentColor = MaterialTheme.colorScheme.onSurface

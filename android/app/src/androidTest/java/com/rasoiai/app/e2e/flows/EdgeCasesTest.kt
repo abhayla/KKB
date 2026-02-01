@@ -174,8 +174,7 @@ class EdgeCasesTest : BaseE2ETest() {
 
         // Clear session by resetting auth state
         // This simulates session expiry - user is no longer authenticated
-        fakeGoogleAuthClient.reset()
-        fakeUserPreferencesDataStore.reset()
+        resetAuthState()
 
         // Next API operation should trigger redirect to auth
         // (Implementation dependent)

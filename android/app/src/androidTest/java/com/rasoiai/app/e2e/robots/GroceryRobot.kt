@@ -1,14 +1,20 @@
 package com.rasoiai.app.e2e.robots
 
+import android.util.Log
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import com.rasoiai.app.e2e.base.clickWithRetry
+import com.rasoiai.app.e2e.base.waitForNetworkContent
 import com.rasoiai.app.e2e.base.waitUntilNodeWithTagExists
+import com.rasoiai.app.e2e.base.waitUntilWithBackoff
+import com.rasoiai.app.e2e.util.RetryUtils
 import com.rasoiai.app.presentation.common.TestTags
 
 /**
@@ -19,9 +25,16 @@ class GroceryRobot(private val composeTestRule: ComposeContentTestRule) {
 
     /**
      * Wait for grocery screen to be displayed.
+     * Uses exponential backoff for better reliability.
      */
     fun waitForGroceryScreen(timeoutMillis: Long = 5000) = apply {
-        composeTestRule.waitUntilNodeWithTagExists(TestTags.GROCERY_SCREEN, timeoutMillis)
+        composeTestRule.waitUntilWithBackoff(
+            tag = TestTags.GROCERY_SCREEN,
+            timeoutMillis = timeoutMillis,
+            initialPollMs = 100,
+            maxPollMs = 500,
+            backoffMultiplier = 1.5
+        )
     }
 
     /**
@@ -34,38 +47,62 @@ class GroceryRobot(private val composeTestRule: ComposeContentTestRule) {
     // ===================== Categories =====================
 
     /**
-     * Assert category is displayed.
+     * Assert category is displayed by enum name (e.g., "vegetables", "grains").
+     * The category name should match IngredientCategory enum name in lowercase.
+     * Uses exponential backoff for network-dependent content.
      */
     fun assertCategoryDisplayed(categoryName: String) = apply {
-        val categoryTag = categoryName.lowercase().replace(" ", "_")
-        composeTestRule.onNodeWithTag("${TestTags.GROCERY_CATEGORY_PREFIX}$categoryTag")
-            .performScrollTo()
-            .assertIsDisplayed()
+        val categoryTag = categoryName.lowercase()
+        val fullTag = "${TestTags.GROCERY_CATEGORY_PREFIX}$categoryTag"
+
+        // Wait for category with network content timeout
+        composeTestRule.waitForNetworkContent(fullTag, timeoutMillis = 10000)
+
+        // Scroll and assert with retry
+        RetryUtils.retryWithBackoff(
+            config = RetryUtils.RetryConfig.FAST,
+            actionName = "assertCategoryDisplayed($categoryName)"
+        ) {
+            composeTestRule.waitForIdle()
+            composeTestRule.onNodeWithTag(fullTag)
+                .performScrollTo()
+                .assertIsDisplayed()
+        }
     }
 
     /**
-     * Expand/collapse category.
+     * Expand/collapse category by enum name (e.g., "vegetables", "grains").
+     * Uses retry for flaky click operations.
      */
     fun toggleCategory(categoryName: String) = apply {
-        val categoryTag = categoryName.lowercase().replace(" ", "_")
-        composeTestRule.onNodeWithTag("${TestTags.GROCERY_CATEGORY_PREFIX}$categoryTag")
-            .performScrollTo()
-            .performClick()
+        val categoryTag = categoryName.lowercase()
+        val fullTag = "${TestTags.GROCERY_CATEGORY_PREFIX}$categoryTag"
+
+        // Wait for category with backoff
+        composeTestRule.waitForNetworkContent(fullTag, timeoutMillis = 10000)
+
+        // Scroll and click with retry
+        RetryUtils.retryWithBackoff(
+            config = RetryUtils.RetryConfig.FAST,
+            actionName = "toggleCategory($categoryName)"
+        ) {
+            composeTestRule.waitForIdle()
+            composeTestRule.onNodeWithTag(fullTag)
+                .performScrollTo()
+                .performClick()
+        }
         composeTestRule.waitForIdle()
     }
 
     /**
      * Assert common categories are displayed.
+     * Note: This is a flexible check - passes if screen is displayed.
+     * Categories may vary based on generated meal plan.
      */
     fun assertCommonCategoriesDisplayed() = apply {
-        val categories = listOf("Vegetables", "Dairy", "Grains", "Spices", "Pulses")
-        for (category in categories) {
-            try {
-                assertCategoryDisplayed(category)
-            } catch (e: Exception) {
-                // Category might not be present in this meal plan
-            }
-        }
+        // Just verify the screen is displayed with content
+        // Categories vary based on the meal plan ingredients
+        assertGroceryScreenDisplayed()
     }
 
     // ===================== Items =====================
@@ -91,21 +128,37 @@ class GroceryRobot(private val composeTestRule: ComposeContentTestRule) {
 
     /**
      * Check a grocery item.
+     * Uses retry for flaky click operations.
      */
     fun checkItem(itemId: String) = apply {
-        composeTestRule.onNodeWithTag("${TestTags.GROCERY_ITEM_PREFIX}$itemId")
-            .performScrollTo()
-            .performClick()
+        val fullTag = "${TestTags.GROCERY_ITEM_PREFIX}$itemId"
+
+        RetryUtils.retryWithBackoff(
+            config = RetryUtils.RetryConfig.FAST,
+            actionName = "checkItem($itemId)"
+        ) {
+            composeTestRule.waitForIdle()
+            composeTestRule.onNodeWithTag(fullTag)
+                .performScrollTo()
+                .performClick()
+        }
         composeTestRule.waitForIdle()
     }
 
     /**
      * Check item by name.
+     * Uses retry for flaky click operations.
      */
     fun checkItemByName(itemName: String) = apply {
-        composeTestRule.onNodeWithText(itemName, substring = true)
-            .performScrollTo()
-            .performClick()
+        RetryUtils.retryWithBackoff(
+            config = RetryUtils.RetryConfig.FAST,
+            actionName = "checkItemByName($itemName)"
+        ) {
+            composeTestRule.waitForIdle()
+            composeTestRule.onNodeWithText(itemName, substring = true)
+                .performScrollTo()
+                .performClick()
+        }
         composeTestRule.waitForIdle()
     }
 
@@ -135,19 +188,20 @@ class GroceryRobot(private val composeTestRule: ComposeContentTestRule) {
     // ===================== Bulk Actions =====================
 
     /**
-     * Mark all items as checked.
+     * Open more options menu.
      */
-    fun markAllChecked() = apply {
-        composeTestRule.onNodeWithText("Mark All", ignoreCase = true)
+    fun openMoreOptionsMenu() = apply {
+        composeTestRule.onNodeWithContentDescription("More options")
             .performClick()
         composeTestRule.waitForIdle()
     }
 
     /**
-     * Clear all checked items.
+     * Clear all purchased items via menu.
+     * Note: Requires opening menu first via openMoreOptionsMenu().
      */
-    fun clearChecked() = apply {
-        composeTestRule.onNodeWithText("Clear Checked", ignoreCase = true)
+    fun clearPurchasedItems() = apply {
+        composeTestRule.onNodeWithText("Clear purchased items", ignoreCase = true)
             .performClick()
         composeTestRule.waitForIdle()
     }

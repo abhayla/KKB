@@ -12,11 +12,36 @@ import javax.inject.Singleton
  * Fake Google Auth Client for E2E testing.
  * Implements GoogleAuthClientInterface and auto-returns success.
  * No need to mock FirebaseUser since SignInUserData is a simple data class.
+ *
+ * ## Pre-Initialization Pattern
+ * For tests that need to start already signed in, set the static companion
+ * object state BEFORE Hilt injection via @BeforeClass.
  */
 @Singleton
 class FakeGoogleAuthClient @Inject constructor() : GoogleAuthClientInterface {
 
-    private var _isSignedIn = false
+    /**
+     * Static configuration that can be set BEFORE Hilt injection.
+     * This solves the race condition where activity launches before @Before method runs.
+     */
+    companion object {
+        /**
+         * Initial signed-in state to use when this class is instantiated.
+         * Set this in @BeforeClass before the test class instantiates.
+         */
+        var initialSignedIn: Boolean = false
+
+        /**
+         * Reset all static state to defaults.
+         * Call this in @AfterClass to prevent test pollution.
+         */
+        fun resetStaticState() {
+            initialSignedIn = false
+        }
+    }
+
+    // Initialize from companion state (set before injection)
+    private var _isSignedIn = initialSignedIn
     private var shouldSucceed = true
     private var errorMessage = "Sign-in failed"
 

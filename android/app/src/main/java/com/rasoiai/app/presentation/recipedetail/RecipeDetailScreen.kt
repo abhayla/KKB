@@ -268,11 +268,15 @@ internal fun RecipeDetailContent(
                                 onServingsChange = onServingsChange,
                                 onIngredientChecked = onIngredientChecked,
                                 onAddAllToGrocery = onAddAllToGrocery,
-                                modifier = Modifier.padding(top = spacing.sm)
+                                modifier = Modifier
+                                    .padding(top = spacing.sm)
+                                    .testTag(TestTags.RECIPE_INGREDIENTS_LIST)
                             )
                             1 -> InstructionsTab(
                                 instructions = uiState.recipe.instructions,
-                                modifier = Modifier.padding(top = spacing.sm)
+                                modifier = Modifier
+                                    .padding(top = spacing.sm)
+                                    .testTag(TestTags.RECIPE_INSTRUCTIONS_LIST)
                             )
                         }
 
@@ -285,7 +289,8 @@ internal fun RecipeDetailContent(
                             onClick = onStartCookingMode,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = spacing.md),
+                                .padding(horizontal = spacing.md)
+                                .testTag(TestTags.RECIPE_START_COOKING_BUTTON),
                             shape = RoundedCornerShape(spacing.sm)
                         ) {
                             Text(

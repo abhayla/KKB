@@ -4,6 +4,9 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -11,6 +14,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
+import android.util.Log
 import com.rasoiai.app.e2e.base.waitUntilNodeWithTagExists
 import com.rasoiai.app.presentation.common.TestTags
 
@@ -25,6 +29,80 @@ class RecipeDetailRobot(private val composeTestRule: ComposeContentTestRule) {
      */
     fun waitForRecipeDetailScreen(timeoutMillis: Long = 5000) = apply {
         composeTestRule.waitUntilNodeWithTagExists(TestTags.RECIPE_DETAIL_SCREEN, timeoutMillis)
+    }
+
+    /**
+     * Wait for recipe content to fully load.
+     * Waits for loading to complete and recipe data to appear.
+     * This is more comprehensive than waitForRecipeDetailScreen() as it ensures
+     * the recipe data has been fetched from the API and rendered.
+     *
+     * @param timeoutMillis Total timeout for both screen and content to appear
+     */
+    fun waitForRecipeContent(timeoutMillis: Long = 45000) = apply {
+        val startTime = System.currentTimeMillis()
+
+        // First wait for the screen to appear
+        Log.d("RecipeDetailRobot", "Waiting for recipe detail screen...")
+        composeTestRule.waitUntilNodeWithTagExists(
+            TestTags.RECIPE_DETAIL_SCREEN,
+            timeoutMillis = 15000
+        )
+
+        // Then wait for loading to complete (recipe content to appear)
+        // Poll for: ingredients list, start cooking button, OR error message
+        Log.d("RecipeDetailRobot", "Waiting for recipe content to load...")
+        val remainingTime = timeoutMillis - (System.currentTimeMillis() - startTime)
+        var contentFound = false
+        var errorFound = false
+
+        val pollStartTime = System.currentTimeMillis()
+        while (!contentFound && !errorFound && (System.currentTimeMillis() - pollStartTime) < remainingTime.coerceAtLeast(1000)) {
+            composeTestRule.waitForIdle()
+
+            // Check if either ingredients list OR start cooking button is visible
+            // These indicate recipe data has loaded
+            val ingredientsNodes = composeTestRule.onAllNodesWithTag(TestTags.RECIPE_INGREDIENTS_LIST)
+                .fetchSemanticsNodes()
+            val startCookingNodes = composeTestRule.onAllNodesWithTag(TestTags.RECIPE_START_COOKING_BUTTON)
+                .fetchSemanticsNodes()
+
+            if (ingredientsNodes.isNotEmpty() || startCookingNodes.isNotEmpty()) {
+                contentFound = true
+                Log.d("RecipeDetailRobot", "Recipe content loaded after ${System.currentTimeMillis() - startTime}ms " +
+                    "(ingredients: ${ingredientsNodes.size}, startCooking: ${startCookingNodes.size})")
+            } else {
+                // Check for error state (recipe not found)
+                val errorNodes = composeTestRule.onAllNodesWithText("Recipe not found", substring = true)
+                    .fetchSemanticsNodes()
+                val failedNodes = composeTestRule.onAllNodesWithText("Failed to load", substring = true)
+                    .fetchSemanticsNodes()
+
+                if (errorNodes.isNotEmpty() || failedNodes.isNotEmpty()) {
+                    errorFound = true
+                    Log.e("RecipeDetailRobot", "Recipe load error detected after ${System.currentTimeMillis() - startTime}ms")
+                } else {
+                    Thread.sleep(300)  // Poll every 300ms
+                }
+            }
+        }
+
+        if (errorFound) {
+            throw AssertionError(
+                "Recipe failed to load - error message detected on screen. " +
+                "The recipe may not exist in the database or the API call failed."
+            )
+        }
+
+        if (!contentFound) {
+            val elapsed = System.currentTimeMillis() - startTime
+            throw AssertionError(
+                "Recipe content did not load within ${elapsed}ms. " +
+                "Expected either ingredients list or start cooking button to appear. " +
+                "This may indicate: (1) Recipe API call failed, (2) Recipe not in database, " +
+                "(3) ViewModel failed to load recipe data, (4) Network timeout."
+            )
+        }
     }
 
     /**
@@ -115,8 +193,15 @@ class RecipeDetailRobot(private val composeTestRule: ComposeContentTestRule) {
 
     /**
      * Assert ingredients list is displayed.
+     * Waits for the node to exist first (handles loading state) before scrolling.
      */
     fun assertIngredientsListDisplayed() = apply {
+        // Wait for ingredients list to appear (handles loading state / API call)
+        // Increased timeout to 30s to match recipe detail screen load timeout
+        composeTestRule.waitUntilNodeWithTagExists(
+            TestTags.RECIPE_INGREDIENTS_LIST,
+            timeoutMillis = 30000  // Allow time for recipe detail API call
+        )
         composeTestRule.onNodeWithTag(TestTags.RECIPE_INGREDIENTS_LIST)
             .performScrollTo()
             .assertIsDisplayed()
@@ -260,9 +345,10 @@ class RecipeDetailRobot(private val composeTestRule: ComposeContentTestRule) {
 
     /**
      * Go back to previous screen.
+     * Uses content description since the back button is an icon with contentDescription="Back".
      */
     fun goBack() = apply {
-        composeTestRule.onNodeWithText("Back", ignoreCase = true).performClick()
+        composeTestRule.onNodeWithContentDescription("Back", useUnmergedTree = true).performClick()
         composeTestRule.waitForIdle()
     }
 

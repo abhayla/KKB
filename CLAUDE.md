@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Quick Orientation
+
+For active development context, check `docs/CONTINUE_PROMPT.md` first.
+
+**Key numbers to know:**
+- 3,580 recipes in PostgreSQL
+- 170 backend tests (pytest)
+- ~400 Android UI tests (Compose)
+- 15 screens implemented
+
 ## Project Overview
 
 **RasoiAI** (रसोई AI) is an AI-powered meal planning application for Indian families. It generates personalized weekly meal plans based on family preferences, dietary restrictions, regional cuisines, and cultural considerations including festivals and fasting days.
@@ -17,7 +27,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 See `docs/CONTINUE_PROMPT.md` for session context and active work.
 
-**Test Coverage (last verified: Jan 30, 2026):**
+**Test Coverage (last verified: Feb 1, 2026):**
 
 | Platform | Tests | Details |
 |----------|-------|---------|
@@ -443,7 +453,7 @@ android/
 │       │   └── common/                  # TestTags.kt, ComponentsTest.kt
 │       └── e2e/                         # End-to-end tests
 │           ├── base/BaseE2ETest.kt      # Base class with Hilt setup
-│           ├── di/                      # FakeGoogleAuthClient, FakeDataStoreModule, FakeAuthRepository
+│           ├── di/                      # FakeGoogleAuthClient, FakeAuthModule
 │           ├── flows/                   # Complete user flow tests (15 files)
 │           ├── database/                # Room DB verification
 │           ├── validation/              # Recipe constraint tests
@@ -544,7 +554,7 @@ PYTHONPATH=. pytest tests/
 
 ## Rules for Claude
 
-1. **Bash Syntax (CRITICAL)**: Use forward slashes `/` (not `\`), use `./gradlew` (not `.\gradlew`), quote paths with spaces. Shell is Unix-style bash even on Windows. This applies to ALL bash commands in this file and any commands Claude generates.
+1. **Bash Syntax (CRITICAL)**: Use forward slashes `/` (not `\`), use `./gradlew` (not `.\gradlew`), quote paths with spaces. Shell is Unix-style bash even on Windows. For Windows PowerShell-specific commands (like venv activation), use the commented alternative. This applies to ALL bash commands in this file and any commands Claude generates.
 
 2. **Document Output**:
    - Generated documents → `docs/claude-docs/`
@@ -552,6 +562,16 @@ PYTHONPATH=. pytest tests/
    - Audit reports → `docs/claude-docs/`
 
 3. **Offline-First**: All features must use Room as source of truth with offline support.
+
+## Common Pitfalls
+
+- **API 36 emulator**: Use API 34 - API 36 has Espresso compatibility issues
+- **Backend tests without PYTHONPATH**: Always run `cd backend && PYTHONPATH=. pytest`
+- **Fake vs Real DataStore in E2E tests**: E2E tests use REAL DataStore with persistent state, not fakes
+- **MissingGreenlet errors**: SQLAlchemy async requires proper eager loading with `selectinload()`
+- **Gradle daemon issues on Windows**: Run `./gradlew --stop` if builds hang mysteriously
+- **KSP/Hilt errors after code changes**: Run `./gradlew clean :app:kspDebugKotlin`
+- **Meal plan generation timeout**: AI generation takes 4-7 seconds; E2E tests use 30-second timeout via `BackendTestHelper.generateMealPlan()`
 
 ## Reference Implementations
 
@@ -593,7 +613,7 @@ API docs available at `http://localhost:8000/docs` when backend is running.
 
 ## Recipe Database
 
-**3,000+ recipes** in PostgreSQL:
+**3,580 recipes** in PostgreSQL:
 - Imported from khanakyabanega dataset
 - Distribution: North (majority), South, West, East
 - Dietary: Vegetarian, Vegan supported
@@ -686,3 +706,40 @@ See `docs/design/Meal-Generation-Config-Architecture.md` for full system design.
 | `ANTHROPIC_API_KEY` | Claude API key for AI features | For meal generation/chat |
 | `DEBUG` | Enable debug mode (`fake-firebase-token` accepted) | No (default: false) |
 | `JWT_SECRET_KEY` | Secret for JWT signing | Yes |
+
+## E2E Test Infrastructure
+
+**Key E2E test files** (in `app/src/androidTest/java/com/rasoiai/app/e2e/`):
+
+| File | Purpose |
+|------|---------|
+| `E2ETestSuite.kt` | JUnit Suite for ordered test execution |
+| `base/BaseE2ETest.kt` | Base class with Hilt setup, meal plan generation |
+| `base/ComposeTestExtensions.kt` | Custom waitUntil helpers, test utilities |
+| `util/BackendTestHelper.kt` | Backend API calls with retry (auth, meal plan generation) |
+| `di/FakeGoogleAuthClient.kt` | Fake auth (returns `fake-firebase-token`) |
+| `di/FakeAuthModule.kt` | Replaces AuthModule with fake for testing |
+| `rules/` | Custom JUnit test rules |
+| `robots/` | Robot pattern classes (HomeRobot, GroceryRobot, RecipeDetailRobot) |
+
+**E2E Test Flow:**
+```
+1. FakeGoogleAuthClient returns fake-firebase-token
+2. AuthViewModel calls /api/v1/auth/firebase (real API)
+3. Backend returns JWT, saved to DataStore
+4. User completes 5-step onboarding
+5. BackendTestHelper.generateMealPlan() calls AI (4-7 seconds)
+6. Home screen displays meal cards
+7. Room DB caches meal plan for offline access
+```
+
+**Running E2E tests:**
+```bash
+# Full E2E suite (ordered execution)
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.E2ETestSuite
+
+# Single flow test
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.flows.CoreDataFlowTest
+```

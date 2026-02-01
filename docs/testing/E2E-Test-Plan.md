@@ -112,7 +112,7 @@ The E2E tests use a hybrid approach where most components are real, but Google O
 |-----------|------|-------------|-------|
 | Google OAuth | **FAKE** | `FakeGoogleAuthClient.kt` | Bypasses real Google sign-in |
 | Firebase Token | **FAKE** | Hardcoded `"fake-firebase-token"` | Backend accepts in debug mode |
-| DataStore State | **FAKE** | `FakeUserPreferencesDataStore.kt` | Controls onboarding state |
+| DataStore State | **REAL** | `UserPreferencesDataStore.kt` | Persists to disk, state shared between tests |
 | Network Monitor | **FAKE** | `FakeNetworkMonitor` | For offline tests only |
 | Backend API | **REAL** | Python FastAPI at localhost:8000 | All API calls are real |
 | JWT Tokens | **REAL** | Backend generates | Actual JWT authentication |
@@ -121,14 +121,54 @@ The E2E tests use a hybrid approach where most components are real, but Google O
 | ViewModels | **REAL** | All `*ViewModel` classes | Real presentation logic |
 | Room Database | **REAL** | Local SQLite cache | Real offline storage |
 
-### Key Fake Module Files
+### Key Test Module Files
 
 | File | Purpose |
 |------|---------|
 | `e2e/di/FakeGoogleAuthClient.kt` | Returns fake credentials, skips OAuth flow |
 | `e2e/di/FakeAuthModule.kt` | Hilt module replacing real GoogleAuthClient |
-| `e2e/di/FakeUserPreferencesDataStore.kt` | Controls navigation state (onboarded/not) |
-| `e2e/di/FakeDataStoreModule.kt` | Hilt module for DataStore replacement |
+| `e2e/E2ETestSuite.kt` | JUnit Suite for ordered test execution |
+| `e2e/base/BaseE2ETest.kt` | Base class with REAL DataStore injection |
+
+### E2E Test Suite Architecture
+
+Tests run in order via `E2ETestSuite`, with state persisted in real DataStore:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        E2E TEST SUITE                                │
+│                    (Single App Instance)                             │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  1. CoreDataFlowTest (clears state first)                           │
+│     ├── Auth Screen → FakeGoogleAuthClient.signIn()                 │
+│     │                  └── Returns "fake-firebase-token"            │
+│     ├── AuthViewModel → Backend API (real)                          │
+│     │                   └── Exchanges token for real JWT            │
+│     ├── REAL UserPreferencesDataStore                               │
+│     │   └── Stores JWT + userId (persists to disk)                  │
+│     ├── Onboarding → Saves preferences (real DataStore)             │
+│     ├── Generation → Creates meal plan (real API + PostgreSQL)      │
+│     └── Home Screen ✓                                               │
+│                                                                      │
+│  2. HomeScreenTest (inherits persisted state)                       │
+│     ├── FakeGoogleAuthClient.simulateSignedIn()                     │
+│     ├── SplashViewModel checks real DataStore → Already onboarded   │
+│     ├── Navigates directly to Home ✓                                │
+│     └── Uses existing meal plan from Room DB                        │
+│                                                                      │
+│  3. GroceryFlowTest (inherits persisted state)                      │
+│  4. CookingModeFlowTest (inherits persisted state)                  │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Run Command:**
+```bash
+cd android
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.E2ETestSuite
+```
 
 ---
 
@@ -1629,5 +1669,117 @@ cd android
 
 ---
 
-*Last Updated: January 30, 2026*
-*Document Version: 1.5 - Added CoreDataFlowTest results and simplified test execution*
+## Phase 16: Performance Tracking During E2E Tests
+
+### Overview
+
+Performance metrics are tracked during E2E test execution to monitor app responsiveness without failing tests on threshold violations.
+
+| Approach | Purpose |
+|----------|---------|
+| Embedded in E2E Tests | Warn-only logging + summary table |
+| Dedicated PerformanceTest.kt | Strict assertions for regression detection |
+
+### Metrics & Thresholds
+
+| Metric | Description | Threshold | Test File |
+|--------|-------------|-----------|-----------|
+| Home Screen Load | App start → meals visible | < 3000ms | HomeScreenTest |
+| Meal Plan Generation | API call to generate plan | < 15000ms | CoreDataFlowTest |
+| Recipe Detail Load | Tap meal → recipe visible | < 500ms | CookingModeFlowTest |
+| Grocery List Load | Navigate → list visible | < 1000ms | GroceryFlowTest |
+| Screen Transitions | Between bottom nav screens | < 300ms | HomeScreenTest |
+
+### Performance Tracker Utility
+
+**File:** `e2e/util/PerformanceTracker.kt`
+
+Key methods:
+- `measure(name, threshold) { block }` - Measure timed operation
+- `record(name, duration, threshold)` - Record pre-measured value
+- `printSummary()` - Print summary table to Logcat
+
+```kotlin
+// Usage example
+PerformanceTracker.measure(
+    "Meal Plan Generation",
+    PerformanceTracker.MEAL_GENERATION_MS
+) {
+    // Code to measure
+    onboardingRobot.tapCreateMealPlan()
+    homeRobot.waitForHomeScreen(LONG_TIMEOUT)
+}
+
+// Print summary at end
+PerformanceTracker.printSummary()
+```
+
+### Sample Output
+
+```
+D/E2E_PERF: ✓ PASS Home Screen Load: 2450ms (threshold: 3000ms)
+D/E2E_PERF: ✓ PASS Meal Plan Generation: 8320ms (threshold: 15000ms)
+D/E2E_PERF: ✓ PASS Recipe Detail Load: 380ms (threshold: 500ms)
+D/E2E_PERF: ✓ PASS Grocery List Load: 720ms (threshold: 1000ms)
+D/E2E_PERF: ⚠️ WARN Avg Screen Transition: 350ms (threshold: 300ms)
+
+I/E2E_PERF:
+╔══════════════════════════════════════════════════════════════╗
+║                 E2E PERFORMANCE SUMMARY                       ║
+╠══════════════════════════════════════════════════════════════╣
+║ Metric                    │ Actual    │ Threshold │ Status   ║
+╠───────────────────────────┼───────────┼───────────┼──────────╣
+║ Home Screen Load          │    2450ms │  < 3000ms │ ✓ PASS   ║
+║ Meal Plan Generation      │    8320ms │ < 15000ms │ ✓ PASS   ║
+║ Recipe Detail Load        │     380ms │   < 500ms │ ✓ PASS   ║
+║ Grocery List Load         │     720ms │  < 1000ms │ ✓ PASS   ║
+║ Avg Screen Transition     │     350ms │   < 300ms │ ⚠️ WARN  ║
+╚══════════════════════════════════════════════════════════════╝
+
+Summary: 4/5 passed, 1 warnings
+```
+
+### Run Performance Tests
+
+```bash
+# Run E2E suite with embedded performance tracking
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.E2ETestSuite
+
+# View performance summary in Logcat
+adb logcat -s E2E_PERF:*
+
+# Run dedicated performance tests (strict assertions)
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.performance.PerformanceTest
+```
+
+### Threshold Sources
+
+| Threshold | Source |
+|-----------|--------|
+| < 3000ms cold start | [Android Developers Performance Guide](https://developer.android.com/training/testing/instrumented-tests/performance) |
+| < 300ms transitions | [Nielsen Norman Group UX Guidelines](https://www.nngroup.com/articles/response-times-3-important-limits/) |
+| < 15000ms AI generation | Claude API typical response time |
+| < 500ms screen loads | Industry standard for mobile apps |
+
+### Performance Tracking Integration Points
+
+| Test File | Metrics Tracked |
+|-----------|-----------------|
+| `CoreDataFlowTest.kt` | Meal Plan Generation |
+| `HomeScreenTest.kt` | Home Screen Load, Screen Transitions |
+| `GroceryFlowTest.kt` | Grocery List Load |
+| `CookingModeFlowTest.kt` | Recipe Detail Load |
+
+### Important Notes
+
+1. **Warn Only**: Performance threshold violations log warnings but do NOT fail tests
+2. **Logcat Tag**: All metrics logged with tag `E2E_PERF` for easy filtering
+3. **Reset Per Test Class**: Call `PerformanceTracker.reset()` in `@Before` methods
+4. **Summary in @After**: Call `PerformanceTracker.printSummary()` in `@After` methods
+
+---
+
+*Last Updated: January 31, 2026*
+*Document Version: 1.6 - Added Phase 16: Performance Tracking During E2E Tests*

@@ -4,8 +4,10 @@ import com.rasoiai.app.e2e.base.BaseE2ETest
 import com.rasoiai.app.e2e.robots.CookingModeRobot
 import com.rasoiai.app.e2e.robots.HomeRobot
 import com.rasoiai.app.e2e.robots.RecipeDetailRobot
+import com.rasoiai.app.e2e.util.PerformanceTracker
 import com.rasoiai.domain.model.MealType
 import dagger.hilt.android.testing.HiltAndroidTest
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import java.time.DayOfWeek
@@ -16,6 +18,17 @@ import java.time.DayOfWeek
  * Tests:
  * 12.1 Recipe Scaling
  * 12.2 Start Cooking Mode
+ *
+ * ## Auth State (E2ETestSuite Context)
+ * When running via E2ETestSuite, CoreDataFlowTest runs first and:
+ * - Authenticates with backend (stores JWT in REAL DataStore)
+ * - Completes onboarding (stores preferences in REAL DataStore)
+ * - Generates meal plan (stores in Room DB)
+ *
+ * This test then:
+ * - Sets FakeGoogleAuthClient.simulateSignedIn() so SplashViewModel sees user as signed in
+ * - Real DataStore already has JWT + onboarded flag from CoreDataFlowTest
+ * - Navigates to Recipe Detail via Home → Meal Card tap
  */
 @HiltAndroidTest
 class CookingModeFlowTest : BaseE2ETest() {
@@ -27,18 +40,49 @@ class CookingModeFlowTest : BaseE2ETest() {
     @Before
     override fun setUp() {
         super.setUp()
-        // Set up authenticated and onboarded user state
+
+        // Reset performance tracker for this test class
+        PerformanceTracker.reset()
+
+        // Set up authenticated state - gets real JWT from backend
+        // This makes the test self-contained (doesn't depend on CoreDataFlowTest running first)
         setUpAuthenticatedState()
 
         homeRobot = HomeRobot(composeTestRule)
         recipeDetailRobot = RecipeDetailRobot(composeTestRule)
         cookingModeRobot = CookingModeRobot(composeTestRule)
 
-        // Navigate to a recipe
+        // Wait for home screen (should navigate directly due to persisted auth state)
         homeRobot.waitForHomeScreen(LONG_TIMEOUT)
-        homeRobot.selectDay(DayOfWeek.MONDAY)
-        homeRobot.tapMealCard(MealType.LUNCH)
-        recipeDetailRobot.waitForRecipeDetailScreen()
+
+        // CRITICAL: Wait for meal data to load (API call can take 30+ seconds)
+        // assertMealCardDisplayed will wait up to 60s for the card to appear
+        try {
+            homeRobot.assertMealCardDisplayed(MealType.BREAKFAST, timeoutMillis = 60000)
+            android.util.Log.i("CookingModeFlowTest", "Meal data loaded successfully")
+        } catch (e: Exception) {
+            android.util.Log.e("CookingModeFlowTest", "Failed to load meal data: ${e.message}")
+            throw AssertionError("Meal data not available - meal plan may have failed to generate")
+        }
+
+        // Measure recipe detail load time
+        // Use BREAKFAST as it's always visible without scrolling
+        PerformanceTracker.measure(
+            "Recipe Detail Load",
+            PerformanceTracker.RECIPE_DETAIL_LOAD_MS
+        ) {
+            // Tap meal card shows action sheet, then tap "View Recipe" to navigate
+            homeRobot.navigateToRecipeDetail(MealType.BREAKFAST)
+            // Allow 30 seconds for recipe detail - API call may be slow
+            recipeDetailRobot.waitForRecipeDetailScreen(30000)
+        }
+    }
+
+    @After
+    override fun tearDown() {
+        // Print performance summary to Logcat
+        PerformanceTracker.printSummary()
+        super.tearDown()
     }
 
     /**

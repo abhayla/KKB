@@ -365,7 +365,8 @@ private fun WhatsAppShareButton(onClick: () -> Unit) {
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = spacing.md, vertical = spacing.sm),
+            .padding(horizontal = spacing.md, vertical = spacing.sm)
+            .testTag(TestTags.GROCERY_WHATSAPP_BUTTON),
         shape = RoundedCornerShape(spacing.sm),
         colors = ButtonDefaults.buttonColors(
             containerColor = Color(0xFF25D366) // WhatsApp green
@@ -393,10 +394,12 @@ private fun GroceryCategorySection(
     onEditItem: (GroceryItem) -> Unit,
     onDeleteItem: (GroceryItem) -> Unit
 ) {
+    val categoryTag = category.category.name.lowercase()
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = spacing.md, vertical = spacing.sm),
+            .padding(horizontal = spacing.md, vertical = spacing.sm)
+            .testTag("${TestTags.GROCERY_CATEGORY_PREFIX}$categoryTag"),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),

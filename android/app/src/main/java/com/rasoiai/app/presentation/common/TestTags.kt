@@ -67,12 +67,44 @@ object TestTags {
 
     // Home Screen
     const val HOME_SCREEN = "home_screen"
+    const val HOME_LOADING = "home_loading"
     const val HOME_PROFILE_BUTTON = "home_profile_button"
     const val HOME_WEEK_SELECTOR = "home_week_selector"
     const val HOME_DAY_TAB_PREFIX = "home_day_tab_"
+    const val HOME_MEAL_LIST = "home_meal_list"
     const val MEAL_CARD_PREFIX = "meal_card_"
     const val MEAL_LOCK_BUTTON_PREFIX = "meal_lock_"
     const val MEAL_SWAP_BUTTON_PREFIX = "meal_swap_"
+
+    // Home Screen - Day Header
+    const val HOME_DAY_LOCK_BUTTON = "home_day_lock_button"
+    const val HOME_REFRESH_BUTTON = "home_refresh_button"
+
+    // Home Screen - Refresh Options Sheet
+    const val REFRESH_OPTIONS_SHEET = "refresh_options_sheet"
+    const val REFRESH_DAY_OPTION = "refresh_day_option"
+    const val REFRESH_WEEK_OPTION = "refresh_week_option"
+
+    // Home Screen - Recipe Action Sheet
+    const val RECIPE_ACTION_SHEET = "recipe_action_sheet"
+    const val ACTION_VIEW_RECIPE = "action_view_recipe"
+    const val ACTION_SWAP_RECIPE = "action_swap_recipe"
+    const val ACTION_LOCK_RECIPE = "action_lock_recipe"
+    const val ACTION_REMOVE_RECIPE = "action_remove_recipe"
+
+    // Home Screen - Swap Recipe Sheet
+    const val SWAP_RECIPE_SHEET = "swap_recipe_sheet"
+    const val SWAP_SEARCH_FIELD = "swap_search_field"
+    const val SWAP_RECIPE_GRID = "swap_recipe_grid"
+    const val SWAP_RECIPE_ITEM_PREFIX = "swap_recipe_item_"
+
+    // Home Screen - Festival Banner
+    const val HOME_FESTIVAL_BANNER = "home_festival_banner"
+
+    // Home Screen - Meal Item Content
+    const val MEAL_ITEM_PREFIX = "meal_item_"
+    const val MEAL_ITEM_NAME_PREFIX = "meal_item_name_"
+    const val MEAL_ITEM_TIME_PREFIX = "meal_item_time_"
 
     // Bottom Navigation
     const val BOTTOM_NAV = "bottom_navigation"
