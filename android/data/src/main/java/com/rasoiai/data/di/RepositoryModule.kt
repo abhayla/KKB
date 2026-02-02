@@ -5,6 +5,7 @@ import com.rasoiai.data.repository.ChatRepositoryImpl
 import com.rasoiai.data.repository.FavoritesRepositoryImpl
 import com.rasoiai.data.repository.GroceryRepositoryImpl
 import com.rasoiai.data.repository.MealPlanRepositoryImpl
+import com.rasoiai.data.repository.NotificationRepositoryImpl
 import com.rasoiai.data.repository.PantryRepositoryImpl
 import com.rasoiai.data.repository.RecipeRepositoryImpl
 import com.rasoiai.data.repository.RecipeRulesRepositoryImpl
@@ -15,6 +16,7 @@ import com.rasoiai.domain.repository.ChatRepository
 import com.rasoiai.domain.repository.FavoritesRepository
 import com.rasoiai.domain.repository.GroceryRepository
 import com.rasoiai.domain.repository.MealPlanRepository
+import com.rasoiai.domain.repository.NotificationRepository
 import com.rasoiai.domain.repository.PantryRepository
 import com.rasoiai.domain.repository.RecipeRepository
 import com.rasoiai.domain.repository.RecipeRulesRepository
@@ -73,4 +75,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindRecipeRulesRepository(impl: RecipeRulesRepositoryImpl): RecipeRulesRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindNotificationRepository(impl: NotificationRepositoryImpl): NotificationRepository
 }

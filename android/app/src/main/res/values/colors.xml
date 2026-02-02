@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Primary - Orange -->
+    <color name="primary">#FF6838</color>
     <color name="primary_light">#FF6838</color>
     <color name="primary_dark">#FFB59C</color>
 

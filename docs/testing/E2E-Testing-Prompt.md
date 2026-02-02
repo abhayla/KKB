@@ -2037,9 +2037,12 @@ adb uninstall com.rasoiai.app.debug
 ```
 
 ### Screenshots & UI
+
+**IMPORTANT:** All screenshots MUST be saved to `docs/testing/screenshots/`. This folder is gitignored.
+
 ```bash
-# Screenshot
-adb exec-out screencap -p > screenshot_$(date +%H%M%S).png
+# Screenshot (save to designated folder)
+adb exec-out screencap -p > docs/testing/screenshots/screenshot_$(date +%H%M%S).png
 
 # UI hierarchy
 adb shell uiautomator dump /data/local/tmp/ui.xml && adb pull /data/local/tmp/ui.xml
@@ -2216,12 +2219,14 @@ start app/build/reports/androidTests/connected/index.html
 
 **Screenshot Verification Loop (Required):**
 
-After each screen test, take a screenshot to verify pass/fail:
+After each screen test, take a screenshot to verify pass/fail.
+
+**Screenshot Storage Rule:** ALL screenshots MUST be saved to `docs/testing/screenshots/` - this folder is gitignored.
 
 ```
 FOR each screen in [Auth, Onboarding, Generation, Home, RecipeDetail, Grocery]:
     1. Run automated test step
-    2. Take screenshot: adb shell screencap
+    2. Take screenshot: adb exec-out screencap -p > docs/testing/screenshots/{step}_{screen}.png
     3. Analyze screenshot to verify pass
     4. IF PASS: Move to next screen
     5. IF FAIL: Fix issue → Clear app data → Retest from start

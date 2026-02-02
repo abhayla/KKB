@@ -5,6 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.rasoiai.data.local.dao.MealPlanDao
 import com.rasoiai.data.local.dao.RecipeDao
 import com.rasoiai.data.local.dao.GroceryDao
@@ -14,6 +16,8 @@ import com.rasoiai.data.local.dao.PantryDao
 import com.rasoiai.data.local.dao.StatsDao
 import com.rasoiai.data.local.dao.RecipeRulesDao
 import com.rasoiai.data.local.dao.ChatDao
+import com.rasoiai.data.local.dao.NotificationDao
+import com.rasoiai.data.local.dao.OfflineQueueDao
 import com.rasoiai.data.local.entity.MealPlanEntity
 import com.rasoiai.data.local.entity.MealPlanFestivalEntity
 import com.rasoiai.data.local.entity.MealPlanItemEntity
@@ -30,6 +34,8 @@ import com.rasoiai.data.local.entity.WeeklyChallengeEntity
 import com.rasoiai.data.local.entity.RecipeRuleEntity
 import com.rasoiai.data.local.entity.NutritionGoalEntity
 import com.rasoiai.data.local.entity.ChatMessageEntity
+import com.rasoiai.data.local.entity.NotificationEntity
+import com.rasoiai.data.local.entity.OfflineQueueEntity
 
 @Database(
     entities = [
@@ -48,9 +54,11 @@ import com.rasoiai.data.local.entity.ChatMessageEntity
         WeeklyChallengeEntity::class,
         RecipeRuleEntity::class,
         NutritionGoalEntity::class,
-        ChatMessageEntity::class
+        ChatMessageEntity::class,
+        NotificationEntity::class,
+        OfflineQueueEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -65,9 +73,54 @@ abstract class RasoiDatabase : RoomDatabase() {
     abstract fun statsDao(): StatsDao
     abstract fun recipeRulesDao(): RecipeRulesDao
     abstract fun chatDao(): ChatDao
+    abstract fun notificationDao(): NotificationDao
+    abstract fun offlineQueueDao(): OfflineQueueDao
 
     companion object {
         private const val DATABASE_NAME = "rasoi_database"
+
+        /**
+         * Migration from version 7 to 8: Add notifications and offline_queue tables.
+         */
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Create notifications table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS notifications (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        type TEXT NOT NULL,
+                        title TEXT NOT NULL,
+                        body TEXT NOT NULL,
+                        imageUrl TEXT,
+                        actionType TEXT,
+                        actionData TEXT,
+                        isRead INTEGER NOT NULL DEFAULT 0,
+                        createdAt INTEGER NOT NULL,
+                        expiresAt INTEGER
+                    )
+                """)
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_notifications_isRead ON notifications (isRead)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_notifications_createdAt ON notifications (createdAt)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_notifications_type ON notifications (type)")
+
+                // Create offline_queue table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS offline_queue (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        actionType TEXT NOT NULL,
+                        payload TEXT NOT NULL,
+                        status TEXT NOT NULL DEFAULT 'pending',
+                        retryCount INTEGER NOT NULL DEFAULT 0,
+                        errorMessage TEXT,
+                        createdAt INTEGER NOT NULL,
+                        lastAttemptAt INTEGER
+                    )
+                """)
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_offline_queue_status ON offline_queue (status)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_offline_queue_createdAt ON offline_queue (createdAt)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_offline_queue_actionType ON offline_queue (actionType)")
+            }
+        }
 
         fun create(context: Context): RasoiDatabase {
             return Room.databaseBuilder(
@@ -75,10 +128,7 @@ abstract class RasoiDatabase : RoomDatabase() {
                 RasoiDatabase::class.java,
                 DATABASE_NAME
             )
-                // NOTE: Implement proper migrations before production release.
-                // fallbackToDestructiveMigration() was removed to prevent data loss.
-                // Add migrations for each schema version change:
-                // .addMigrations(MIGRATION_7_8, MIGRATION_8_9, etc.)
+                .addMigrations(MIGRATION_7_8)
                 .build()
         }
     }

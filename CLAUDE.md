@@ -302,6 +302,35 @@ class FeatureScreenTest {
 }
 ```
 
+### ViewModel Unit Tests
+
+Located in `app/src/test/java/com/rasoiai/app/presentation/`:
+
+```kotlin
+@OptIn(ExperimentalCoroutinesApi::class)
+class FeatureViewModelTest {
+    @get:Rule val testDispatcherRule = TestDispatcherRule()
+
+    private lateinit var repository: FakeFeatureRepository
+    private lateinit var viewModel: FeatureViewModel
+
+    @Before
+    fun setup() {
+        repository = FakeFeatureRepository()
+        viewModel = FeatureViewModel(repository)
+    }
+
+    @Test
+    fun `initial state is loading`() = runTest {
+        assertEquals(true, viewModel.uiState.value.isLoading)
+    }
+}
+```
+
+**Test utilities:**
+- `TestDispatcherRule` - Replaces Dispatchers.Main for coroutine tests
+- `Fake*Repository` classes - In-memory implementations for testing
+
 ### E2E Test Infrastructure
 
 **Key files** in `app/src/androidTest/java/com/rasoiai/app/e2e/`:
@@ -439,7 +468,14 @@ Configuration-driven meal planning with YAML source of truth synced to PostgreSQ
    - Generated documents → `docs/claude-docs/`
    - Test screenshots → `docs/testing/screenshots/` (gitignored)
 
-3. **Offline-First**: All features must use Room as source of truth with offline support.
+3. **Screenshots (CRITICAL)**:
+   - **ALL screenshots MUST be saved to `docs/testing/screenshots/`** - no exceptions
+   - This includes: Playwright screenshots, emulator screenshots, UI test captures, debugging screenshots
+   - NEVER save screenshots to the project root, `.playwright-mcp/`, or any other location
+   - The folder is gitignored - screenshots are temporary debugging artifacts
+   - Use descriptive filenames: `{feature}_{context}.png` (e.g., `home_after_login.png`, `onboarding_step2.png`)
+
+4. **Offline-First**: All features must use Room as source of truth with offline support.
 
 4. **Bug & Feature Tracking**:
    - **Before starting work**: Check GitHub Issues for related bugs/features with `gh issue list`
@@ -447,6 +483,7 @@ Configuration-driven meal planning with YAML source of truth synced to PostgreSQ
    - **After fixing**: Reference issue number in commit: `Fix #123: description`
    - **Use `/fix-issue <number>`**: To implement a fix for a specific GitHub Issue
    - **Labels**: `bug`, `enhancement`, `not-implemented`, `home-screen`, etc.
+   - **Issue Templates**: `.github/ISSUE_TEMPLATE/` has templates for bug reports and feature requests
 
 ## Key Documentation
 
@@ -455,5 +492,7 @@ Configuration-driven meal planning with YAML source of truth synced to PostgreSQ
 | Requirements | `docs/requirements/RasoiAI Requirements.md` |
 | Technical Design | `docs/design/RasoiAI Technical Design.md` |
 | Meal Generation Algorithm | `docs/design/Meal-Generation-Algorithm.md` |
+| Meal Generation Config | `docs/design/Meal-Generation-Config-Architecture.md` |
 | E2E Testing Guide | `docs/testing/E2E-Testing-Prompt.md` |
+| E2E Test Plan | `docs/testing/E2E-Test-Plan.md` |
 | Session Context | `docs/CONTINUE_PROMPT.md` |

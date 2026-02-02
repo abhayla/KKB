@@ -118,6 +118,14 @@ object TestTags {
     const val NOTIFICATIONS_SCREEN = "notifications_screen"
     const val NOTIFICATIONS_LIST = "notifications_list"
     const val NOTIFICATION_ITEM_PREFIX = "notification_item_"
+    const val NOTIFICATIONS_LOADING = "notifications_loading"
+    const val NOTIFICATIONS_EMPTY = "notifications_empty"
+    const val NOTIFICATIONS_ERROR = "notifications_error"
+    const val NOTIFICATIONS_MARK_ALL_READ = "notifications_mark_all_read"
+    const val NOTIFICATION_FILTER_ALL = "notification_filter_all"
+    const val NOTIFICATION_FILTER_UNREAD = "notification_filter_unread"
+    const val NOTIFICATION_BADGE = "notification_badge"
+    const val NOTIFICATION_SWIPE_DELETE = "notification_swipe_delete"
 
     // Home Screen - Festival Banner
     const val HOME_FESTIVAL_BANNER = "home_festival_banner"

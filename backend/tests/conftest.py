@@ -21,6 +21,7 @@ from app.models import (  # noqa: F401
     festival,
     grocery,
     meal_plan,
+    notification,
     recipe,
     stats,
     user,

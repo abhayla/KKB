@@ -7,6 +7,9 @@ import com.rasoiai.data.remote.dto.SwapMealRequest
 import com.rasoiai.data.remote.dto.UserResponse
 import com.rasoiai.data.remote.dto.AuthRequest
 import com.rasoiai.data.remote.dto.AuthResponse
+import com.rasoiai.data.remote.dto.NotificationsResponse
+import com.rasoiai.data.remote.dto.FcmTokenRequest
+import com.rasoiai.data.remote.dto.SuccessResponse
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -101,4 +104,23 @@ interface RasoiApiService {
 
     @GET("api/v1/stats/monthly")
     suspend fun getMonthlyStats(@Query("month") month: String): Map<String, Any>
+
+    // Notifications
+    @GET("api/v1/notifications")
+    suspend fun getNotifications(): NotificationsResponse
+
+    @PUT("api/v1/notifications/{id}/read")
+    suspend fun markNotificationAsRead(@Path("id") id: String): SuccessResponse
+
+    @PUT("api/v1/notifications/read-all")
+    suspend fun markAllNotificationsAsRead(): SuccessResponse
+
+    @DELETE("api/v1/notifications/{id}")
+    suspend fun deleteNotification(@Path("id") id: String): SuccessResponse
+
+    @POST("api/v1/notifications/fcm-token")
+    suspend fun registerFcmToken(@Body request: FcmTokenRequest): SuccessResponse
+
+    @DELETE("api/v1/notifications/fcm-token")
+    suspend fun unregisterFcmToken(@Query("fcm_token") fcmToken: String): SuccessResponse
 }

@@ -9,6 +9,7 @@ import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import coil.util.DebugLogger
+import com.rasoiai.app.fcm.NotificationChannelManager
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
 import javax.inject.Inject
@@ -22,6 +23,16 @@ class RasoiAIApplication : Application(), Configuration.Provider, ImageLoaderFac
     override fun onCreate() {
         super.onCreate()
         initTimber()
+        initNotificationChannels()
+    }
+
+    /**
+     * Initialize notification channels for FCM.
+     * Must be done before any notifications are sent.
+     */
+    private fun initNotificationChannels() {
+        NotificationChannelManager.createChannels(this)
+        Timber.d("Notification channels initialized")
     }
 
     /**

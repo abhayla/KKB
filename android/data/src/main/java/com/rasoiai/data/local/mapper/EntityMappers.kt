@@ -57,6 +57,17 @@ import com.rasoiai.domain.model.RuleFrequency
 import com.rasoiai.domain.model.FrequencyType
 import com.rasoiai.domain.model.NutritionGoal
 import com.rasoiai.domain.model.FoodCategory
+import com.rasoiai.domain.model.Notification
+import com.rasoiai.domain.model.NotificationActionData
+import com.rasoiai.domain.model.NotificationActionType
+import com.rasoiai.domain.model.NotificationType
+import com.rasoiai.domain.model.OfflineAction
+import com.rasoiai.domain.model.ActionStatus
+import com.rasoiai.domain.model.OfflineActionType
+import com.rasoiai.data.local.entity.NotificationEntity
+import com.rasoiai.data.local.entity.OfflineQueueEntity
+import com.rasoiai.data.remote.dto.NotificationDto
+import com.rasoiai.data.remote.dto.NotificationActionDataDto
 import timber.log.Timber
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -563,7 +574,129 @@ fun ChatMessage.toEntity(): ChatMessageEntity = ChatMessageEntity(
     recipeSuggestionsJson = recipeSuggestions?.let { gson.toJson(it) }
 )
 
+// ==================== Notification Entity Mappers ====================
+
+fun NotificationEntity.toDomain(): Notification {
+    val actionDataParsed = actionData?.let {
+        try {
+            gson.fromJson(it, NotificationActionData::class.java)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    return Notification(
+        id = id,
+        type = NotificationType.fromValue(type),
+        title = title,
+        body = body,
+        imageUrl = imageUrl,
+        actionType = NotificationActionType.fromValue(actionType),
+        actionData = actionDataParsed,
+        isRead = isRead,
+        createdAt = createdAt,
+        expiresAt = expiresAt
+    )
+}
+
+fun Notification.toEntity(): NotificationEntity = NotificationEntity(
+    id = id,
+    type = type.value,
+    title = title,
+    body = body,
+    imageUrl = imageUrl,
+    actionType = actionType.value,
+    actionData = actionData?.let { gson.toJson(it) },
+    isRead = isRead,
+    createdAt = createdAt,
+    expiresAt = expiresAt
+)
+
+fun NotificationDto.toEntity(): NotificationEntity {
+    val actionDataJson = actionData?.let { gson.toJson(it) }
+
+    return NotificationEntity(
+        id = id,
+        type = type,
+        title = title,
+        body = body,
+        imageUrl = imageUrl,
+        actionType = actionType,
+        actionData = actionDataJson,
+        isRead = isRead,
+        createdAt = parseTimestampToMillis(createdAt),
+        expiresAt = expiresAt?.let { parseTimestampToMillis(it) }
+    )
+}
+
+fun NotificationDto.toDomain(): Notification {
+    val actionDataParsed = actionData?.let {
+        NotificationActionData(
+            recipeId = it.recipeId,
+            mealPlanId = it.mealPlanId,
+            festivalId = it.festivalId,
+            streakCount = it.streakCount
+        )
+    }
+
+    return Notification(
+        id = id,
+        type = NotificationType.fromValue(type),
+        title = title,
+        body = body,
+        imageUrl = imageUrl,
+        actionType = NotificationActionType.fromValue(actionType),
+        actionData = actionDataParsed,
+        isRead = isRead,
+        createdAt = parseTimestampToMillis(createdAt),
+        expiresAt = expiresAt?.let { parseTimestampToMillis(it) }
+    )
+}
+
+// ==================== Offline Queue Entity Mappers ====================
+
+fun OfflineQueueEntity.toDomain(): OfflineAction = OfflineAction(
+    id = id,
+    actionType = OfflineActionType.fromValue(actionType),
+    payload = payload,
+    status = ActionStatus.fromValue(status),
+    retryCount = retryCount,
+    errorMessage = errorMessage,
+    createdAt = createdAt,
+    lastAttemptAt = lastAttemptAt
+)
+
+fun OfflineAction.toEntity(): OfflineQueueEntity = OfflineQueueEntity(
+    id = id,
+    actionType = actionType.value,
+    payload = payload,
+    status = status.value,
+    retryCount = retryCount,
+    errorMessage = errorMessage,
+    createdAt = createdAt,
+    lastAttemptAt = lastAttemptAt
+)
+
 // ==================== Helper Functions ====================
+
+private fun parseTimestampToMillis(timestamp: String): Long {
+    return try {
+        java.time.ZonedDateTime.parse(timestamp, DateTimeFormatter.ISO_DATE_TIME)
+            .toInstant().toEpochMilli()
+    } catch (e: Exception) {
+        try {
+            java.time.OffsetDateTime.parse(timestamp, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+                .toInstant().toEpochMilli()
+        } catch (e2: Exception) {
+            try {
+                LocalDateTime.parse(timestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                    .atZone(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
+            } catch (e3: Exception) {
+                System.currentTimeMillis()
+            }
+        }
+    }
+}
 
 private fun parseTimestamp(timestamp: String): Long {
     return try {

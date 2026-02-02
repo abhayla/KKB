@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from app.models.chat import ChatMessage
     from app.models.grocery import GroceryList
     from app.models.meal_plan import MealPlan
+    from app.models.notification import FcmToken, Notification
     from app.models.stats import CookingStreak, UserAchievement
 
 
@@ -90,6 +91,16 @@ class User(Base, TimestampMixin):
     )
     achievements: Mapped[list["UserAchievement"]] = relationship(
         "UserAchievement",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    notifications: Mapped[list["Notification"]] = relationship(
+        "Notification",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    fcm_tokens: Mapped[list["FcmToken"]] = relationship(
+        "FcmToken",
         back_populates="user",
         cascade="all, delete-orphan",
     )
