@@ -8,6 +8,7 @@ import com.rasoiai.domain.model.MealPlan
 import com.rasoiai.domain.model.MealPlanDay
 import com.rasoiai.domain.model.MealType
 import com.rasoiai.domain.repository.MealPlanRepository
+import com.rasoiai.domain.repository.RecipeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -43,6 +44,7 @@ data class HomeUiState(
     val showRefreshSheet: Boolean = false,
     val showSwapSheet: Boolean = false,
     val swapSuggestions: List<MealItem> = emptyList(),
+    val isLoadingSwapSuggestions: Boolean = false,
     // 3-level locking system state
     val dayLockStates: Map<LocalDate, Boolean> = emptyMap(),
     val mealLockStates: Map<Pair<LocalDate, MealType>, Boolean> = emptyMap(),
@@ -127,7 +129,8 @@ sealed class HomeNavigationEvent {
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val mealPlanRepository: MealPlanRepository
+    private val mealPlanRepository: MealPlanRepository,
+    private val recipeRepository: RecipeRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -171,8 +174,17 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun updateStateWithMealPlan(mealPlan: MealPlan) {
+        Timber.d("updateStateWithMealPlan: ${mealPlan.days.size} days")
+        mealPlan.days.forEach { day ->
+            Timber.d("  ${day.date}: B=${day.breakfast.size}, L=${day.lunch.size}, D=${day.dinner.size}, S=${day.snacks.size}")
+        }
+
         val selectedDate = _uiState.value.selectedDate
         val selectedDayMeals = mealPlan.days.find { it.date == selectedDate }
+        Timber.d("Looking for selectedDate=$selectedDate, found=${selectedDayMeals != null}")
+        if (selectedDayMeals != null) {
+            Timber.d("Selected day meals: B=${selectedDayMeals.breakfast.size}, L=${selectedDayMeals.lunch.size}, D=${selectedDayMeals.dinner.size}, S=${selectedDayMeals.snacks.size}")
+        }
         val weekDates = generateWeekDates(mealPlan.weekStartDate, selectedDate)
         val upcomingFestival = findUpcomingFestival(mealPlan.days)
 
@@ -290,10 +302,62 @@ class HomeViewModel @Inject constructor(
     fun showSwapOptions() {
         dismissRecipeActionSheet()
         _uiState.update { it.copy(showSwapSheet = true) }
+        fetchSwapSuggestions()
+    }
+
+    private fun fetchSwapSuggestions() {
+        val state = _uiState.value
+        val mealType = state.selectedMealType ?: return
+        val currentRecipeId = state.selectedMealItem?.recipeId ?: return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingSwapSuggestions = true) }
+
+            recipeRepository.searchRecipes(
+                mealType = mealType,
+                limit = 20
+            ).onSuccess { recipes ->
+                // Convert Recipe to MealItem and filter out current recipe
+                val suggestions = recipes
+                    .filter { it.id != currentRecipeId }
+                    .mapIndexed { index, recipe ->
+                        MealItem(
+                            id = "swap_${recipe.id}",
+                            recipeId = recipe.id,
+                            recipeName = recipe.name,
+                            recipeImageUrl = recipe.imageUrl,
+                            prepTimeMinutes = recipe.prepTimeMinutes,
+                            calories = recipe.nutrition?.calories ?: 0,
+                            isLocked = false,
+                            order = index,
+                            dietaryTags = recipe.dietaryTags
+                        )
+                    }
+                _uiState.update {
+                    it.copy(
+                        swapSuggestions = suggestions,
+                        isLoadingSwapSuggestions = false
+                    )
+                }
+            }.onFailure { e ->
+                Timber.e(e, "Failed to fetch swap suggestions")
+                _uiState.update {
+                    it.copy(
+                        swapSuggestions = emptyList(),
+                        isLoadingSwapSuggestions = false
+                    )
+                }
+            }
+        }
     }
 
     fun dismissSwapSheet() {
-        _uiState.update { it.copy(showSwapSheet = false) }
+        _uiState.update {
+            it.copy(
+                showSwapSheet = false,
+                swapSuggestions = emptyList()
+            )
+        }
     }
 
     fun swapRecipe(newRecipeId: String? = null) {
@@ -321,11 +385,16 @@ class HomeViewModel @Inject constructor(
                 it.copy(
                     isRefreshing = false,
                     showSwapSheet = false,
+                    swapSuggestions = emptyList(),
                     selectedMealItem = null,
                     selectedMealType = null
                 )
             }
         }
+    }
+
+    fun selectSwapRecipe(mealItem: MealItem) {
+        swapRecipe(mealItem.recipeId)
     }
 
     fun toggleLockRecipe() {

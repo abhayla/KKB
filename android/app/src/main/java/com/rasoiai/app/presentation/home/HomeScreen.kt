@@ -161,7 +161,7 @@ fun HomeScreen(
         onRegenerateDay = viewModel::regenerateDay,
         onRegenerateWeek = viewModel::regenerateWeek,
         onDismissSwapSheet = viewModel::dismissSwapSheet,
-        onConfirmSwap = { viewModel.swapRecipe() },
+        onSelectSwapRecipe = viewModel::selectSwapRecipe,
         onToggleRecipeLockDirect = viewModel::toggleRecipeLockDirect,
         onRemoveRecipeDirect = viewModel::removeRecipeFromMealDirect,
         onAddRecipeClick = viewModel::showAddRecipeSheet,  // Add Recipe button (Issue #4)
@@ -201,7 +201,7 @@ private fun HomeScreenContent(
     onRegenerateDay: () -> Unit,
     onRegenerateWeek: () -> Unit,
     onDismissSwapSheet: () -> Unit,
-    onConfirmSwap: () -> Unit,
+    onSelectSwapRecipe: (MealItem) -> Unit,
     onToggleRecipeLockDirect: (MealItem, MealType) -> Unit,
     onRemoveRecipeDirect: (MealItem, MealType) -> Unit,
     onAddRecipeClick: (MealType) -> Unit,
@@ -435,8 +435,9 @@ private fun HomeScreenContent(
         SwapRecipeSheet(
             recipeName = uiState.selectedMealItem?.recipeName ?: "",
             swapSuggestions = uiState.swapSuggestions,
+            isLoading = uiState.isLoadingSwapSuggestions,
             onDismiss = onDismissSwapSheet,
-            onSelectRecipe = { selectedRecipe -> onConfirmSwap() }
+            onSelectRecipe = onSelectSwapRecipe
         )
     }
 
@@ -1202,6 +1203,7 @@ private fun RefreshOptionsSheet(
 private fun SwapRecipeSheet(
     recipeName: String,
     swapSuggestions: List<MealItem>,
+    isLoading: Boolean,
     onDismiss: () -> Unit,
     onSelectRecipe: (MealItem) -> Unit
 ) {
@@ -1273,7 +1275,16 @@ private fun SwapRecipeSheet(
             )
 
             // Recipe Grid (2 columns)
-            if (filteredSuggestions.isEmpty()) {
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = spacing.xl),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (filteredSuggestions.isEmpty()) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()

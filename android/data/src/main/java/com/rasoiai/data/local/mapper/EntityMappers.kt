@@ -57,6 +57,7 @@ import com.rasoiai.domain.model.RuleFrequency
 import com.rasoiai.domain.model.FrequencyType
 import com.rasoiai.domain.model.NutritionGoal
 import com.rasoiai.domain.model.FoodCategory
+import timber.log.Timber
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -76,8 +77,10 @@ fun MealPlanResponse.toEntity(): MealPlanEntity = MealPlanEntity(
 )
 
 fun MealPlanResponse.toItemEntities(): List<MealPlanItemEntity> {
+    Timber.d("toItemEntities: Processing ${days.size} days from API response")
     return days.flatMap { day ->
         val items = mutableListOf<MealPlanItemEntity>()
+        Timber.d("toItemEntities: Day ${day.date} - B=${day.meals.breakfast.size}, L=${day.meals.lunch.size}, D=${day.meals.dinner.size}, S=${day.meals.snacks.size}")
 
         day.meals.breakfast.forEachIndexed { index, item ->
             items.add(item.toEntity(id, day.date, day.dayName, MealType.BREAKFAST.value, index))
@@ -138,12 +141,15 @@ fun MealPlanEntity.toDomain(
     items: List<MealPlanItemEntity>,
     festivals: List<MealPlanFestivalEntity>
 ): MealPlan {
+    Timber.d("toDomain: Converting ${items.size} items, ${festivals.size} festivals")
+
     val dateFormatter = DateTimeFormatter.ISO_DATE
     val startDate = LocalDate.parse(weekStartDate, dateFormatter)
     val endDate = LocalDate.parse(weekEndDate, dateFormatter)
 
     // Group items by date
     val itemsByDate = items.groupBy { it.date }
+    Timber.d("toDomain: itemsByDate keys = ${itemsByDate.keys}")
     val festivalsByDate = festivals.associateBy { it.date }
 
     // Create days for each date in range
@@ -152,6 +158,7 @@ fun MealPlanEntity.toDomain(
         .map { date ->
             val dateStr = date.format(dateFormatter)
             val dayItems = itemsByDate[dateStr] ?: emptyList()
+            Timber.d("toDomain: Date $dateStr has ${dayItems.size} items")
             val festival = festivalsByDate[dateStr]
 
             MealPlanDay(

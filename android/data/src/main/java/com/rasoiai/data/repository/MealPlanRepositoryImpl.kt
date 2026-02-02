@@ -40,13 +40,20 @@ class MealPlanRepositoryImpl @Inject constructor(
 
     override fun getMealPlanForDate(date: LocalDate): Flow<MealPlan?> {
         val dateStr = date.format(dateFormatter)
+        Timber.d("getMealPlanForDate: Looking for date $dateStr")
 
         return mealPlanDao.getMealPlanForDate(dateStr).map { entity ->
             if (entity != null) {
+                Timber.d("Found meal plan entity: ${entity.id}, range: ${entity.weekStartDate} - ${entity.weekEndDate}")
                 val items = mealPlanDao.getMealPlanItemsSync(entity.id)
+                Timber.d("Loaded ${items.size} items for plan ${entity.id}")
+                items.take(5).forEach { item ->
+                    Timber.d("  Item: ${item.date} | ${item.mealType} | ${item.recipeName}")
+                }
                 val festivals = mealPlanDao.getFestivalsForMealPlan(entity.id)
                 entity.toDomain(items, festivals)
             } else {
+                Timber.d("No meal plan found for date $dateStr, will fetch from API")
                 // Try to fetch from API if online and no local data
                 if (networkMonitor.isOnline.first()) {
                     fetchAndCacheMealPlan(date)
@@ -75,7 +82,17 @@ class MealPlanRepositoryImpl @Inject constructor(
             val items = response.toItemEntities()
             val festivals = response.toFestivalEntities()
 
+            Timber.d("generateMealPlan: API response has ${response.days.size} days")
+            Timber.d("generateMealPlan: Created ${items.size} item entities")
+            items.take(5).forEach { item ->
+                Timber.d("  Generated item: ${item.date} | ${item.mealType} | ${item.recipeName}")
+            }
+
             mealPlanDao.replaceMealPlan(entity, items, festivals)
+
+            // Verify items were saved correctly
+            val savedItems = mealPlanDao.getMealPlanItemsSync(entity.id)
+            Timber.d("generateMealPlan: Verified ${savedItems.size} items saved to Room")
 
             Timber.i("Meal plan generated and cached: ${response.id}")
 
