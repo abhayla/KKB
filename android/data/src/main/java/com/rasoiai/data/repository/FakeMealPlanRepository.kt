@@ -139,6 +139,59 @@ class FakeMealPlanRepository @Inject constructor() : MealPlanRepository {
         return Result.success(Unit)
     }
 
+    override suspend fun addRecipeToMeal(
+        mealPlanId: String,
+        date: LocalDate,
+        mealType: MealType,
+        recipeId: String,
+        recipeName: String,
+        recipeImageUrl: String?,
+        prepTimeMinutes: Int,
+        calories: Int
+    ): Result<MealPlan> {
+        return try {
+            val newItem = MealItem(
+                id = UUID.randomUUID().toString(),
+                recipeId = recipeId,
+                recipeName = recipeName,
+                recipeImageUrl = recipeImageUrl,
+                prepTimeMinutes = prepTimeMinutes,
+                calories = calories,
+                isLocked = false,
+                order = 0,
+                dietaryTags = listOf(DietaryTag.VEGETARIAN)
+            )
+
+            val updatedPlans = mealPlans.value.map { plan ->
+                if (plan.id == mealPlanId) {
+                    plan.copy(
+                        days = plan.days.map { day ->
+                            if (day.date == date) {
+                                addMealToDay(day, mealType, newItem)
+                            } else day
+                        },
+                        updatedAt = System.currentTimeMillis()
+                    )
+                } else plan
+            }
+            mealPlans.value = updatedPlans
+            val updatedPlan = updatedPlans.find { it.id == mealPlanId }
+                ?: return Result.failure(Exception("Meal plan not found"))
+            Result.success(updatedPlan)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    private fun addMealToDay(day: MealPlanDay, mealType: MealType, newItem: MealItem): MealPlanDay {
+        return when (mealType) {
+            MealType.BREAKFAST -> day.copy(breakfast = day.breakfast + newItem)
+            MealType.LUNCH -> day.copy(lunch = day.lunch + newItem)
+            MealType.DINNER -> day.copy(dinner = day.dinner + newItem)
+            MealType.SNACKS -> day.copy(snacks = day.snacks + newItem)
+        }
+    }
+
     private fun removeMealFromDay(day: MealPlanDay, mealType: MealType, recipeId: String): MealPlanDay {
         fun removeMeal(meals: List<MealItem>): List<MealItem> {
             return meals.filter { meal -> meal.recipeId != recipeId || meal.isLocked }

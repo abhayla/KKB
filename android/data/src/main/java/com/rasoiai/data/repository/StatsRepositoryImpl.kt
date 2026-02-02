@@ -3,9 +3,11 @@ package com.rasoiai.data.repository
 import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.data.local.dao.StatsDao
 import com.rasoiai.data.local.entity.AchievementEntity
+import com.rasoiai.data.local.entity.CookedRecipeEntity
 import com.rasoiai.data.local.entity.CookingDayEntity
 import com.rasoiai.data.local.entity.CookingStreakEntity
 import com.rasoiai.data.local.entity.WeeklyChallengeEntity
+import java.util.UUID
 import com.rasoiai.data.local.mapper.toDomain
 import com.rasoiai.data.remote.api.RasoiApiService
 import com.rasoiai.domain.model.Achievement
@@ -322,6 +324,80 @@ class StatsRepositoryImpl @Inject constructor(
             )
             statsDao.insertWeeklyChallenge(challenge)
             Timber.d("Initialized weekly challenge")
+        }
+    }
+
+    override suspend fun recordCookedRecipe(
+        recipeId: String,
+        recipeName: String,
+        cuisineType: String
+    ): Result<Unit> {
+        return try {
+            val today = LocalDate.now()
+            val cookedRecipe = CookedRecipeEntity(
+                id = UUID.randomUUID().toString(),
+                recipeId = recipeId,
+                recipeName = recipeName,
+                cuisineType = cuisineType,
+                cookedDate = today.format(DateTimeFormatter.ISO_DATE),
+                createdAt = System.currentTimeMillis()
+            )
+
+            statsDao.insertCookedRecipe(cookedRecipe)
+            Timber.i("Recorded cooked recipe: $recipeName ($cuisineType)")
+
+            // Also record the meal and check achievements
+            recordCookedMeal()
+
+            // Check for cuisine explorer achievement
+            val uniqueCuisines = statsDao.getUniqueCuisinesCount()
+            if (uniqueCuisines >= 5) {
+                val achievement = statsDao.getAchievementById("five_cuisines")
+                if (achievement?.isUnlocked == false) {
+                    val todayStr = today.format(DateTimeFormatter.ISO_DATE)
+                    statsDao.updateAchievement(achievement.copy(isUnlocked = true, unlockedDate = todayStr))
+                    Timber.i("Achievement unlocked: Cuisine Explorer")
+                }
+            }
+
+            // Check for fifty meals achievement
+            val totalCooked = statsDao.getTotalCookedRecipesCount()
+            if (totalCooked >= 50) {
+                val achievement = statsDao.getAchievementById("fifty_meals")
+                if (achievement?.isUnlocked == false) {
+                    val todayStr = today.format(DateTimeFormatter.ISO_DATE)
+                    statsDao.updateAchievement(achievement.copy(isUnlocked = true, unlockedDate = todayStr))
+                    Timber.i("Achievement unlocked: Fifty Feasts")
+                }
+            }
+
+            // Check for ten new recipes achievement
+            val uniqueRecipes = statsDao.getUniqueCookedRecipesCount()
+            if (uniqueRecipes >= 10) {
+                val achievement = statsDao.getAchievementById("ten_new_recipes")
+                if (achievement?.isUnlocked == false) {
+                    val todayStr = today.format(DateTimeFormatter.ISO_DATE)
+                    statsDao.updateAchievement(achievement.copy(isUnlocked = true, unlockedDate = todayStr))
+                    Timber.i("Achievement unlocked: Recipe Pioneer")
+                }
+            }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to record cooked recipe")
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getCuisineBreakdown(): Result<List<Pair<String, Int>>> {
+        return try {
+            val breakdown = statsDao.getCuisineBreakdown()
+            val result = breakdown.map { it.cuisineType to it.count }
+            Timber.d("Cuisine breakdown: $result")
+            Result.success(result)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get cuisine breakdown")
+            Result.failure(e)
         }
     }
 }

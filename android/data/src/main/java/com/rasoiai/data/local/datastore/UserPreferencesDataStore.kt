@@ -109,6 +109,13 @@ class UserPreferencesDataStore @Inject constructor(
         }.first()
     }
 
+    override suspend fun updateAccessToken(accessToken: String, expiresInSeconds: Long) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.ACCESS_TOKEN] = accessToken
+            prefs[PreferencesKeys.TOKEN_EXPIRY] = System.currentTimeMillis() + (expiresInSeconds * 1000)
+        }
+    }
+
     override suspend fun clearAuthTokens() {
         context.dataStore.edit { prefs ->
             prefs.remove(PreferencesKeys.ACCESS_TOKEN)

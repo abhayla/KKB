@@ -91,8 +91,10 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rasoiai.app.presentation.common.TestTags
+import com.rasoiai.app.presentation.home.components.AddRecipeSheet
 import com.rasoiai.app.presentation.home.components.RasoiBottomNavigation
 import com.rasoiai.app.presentation.navigation.Screen
+import com.rasoiai.domain.model.Recipe
 import com.rasoiai.app.presentation.theme.DietaryColors
 import com.rasoiai.app.presentation.theme.RasoiAITheme
 import com.rasoiai.app.presentation.theme.spacing
@@ -166,6 +168,7 @@ fun HomeScreen(
         onRemoveRecipeDirect = viewModel::removeRecipeFromMealDirect,
         onAddRecipeClick = viewModel::showAddRecipeSheet,  // Add Recipe button (Issue #4)
         onDismissAddRecipeSheet = viewModel::dismissAddRecipeSheet,
+        onSelectAddRecipe = viewModel::addRecipeToMeal,  // Issue #23: Recipe selection
         onBottomNavItemClick = { screen ->
             when (screen) {
                 Screen.Home -> { /* Already on Home */ }
@@ -206,6 +209,7 @@ private fun HomeScreenContent(
     onRemoveRecipeDirect: (MealItem, MealType) -> Unit,
     onAddRecipeClick: (MealType) -> Unit,
     onDismissAddRecipeSheet: () -> Unit,
+    onSelectAddRecipe: (Recipe) -> Unit,
     onBottomNavItemClick: (Screen) -> Unit
 ) {
     Scaffold(
@@ -445,8 +449,10 @@ private fun HomeScreenContent(
     if (uiState.showAddRecipeSheet && uiState.addRecipeMealType != null) {
         AddRecipeSheet(
             mealType = uiState.addRecipeMealType,
+            suggestedRecipes = uiState.addRecipeSuggestions,
+            favoriteRecipes = uiState.addRecipeFavorites,
             onDismiss = onDismissAddRecipeSheet,
-            onSelectRecipe = { /* TODO: Implement recipe selection */ }
+            onRecipeSelected = onSelectAddRecipe
         )
     }
 }
@@ -1419,103 +1425,6 @@ private fun SwapRecipeGridItem(
     }
 }
 
-/**
- * Bottom sheet for adding a recipe to a meal slot
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun AddRecipeSheet(
-    mealType: MealType,
-    onDismiss: () -> Unit,
-    onSelectRecipe: (String) -> Unit
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var searchQuery by rememberSaveable { mutableStateOf("") }
-
-    val mealTypeName = when (mealType) {
-        MealType.BREAKFAST -> "Breakfast"
-        MealType.LUNCH -> "Lunch"
-        MealType.SNACKS -> "Snacks"
-        MealType.DINNER -> "Dinner"
-    }
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        modifier = Modifier.testTag(TestTags.ADD_RECIPE_SHEET)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = spacing.md)
-        ) {
-            Text(
-                text = "Add to $mealTypeName",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = spacing.sm)
-            )
-
-            Text(
-                text = "Search for a recipe to add",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = spacing.md)
-            )
-
-            // Search Bar
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Search recipes...") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = null
-                    )
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(spacing.sm)
-            )
-
-            Spacer(modifier = Modifier.height(spacing.lg))
-
-            // Placeholder for recipe suggestions
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = spacing.xl),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Recipe search coming soon",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "Use AI Chat to add specific recipes",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(top = spacing.xs)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(spacing.md))
-
-            // Cancel Button
-            OutlinedButton(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(spacing.sm)
-            ) {
-                Text("Cancel")
-            }
-
-            Spacer(modifier = Modifier.height(spacing.xl))
-        }
-    }
-}
 
 @Preview(showBackground = true, backgroundColor = 0xFFFDFAF4)
 @Preview(

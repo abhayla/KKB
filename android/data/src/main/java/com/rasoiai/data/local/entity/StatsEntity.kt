@@ -56,3 +56,25 @@ data class WeeklyChallengeEntity(
     val weekStartDate: String, // ISO date format
     val weekEndDate: String // ISO date format
 )
+
+/**
+ * Tracks cooked recipes for cuisine breakdown statistics.
+ */
+@Entity(tableName = "cooked_recipes")
+data class CookedRecipeEntity(
+    @PrimaryKey
+    val id: String,
+    val recipeId: String,
+    val recipeName: String,
+    val cuisineType: String, // NORTH, SOUTH, EAST, WEST
+    val cookedDate: String, // ISO date format
+    val createdAt: Long = System.currentTimeMillis()
+)
+
+/**
+ * Result class for cuisine count queries.
+ */
+data class CuisineCountResult(
+    val cuisineType: String,
+    val count: Int
+)

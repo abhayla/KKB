@@ -34,10 +34,10 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DataModule {
 
-    // Use 10.0.2.2 to access host machine's localhost from Android emulator
-    // TODO: Use BuildConfig to switch between debug/release URLs
     // Note: Base URL should NOT include /api/v1/ since endpoint paths already include it
-    private const val BASE_URL = "http://10.0.2.2:8000/"
+    // BASE_URL is now configured via BuildConfig in build.gradle.kts
+    // - Debug: http://10.0.2.2:8000/ (emulator accessing host machine)
+    // - Release: https://api.rasoiai.com/
     private const val TIMEOUT_SECONDS = 30L
 
     @Provides
@@ -66,7 +66,7 @@ object DataModule {
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(BuildConfig.BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

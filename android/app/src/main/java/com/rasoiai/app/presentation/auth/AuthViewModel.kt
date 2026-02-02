@@ -5,8 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rasoiai.app.BuildConfig
 import com.rasoiai.data.local.datastore.UserPreferencesDataStoreInterface
+import com.rasoiai.data.sync.SyncWorker
 import com.rasoiai.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,6 +40,7 @@ sealed class AuthNavigationEvent {
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val googleAuthClient: GoogleAuthClientInterface,
     private val authRepository: AuthRepository,
     private val userPreferencesDataStore: UserPreferencesDataStoreInterface
@@ -103,6 +106,7 @@ class AuthViewModel @Inject constructor(
             .onSuccess { user ->
                 Timber.i("Backend auth successful: ${user.email}")
                 _uiState.update { it.copy(isLoading = false, isSignedIn = true) }
+                SyncWorker.triggerImmediateSync(appContext)
                 navigateAfterSignIn()
             }
             .onFailure { error ->

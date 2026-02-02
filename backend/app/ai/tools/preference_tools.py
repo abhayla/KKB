@@ -150,32 +150,43 @@ PREFERENCE_TOOLS = [
 # System prompt for chat with config update capabilities
 CONFIG_CHAT_SYSTEM_PROMPT = """You are RasoiAI, a friendly and knowledgeable Indian cooking assistant. You help users with:
 
-1. **Meal Planning Configuration** - You can modify users' meal planning preferences using the available tools:
+1. **Meal Plan Queries and Modifications** - You can view and modify users' current meal plans:
+   - Query what meals are planned ("What's for dinner today?") → use query_current_meals
+   - Swap recipes ("I don't feel like dal, change it to something else") → use swap_meal_recipe
+   - Add recipes ("Add paneer to my lunch tomorrow") → use add_recipe_to_meal
+   - Remove recipes ("Remove the paratha from breakfast") → use remove_recipe_from_meal
+
+2. **Meal Planning Configuration** - You can modify users' meal planning preferences:
    - Add/remove INCLUDE rules (e.g., "I want chai every morning")
    - Add/remove EXCLUDE rules (e.g., "I don't want mushroom")
    - Manage allergies (e.g., "I'm allergic to peanuts")
    - Manage dislikes (e.g., "I don't like karela")
    - Update cooking preferences (e.g., "I only have 30 minutes on weekdays")
 
-2. **Cooking Help** - Answer questions about:
+3. **Cooking Help** - Answer questions about:
    - Indian recipes and cooking techniques
    - Ingredient substitutions
    - Regional cuisines (North, South, East, West India)
    - Festival foods and traditional dishes
 
 **Important Guidelines:**
-- When users express preferences about their meal plans, USE THE TOOLS to update their configuration
+- When users ask about today's/tomorrow's meals, USE THE TOOLS to query their plan
+- When users want to change specific meals, use the meal plan tools
+- When users express general preferences, use the preference tools
 - Parse user intent carefully:
+  - "What's for dinner?" → query_current_meals with date='today' and meal_type='DINNER'
+  - "Change my lunch" or "Swap the dal" → swap_meal_recipe
+  - "Add paneer to dinner" → add_recipe_to_meal
+  - "Remove the roti" → remove_recipe_from_meal
   - "I want X every day" → ADD INCLUDE rule with DAILY frequency
-  - "Include X twice a week" → ADD INCLUDE rule with TIMES_PER_WEEK frequency
-  - "Never give me X" or "I don't want X" → ADD EXCLUDE rule with NEVER frequency
-  - "Remove the X rule" → REMOVE the rule
+  - "I want X twice a week" → ADD INCLUDE rule with TIMES_PER_WEEK frequency (times_per_week=2)
+  - "Never give me X" → ADD EXCLUDE rule with NEVER frequency
   - "I'm allergic to X" → ADD allergy
-  - "I don't like X" (preference, not allergy) → ADD dislike
   - "Show my settings" → show_config
 
 - After making changes, summarize what was changed
-- If there's a conflict (e.g., user has EXCLUDE for something but wants to INCLUDE it), explain the conflict and ask for resolution
+- If a recipe is locked, explain that it cannot be modified
+- If no meal plan exists, suggest generating one
 - Be warm and use occasional Hindi/Indian cooking terms naturally
 - Keep responses concise but helpful
 
@@ -231,3 +242,108 @@ def format_config_for_display(config: dict) -> str:
             lines.append(f"  - Busy Days: {', '.join(p['busy_days'])}")
 
     return "\n".join(lines) if lines else "No configuration set."
+
+
+# Meal plan related tools
+MEAL_PLAN_TOOLS = [
+    {
+        "name": "query_current_meals",
+        "description": "Query the user's current meal plan for a specific date or meal type. "
+                      "Use this to tell users what meals are planned for today, tomorrow, or a specific day.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string",
+                    "description": "The date to query in YYYY-MM-DD format. Use 'today' or 'tomorrow' for relative dates."
+                },
+                "meal_type": {
+                    "type": "string",
+                    "enum": ["BREAKFAST", "LUNCH", "DINNER", "SNACKS", "ALL"],
+                    "description": "Which meal to query. Use 'ALL' to get all meals for the day."
+                }
+            },
+            "required": ["date"]
+        }
+    },
+    {
+        "name": "swap_meal_recipe",
+        "description": "Swap a recipe in the user's meal plan with a different recipe suggestion. "
+                      "Use this when the user wants to change a specific meal to something else.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string",
+                    "description": "The date of the meal to swap in YYYY-MM-DD format. Use 'today' or 'tomorrow' for relative dates."
+                },
+                "meal_type": {
+                    "type": "string",
+                    "enum": ["BREAKFAST", "LUNCH", "DINNER", "SNACKS"],
+                    "description": "Which meal slot to swap"
+                },
+                "current_recipe_name": {
+                    "type": "string",
+                    "description": "The name of the current recipe to replace (optional, if not specified will swap the first item)"
+                },
+                "requested_recipe_name": {
+                    "type": "string",
+                    "description": "The name of the recipe the user wants instead (optional, if not specified will suggest alternatives)"
+                }
+            },
+            "required": ["date", "meal_type"]
+        }
+    },
+    {
+        "name": "add_recipe_to_meal",
+        "description": "Add a recipe to a meal slot in the user's meal plan. "
+                      "Use this when the user wants to add a specific dish to their meal plan.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string",
+                    "description": "The date to add the meal in YYYY-MM-DD format. Use 'today' or 'tomorrow' for relative dates."
+                },
+                "meal_type": {
+                    "type": "string",
+                    "enum": ["BREAKFAST", "LUNCH", "DINNER", "SNACKS"],
+                    "description": "Which meal slot to add to"
+                },
+                "recipe_name": {
+                    "type": "string",
+                    "description": "The name of the recipe to add"
+                }
+            },
+            "required": ["date", "meal_type", "recipe_name"]
+        }
+    },
+    {
+        "name": "remove_recipe_from_meal",
+        "description": "Remove a recipe from a meal slot in the user's meal plan. "
+                      "Use this when the user wants to remove a specific dish from their plan.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string",
+                    "description": "The date of the meal in YYYY-MM-DD format. Use 'today' or 'tomorrow' for relative dates."
+                },
+                "meal_type": {
+                    "type": "string",
+                    "enum": ["BREAKFAST", "LUNCH", "DINNER", "SNACKS"],
+                    "description": "Which meal slot to remove from"
+                },
+                "recipe_name": {
+                    "type": "string",
+                    "description": "The name of the recipe to remove"
+                }
+            },
+            "required": ["date", "meal_type", "recipe_name"]
+        }
+    }
+]
+
+
+# Combined tools for chat assistant
+ALL_CHAT_TOOLS = PREFERENCE_TOOLS + MEAL_PLAN_TOOLS

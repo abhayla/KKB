@@ -83,6 +83,9 @@ class StatsViewModelTest {
         coEvery { mockStatsRepository.getMonthlyStats(any()) } returns Result.success(MonthlyStats(mealsCooked = 20, newRecipes = 15, averageRating = 4.5f))
         coEvery { mockStatsRepository.getCookingDays(any()) } returns Result.success(emptyList())
         coEvery { mockStatsRepository.getLeaderboard(any()) } returns Result.success(testLeaderboard)
+        coEvery { mockStatsRepository.getCuisineBreakdown() } returns Result.success(
+            listOf("North" to 10, "South" to 8, "East" to 5, "West" to 7)
+        )
     }
 
     @AfterEach

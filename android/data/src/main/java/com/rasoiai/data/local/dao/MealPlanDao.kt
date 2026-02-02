@@ -44,6 +44,12 @@ interface MealPlanDao {
     @Query("SELECT * FROM meal_plan_items WHERE mealPlanId = :mealPlanId AND date = :date ORDER BY mealType, `order`")
     fun getMealPlanItemsForDate(mealPlanId: String, date: String): Flow<List<MealPlanItemEntity>>
 
+    @Query("SELECT * FROM meal_plan_items WHERE mealPlanId = :mealPlanId AND date = :date AND mealType = :mealType ORDER BY `order`")
+    suspend fun getMealPlanItemsForDateAndType(mealPlanId: String, date: String, mealType: String): List<MealPlanItemEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMealPlanItem(item: MealPlanItemEntity)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMealPlanItems(items: List<MealPlanItemEntity>)
 

@@ -7,6 +7,8 @@ import com.rasoiai.data.remote.dto.SwapMealRequest
 import com.rasoiai.data.remote.dto.UserResponse
 import com.rasoiai.data.remote.dto.AuthRequest
 import com.rasoiai.data.remote.dto.AuthResponse
+import com.rasoiai.data.remote.dto.RefreshTokenRequest
+import com.rasoiai.data.remote.dto.RefreshTokenResponse
 import com.rasoiai.data.remote.dto.NotificationsResponse
 import com.rasoiai.data.remote.dto.FcmTokenRequest
 import com.rasoiai.data.remote.dto.SuccessResponse
@@ -23,6 +25,9 @@ interface RasoiApiService {
     // Auth
     @POST("api/v1/auth/firebase")
     suspend fun authenticateWithFirebase(@Body request: AuthRequest): AuthResponse
+
+    @POST("api/v1/auth/refresh")
+    suspend fun refreshToken(@Body request: RefreshTokenRequest): RefreshTokenResponse
 
     // User
     @GET("api/v1/users/me")

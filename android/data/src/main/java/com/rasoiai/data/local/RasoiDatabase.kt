@@ -36,6 +36,7 @@ import com.rasoiai.data.local.entity.NutritionGoalEntity
 import com.rasoiai.data.local.entity.ChatMessageEntity
 import com.rasoiai.data.local.entity.NotificationEntity
 import com.rasoiai.data.local.entity.OfflineQueueEntity
+import com.rasoiai.data.local.entity.CookedRecipeEntity
 
 @Database(
     entities = [
@@ -56,9 +57,10 @@ import com.rasoiai.data.local.entity.OfflineQueueEntity
         NutritionGoalEntity::class,
         ChatMessageEntity::class,
         NotificationEntity::class,
-        OfflineQueueEntity::class
+        OfflineQueueEntity::class,
+        CookedRecipeEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -78,6 +80,27 @@ abstract class RasoiDatabase : RoomDatabase() {
 
     companion object {
         private const val DATABASE_NAME = "rasoi_database"
+
+        /**
+         * Migration from version 8 to 9: Add cooked_recipes table for cuisine breakdown stats.
+         */
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Create cooked_recipes table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS cooked_recipes (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        recipeId TEXT NOT NULL,
+                        recipeName TEXT NOT NULL,
+                        cuisineType TEXT NOT NULL,
+                        cookedDate TEXT NOT NULL,
+                        createdAt INTEGER NOT NULL
+                    )
+                """)
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_cooked_recipes_cuisineType ON cooked_recipes (cuisineType)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_cooked_recipes_cookedDate ON cooked_recipes (cookedDate)")
+            }
+        }
 
         /**
          * Migration from version 7 to 8: Add notifications and offline_queue tables.
@@ -128,7 +151,7 @@ abstract class RasoiDatabase : RoomDatabase() {
                 RasoiDatabase::class.java,
                 DATABASE_NAME
             )
-                .addMigrations(MIGRATION_7_8)
+                .addMigrations(MIGRATION_7_8, MIGRATION_8_9)
                 .build()
         }
     }

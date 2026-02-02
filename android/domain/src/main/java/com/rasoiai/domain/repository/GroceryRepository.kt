@@ -2,6 +2,7 @@ package com.rasoiai.domain.repository
 
 import com.rasoiai.domain.model.GroceryItem
 import com.rasoiai.domain.model.GroceryList
+import com.rasoiai.domain.model.Ingredient
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 
@@ -50,4 +51,19 @@ interface GroceryRepository {
      * Returns the count of items cleared.
      */
     suspend fun clearPurchasedItems(): Result<Int>
+
+    /**
+     * Add ingredients from a recipe to the grocery list.
+     * Handles duplicate ingredients by merging quantities where possible.
+     *
+     * @param ingredients List of ingredients to add
+     * @param recipeId The recipe these ingredients come from
+     * @param recipeName The name of the recipe for reference
+     * @return Result containing the list of added/merged grocery items
+     */
+    suspend fun addIngredientsFromRecipe(
+        ingredients: List<Ingredient>,
+        recipeId: String,
+        recipeName: String
+    ): Result<List<GroceryItem>>
 }

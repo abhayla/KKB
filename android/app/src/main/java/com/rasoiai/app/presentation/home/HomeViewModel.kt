@@ -2,11 +2,13 @@ package com.rasoiai.app.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rasoiai.domain.model.DietaryTag
 import com.rasoiai.domain.model.Festival
 import com.rasoiai.domain.model.MealItem
 import com.rasoiai.domain.model.MealPlan
 import com.rasoiai.domain.model.MealPlanDay
 import com.rasoiai.domain.model.MealType
+import com.rasoiai.domain.model.Recipe
 import com.rasoiai.domain.repository.MealPlanRepository
 import com.rasoiai.domain.repository.RecipeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,6 +17,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -50,7 +53,10 @@ data class HomeUiState(
     val mealLockStates: Map<Pair<LocalDate, MealType>, Boolean> = emptyMap(),
     // Add Recipe Sheet state
     val showAddRecipeSheet: Boolean = false,
-    val addRecipeMealType: MealType? = null
+    val addRecipeMealType: MealType? = null,
+    val addRecipeSuggestions: List<Recipe> = emptyList(),
+    val addRecipeFavorites: List<Recipe> = emptyList(),
+    val isLoadingAddRecipeSuggestions: Boolean = false
 ) {
     /** Check if the selected day is locked */
     val isSelectedDayLocked: Boolean
@@ -558,10 +564,80 @@ class HomeViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 showAddRecipeSheet = true,
-                addRecipeMealType = mealType
+                addRecipeMealType = mealType,
+                isLoadingAddRecipeSuggestions = true
             )
         }
         Timber.i("Show Add Recipe sheet for $mealType")
+        fetchAddRecipeSuggestions(mealType)
+    }
+
+    /**
+     * Fetch recipe suggestions for the Add Recipe sheet
+     */
+    private fun fetchAddRecipeSuggestions(mealType: MealType) {
+        viewModelScope.launch {
+            // Fetch suggestions based on meal type
+            recipeRepository.searchRecipes(mealType = mealType, limit = 20)
+                .onSuccess { recipes ->
+                    _uiState.update {
+                        it.copy(
+                            addRecipeSuggestions = recipes,
+                            isLoadingAddRecipeSuggestions = false
+                        )
+                    }
+                }
+                .onFailure { e ->
+                    Timber.e(e, "Failed to fetch recipe suggestions")
+                    _uiState.update {
+                        it.copy(
+                            addRecipeSuggestions = emptyList(),
+                            isLoadingAddRecipeSuggestions = false
+                        )
+                    }
+                }
+        }
+
+        // Fetch favorites
+        viewModelScope.launch {
+            try {
+                val favorites = recipeRepository.getFavoriteRecipes().first()
+                _uiState.update { it.copy(addRecipeFavorites = favorites) }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to fetch favorites")
+            }
+        }
+    }
+
+    /**
+     * Add a recipe to the current meal slot
+     */
+    fun addRecipeToMeal(recipe: Recipe) {
+        val state = _uiState.value
+        val mealPlan = state.mealPlan ?: return
+        val mealType = state.addRecipeMealType ?: return
+        val date = state.selectedDate
+
+        viewModelScope.launch {
+            mealPlanRepository.addRecipeToMeal(
+                mealPlanId = mealPlan.id,
+                date = date,
+                mealType = mealType,
+                recipeId = recipe.id,
+                recipeName = recipe.name,
+                recipeImageUrl = recipe.imageUrl,
+                prepTimeMinutes = recipe.prepTimeMinutes,
+                calories = recipe.nutrition?.calories ?: 0
+            ).onSuccess { updatedPlan ->
+                Timber.i("Recipe added to meal: ${recipe.name}")
+                updateStateWithMealPlan(updatedPlan)
+            }.onFailure { e ->
+                Timber.e(e, "Failed to add recipe to meal")
+                _uiState.update { it.copy(errorMessage = "Failed to add recipe") }
+            }
+        }
+
+        dismissAddRecipeSheet()
     }
 
     /**
@@ -571,7 +647,9 @@ class HomeViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 showAddRecipeSheet = false,
-                addRecipeMealType = null
+                addRecipeMealType = null,
+                addRecipeSuggestions = emptyList(),
+                addRecipeFavorites = emptyList()
             )
         }
     }

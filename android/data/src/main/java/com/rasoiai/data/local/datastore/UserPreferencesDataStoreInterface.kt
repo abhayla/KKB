@@ -22,6 +22,7 @@ interface UserPreferencesDataStoreInterface {
 
     suspend fun getAccessTokenSync(): String?
     suspend fun getRefreshToken(): String?
+    suspend fun updateAccessToken(accessToken: String, expiresInSeconds: Long)
     suspend fun clearAuthTokens()
     suspend fun saveOnboardingComplete(preferences: UserPreferences)
     suspend fun clearPreferences()

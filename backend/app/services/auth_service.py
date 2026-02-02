@@ -3,10 +3,11 @@
 from datetime import timedelta
 
 from app.config import settings
+from app.core.exceptions import AuthenticationError
 from app.core.firebase import verify_firebase_token
-from app.core.security import create_access_token
+from app.core.security import create_access_token, decode_access_token
 from app.repositories.user_repository import UserRepository
-from app.schemas.auth import AuthResponse, UserResponseForAuth
+from app.schemas.auth import AuthResponse, RefreshTokenResponse, UserResponseForAuth
 from app.schemas.user import UserPreferencesDto
 
 
@@ -77,4 +78,46 @@ async def authenticate_with_firebase(firebase_token: str) -> AuthResponse:
         token_type="bearer",
         expires_in=settings.access_token_expire_minutes * 60,
         user=user_response,
+    )
+
+
+async def refresh_access_token(refresh_token: str) -> RefreshTokenResponse:
+    """Refresh an access token using a valid refresh token.
+
+    Args:
+        refresh_token: The refresh token from initial authentication
+
+    Returns:
+        RefreshTokenResponse with new access token
+
+    Raises:
+        AuthenticationError: If refresh token is invalid or not a refresh token type
+    """
+    # Decode and validate the refresh token
+    payload = decode_access_token(refresh_token)
+
+    # Verify this is actually a refresh token
+    if payload.get("type") != "refresh":
+        raise AuthenticationError("Invalid token type: expected refresh token")
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise AuthenticationError("Token missing user ID")
+
+    # Verify user still exists
+    user_repo = UserRepository()
+    user = await user_repo.get_by_id(user_id)
+    if not user:
+        raise AuthenticationError("User not found")
+
+    # Create new access token
+    new_access_token = create_access_token(
+        data={"sub": user_id},
+        expires_delta=timedelta(minutes=settings.access_token_expire_minutes),
+    )
+
+    return RefreshTokenResponse(
+        access_token=new_access_token,
+        token_type="bearer",
+        expires_in=settings.access_token_expire_minutes * 60,
     )

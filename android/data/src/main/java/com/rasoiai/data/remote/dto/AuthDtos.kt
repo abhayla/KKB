@@ -7,6 +7,20 @@ data class AuthRequest(
     val firebaseToken: String
 )
 
+data class RefreshTokenRequest(
+    @SerializedName("refresh_token")
+    val refreshToken: String
+)
+
+data class RefreshTokenResponse(
+    @SerializedName("access_token")
+    val accessToken: String,
+    @SerializedName("token_type")
+    val tokenType: String,
+    @SerializedName("expires_in")
+    val expiresIn: Long
+)
+
 data class AuthResponse(
     @SerializedName("access_token")
     val accessToken: String,

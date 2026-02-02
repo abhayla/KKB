@@ -3,6 +3,7 @@ package com.rasoiai.app.presentation.chat
 import app.cash.turbine.test
 import com.rasoiai.domain.model.ChatMessage
 import com.rasoiai.domain.repository.ChatRepository
+import com.rasoiai.domain.repository.MealPlanRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -29,6 +30,7 @@ class ChatViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var mockChatRepository: ChatRepository
+    private lateinit var mockMealPlanRepository: MealPlanRepository
 
     private val testMessages = listOf(
         ChatMessage(
@@ -61,6 +63,7 @@ class ChatViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         mockChatRepository = mockk(relaxed = true)
+        mockMealPlanRepository = mockk(relaxed = true)
         coEvery { mockChatRepository.getMessages() } returns flowOf(testMessages)
         every { mockChatRepository.getQuickActions() } returns testQuickActions
     }
@@ -77,7 +80,7 @@ class ChatViewModelTest {
         @Test
         @DisplayName("Initial state should be loading")
         fun `initial state should be loading`() = runTest {
-            val viewModel = ChatViewModel(mockChatRepository)
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
 
             viewModel.uiState.test {
                 val initialState = awaitItem()
@@ -89,7 +92,7 @@ class ChatViewModelTest {
         @Test
         @DisplayName("After loading, messages should be populated")
         fun `after loading messages should be populated`() = runTest {
-            val viewModel = ChatViewModel(mockChatRepository)
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial with quick actions
@@ -106,7 +109,7 @@ class ChatViewModelTest {
         @Test
         @DisplayName("Quick actions should be loaded")
         fun `quick actions should be loaded`() = runTest {
-            val viewModel = ChatViewModel(mockChatRepository)
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
 
             viewModel.uiState.test {
                 val state = awaitItem()
@@ -124,7 +127,7 @@ class ChatViewModelTest {
         @Test
         @DisplayName("updateInputText should update input text")
         fun `updateInputText should update input text`() = runTest {
-            val viewModel = ChatViewModel(mockChatRepository)
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -143,7 +146,7 @@ class ChatViewModelTest {
             val responseMessage = ChatMessage(id = "msg-response", content = "Test response", isFromUser = false, timestamp = System.currentTimeMillis())
             coEvery { mockChatRepository.sendMessage(any()) } returns Result.success(responseMessage)
 
-            val viewModel = ChatViewModel(mockChatRepository)
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -166,7 +169,7 @@ class ChatViewModelTest {
         @Test
         @DisplayName("sendMessage with blank text should do nothing")
         fun `sendMessage with blank text should do nothing`() = runTest {
-            val viewModel = ChatViewModel(mockChatRepository)
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -185,7 +188,7 @@ class ChatViewModelTest {
             val responseMessage = ChatMessage(id = "msg-response", content = "Here is a suggestion", isFromUser = false, timestamp = System.currentTimeMillis())
             coEvery { mockChatRepository.sendMessage(any()) } returns Result.success(responseMessage)
 
-            val viewModel = ChatViewModel(mockChatRepository)
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -209,7 +212,7 @@ class ChatViewModelTest {
         @Test
         @DisplayName("toggleMenu should toggle menu visibility")
         fun `toggleMenu should toggle menu visibility`() = runTest {
-            val viewModel = ChatViewModel(mockChatRepository)
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial (menu hidden)
@@ -225,7 +228,7 @@ class ChatViewModelTest {
         @Test
         @DisplayName("dismissMenu should hide menu")
         fun `dismissMenu should hide menu`() = runTest {
-            val viewModel = ChatViewModel(mockChatRepository)
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -244,7 +247,7 @@ class ChatViewModelTest {
         @Test
         @DisplayName("showClearChatDialog should show dialog and dismiss menu")
         fun `showClearChatDialog should show dialog and dismiss menu`() = runTest {
-            val viewModel = ChatViewModel(mockChatRepository)
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -265,7 +268,7 @@ class ChatViewModelTest {
         @Test
         @DisplayName("dismissClearChatDialog should hide dialog")
         fun `dismissClearChatDialog should hide dialog`() = runTest {
-            val viewModel = ChatViewModel(mockChatRepository)
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -286,7 +289,7 @@ class ChatViewModelTest {
         fun `clearChatHistory should clear history`() = runTest {
             coEvery { mockChatRepository.clearHistory() } returns Result.success(Unit)
 
-            val viewModel = ChatViewModel(mockChatRepository)
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -311,7 +314,7 @@ class ChatViewModelTest {
         @Test
         @DisplayName("navigateBack should emit back event")
         fun `navigateBack should emit back event`() = runTest {
-            val viewModel = ChatViewModel(mockChatRepository)
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
 
             viewModel.navigationEvent.test {
                 viewModel.navigateBack()
@@ -324,7 +327,7 @@ class ChatViewModelTest {
         @Test
         @DisplayName("navigateToHome should emit home event")
         fun `navigateToHome should emit home event`() = runTest {
-            val viewModel = ChatViewModel(mockChatRepository)
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
 
             viewModel.navigationEvent.test {
                 viewModel.navigateToHome()
@@ -337,7 +340,7 @@ class ChatViewModelTest {
         @Test
         @DisplayName("navigateToRecipeDetail should emit recipe detail event")
         fun `navigateToRecipeDetail should emit recipe detail event`() = runTest {
-            val viewModel = ChatViewModel(mockChatRepository)
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
 
             viewModel.navigationEvent.test {
                 viewModel.navigateToRecipeDetail("recipe-123")
@@ -351,7 +354,7 @@ class ChatViewModelTest {
         @Test
         @DisplayName("navigateToGrocery should emit grocery event")
         fun `navigateToGrocery should emit grocery event`() = runTest {
-            val viewModel = ChatViewModel(mockChatRepository)
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
 
             viewModel.navigationEvent.test {
                 viewModel.navigateToGrocery()
@@ -364,7 +367,7 @@ class ChatViewModelTest {
         @Test
         @DisplayName("navigateToFavorites should emit favorites event")
         fun `navigateToFavorites should emit favorites event`() = runTest {
-            val viewModel = ChatViewModel(mockChatRepository)
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
 
             viewModel.navigationEvent.test {
                 viewModel.navigateToFavorites()
@@ -382,7 +385,7 @@ class ChatViewModelTest {
         @Test
         @DisplayName("onVoiceButtonClick should show coming soon message")
         fun `onVoiceButtonClick should show coming soon message`() = runTest {
-            val viewModel = ChatViewModel(mockChatRepository)
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -398,7 +401,7 @@ class ChatViewModelTest {
         @Test
         @DisplayName("onAttachmentButtonClick should show coming soon message")
         fun `onAttachmentButtonClick should show coming soon message`() = runTest {
-            val viewModel = ChatViewModel(mockChatRepository)
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -419,7 +422,7 @@ class ChatViewModelTest {
         @Test
         @DisplayName("clearError should clear error message")
         fun `clearError should clear error message`() = runTest {
-            val viewModel = ChatViewModel(mockChatRepository)
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -438,7 +441,7 @@ class ChatViewModelTest {
         fun `sendMessage failure should show error`() = runTest {
             coEvery { mockChatRepository.sendMessage(any()) } returns Result.failure(Exception("Network error"))
 
-            val viewModel = ChatViewModel(mockChatRepository)
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial

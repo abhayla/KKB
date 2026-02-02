@@ -134,6 +134,28 @@ class FakeStatsRepository @Inject constructor() : StatsRepository {
         return Result.success(Unit)
     }
 
+    override suspend fun recordCookedRecipe(
+        recipeId: String,
+        recipeName: String,
+        cuisineType: String
+    ): Result<Unit> {
+        delay(200)
+        // Fake implementation - just record the meal
+        return recordCookedMeal()
+    }
+
+    override suspend fun getCuisineBreakdown(): Result<List<Pair<String, Int>>> {
+        delay(200)
+        return Result.success(
+            listOf(
+                "North" to 18,
+                "South" to 12,
+                "East" to 6,
+                "West" to 9
+            )
+        )
+    }
+
     private fun createMockAchievements(): List<Achievement> = listOf(
         Achievement(
             id = "first-meal",

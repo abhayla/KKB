@@ -1,5 +1,6 @@
 package com.rasoiai.app.presentation.auth
 
+import android.content.Context
 import app.cash.turbine.test
 import com.google.firebase.auth.FirebaseUser
 import com.rasoiai.data.local.datastore.UserPreferencesDataStore
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Test
 class AuthViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
+    private lateinit var mockContext: Context
     private lateinit var mockGoogleAuthClient: GoogleAuthClient
     private lateinit var mockAuthRepository: AuthRepository
     private lateinit var mockUserPreferencesDataStore: UserPreferencesDataStore
@@ -33,6 +35,7 @@ class AuthViewModelTest {
     @BeforeEach
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+        mockContext = mockk(relaxed = true)
         mockGoogleAuthClient = mockk(relaxed = true)
         mockAuthRepository = mockk(relaxed = true)
         mockUserPreferencesDataStore = mockk(relaxed = true)
@@ -50,7 +53,7 @@ class AuthViewModelTest {
         every { mockGoogleAuthClient.isSignedIn } returns false
         every { mockGoogleAuthClient.currentUser } returns null
 
-        val viewModel = AuthViewModel(mockGoogleAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
+        val viewModel = AuthViewModel(mockContext, mockGoogleAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
 
         viewModel.uiState.test {
             val state = awaitItem()
@@ -68,7 +71,7 @@ class AuthViewModelTest {
         every { mockGoogleAuthClient.isSignedIn } returns true
         every { mockGoogleAuthClient.currentUser } returns mockUser
 
-        val viewModel = AuthViewModel(mockGoogleAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
+        val viewModel = AuthViewModel(mockContext, mockGoogleAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
 
         viewModel.uiState.test {
             val state = awaitItem()
@@ -84,7 +87,7 @@ class AuthViewModelTest {
         every { mockGoogleAuthClient.isSignedIn } returns true
         every { mockGoogleAuthClient.currentUser } returns mockUser
 
-        val viewModel = AuthViewModel(mockGoogleAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
+        val viewModel = AuthViewModel(mockContext, mockGoogleAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
 
         // Subscribe to navigation events BEFORE advancing, so we don't miss the event
         viewModel.navigationEvent.test {
@@ -106,7 +109,7 @@ class AuthViewModelTest {
         every { mockGoogleAuthClient.currentUser } returns mockUser
         every { mockUserPreferencesDataStore.isOnboarded } returns flowOf(true)
 
-        val viewModel = AuthViewModel(mockGoogleAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
+        val viewModel = AuthViewModel(mockContext, mockGoogleAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
 
         // Subscribe to navigation events BEFORE advancing, so we don't miss the event
         viewModel.navigationEvent.test {
@@ -125,7 +128,7 @@ class AuthViewModelTest {
         every { mockGoogleAuthClient.isSignedIn } returns false
         every { mockGoogleAuthClient.currentUser } returns null
 
-        val viewModel = AuthViewModel(mockGoogleAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
+        val viewModel = AuthViewModel(mockContext, mockGoogleAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
 
         viewModel.uiState.test {
             viewModel.clearError()

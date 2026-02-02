@@ -3,13 +3,17 @@ package com.rasoiai.app.presentation.chat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rasoiai.domain.model.ChatMessage
+import com.rasoiai.domain.model.MealType
 import com.rasoiai.domain.repository.ChatRepository
+import com.rasoiai.domain.repository.MealPlanRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.LocalDate
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -44,7 +48,8 @@ sealed class ChatNavigationEvent {
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
-    private val chatRepository: ChatRepository
+    private val chatRepository: ChatRepository,
+    private val mealPlanRepository: MealPlanRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ChatUiState())
@@ -194,12 +199,59 @@ class ChatViewModel @Inject constructor(
 
     // region Meal Plan Actions
 
-    fun addRecipeToMealPlan(recipeId: String) {
+    /**
+     * Add a recipe to the user's meal plan for today.
+     * Uses the current time to determine appropriate meal type.
+     */
+    fun addRecipeToMealPlan(recipeId: String, recipeName: String = "Recipe") {
         viewModelScope.launch {
-            // TODO: Implement actual meal plan integration via MealPlanRepository
-            // For now, show a confirmation message
-            Timber.i("Adding recipe $recipeId to meal plan")
-            _uiState.update { it.copy(errorMessage = "Recipe added to your meal plan!") }
+            val today = LocalDate.now()
+            val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+
+            // Determine meal type based on time of day
+            val mealType = when {
+                hour in 6..10 -> MealType.BREAKFAST
+                hour in 11..15 -> MealType.LUNCH
+                hour in 16..18 -> MealType.SNACKS
+                else -> MealType.DINNER
+            }
+
+            Timber.i("Adding recipe $recipeId to $mealType")
+
+            try {
+                // Get current meal plan
+                val mealPlan = mealPlanRepository.getMealPlanForDate(today).first()
+
+                if (mealPlan != null) {
+                    mealPlanRepository.addRecipeToMeal(
+                        mealPlanId = mealPlan.id,
+                        date = today,
+                        mealType = mealType,
+                        recipeId = recipeId,
+                        recipeName = recipeName,
+                        recipeImageUrl = null,
+                        prepTimeMinutes = 30,
+                        calories = 0
+                    ).onSuccess {
+                        val mealTypeDisplay = mealType.name.lowercase().replaceFirstChar { c -> c.uppercase() }
+                        _uiState.update {
+                            it.copy(errorMessage = "Added $recipeName to $mealTypeDisplay!")
+                        }
+                    }.onFailure { e ->
+                        Timber.e(e, "Failed to add recipe to meal plan")
+                        _uiState.update {
+                            it.copy(errorMessage = "Failed to add recipe to meal plan")
+                        }
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(errorMessage = "No meal plan available. Generate one first!")
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error accessing meal plan")
+                _uiState.update { it.copy(errorMessage = "Failed to access meal plan") }
+            }
         }
     }
 

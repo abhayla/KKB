@@ -2,8 +2,13 @@
 
 from fastapi import APIRouter
 
-from app.schemas.auth import AuthRequest, AuthResponse
-from app.services.auth_service import authenticate_with_firebase
+from app.schemas.auth import (
+    AuthRequest,
+    AuthResponse,
+    RefreshTokenRequest,
+    RefreshTokenResponse,
+)
+from app.services.auth_service import authenticate_with_firebase, refresh_access_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -16,3 +21,13 @@ async def firebase_auth(request: AuthRequest) -> AuthResponse:
     and returns a JWT token for subsequent API calls.
     """
     return await authenticate_with_firebase(request.firebase_token)
+
+
+@router.post("/refresh", response_model=RefreshTokenResponse)
+async def refresh_token(request: RefreshTokenRequest) -> RefreshTokenResponse:
+    """Refresh an access token using a valid refresh token.
+
+    This endpoint takes a refresh token and returns a new access token.
+    Use this when the access token expires to avoid re-authentication.
+    """
+    return await refresh_access_token(request.refresh_token)

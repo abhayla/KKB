@@ -53,4 +53,20 @@ interface StatsRepository {
      * Record that a meal was cooked today.
      */
     suspend fun recordCookedMeal(): Result<Unit>
+
+    /**
+     * Record that a specific recipe was cooked.
+     * Used for tracking cuisine breakdown statistics.
+     */
+    suspend fun recordCookedRecipe(
+        recipeId: String,
+        recipeName: String,
+        cuisineType: String
+    ): Result<Unit>
+
+    /**
+     * Get cuisine breakdown statistics showing how many recipes of each cuisine type were cooked.
+     * Returns pairs of cuisine type and count.
+     */
+    suspend fun getCuisineBreakdown(): Result<List<Pair<String, Int>>>
 }

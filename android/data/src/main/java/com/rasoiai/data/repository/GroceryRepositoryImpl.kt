@@ -10,6 +10,7 @@ import com.rasoiai.data.local.mapper.toGroceryList
 import com.rasoiai.data.remote.api.RasoiApiService
 import com.rasoiai.domain.model.GroceryItem
 import com.rasoiai.domain.model.GroceryList
+import com.rasoiai.domain.model.Ingredient
 import com.rasoiai.domain.model.IngredientCategory
 import com.rasoiai.domain.repository.GroceryRepository
 import kotlinx.coroutines.flow.Flow
@@ -249,5 +250,109 @@ class GroceryRepositoryImpl @Inject constructor(
         groceryDao.insertGroceryItems(ingredientMap.values.toList())
 
         Timber.d("Generated local grocery list: ${ingredientMap.size} items")
+    }
+
+    override suspend fun addIngredientsFromRecipe(
+        ingredients: List<Ingredient>,
+        recipeId: String,
+        recipeName: String
+    ): Result<List<GroceryItem>> {
+        return try {
+            Timber.d("Adding ${ingredients.size} ingredients from recipe: $recipeName")
+
+            // Get current meal plan to associate
+            val today = LocalDate.now().format(dateFormatter)
+            val mealPlan = mealPlanDao.getMealPlanForDate(today).first()
+            val mealPlanId = mealPlan?.id
+
+            // Get existing grocery items to check for duplicates
+            val existingItems = groceryDao.getAllGroceryItems().first()
+            val existingByName = existingItems.associateBy { it.name.lowercase() }
+
+            val addedItems = mutableListOf<GroceryItem>()
+
+            for (ingredient in ingredients) {
+                val existingItem = existingByName[ingredient.name.lowercase()]
+
+                if (existingItem != null) {
+                    // Item already exists - add recipe to recipeIds if not already there
+                    val updatedRecipeIds = if (recipeId !in existingItem.recipeIds) {
+                        existingItem.recipeIds + recipeId
+                    } else {
+                        existingItem.recipeIds
+                    }
+
+                    // Try to merge quantities if units match
+                    val (mergedQty, mergedUnit) = tryMergeQuantities(
+                        existingItem.quantity, existingItem.unit,
+                        ingredient.quantity, ingredient.unit
+                    )
+
+                    val updatedEntity = existingItem.copy(
+                        quantity = mergedQty,
+                        unit = mergedUnit,
+                        recipeIds = updatedRecipeIds
+                    )
+                    groceryDao.insertGroceryItem(updatedEntity)
+                    addedItems.add(updatedEntity.toDomain())
+
+                    Timber.d("Merged ingredient: ${ingredient.name} (now: $mergedQty $mergedUnit)")
+                } else {
+                    // New item - add it
+                    val newEntity = GroceryItemEntity(
+                        id = UUID.randomUUID().toString(),
+                        name = ingredient.name,
+                        quantity = ingredient.quantity,
+                        unit = ingredient.unit,
+                        category = ingredient.category.value,
+                        isChecked = false,
+                        mealPlanId = mealPlanId,
+                        recipeIds = listOf(recipeId),
+                        notes = "From: $recipeName",
+                        createdAt = System.currentTimeMillis()
+                    )
+                    groceryDao.insertGroceryItem(newEntity)
+                    addedItems.add(newEntity.toDomain())
+
+                    Timber.d("Added new ingredient: ${ingredient.name}")
+                }
+            }
+
+            Timber.i("Added ${addedItems.size} ingredients to grocery list from recipe: $recipeName")
+            Result.success(addedItems)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to add ingredients from recipe")
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Try to merge two quantities with units.
+     * If units match, add quantities. Otherwise, append as note.
+     */
+    private fun tryMergeQuantities(
+        qty1: String, unit1: String,
+        qty2: String, unit2: String
+    ): Pair<String, String> {
+        // If units are the same (or both empty), try to add numeric parts
+        if (unit1.equals(unit2, ignoreCase = true) || (unit1.isBlank() && unit2.isBlank())) {
+            val num1 = qty1.toDoubleOrNull()
+            val num2 = qty2.toDoubleOrNull()
+
+            if (num1 != null && num2 != null) {
+                val sum = num1 + num2
+                // Format nicely - no decimal if whole number
+                val sumStr = if (sum == sum.toLong().toDouble()) {
+                    sum.toLong().toString()
+                } else {
+                    String.format("%.1f", sum)
+                }
+                return sumStr to (unit1.ifBlank { unit2 })
+            }
+        }
+
+        // Units don't match or not numeric - just append
+        val combined = "$qty1 $unit1 + $qty2 $unit2".trim()
+        return combined to ""
     }
 }

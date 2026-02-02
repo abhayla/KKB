@@ -86,10 +86,10 @@ class ChatRepositoryImpl @Inject constructor(
     override fun getQuickActions(): List<String> {
         val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         return when {
-            hour in 6..10 -> listOf("Quick breakfast", "Healthy start", "Light meal", "Tea-time snack")
-            hour in 11..15 -> listOf("Lunch ideas", "Light meal", "Quick recipe", "South Indian")
-            hour in 16..20 -> listOf("Dinner suggestions", "Family meal", "Something special", "Quick dinner")
-            else -> listOf("Light snack", "Quick bite", "Healthy option", "Simple recipe")
+            hour in 6..10 -> listOf("What's for breakfast?", "Quick breakfast ideas", "Change my breakfast", "Healthy start")
+            hour in 11..15 -> listOf("What's for lunch?", "Swap my lunch", "Quick lunch ideas", "South Indian")
+            hour in 16..20 -> listOf("What's for dinner?", "Change dinner", "Family meal ideas", "Quick dinner")
+            else -> listOf("Show my meals", "Light snack ideas", "Healthy option", "Simple recipe")
         }
     }
 

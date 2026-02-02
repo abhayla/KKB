@@ -11,9 +11,12 @@ from app.ai.claude_client import (
 )
 from app.ai.tools import (
     PREFERENCE_TOOLS,
+    MEAL_PLAN_TOOLS,
+    ALL_CHAT_TOOLS,
     CONFIG_CHAT_SYSTEM_PROMPT,
     format_config_for_display,
 )
+from app.services import meal_plan_chat_service
 from app.repositories.chat_repository import ChatRepository
 from app.repositories.user_repository import UserRepository
 from app.services.preference_update_service import PreferenceUpdateService
@@ -69,7 +72,7 @@ async def process_chat_message(
         result = await generate_with_tools(
             system_prompt=system_prompt,
             messages=messages,
-            tools=PREFERENCE_TOOLS,
+            tools=ALL_CHAT_TOOLS,
             max_tokens=1024,
             temperature=0.7,
         )
@@ -137,7 +140,7 @@ async def process_chat_message(
                 system_prompt=system_prompt,
                 messages=messages,
                 tool_results=tool_results,
-                tools=PREFERENCE_TOOLS,
+                tools=ALL_CHAT_TOOLS,
                 max_tokens=1024,
                 temperature=0.7,
             )
@@ -232,6 +235,58 @@ async def _execute_tool(
             result = await pref_service.show_config(
                 user_id=user_id,
                 section=tool_input.get("section", "all"),
+            )
+
+        # Meal plan tools
+        elif tool_name == "query_current_meals":
+            result = await meal_plan_chat_service.query_meals(
+                user_id=user_id,
+                date_str=tool_input["date"],
+                meal_type=tool_input.get("meal_type", "ALL"),
+            )
+            # Format meal results for display
+            if result.get("success") and "meals" in result:
+                meals = result["meals"]
+                lines = [f"**Meals for {result.get('day_name', '')} ({result.get('date', '')}):**"]
+                if result.get("festival"):
+                    lines.append(f"🎉 Festival: {result['festival']}")
+                for meal_type, items in meals.items():
+                    if items:
+                        item_names = ", ".join([i["name"] for i in items])
+                        lines.append(f"- **{meal_type.title()}:** {item_names}")
+                return "\n".join(lines) if len(lines) > 1 else "No meals planned for this day."
+
+        elif tool_name == "swap_meal_recipe":
+            result = await meal_plan_chat_service.swap_recipe(
+                user_id=user_id,
+                date_str=tool_input["date"],
+                meal_type=tool_input["meal_type"],
+                current_recipe_name=tool_input.get("current_recipe_name"),
+                requested_recipe_name=tool_input.get("requested_recipe_name"),
+            )
+            # Handle suggestion responses
+            if result.get("needs_confirmation") and "suggestions" in result:
+                suggestions = result["suggestions"]
+                lines = [result.get("message", "Here are some alternatives:")]
+                for i, name in enumerate(suggestions, 1):
+                    lines.append(f"  {i}. {name}")
+                lines.append("\nWhich one would you like?")
+                return "\n".join(lines)
+
+        elif tool_name == "add_recipe_to_meal":
+            result = await meal_plan_chat_service.add_recipe(
+                user_id=user_id,
+                date_str=tool_input["date"],
+                meal_type=tool_input["meal_type"],
+                recipe_name=tool_input["recipe_name"],
+            )
+
+        elif tool_name == "remove_recipe_from_meal":
+            result = await meal_plan_chat_service.remove_recipe(
+                user_id=user_id,
+                date_str=tool_input["date"],
+                meal_type=tool_input["meal_type"],
+                recipe_name=tool_input["recipe_name"],
             )
 
         else:

@@ -6,8 +6,10 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.rasoiai.data.local.entity.AchievementEntity
+import com.rasoiai.data.local.entity.CookedRecipeEntity
 import com.rasoiai.data.local.entity.CookingDayEntity
 import com.rasoiai.data.local.entity.CookingStreakEntity
+import com.rasoiai.data.local.entity.CuisineCountResult
 import com.rasoiai.data.local.entity.WeeklyChallengeEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -84,4 +86,26 @@ interface StatsDao {
 
     @Query("UPDATE weekly_challenges SET currentProgress = currentProgress + 1 WHERE id = :challengeId AND isJoined = 1")
     suspend fun incrementChallengeProgress(challengeId: String)
+
+    // ==================== Cooked Recipes (Cuisine Breakdown) ====================
+
+    @Query("""
+        SELECT cuisineType, COUNT(*) as count
+        FROM cooked_recipes
+        GROUP BY cuisineType
+        ORDER BY count DESC
+    """)
+    suspend fun getCuisineBreakdown(): List<CuisineCountResult>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCookedRecipe(recipe: CookedRecipeEntity)
+
+    @Query("SELECT COUNT(*) FROM cooked_recipes")
+    suspend fun getTotalCookedRecipesCount(): Int
+
+    @Query("SELECT COUNT(DISTINCT recipeId) FROM cooked_recipes")
+    suspend fun getUniqueCookedRecipesCount(): Int
+
+    @Query("SELECT COUNT(DISTINCT cuisineType) FROM cooked_recipes")
+    suspend fun getUniqueCuisinesCount(): Int
 }

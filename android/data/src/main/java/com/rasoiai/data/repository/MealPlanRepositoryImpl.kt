@@ -7,10 +7,12 @@ import com.rasoiai.data.local.mapper.toEntity
 import com.rasoiai.data.local.mapper.toFestivalEntities
 import com.rasoiai.data.local.mapper.toItemEntities
 import com.rasoiai.data.remote.api.RasoiApiService
+import com.rasoiai.data.local.entity.MealPlanItemEntity
 import com.rasoiai.data.remote.dto.GenerateMealPlanRequest
 import com.rasoiai.data.remote.dto.SwapMealRequest
 import com.rasoiai.domain.model.MealPlan
 import com.rasoiai.domain.model.MealType
+import java.time.DayOfWeek
 import com.rasoiai.domain.repository.MealPlanRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -243,6 +245,65 @@ class MealPlanRepositoryImpl @Inject constructor(
             Result.success(Unit)
         } catch (e: Exception) {
             Timber.e(e, "Failed to remove recipe from meal")
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun addRecipeToMeal(
+        mealPlanId: String,
+        date: LocalDate,
+        mealType: MealType,
+        recipeId: String,
+        recipeName: String,
+        recipeImageUrl: String?,
+        prepTimeMinutes: Int,
+        calories: Int
+    ): Result<MealPlan> {
+        return try {
+            val dateStr = date.format(dateFormatter)
+            val dayName = date.dayOfWeek.name.lowercase().replaceFirstChar { it.uppercase() }
+
+            Timber.d("Adding recipe to meal: $mealPlanId, $dateStr, ${mealType.value}, $recipeId")
+
+            // Get current items to determine order
+            val existingItems = mealPlanDao.getMealPlanItemsForDateAndType(
+                mealPlanId = mealPlanId,
+                date = dateStr,
+                mealType = mealType.value
+            )
+            val nextOrder = existingItems.maxOfOrNull { it.order }?.plus(1) ?: 0
+
+            // Create new item
+            val newItem = MealPlanItemEntity(
+                mealPlanId = mealPlanId,
+                date = dateStr,
+                dayName = dayName,
+                mealType = mealType.value,
+                recipeId = recipeId,
+                recipeName = recipeName,
+                recipeImageUrl = recipeImageUrl,
+                prepTimeMinutes = prepTimeMinutes,
+                calories = calories,
+                dietaryTags = emptyList(), // Will be loaded from recipe when viewed
+                isLocked = false,
+                order = nextOrder
+            )
+
+            // Insert into local database
+            mealPlanDao.insertMealPlanItem(newItem)
+
+            // Get updated meal plan
+            val mealPlanEntity = mealPlanDao.getMealPlanById(mealPlanId)
+                ?: return Result.failure(Exception("Meal plan not found"))
+            val allItems = mealPlanDao.getMealPlanItemsSync(mealPlanId)
+            val festivals = mealPlanDao.getFestivalsForMealPlan(mealPlanId)
+
+            Timber.i("Recipe added to meal: $recipeName")
+
+            val mealPlan = mealPlanEntity.toDomain(allItems, festivals)
+            Result.success(mealPlan)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to add recipe to meal")
             Result.failure(e)
         }
     }

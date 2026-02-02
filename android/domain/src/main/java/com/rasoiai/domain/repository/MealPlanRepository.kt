@@ -49,6 +49,20 @@ interface MealPlanRepository {
     ): Result<Unit>
 
     /**
+     * Add a recipe to a meal slot.
+     */
+    suspend fun addRecipeToMeal(
+        mealPlanId: String,
+        date: LocalDate,
+        mealType: MealType,
+        recipeId: String,
+        recipeName: String,
+        recipeImageUrl: String?,
+        prepTimeMinutes: Int,
+        calories: Int
+    ): Result<MealPlan>
+
+    /**
      * Sync local changes to the server.
      */
     suspend fun syncMealPlans(): Result<Unit>

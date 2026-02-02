@@ -11,6 +11,7 @@ import com.rasoiai.domain.model.IngredientCategory
 import com.rasoiai.domain.model.Instruction
 import com.rasoiai.domain.model.Nutrition
 import com.rasoiai.domain.model.Recipe
+import com.rasoiai.domain.repository.GroceryRepository
 import com.rasoiai.domain.repository.RecipeRepository
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -37,6 +38,7 @@ class RecipeDetailViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var mockRecipeRepository: RecipeRepository
+    private lateinit var mockGroceryRepository: GroceryRepository
     private lateinit var savedStateHandle: SavedStateHandle
 
     private val testRecipe = Recipe(
@@ -69,6 +71,7 @@ class RecipeDetailViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         mockRecipeRepository = mockk(relaxed = true)
+        mockGroceryRepository = mockk(relaxed = true)
         savedStateHandle = SavedStateHandle().apply {
             set(Screen.RecipeDetail.ARG_RECIPE_ID, "test-recipe-1")
             set(Screen.RecipeDetail.ARG_IS_LOCKED, false)
@@ -90,7 +93,7 @@ class RecipeDetailViewModelTest {
         fun `initial state should be loading`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(null)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
 
             viewModel.uiState.test {
                 val initialState = awaitItem()
@@ -104,7 +107,7 @@ class RecipeDetailViewModelTest {
         fun `after loading recipe isLoading should be false`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial loading
@@ -123,7 +126,7 @@ class RecipeDetailViewModelTest {
         fun `lock state should be NO_CONTEXT when not from meal plan`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
 
             viewModel.uiState.test {
                 val state = awaitItem()
@@ -141,7 +144,7 @@ class RecipeDetailViewModelTest {
             }
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
 
             viewModel.uiState.test {
                 val state = awaitItem()
@@ -161,7 +164,7 @@ class RecipeDetailViewModelTest {
         fun `selectTab should update selected tab index`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -184,7 +187,7 @@ class RecipeDetailViewModelTest {
         fun `toggleIngredientChecked should add ingredient to checked list`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -204,7 +207,7 @@ class RecipeDetailViewModelTest {
         fun `toggleIngredientChecked should remove ingredient from checked list`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -227,7 +230,7 @@ class RecipeDetailViewModelTest {
         fun `checkAllIngredients should check all ingredients`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -248,7 +251,7 @@ class RecipeDetailViewModelTest {
         fun `uncheckAllIngredients should uncheck all ingredients`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -276,7 +279,7 @@ class RecipeDetailViewModelTest {
         fun `startCookingMode should emit navigation event`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
 
             viewModel.navigationEvent.test {
                 viewModel.startCookingMode()
@@ -292,7 +295,7 @@ class RecipeDetailViewModelTest {
         fun `navigateBack should emit back navigation event`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
 
             viewModel.navigationEvent.test {
                 viewModel.navigateBack()
@@ -307,7 +310,7 @@ class RecipeDetailViewModelTest {
         fun `modifyWithAI should emit chat navigation event`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
 
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -330,7 +333,7 @@ class RecipeDetailViewModelTest {
         fun `isVegetarian should be true for vegetarian recipe`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -347,7 +350,7 @@ class RecipeDetailViewModelTest {
         fun `totalTimeMinutes should return sum of prep and cook time`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -364,7 +367,7 @@ class RecipeDetailViewModelTest {
         fun `ingredientCount should return correct count`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -386,7 +389,7 @@ class RecipeDetailViewModelTest {
         fun `recipe not found should show error`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(null)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -405,7 +408,7 @@ class RecipeDetailViewModelTest {
         fun `clearError should clear error message`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial

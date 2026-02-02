@@ -3,6 +3,7 @@ package com.rasoiai.data.repository
 import com.rasoiai.data.local.datastore.UserPreferencesDataStoreInterface
 import com.rasoiai.data.remote.api.RasoiApiService
 import com.rasoiai.data.remote.dto.AuthRequest
+import com.rasoiai.data.remote.dto.RefreshTokenRequest
 import com.rasoiai.data.remote.mapper.toDomain
 import com.rasoiai.data.remote.mapper.toUser
 import com.rasoiai.domain.model.User
@@ -90,13 +91,25 @@ class AuthRepositoryImpl @Inject constructor(
         return try {
             val refreshToken = userPreferencesDataStore.getRefreshToken()
             if (refreshToken.isNullOrEmpty()) {
+                Timber.w("No refresh token available")
                 return Result.failure(Exception("No refresh token available"))
             }
 
-            // TODO: Implement refresh token endpoint when available
-            // For now, return failure to trigger re-authentication
-            Timber.w("Token refresh not implemented - user needs to re-authenticate")
-            Result.failure(Exception("Token refresh not implemented"))
+            Timber.d("Refreshing access token")
+
+            // Call backend API to refresh the access token
+            val response = apiService.refreshToken(
+                RefreshTokenRequest(refreshToken = refreshToken)
+            )
+
+            // Update only the access token in DataStore
+            userPreferencesDataStore.updateAccessToken(
+                accessToken = response.accessToken,
+                expiresInSeconds = response.expiresIn
+            )
+
+            Timber.i("Successfully refreshed access token")
+            Result.success(response.accessToken)
         } catch (e: Exception) {
             Timber.e(e, "Failed to refresh token")
             Result.failure(e)

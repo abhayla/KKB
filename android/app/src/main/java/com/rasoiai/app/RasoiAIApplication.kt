@@ -10,6 +10,7 @@ import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import coil.util.DebugLogger
 import com.rasoiai.app.fcm.NotificationChannelManager
+import com.rasoiai.data.sync.SyncWorker
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
 import javax.inject.Inject
@@ -24,6 +25,16 @@ class RasoiAIApplication : Application(), Configuration.Provider, ImageLoaderFac
         super.onCreate()
         initTimber()
         initNotificationChannels()
+        initSyncWorker()
+    }
+
+    /**
+     * Initialize periodic SyncWorker for background data sync.
+     * Runs every 6 hours when network is available and battery is not low.
+     */
+    private fun initSyncWorker() {
+        SyncWorker.enqueue(this)
+        Timber.d("SyncWorker scheduled for periodic execution")
     }
 
     /**

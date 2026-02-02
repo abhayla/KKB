@@ -15,6 +15,7 @@ import com.rasoiai.data.local.dao.OfflineQueueDao
 import com.rasoiai.data.local.mapper.toDomain
 import com.rasoiai.data.remote.api.RasoiApiService
 import com.rasoiai.data.remote.dto.FcmTokenRequest
+import com.rasoiai.data.remote.dto.SwapMealRequest
 import com.rasoiai.domain.model.OfflineAction
 import com.rasoiai.domain.model.OfflineActionType
 import dagger.assisted.Assisted
@@ -147,35 +148,36 @@ class SyncWorker @AssistedInject constructor(
 
             OfflineActionType.SWAP_MEAL -> {
                 val (planId, itemId) = extractMealIds(action.payload)
-                // TODO: Implement when MealPlanRepository is updated
-                Timber.w("SWAP_MEAL action not yet implemented")
+                apiService.swapMealItem(planId, itemId, SwapMealRequest())
+                Timber.d("SWAP_MEAL: Synced swap for plan=$planId, item=$itemId")
                 true
             }
 
             OfflineActionType.LOCK_MEAL -> {
                 val (planId, itemId) = extractMealIds(action.payload)
-                // TODO: Implement when MealPlanRepository is updated
-                Timber.w("LOCK_MEAL action not yet implemented")
+                apiService.lockMealItem(planId, itemId)
+                Timber.d("LOCK_MEAL: Synced lock for plan=$planId, item=$itemId")
                 true
             }
 
             OfflineActionType.REMOVE_MEAL -> {
                 val (planId, itemId) = extractMealIds(action.payload)
-                // TODO: Implement when MealPlanRepository is updated
-                Timber.w("REMOVE_MEAL action not yet implemented")
+                apiService.removeMealItem(planId, itemId)
+                Timber.d("REMOVE_MEAL: Synced remove for plan=$planId, item=$itemId")
                 true
             }
 
             OfflineActionType.TOGGLE_FAVORITE -> {
-                val recipeId = extractRecipeId(action.payload)
-                // TODO: Implement when FavoritesRepository is updated
-                Timber.w("TOGGLE_FAVORITE action not yet implemented")
+                // Favorites are local-only (no backend API)
+                // Action already synced to local DB, mark as completed
+                Timber.d("TOGGLE_FAVORITE: Local-only operation, marking complete")
                 true
             }
 
             OfflineActionType.UPDATE_GROCERY -> {
-                // TODO: Implement when GroceryRepository is updated
-                Timber.w("UPDATE_GROCERY action not yet implemented")
+                // Grocery updates are local-only (no backend API)
+                // Action already synced to local DB, mark as completed
+                Timber.d("UPDATE_GROCERY: Local-only operation, marking complete")
                 true
             }
         }

@@ -2,6 +2,7 @@ package com.rasoiai.data.repository
 
 import com.rasoiai.domain.model.GroceryItem
 import com.rasoiai.domain.model.GroceryList
+import com.rasoiai.domain.model.Ingredient
 import com.rasoiai.domain.model.IngredientCategory
 import com.rasoiai.domain.repository.GroceryRepository
 import kotlinx.coroutines.flow.Flow
@@ -115,6 +116,38 @@ class FakeGroceryRepository @Inject constructor() : GroceryRepository {
     override suspend fun generateFromMealPlan(mealPlanId: String): Result<GroceryList> {
         // In a real implementation, this would aggregate ingredients from the meal plan
         return Result.success(groceryLists.value.first())
+    }
+
+    override suspend fun addIngredientsFromRecipe(
+        ingredients: List<Ingredient>,
+        recipeId: String,
+        recipeName: String
+    ): Result<List<GroceryItem>> {
+        return try {
+            val currentWeekStart = LocalDate.now()
+                .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+
+            val newItems = ingredients.map { ingredient ->
+                GroceryItem(
+                    id = UUID.randomUUID().toString(),
+                    name = ingredient.name,
+                    quantity = ingredient.quantity,
+                    unit = ingredient.unit,
+                    category = ingredient.category,
+                    recipeIds = listOf(recipeId)
+                )
+            }
+
+            groceryLists.value = groceryLists.value.map { list ->
+                if (list.weekStartDate == currentWeekStart) {
+                    list.copy(items = list.items + newItems)
+                } else list
+            }
+
+            Result.success(newItems)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     override suspend fun clearPurchasedItems(): Result<Int> {

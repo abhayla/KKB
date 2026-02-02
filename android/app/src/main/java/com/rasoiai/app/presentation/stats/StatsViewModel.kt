@@ -106,14 +106,29 @@ class StatsViewModel @Inject constructor(
     }
 
     private fun loadCuisineBreakdown() {
-        // TODO: Load from repository - using mock data for now
-        val mockBreakdown = listOf(
-            CuisineBreakdown("North", 18, 40f),
-            CuisineBreakdown("South", 12, 27f),
-            CuisineBreakdown("East", 6, 13f),
-            CuisineBreakdown("West", 9, 20f)
-        )
-        _uiState.update { it.copy(cuisineBreakdown = mockBreakdown) }
+        viewModelScope.launch {
+            statsRepository.getCuisineBreakdown()
+                .onSuccess { breakdown ->
+                    val total = breakdown.sumOf { it.second }.toFloat()
+                    val cuisineBreakdown = if (total > 0) {
+                        breakdown.map { (cuisine, count) ->
+                            CuisineBreakdown(
+                                cuisine = cuisine,
+                                count = count,
+                                percentage = (count / total) * 100f
+                            )
+                        }
+                    } else {
+                        // Show empty state with placeholder data
+                        emptyList()
+                    }
+                    _uiState.update { it.copy(cuisineBreakdown = cuisineBreakdown) }
+                }
+                .onFailure { e ->
+                    Timber.e(e, "Failed to load cuisine breakdown")
+                    // Keep existing data or show empty state
+                }
+        }
     }
 
     private fun observeStreams() {

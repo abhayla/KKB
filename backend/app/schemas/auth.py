@@ -41,6 +41,20 @@ class AuthResponse(BaseModel):
         from_attributes = True
 
 
+class RefreshTokenRequest(BaseModel):
+    """Request to refresh access token."""
+
+    refresh_token: str = Field(..., description="Refresh token from initial auth")
+
+
+class RefreshTokenResponse(BaseModel):
+    """Response with new access token."""
+
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int  # seconds
+
+
 # Import for forward reference resolution
 from app.schemas.user import UserPreferencesDto  # noqa: E402, F811
 
