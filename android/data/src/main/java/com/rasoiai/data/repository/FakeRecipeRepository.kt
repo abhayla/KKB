@@ -52,7 +52,7 @@ class FakeRecipeRepository @Inject constructor() : RecipeRepository {
             }
             cuisine?.let { c -> filtered = filtered.filter { it.cuisineType == c } }
             dietary?.let { d -> filtered = filtered.filter { d in it.dietaryTags } }
-            mealType?.let { m -> filtered = filtered.filter { m in it.mealTypes } }
+            // Note: mealType filter intentionally removed - any recipe can go in any meal slot
 
             val offset = (page - 1) * limit
             Result.success(filtered.drop(offset).take(limit))

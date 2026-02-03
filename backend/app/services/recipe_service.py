@@ -205,9 +205,10 @@ async def search_recipes(
     if params.dietary:
         query = query.where(Recipe.dietary_tags.contains([params.dietary]))
 
-    # Meal type filter
-    if params.meal_type:
-        query = query.where(Recipe.meal_types.contains([params.meal_type]))
+    # Note: meal_type filter intentionally removed
+    # Users should be able to add any recipe to any meal slot
+    # (e.g., biryani for breakfast, chai for dinner)
+    # The meal_types field is kept for informational/suggestion purposes only
 
     # Pagination
     offset = (params.page - 1) * params.limit

@@ -284,11 +284,12 @@ async def swap_meal_item(
                 except ValueError:
                     continue
 
+        # Note: meal_type filter intentionally removed
+        # Users should be able to swap to any recipe regardless of meal type
         recipe_result = await db.execute(
             select(Recipe)
             .options(selectinload(Recipe.nutrition))
             .where(
-                Recipe.meal_types.contains([item_to_swap.meal_type]),
                 Recipe.is_active == True,
                 ~Recipe.id.in_(exclude_ids),
             )

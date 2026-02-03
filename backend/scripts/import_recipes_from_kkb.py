@@ -292,6 +292,8 @@ def transform_recipe(source: dict) -> dict:
     dietary_tags = DIET_MAPPING.get(diet_raw, ["vegetarian"])
 
     # Map meal types
+    # Note: meal_types is kept for informational/suggestion purposes only
+    # Users can add any recipe to any meal slot (meal_type filter removed from search)
     meal_types_raw = source.get("mealTypes", [])
     meal_types = []
     for mt in meal_types_raw:

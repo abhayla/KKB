@@ -209,6 +209,7 @@ class RecipeRepositoryImpl @Inject constructor(
 
     /**
      * Search recipes locally when offline.
+     * Note: mealType filter intentionally not used - users can add any recipe to any meal slot.
      */
     private suspend fun searchLocalRecipes(
         query: String?,
@@ -217,12 +218,12 @@ class RecipeRepositoryImpl @Inject constructor(
         mealType: MealType?,
         limit: Int
     ): List<Recipe> {
-        // For now, just return recipes by cuisine if specified
+        // For now, just return recipes by cuisine if specified, or all recipes
         // A more sophisticated local search would use FTS
+        // Note: mealType is intentionally ignored - any recipe can go in any meal slot
         val recipes = when {
             cuisine != null -> recipeDao.getRecipesByCuisine(cuisine.value).first()
-            mealType != null -> recipeDao.getRecipesByMealType(mealType.value).first()
-            else -> emptyList()
+            else -> recipeDao.getAllRecipes().first()
         }
         return recipes.take(limit).map { it.toDomain() }
     }
