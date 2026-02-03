@@ -18,6 +18,15 @@ interface ChatRepository {
     suspend fun sendMessage(content: String): Result<ChatMessage>
 
     /**
+     * Send an image message for food analysis.
+     * The image will be compressed and sent to the backend for analysis.
+     *
+     * @param imageUriString String representation of the image URI to analyze
+     * @return AI response with food analysis
+     */
+    suspend fun sendImageMessage(imageUriString: String): Result<ChatMessage>
+
+    /**
      * Clear all chat history.
      */
     suspend fun clearHistory(): Result<Unit>

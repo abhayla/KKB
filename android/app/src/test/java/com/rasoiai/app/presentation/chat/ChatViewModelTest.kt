@@ -399,8 +399,8 @@ class ChatViewModelTest {
         }
 
         @Test
-        @DisplayName("onAttachmentButtonClick should show coming soon message")
-        fun `onAttachmentButtonClick should show coming soon message`() = runTest {
+        @DisplayName("onAttachmentButtonClick should show image source dialog")
+        fun `onAttachmentButtonClick should show image source dialog`() = runTest {
             val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
 
             viewModel.uiState.test {
@@ -409,7 +409,50 @@ class ChatViewModelTest {
                 viewModel.onAttachmentButtonClick()
 
                 val state = awaitItem()
-                assertTrue(state.errorMessage?.contains("Photo attachment") == true)
+                assertTrue(state.showImageSourceDialog)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Image Attachment")
+    inner class ImageAttachment {
+
+        @Test
+        @DisplayName("dismissImageSourceDialog should hide dialog")
+        fun `dismissImageSourceDialog should hide dialog`() = runTest {
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial
+
+                viewModel.onAttachmentButtonClick()
+                val dialogShown = awaitItem()
+                assertTrue(dialogShown.showImageSourceDialog)
+
+                viewModel.dismissImageSourceDialog()
+                val dialogHidden = awaitItem()
+                assertFalse(dialogHidden.showImageSourceDialog)
+
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("clearSelectedImage should reset image state")
+        fun `clearSelectedImage should reset image state`() = runTest {
+            val viewModel = ChatViewModel(mockChatRepository, mockMealPlanRepository)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial
+
+                viewModel.clearSelectedImage()
+
+                val state = viewModel.uiState.value
+                assertNull(state.selectedImageUri)
+                assertFalse(state.isUploadingImage)
+
                 cancelAndIgnoreRemainingEvents()
             }
         }

@@ -39,6 +39,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rasoiai.app.presentation.settings.components.DarkModeDialog
 import com.rasoiai.app.presentation.settings.components.FamilySection
+import com.rasoiai.app.presentation.settings.components.ItemsPerMealDialog
 import com.rasoiai.app.presentation.settings.components.ProfileSection
 import com.rasoiai.app.presentation.settings.components.SettingsItem
 import com.rasoiai.app.presentation.settings.components.SettingsSection
@@ -147,6 +148,14 @@ fun SettingsScreen(
             currentPreference = uiState.appSettings.darkMode,
             onPreferenceSelected = viewModel::onDarkModeSelected,
             onDismiss = viewModel::dismissDarkModeDialog
+        )
+    }
+
+    if (uiState.showItemsPerMealDialog) {
+        ItemsPerMealDialog(
+            currentValue = uiState.itemsPerMeal,
+            onSelected = viewModel::onItemsPerMealSelected,
+            onDismiss = viewModel::dismissItemsPerMealDialog
         )
     }
 }

@@ -30,7 +30,8 @@ data class SettingsUiState(
     val appVersion: String = "1.0.0",
     val isSigningOut: Boolean = false,
     val showSignOutDialog: Boolean = false,
-    val showDarkModeDialog: Boolean = false
+    val showDarkModeDialog: Boolean = false,
+    val showItemsPerMealDialog: Boolean = false
 ) {
     val familyMembers: List<FamilyMember>
         get() = user?.preferences?.familyMembers ?: emptyList()
@@ -285,9 +286,30 @@ class SettingsViewModel @Inject constructor(
 
     // region Meal Generation Settings
 
+    fun showItemsPerMealDialog() {
+        _uiState.update { it.copy(showItemsPerMealDialog = true) }
+    }
+
+    fun dismissItemsPerMealDialog() {
+        _uiState.update { it.copy(showItemsPerMealDialog = false) }
+    }
+
     fun onItemsPerMealClick() {
-        // TODO: Show dialog to select items per meal (1-4)
-        _uiState.update { it.copy(errorMessage = "Items per meal picker: Coming soon!") }
+        showItemsPerMealDialog()
+    }
+
+    fun onItemsPerMealSelected(count: Int) {
+        viewModelScope.launch {
+            settingsRepository.updateMealGenerationSettings(itemsPerMeal = count)
+                .onSuccess {
+                    Timber.i("Items per meal updated to: $count")
+                }
+                .onFailure { e ->
+                    Timber.e(e, "Failed to update items per meal")
+                    _uiState.update { it.copy(errorMessage = "Failed to update setting") }
+                }
+        }
+        dismissItemsPerMealDialog()
     }
 
     fun onStrictAllergenModeToggle(enabled: Boolean) {

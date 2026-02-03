@@ -1,6 +1,11 @@
 package com.rasoiai.app.presentation.chat
 
+import android.Manifest
 import android.content.res.Configuration
+import android.net.Uri
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -32,21 +37,30 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import com.rasoiai.app.presentation.common.TestTags
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rasoiai.app.presentation.chat.components.ChatInputBar
 import com.rasoiai.app.presentation.chat.components.ChatMessageItem
+import com.rasoiai.app.presentation.chat.components.ImageSourceDialog
+import com.rasoiai.app.presentation.common.TestTags
 import com.rasoiai.app.presentation.home.components.RasoiBottomNavigation
 import com.rasoiai.app.presentation.navigation.Screen
 import com.rasoiai.app.presentation.theme.RasoiAITheme
 import com.rasoiai.app.presentation.theme.spacing
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun ChatScreen(
@@ -59,6 +73,47 @@ fun ChatScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+
+    // State for temporary camera photo URI
+    var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
+
+    // Camera launcher
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && tempPhotoUri != null) {
+            viewModel.onImageSelected(tempPhotoUri!!)
+        }
+    }
+
+    // Gallery launcher
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let { viewModel.onImageSelected(it) }
+    }
+
+    // Camera permission launcher
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            tempPhotoUri = createTempImageUri(context)
+            tempPhotoUri?.let { cameraLauncher.launch(it) }
+        } else {
+            viewModel.clearError()
+        }
+    }
+
+    // Gallery permission launcher
+    val galleryPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            galleryLauncher.launch("image/*")
+        }
+    }
 
     // Handle navigation events
     LaunchedEffect(Unit) {
@@ -116,6 +171,44 @@ fun ChatScreen(
             onConfirm = viewModel::clearChatHistory,
             onDismiss = viewModel::dismissClearChatDialog
         )
+    }
+
+    // Image source selection dialog
+    if (uiState.showImageSourceDialog) {
+        ImageSourceDialog(
+            onDismiss = viewModel::dismissImageSourceDialog,
+            onCameraSelected = {
+                viewModel.dismissImageSourceDialog()
+                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+            },
+            onGallerySelected = {
+                viewModel.dismissImageSourceDialog()
+                // For Android 13+, use READ_MEDIA_IMAGES, otherwise READ_EXTERNAL_STORAGE
+                val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    Manifest.permission.READ_MEDIA_IMAGES
+                } else {
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+                }
+                galleryPermissionLauncher.launch(permission)
+            }
+        )
+    }
+}
+
+/**
+ * Creates a temporary file URI for camera capture.
+ */
+private fun createTempImageUri(context: android.content.Context): Uri? {
+    return try {
+        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val imageFile = File(context.cacheDir, "JPEG_${timeStamp}.jpg")
+        FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.provider",
+            imageFile
+        )
+    } catch (e: Exception) {
+        null
     }
 }
 

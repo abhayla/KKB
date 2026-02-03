@@ -1,16 +1,27 @@
 package com.rasoiai.data.repository
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.util.Base64
 import com.rasoiai.data.local.dao.ChatDao
 import com.rasoiai.data.local.mapper.toDomain
 import com.rasoiai.data.local.mapper.toEntity
+import com.rasoiai.data.remote.api.RasoiApiService
+import com.rasoiai.data.remote.dto.ChatImageRequest
 import com.rasoiai.domain.model.ChatMessage
 import com.rasoiai.domain.model.RecipeSuggestion
 import com.rasoiai.domain.repository.ChatRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.io.ByteArrayOutputStream
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
@@ -26,8 +37,17 @@ import javax.inject.Singleton
  */
 @Singleton
 class ChatRepositoryImpl @Inject constructor(
-    private val chatDao: ChatDao
+    private val chatDao: ChatDao,
+    private val apiService: RasoiApiService,
+    @ApplicationContext private val context: Context
 ) : ChatRepository {
+
+    companion object {
+        private const val MAX_IMAGE_SIZE_BYTES = 1024 * 1024 // 1MB
+        private const val INITIAL_QUALITY = 85
+        private const val MIN_QUALITY = 20
+        private const val QUALITY_STEP = 10
+    }
 
     override fun getMessages(): Flow<List<ChatMessage>> {
         return chatDao.getAllMessages().map { entities ->
@@ -66,6 +86,94 @@ class ChatRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Timber.e(e, "Failed to send message")
             Result.failure(e)
+        }
+    }
+
+    override suspend fun sendImageMessage(imageUriString: String): Result<ChatMessage> {
+        return try {
+            val imageUri = Uri.parse(imageUriString)
+
+            // 1. Add user message indicating image was sent
+            val userMessage = ChatMessage(
+                id = UUID.randomUUID().toString(),
+                content = "[Sent a food photo for analysis]",
+                isFromUser = true,
+                timestamp = System.currentTimeMillis()
+            )
+            chatDao.insertMessage(userMessage.toEntity())
+            Timber.d("User image message saved: ${userMessage.id}")
+
+            // 2. Read and compress the image
+            val base64Image = withContext(Dispatchers.IO) {
+                compressAndEncodeImage(imageUri)
+            } ?: return Result.failure(Exception("Failed to process image"))
+
+            // 3. Send to backend for analysis
+            val response = apiService.sendImageChatMessage(
+                ChatImageRequest(
+                    message = "Please analyze this food image and provide recipe suggestions.",
+                    imageBase64 = base64Image,
+                    mediaType = "image/jpeg"
+                )
+            )
+
+            // 4. Create and save AI response
+            val aiMessage = ChatMessage(
+                id = response.message.id,
+                content = response.message.content,
+                isFromUser = false,
+                timestamp = System.currentTimeMillis()
+            )
+            chatDao.insertMessage(aiMessage.toEntity())
+            Timber.d("AI image analysis response saved: ${aiMessage.id}")
+
+            Result.success(aiMessage)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to send image message")
+            Result.failure(e)
+        }
+    }
+
+    private fun compressAndEncodeImage(uri: Uri): String? {
+        return try {
+            // Read the image from URI
+            val inputStream = context.contentResolver.openInputStream(uri)
+                ?: return null
+
+            val bitmap = BitmapFactory.decodeStream(inputStream)
+            inputStream.close()
+
+            if (bitmap == null) {
+                Timber.e("Failed to decode bitmap from URI: $uri")
+                return null
+            }
+
+            // Compress to JPEG with progressive quality reduction if needed
+            val outputStream = ByteArrayOutputStream()
+            var quality = INITIAL_QUALITY
+
+            bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream)
+
+            // Reduce quality until we're under the max size
+            while (outputStream.size() > MAX_IMAGE_SIZE_BYTES && quality > MIN_QUALITY) {
+                outputStream.reset()
+                quality -= QUALITY_STEP
+                bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream)
+                Timber.d("Compressed image to quality $quality, size: ${outputStream.size()} bytes")
+            }
+
+            // Convert to Base64
+            val base64 = Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
+
+            // Clean up
+            bitmap.recycle()
+            outputStream.close()
+
+            Timber.d("Image encoded successfully, Base64 length: ${base64.length}")
+            base64
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to compress and encode image")
+            null
         }
     }
 

@@ -1,17 +1,19 @@
 package com.rasoiai.data.remote.api
 
-import com.rasoiai.data.remote.dto.GenerateMealPlanRequest
-import com.rasoiai.data.remote.dto.MealPlanResponse
-import com.rasoiai.data.remote.dto.RecipeResponse
-import com.rasoiai.data.remote.dto.SwapMealRequest
-import com.rasoiai.data.remote.dto.UserResponse
 import com.rasoiai.data.remote.dto.AuthRequest
 import com.rasoiai.data.remote.dto.AuthResponse
+import com.rasoiai.data.remote.dto.ChatImageRequest
+import com.rasoiai.data.remote.dto.ChatImageResponse
+import com.rasoiai.data.remote.dto.FcmTokenRequest
+import com.rasoiai.data.remote.dto.GenerateMealPlanRequest
+import com.rasoiai.data.remote.dto.MealPlanResponse
+import com.rasoiai.data.remote.dto.NotificationsResponse
+import com.rasoiai.data.remote.dto.RecipeResponse
 import com.rasoiai.data.remote.dto.RefreshTokenRequest
 import com.rasoiai.data.remote.dto.RefreshTokenResponse
-import com.rasoiai.data.remote.dto.NotificationsResponse
-import com.rasoiai.data.remote.dto.FcmTokenRequest
 import com.rasoiai.data.remote.dto.SuccessResponse
+import com.rasoiai.data.remote.dto.SwapMealRequest
+import com.rasoiai.data.remote.dto.UserResponse
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -99,6 +101,9 @@ interface RasoiApiService {
     // Chat
     @POST("api/v1/chat/message")
     suspend fun sendChatMessage(@Body message: Map<String, String>): Map<String, Any>
+
+    @POST("api/v1/chat/image")
+    suspend fun sendImageChatMessage(@Body request: ChatImageRequest): ChatImageResponse
 
     @GET("api/v1/chat/history")
     suspend fun getChatHistory(): List<Map<String, Any>>

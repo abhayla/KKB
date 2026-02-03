@@ -21,6 +21,7 @@ email-validator>=2.1.0,<3.0.0
 
 # AI
 anthropic>=0.18.0,<1.0.0
+google-generativeai>=0.3.0,<1.0.0
 
 # HTTP client
 httpx>=0.26.0,<1.0.0

@@ -11,6 +11,26 @@ class ChatMessageRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=2000)
 
 
+class ChatImageRequest(BaseModel):
+    """Chat image request for food photo analysis."""
+
+    message: str = Field(
+        default="Please analyze this food image",
+        max_length=500,
+        description="Optional message to accompany the image"
+    )
+    image_base64: str = Field(
+        ...,
+        min_length=100,
+        description="Base64 encoded image data"
+    )
+    media_type: str = Field(
+        default="image/jpeg",
+        pattern=r"^image/(jpeg|png|webp)$",
+        description="Image MIME type"
+    )
+
+
 class ChatMessageResponse(BaseModel):
     """Single chat message response."""
 

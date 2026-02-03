@@ -47,6 +47,40 @@ class FakeChatRepository @Inject constructor() : ChatRepository {
         }
     }
 
+    override suspend fun sendImageMessage(imageUriString: String): Result<ChatMessage> {
+        return try {
+            // Add user message indicating image was sent
+            val userMessage = ChatMessage(
+                id = UUID.randomUUID().toString(),
+                content = "[Sent a food photo for analysis]",
+                isFromUser = true,
+                timestamp = System.currentTimeMillis()
+            )
+            _messages.value = _messages.value + userMessage
+
+            // Simulate AI thinking delay
+            delay(1500)
+
+            // Generate fake AI response for image analysis
+            val aiResponse = ChatMessage(
+                id = UUID.randomUUID().toString(),
+                content = "I can see what looks like a delicious Indian dish in your photo! Based on the ingredients and presentation, this appears to be a classic Dal Tadka with some aromatic tempering.\n\nHere are some similar recipes you might enjoy:",
+                isFromUser = false,
+                timestamp = System.currentTimeMillis(),
+                recipeSuggestions = listOf(
+                    RecipeSuggestion("dal-tadka", "Dal Tadka", 35, null),
+                    RecipeSuggestion("dal-makhani", "Dal Makhani", 60, null),
+                    RecipeSuggestion("chana-dal", "Chana Dal", 45, null)
+                )
+            )
+            _messages.value = _messages.value + aiResponse
+
+            Result.success(aiResponse)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun clearHistory(): Result<Unit> {
         return try {
             _messages.value = listOf(createWelcomeMessage())

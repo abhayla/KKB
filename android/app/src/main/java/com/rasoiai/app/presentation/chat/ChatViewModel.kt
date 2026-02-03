@@ -1,5 +1,6 @@
 package com.rasoiai.app.presentation.chat
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rasoiai.domain.model.ChatMessage
@@ -31,7 +32,11 @@ data class ChatUiState(
     val inputText: String = "",
     val quickActions: List<String> = emptyList(),
     val showClearChatDialog: Boolean = false,
-    val showMenu: Boolean = false
+    val showMenu: Boolean = false,
+    // Image attachment state
+    val showImageSourceDialog: Boolean = false,
+    val selectedImageUri: Uri? = null,
+    val isUploadingImage: Boolean = false
 )
 
 /**
@@ -271,8 +276,72 @@ class ChatViewModel @Inject constructor(
         _uiState.update { it.copy(errorMessage = "Voice input coming soon!") }
     }
 
+    // endregion
+
+    // region Image Attachment
+
     fun onAttachmentButtonClick() {
-        _uiState.update { it.copy(errorMessage = "Photo attachment coming soon!") }
+        _uiState.update { it.copy(showImageSourceDialog = true) }
+    }
+
+    fun dismissImageSourceDialog() {
+        _uiState.update { it.copy(showImageSourceDialog = false) }
+    }
+
+    fun onImageSelected(uri: Uri) {
+        _uiState.update {
+            it.copy(
+                showImageSourceDialog = false,
+                selectedImageUri = uri,
+                isUploadingImage = true
+            )
+        }
+        processAndSendImage(uri)
+    }
+
+    private fun processAndSendImage(uri: Uri) {
+        viewModelScope.launch {
+            try {
+                chatRepository.sendImageMessage(uri.toString())
+                    .onSuccess { response ->
+                        Timber.i("Image analyzed successfully")
+                        _uiState.update {
+                            it.copy(
+                                isUploadingImage = false,
+                                selectedImageUri = null
+                            )
+                        }
+                    }
+                    .onFailure { e ->
+                        Timber.e(e, "Failed to send image")
+                        _uiState.update {
+                            it.copy(
+                                isUploadingImage = false,
+                                selectedImageUri = null,
+                                errorMessage = "Failed to analyze image. Please try again."
+                            )
+                        }
+                    }
+            } catch (e: Exception) {
+                Timber.e(e, "Error processing image")
+                _uiState.update {
+                    it.copy(
+                        isUploadingImage = false,
+                        selectedImageUri = null,
+                        errorMessage = "Failed to process image. Please try again."
+                    )
+                }
+            }
+        }
+    }
+
+    fun clearSelectedImage() {
+        _uiState.update {
+            it.copy(
+                selectedImageUri = null,
+                isUploadingImage = false
+            )
+        }
     }
 
     // endregion
