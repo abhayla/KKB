@@ -302,7 +302,7 @@ class StatsRepositoryImplTest {
             val today = LocalDate.now().format(DateTimeFormatter.ISO_DATE)
             coEvery { mockStatsDao.getCookingDayByDate(today) } returns null
             coEvery { mockStatsDao.getCookingStreakSync() } returns testStreakEntity
-            coEvery { mockStatsDao.getAllAchievements().first() } returns listOf(testAchievementEntity)
+            every { mockStatsDao.getAllAchievements() } returns flowOf(listOf(testAchievementEntity))
             coEvery { mockStatsDao.getCurrentWeeklyChallengeSync() } returns testChallengeEntity
 
             // When
@@ -321,7 +321,7 @@ class StatsRepositoryImplTest {
             val today = LocalDate.now().format(DateTimeFormatter.ISO_DATE)
             coEvery { mockStatsDao.getCookingDayByDate(today) } returns testCookingDayEntity.copy(date = today)
             coEvery { mockStatsDao.getCookingStreakSync() } returns testStreakEntity
-            coEvery { mockStatsDao.getAllAchievements().first() } returns listOf(testAchievementEntity)
+            every { mockStatsDao.getAllAchievements() } returns flowOf(listOf(testAchievementEntity))
             coEvery { mockStatsDao.getCurrentWeeklyChallengeSync() } returns null
 
             // When

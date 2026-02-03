@@ -1336,6 +1336,77 @@ class HomeViewModelTest {
     }
 
     @Nested
+    @DisplayName("Race Condition Prevention")
+    inner class RaceConditionPrevention {
+
+        @Test
+        @DisplayName("Should not show error when meal plan loads successfully")
+        fun `should not show error when meal plan loads successfully`() = runTest {
+            // This test verifies the fix for the race condition where
+            // error was shown despite meals appearing successfully
+            coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
+
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial loading
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                val state = expectMostRecentItem()
+                // Should have meal plan data
+                assertNotNull(state.mealPlan)
+                assertEquals(testMealPlan.id, state.mealPlan?.id)
+                // Should NOT have error message
+                assertNull(state.errorMessage)
+                // Should not be loading
+                assertFalse(state.isLoading)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("Generation should only be called once when no meal plan exists")
+        fun `generation should only be called once when no meal plan exists`() = runTest {
+            // This test verifies that generation is only called once, not twice (race condition)
+            coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(null)
+            coEvery { mockMealPlanRepository.generateMealPlan(any()) } returns Result.success(testMealPlan)
+
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            // Verify generateMealPlan was only called once
+            io.mockk.coVerify(exactly = 1) { mockMealPlanRepository.generateMealPlan(any()) }
+        }
+
+        @Test
+        @DisplayName("Should observe meal plan changes after initial load")
+        fun `should observe meal plan changes after initial load`() = runTest {
+            // Create a mutable flow to simulate Room updates
+            val mealPlanFlow = kotlinx.coroutines.flow.MutableStateFlow<MealPlan?>(testMealPlan)
+            coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns mealPlanFlow
+
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial loading
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                val initialState = expectMostRecentItem()
+                assertEquals(testMealPlan.id, initialState.mealPlan?.id)
+
+                // Simulate Room emitting an updated meal plan
+                val updatedMealPlan = testMealPlan.copy(id = "updated-plan-id")
+                mealPlanFlow.value = updatedMealPlan
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                val updatedState = expectMostRecentItem()
+                assertEquals("updated-plan-id", updatedState.mealPlan?.id)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+    }
+
+    @Nested
     @DisplayName("UiState Computed Properties")
     inner class UiStateComputedProperties {
 

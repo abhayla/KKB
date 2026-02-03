@@ -139,6 +139,13 @@ class FakeMealPlanRepository @Inject constructor() : MealPlanRepository {
         return Result.success(Unit)
     }
 
+    override suspend fun hasMealPlanForCurrentWeek(): Boolean {
+        val today = LocalDate.now()
+        return mealPlans.value.any { plan ->
+            !today.isBefore(plan.weekStartDate) && !today.isAfter(plan.weekEndDate)
+        }
+    }
+
     override suspend fun addRecipeToMeal(
         mealPlanId: String,
         date: LocalDate,

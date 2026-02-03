@@ -30,8 +30,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.rasoiai.app.presentation.common.TestTags
 import com.rasoiai.app.presentation.theme.spacing
 import com.rasoiai.domain.model.MealType
 import com.rasoiai.domain.model.Recipe
@@ -87,7 +89,8 @@ fun AddRecipeSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState
+        sheetState = sheetState,
+        modifier = Modifier.testTag(TestTags.ADD_RECIPE_SHEET)
     ) {
         Column(
             modifier = Modifier
@@ -253,7 +256,8 @@ fun AddRecipeSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState
+        sheetState = sheetState,
+        modifier = Modifier.testTag(TestTags.ADD_RECIPE_SHEET)
     ) {
         Column(
             modifier = Modifier

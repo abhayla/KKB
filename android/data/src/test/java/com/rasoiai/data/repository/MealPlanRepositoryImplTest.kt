@@ -155,21 +155,59 @@ class MealPlanRepositoryImplTest {
         }
 
         @Test
-        @DisplayName("Should fetch from API when no local data and online")
-        fun `should fetch from API when no local data and online`() = runTest {
-            // Given
+        @DisplayName("Should return null when no local data and online - ViewModel handles generation")
+        fun `should return null when no local data and online`() = runTest {
+            // Given - Repository no longer fetches from API in getMealPlanForDate
+            // This is now the ViewModel's responsibility to avoid race conditions
             every { mockMealPlanDao.getMealPlanForDate(testDateString) } returns flowOf(null)
             every { mockNetworkMonitor.isOnline } returns flowOf(true)
-            coEvery { mockApiService.getCurrentMealPlan() } returns testMealPlanDto
 
             // When & Then
             repository.getMealPlanForDate(testDate).test {
-                awaitItem() // null initially
-                testDispatcher.scheduler.advanceUntilIdle()
+                val mealPlan = awaitItem()
+
+                // Should return null - ViewModel will handle generation
+                assertNull(mealPlan)
                 cancelAndIgnoreRemainingEvents()
             }
 
-            coVerify { mockApiService.getCurrentMealPlan() }
+            // API should NOT be called from repository's getMealPlanForDate
+            coVerify(exactly = 0) { mockApiService.getCurrentMealPlan() }
+        }
+    }
+
+    @Nested
+    @DisplayName("hasMealPlanForCurrentWeek")
+    inner class HasMealPlanForCurrentWeek {
+
+        @Test
+        @DisplayName("Should return true when meal plan exists for today")
+        fun `should return true when meal plan exists for today`() = runTest {
+            // Given
+            val today = LocalDate.now()
+            val todayString = today.toString()
+            coEvery { mockMealPlanDao.hasMealPlanForDate(todayString) } returns true
+
+            // When
+            val result = repository.hasMealPlanForCurrentWeek()
+
+            // Then
+            assertTrue(result)
+        }
+
+        @Test
+        @DisplayName("Should return false when no meal plan exists for today")
+        fun `should return false when no meal plan exists for today`() = runTest {
+            // Given
+            val today = LocalDate.now()
+            val todayString = today.toString()
+            coEvery { mockMealPlanDao.hasMealPlanForDate(todayString) } returns false
+
+            // When
+            val result = repository.hasMealPlanForCurrentWeek()
+
+            // Then
+            assertTrue(!result)
         }
     }
 

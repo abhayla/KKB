@@ -33,6 +33,9 @@ interface MealPlanDao {
     @Query("SELECT * FROM meal_plans WHERE isSynced = 0")
     suspend fun getUnsyncedMealPlans(): List<MealPlanEntity>
 
+    @Query("SELECT EXISTS(SELECT 1 FROM meal_plans WHERE weekStartDate <= :date AND weekEndDate >= :date LIMIT 1)")
+    suspend fun hasMealPlanForDate(date: String): Boolean
+
     // ==================== Meal Plan Items ====================
 
     @Query("SELECT * FROM meal_plan_items WHERE mealPlanId = :mealPlanId ORDER BY date, mealType, `order`")

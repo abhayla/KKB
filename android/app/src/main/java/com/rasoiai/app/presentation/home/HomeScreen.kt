@@ -169,6 +169,9 @@ fun HomeScreen(
         onAddRecipeClick = viewModel::showAddRecipeSheet,  // Add Recipe button (Issue #4)
         onDismissAddRecipeSheet = viewModel::dismissAddRecipeSheet,
         onSelectAddRecipe = viewModel::addRecipeToMeal,  // Issue #23: Recipe selection
+        onFestivalBannerClick = viewModel::onFestivalBannerClick,
+        onDismissFestivalRecipesSheet = viewModel::dismissFestivalRecipesSheet,
+        onFestivalRecipeClick = viewModel::onFestivalRecipeClick,
         onBottomNavItemClick = { screen ->
             when (screen) {
                 Screen.Home -> { /* Already on Home */ }
@@ -210,6 +213,9 @@ private fun HomeScreenContent(
     onAddRecipeClick: (MealType) -> Unit,
     onDismissAddRecipeSheet: () -> Unit,
     onSelectAddRecipe: (Recipe) -> Unit,
+    onFestivalBannerClick: () -> Unit,
+    onDismissFestivalRecipesSheet: () -> Unit,
+    onFestivalRecipeClick: (Recipe) -> Unit,
     onBottomNavItemClick: (Screen) -> Unit
 ) {
     Scaffold(
@@ -291,7 +297,7 @@ private fun HomeScreenContent(
                         item {
                             FestivalBanner(
                                 festival = festival,
-                                onClick = { /* TODO: Navigate to festival recipes */ }
+                                onClick = onFestivalBannerClick
                             )
                         }
                     }
@@ -453,6 +459,17 @@ private fun HomeScreenContent(
             favoriteRecipes = uiState.addRecipeFavorites,
             onDismiss = onDismissAddRecipeSheet,
             onRecipeSelected = onSelectAddRecipe
+        )
+    }
+
+    // Festival Recipes Sheet
+    if (uiState.showFestivalRecipesSheet && uiState.upcomingFestival != null) {
+        FestivalRecipesSheet(
+            festival = uiState.upcomingFestival,
+            recipes = uiState.festivalRecipes,
+            isLoading = uiState.isLoadingFestivalRecipes,
+            onDismiss = onDismissFestivalRecipesSheet,
+            onRecipeClick = onFestivalRecipeClick
         )
     }
 }
@@ -759,6 +776,7 @@ private fun MealSection(
                     }
                     TextButton(
                         onClick = onAddClick,
+                        modifier = Modifier.testTag("${TestTags.MEAL_ADD_BUTTON_PREFIX}${mealType.name.lowercase()}"),
                         contentPadding = PaddingValues(horizontal = spacing.sm)
                     ) {
                         Icon(
@@ -858,19 +876,25 @@ private fun SwipeActionBackground(
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Lock/Unlock button
-        IconButton(onClick = onLockToggle) {
+        IconButton(
+            onClick = onLockToggle,
+            modifier = Modifier.testTag(TestTags.SWIPE_LOCK_BUTTON)
+        ) {
             Icon(
                 imageVector = if (isLocked) Icons.Default.LockOpen else Icons.Default.Lock,
-                contentDescription = if (isLocked) "Unlock" else "Lock",
+                contentDescription = if (isLocked) "Unlock recipe" else "Lock recipe",
                 tint = MaterialTheme.colorScheme.primary
             )
         }
         // Delete button (only when unlocked)
         if (onDelete != null) {
-            IconButton(onClick = onDelete) {
+            IconButton(
+                onClick = onDelete,
+                modifier = Modifier.testTag(TestTags.SWIPE_DELETE_BUTTON)
+            ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = "Remove",
+                    contentDescription = "Remove recipe",
                     tint = MaterialTheme.colorScheme.error
                 )
             }
@@ -1417,6 +1441,210 @@ private fun SwapRecipeGridItem(
                 // Time and calories
                 Text(
                     text = "${mealItem.prepTimeMinutes}m${if (mealItem.calories > 0) " \u00B7 ${mealItem.calories}cal" else ""}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Festival Recipes Bottom Sheet - displays festive recipe suggestions
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FestivalRecipesSheet(
+    festival: FestivalInfo,
+    recipes: List<Recipe>,
+    isLoading: Boolean,
+    onDismiss: () -> Unit,
+    onRecipeClick: (Recipe) -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        modifier = Modifier.testTag(TestTags.FESTIVAL_RECIPES_SHEET)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = spacing.md)
+        ) {
+            // Header with party emoji
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = spacing.sm)
+            ) {
+                Text(
+                    text = "\uD83C\uDF89", // Party popper emoji
+                    style = MaterialTheme.typography.headlineMedium
+                )
+                Spacer(modifier = Modifier.width(spacing.sm))
+                Column {
+                    Text(
+                        text = "${festival.name} Recipes",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = if (festival.daysUntil == 0) "Today!" else "${festival.daysUntil} ${if (festival.daysUntil == 1) "day" else "days"} until festival",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(spacing.md))
+
+            // Section title
+            Text(
+                text = "Festive Dishes",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = spacing.sm)
+            )
+
+            // Recipe Grid (2 columns)
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = spacing.xl),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (recipes.isEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = spacing.xl),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "No festive recipes available",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    contentPadding = PaddingValues(vertical = spacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(spacing.sm),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(400.dp)
+                        .testTag(TestTags.FESTIVAL_RECIPE_GRID)
+                ) {
+                    items(
+                        items = recipes,
+                        key = { it.id }
+                    ) { recipe ->
+                        FestivalRecipeGridItem(
+                            recipe = recipe,
+                            onClick = { onRecipeClick(recipe) },
+                            modifier = Modifier.testTag("${TestTags.FESTIVAL_RECIPE_ITEM_PREFIX}${recipe.id}")
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(spacing.md))
+
+            // Cancel Button
+            OutlinedButton(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(spacing.sm)
+            ) {
+                Text("Close")
+            }
+
+            Spacer(modifier = Modifier.height(spacing.xl))
+        }
+    }
+}
+
+/**
+ * Grid item for festival recipe selection
+ */
+@Composable
+private fun FestivalRecipeGridItem(
+    recipe: Recipe,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val isVegetarian = recipe.dietaryTags.contains(DietaryTag.VEGETARIAN) ||
+                      recipe.dietaryTags.contains(DietaryTag.VEGAN)
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(spacing.md),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column {
+            // Image placeholder with festive accent
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1.2f)
+                    .clip(RoundedCornerShape(topStart = spacing.md, topEnd = spacing.md))
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = recipe.name.take(2).uppercase(),
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+
+            // Content
+            Column(
+                modifier = Modifier.padding(spacing.sm)
+            ) {
+                // Name with dietary indicator
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Veg/Non-veg indicator
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (isVegetarian) DietaryColors.Vegetarian else DietaryColors.NonVegetarian
+                            )
+                    )
+
+                    Spacer(modifier = Modifier.width(spacing.xs))
+
+                    Text(
+                        text = recipe.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(spacing.xs))
+
+                // Time and calories
+                Text(
+                    text = "${recipe.prepTimeMinutes}m${if ((recipe.nutrition?.calories ?: 0) > 0) " \u00B7 ${recipe.nutrition?.calories}cal" else ""}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

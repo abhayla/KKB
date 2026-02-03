@@ -55,11 +55,9 @@ class MealPlanRepositoryImpl @Inject constructor(
                 val festivals = mealPlanDao.getFestivalsForMealPlan(entity.id)
                 entity.toDomain(items, festivals)
             } else {
-                Timber.d("No meal plan found for date $dateStr, will fetch from API")
-                // Try to fetch from API if online and no local data
-                if (networkMonitor.isOnline.first()) {
-                    fetchAndCacheMealPlan(date)
-                }
+                Timber.d("No meal plan found for date $dateStr")
+                // Don't fetch from API here - let ViewModel handle generation logic
+                // This prevents race condition where both Flow and generateNewMealPlan() compete
                 null
             }
         }
@@ -337,6 +335,12 @@ class MealPlanRepositoryImpl @Inject constructor(
             Timber.e(e, "Failed to sync meal plans")
             Result.failure(e)
         }
+    }
+
+    override suspend fun hasMealPlanForCurrentWeek(): Boolean {
+        val today = LocalDate.now()
+        val dateStr = today.format(dateFormatter)
+        return mealPlanDao.hasMealPlanForDate(dateStr)
     }
 
     /**

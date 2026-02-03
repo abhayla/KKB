@@ -56,7 +56,11 @@ data class HomeUiState(
     val addRecipeMealType: MealType? = null,
     val addRecipeSuggestions: List<Recipe> = emptyList(),
     val addRecipeFavorites: List<Recipe> = emptyList(),
-    val isLoadingAddRecipeSuggestions: Boolean = false
+    val isLoadingAddRecipeSuggestions: Boolean = false,
+    // Festival Recipes Sheet state
+    val showFestivalRecipesSheet: Boolean = false,
+    val festivalRecipes: List<Recipe> = emptyList(),
+    val isLoadingFestivalRecipes: Boolean = false
 ) {
     /** Check if the selected day is locked */
     val isSelectedDayLocked: Boolean
@@ -156,16 +160,19 @@ class HomeViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
             try {
-                mealPlanRepository.getMealPlanForDate(LocalDate.now()).collect { mealPlan ->
-                    if (mealPlan != null) {
-                        updateStateWithMealPlan(mealPlan)
-                        _uiState.update { it.copy(isLoading = false) }
-                    } else {
-                        // Generate a new meal plan if none exists
-                        // Keep isLoading = true during generation
-                        // generateNewMealPlan will set isLoading = false on success/failure
-                        generateNewMealPlan()
-                    }
+                // Check once for existing meal plan using first()
+                val existingPlan = mealPlanRepository.getMealPlanForDate(LocalDate.now()).first()
+
+                if (existingPlan != null) {
+                    // Meal plan exists - update UI and start observing changes
+                    updateStateWithMealPlan(existingPlan)
+                    _uiState.update { it.copy(isLoading = false) }
+                    observeMealPlan()
+                } else {
+                    // No meal plan exists - generate new one
+                    // Keep isLoading = true during generation
+                    // generateNewMealPlan will set isLoading = false and start observing on success
+                    generateNewMealPlan()
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error loading meal plan")
@@ -174,6 +181,20 @@ class HomeViewModel @Inject constructor(
                         isLoading = false,
                         errorMessage = "Failed to load meal plan. Please try again."
                     )
+                }
+            }
+        }
+    }
+
+    /**
+     * Observe meal plan changes after initial load.
+     * This starts a Flow collection that updates UI when Room data changes.
+     */
+    private fun observeMealPlan() {
+        viewModelScope.launch {
+            mealPlanRepository.getMealPlanForDate(LocalDate.now()).collect { mealPlan ->
+                if (mealPlan != null) {
+                    updateStateWithMealPlan(mealPlan)
                 }
             }
         }
@@ -209,9 +230,10 @@ class HomeViewModel @Inject constructor(
         mealPlanRepository.generateMealPlan(weekStart)
             .onSuccess { mealPlan ->
                 Timber.i("Generated new meal plan: ${mealPlan.id}")
-                // Room Flow should emit automatically, but force UI update just in case
                 updateStateWithMealPlan(mealPlan)
                 _uiState.update { it.copy(isLoading = false) }
+                // Start observing for future changes
+                observeMealPlan()
             }
             .onFailure { e ->
                 Timber.e(e, "Failed to generate meal plan")
@@ -650,6 +672,77 @@ class HomeViewModel @Inject constructor(
                 addRecipeMealType = null,
                 addRecipeSuggestions = emptyList(),
                 addRecipeFavorites = emptyList()
+            )
+        }
+    }
+
+    // endregion
+
+    // region Festival Recipes Actions
+
+    /**
+     * Show the Festival Recipes sheet when banner is clicked
+     */
+    fun onFestivalBannerClick() {
+        val festival = _uiState.value.upcomingFestival ?: return
+        _uiState.update {
+            it.copy(
+                showFestivalRecipesSheet = true,
+                isLoadingFestivalRecipes = true
+            )
+        }
+        Timber.i("Show Festival Recipes sheet for ${festival.name}")
+        fetchFestivalRecipes(festival.suggestedDishes)
+    }
+
+    /**
+     * Fetch recipes for the festival based on suggested dishes
+     */
+    private fun fetchFestivalRecipes(suggestedDishes: List<String>) {
+        viewModelScope.launch {
+            // Search for recipes matching the suggested dishes
+            val recipes = mutableListOf<Recipe>()
+
+            for (dish in suggestedDishes.take(10)) {
+                recipeRepository.searchRecipes(query = dish, limit = 1)
+                    .onSuccess { results ->
+                        recipes.addAll(results)
+                    }
+            }
+
+            // If we didn't find specific dishes, fall back to general search
+            if (recipes.isEmpty()) {
+                recipeRepository.searchRecipes(limit = 10)
+                    .onSuccess { results ->
+                        recipes.addAll(results)
+                    }
+            }
+
+            _uiState.update {
+                it.copy(
+                    festivalRecipes = recipes,
+                    isLoadingFestivalRecipes = false
+                )
+            }
+        }
+    }
+
+    /**
+     * Navigate to recipe detail from festival sheet
+     */
+    fun onFestivalRecipeClick(recipe: Recipe) {
+        dismissFestivalRecipesSheet()
+        _navigationEvent.trySend(HomeNavigationEvent.NavigateToRecipeDetail(recipe.id, isLocked = false))
+    }
+
+    /**
+     * Dismiss the Festival Recipes sheet
+     */
+    fun dismissFestivalRecipesSheet() {
+        _uiState.update {
+            it.copy(
+                showFestivalRecipesSheet = false,
+                festivalRecipes = emptyList()
             )
         }
     }

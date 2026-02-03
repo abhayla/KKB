@@ -66,4 +66,10 @@ interface MealPlanRepository {
      * Sync local changes to the server.
      */
     suspend fun syncMealPlans(): Result<Unit>
+
+    /**
+     * Check if a meal plan exists for the current week.
+     * Used to determine if user has completed onboarding.
+     */
+    suspend fun hasMealPlanForCurrentWeek(): Boolean
 }

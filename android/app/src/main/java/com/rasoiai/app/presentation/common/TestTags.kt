@@ -129,11 +129,18 @@ object TestTags {
 
     // Home Screen - Festival Banner
     const val HOME_FESTIVAL_BANNER = "home_festival_banner"
+    const val FESTIVAL_RECIPES_SHEET = "festival_recipes_sheet"
+    const val FESTIVAL_RECIPE_GRID = "festival_recipe_grid"
+    const val FESTIVAL_RECIPE_ITEM_PREFIX = "festival_recipe_item_"
 
     // Home Screen - Meal Item Content
     const val MEAL_ITEM_PREFIX = "meal_item_"
     const val MEAL_ITEM_NAME_PREFIX = "meal_item_name_"
     const val MEAL_ITEM_TIME_PREFIX = "meal_item_time_"
+
+    // Home Screen - Swipe Action Buttons
+    const val SWIPE_LOCK_BUTTON = "swipe_lock_button"
+    const val SWIPE_DELETE_BUTTON = "swipe_delete_button"
 
     // Bottom Navigation
     const val BOTTOM_NAV = "bottom_navigation"

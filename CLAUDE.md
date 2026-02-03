@@ -15,10 +15,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 source venv/bin/activate           # Linux/Mac/Git Bash
 # .\venv\Scripts\activate          # Windows PowerShell
 uvicorn app.main:app --reload      # Start server → http://localhost:8000/docs
-PYTHONPATH=. pytest                # Run all 170 tests
+PYTHONPATH=. pytest                # Run all tests
 ```
 
-**Key numbers:** 3,580 recipes | 170 backend tests | 319 Android unit tests | ~400 Android UI tests | 15 screens
+**Key numbers:** 3,580 recipes | 202 backend tests | 319 Android unit tests | 523 Android UI tests | 16 screens
 
 **Session context:** Check `docs/CONTINUE_PROMPT.md` for active work between sessions.
 
@@ -263,16 +263,16 @@ GRANT ALL PRIVILEGES ON DATABASE rasoiai TO rasoiai_user;
 
 | Platform | Tests | Framework |
 |----------|-------|-----------|
-| Backend | 170 | pytest |
-| Android UI | ~400 | Compose UI Testing |
-| Android E2E | 65+ | Compose UI Testing + Hilt |
+| Backend | 202 | pytest |
+| Android Unit | 319 | JUnit + MockK |
+| Android UI/E2E | 523 | Compose UI Testing + Hilt |
 
-### Backend Tests (170 total)
+### Backend Tests (202 total)
 
 | Test File | Tests | Purpose |
 |-----------|-------|---------|
 | `test_health.py` | 2 | Health check endpoints |
-| `test_auth.py` | 3 | Firebase authentication |
+| `test_auth.py` | 6 | Firebase authentication |
 | `test_preference_service.py` | 26 | PreferenceUpdateService |
 | `test_chat_integration.py` | 27 | Chat tool calling flow |
 | `test_meal_generation.py` | 22 | Meal generation structures |
@@ -280,6 +280,8 @@ GRANT ALL PRIVILEGES ON DATABASE rasoiai TO rasoiai_user;
 | `test_meal_generation_e2e.py` | 14 | E2E against PostgreSQL |
 | `test_chat_api.py` | 12 | Chat API endpoints |
 | `test_recipe_cache.py` | 35 | Recipe cache operations |
+| `test_notification_service.py` | 19 | Notification service logic |
+| `test_notification_api.py` | 10 | Notification API endpoints |
 
 ### Android UI Tests
 
@@ -480,7 +482,7 @@ Configuration-driven meal planning with YAML source of truth synced to PostgreSQ
 
 4. **Offline-First**: All features must use Room as source of truth with offline support.
 
-4. **Bug & Feature Tracking**:
+5. **Bug & Feature Tracking**:
    - **Before starting work**: Check GitHub Issues for related bugs/features with `gh issue list`
    - **Finding TODOs**: When you find `/* TODO: ... */` comments, consider creating a GitHub Issue
    - **After fixing**: Reference issue number in commit: `Fix #123: description`
