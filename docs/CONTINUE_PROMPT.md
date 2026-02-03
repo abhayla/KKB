@@ -9,16 +9,27 @@ Use this prompt to start a new conversation/context and continue the project fro
 ```
 I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 
-## Current State: Comprehensive Home Screen E2E Tests Complete
+## Current State: Photo Attachment & Settings Dialogs Implemented
 
 Backend running on PostgreSQL with SQLAlchemy async ORM. Android app with Compose UI, Hilt DI, Room DB. Full E2E tests passing with real API calls.
 
-**Latest Session (Session 38): Home Screen E2E Tests**
+**Latest Session (Session 39): Issues #13 and #16 Implementation**
+- **Issue #16**: Items per Meal Selection Dialog in Settings
+  - Created `ItemsPerMealDialog.kt` with 1-4 options
+  - Integrated into SettingsScreen with ViewModel state
+- **Issue #13**: Photo Attachment for Chat with Gemini Vision
+  - Created `ImageSourceDialog.kt` (Camera/Gallery picker)
+  - Created `gemini_client.py` for Google Gemini Vision API
+  - Added `/api/v1/chat/image` endpoint for food photo analysis
+  - Added image compression and Base64 encoding in ChatRepositoryImpl
+  - Added FileProvider and gallery permissions
+  - Updated ChatViewModel with image attachment state
+- **319 Android unit tests passing** (all)
+- **12 backend chat API tests passing**
+
+**Previous Session (Session 38): Home Screen E2E Tests**
 - Added 2 new test classes: `HomeScreenLockingTest` (8 tests), `HomeScreenActionsTest` (10 tests)
 - Extended `HomeRobot` with 25+ new methods for interactions
-- Added 18 new test tags in `TestTags.kt` for Home screen elements
-- Fixed `tapMealCard()` to click inside card bounds (recipe items are clickable)
-- Fixed `RecipeDetailRobot.goBack()` to use contentDescription
 - **24 Home screen tests passing** (6 + 8 + 10)
 
 **Previous Session (Session 37): E2E Test Reliability Phase 2**
@@ -233,6 +244,8 @@ cd android
 | E2E Test Suite | DONE | 65+ tests passing |
 | UI Tests | DONE | ~400 tests |
 | Home Screen E2E | DONE | 24 tests (locking, actions, navigation) |
+| Items per Meal Dialog | DONE | Issue #16 - Settings dialog with 1-4 options |
+| Chat Photo Attachment | DONE | Issue #13 - Gemini Vision API integration |
 
 ---
 
@@ -387,7 +400,23 @@ PYTHONPATH=. python scripts/import_recipes_postgres.py --all
 - Tests using `setUpAuthenticatedState()` now have meal data available
 - Fixes HomeScreenTest, GroceryFlowTest, CookingModeFlowTest meal card tests
 
-### Session 38: Home Screen E2E Tests (Current)
+### Session 39: Issues #13 and #16 Implementation (Current)
+- **Issue #16: Items per Meal Selection Dialog**
+  - Created `ItemsPerMealDialog.kt` component with radio buttons for 1-4 options
+  - Added `showItemsPerMealDialog` state to SettingsViewModel
+  - Integrated dialog into SettingsScreen
+- **Issue #13: Photo Attachment for Chat**
+  - Created `ImageSourceDialog.kt` for Camera/Gallery picker
+  - Created `gemini_client.py` for Google Gemini Vision API
+  - Added `/api/v1/chat/image` endpoint with ChatImageRequest schema
+  - Implemented image compression (max 1MB JPEG) in ChatRepositoryImpl
+  - Added FileProvider and READ_MEDIA_IMAGES permission
+  - Updated ChatViewModel with image attachment state
+  - Updated ChatViewModelTest with new tests for image functionality
+- **319 Android unit tests passing**
+- **12 backend chat API tests passing**
+
+### Session 38: Home Screen E2E Tests
 - Created `HomeScreenLockingTest` (8 tests for day/meal/recipe locking)
 - Created `HomeScreenActionsTest` (10 tests for action sheets, swap, refresh)
 - Added 18 new test tags in `TestTags.kt`
@@ -479,6 +508,6 @@ HOME SCREEN TEST COVERAGE:
 
 ---
 
-*Last Updated: February 1, 2026*
-*Session 38: Home Screen E2E Tests*
-*3,580 recipes. 170 backend tests. 65+ Android E2E tests. ~400 UI tests.*
+*Last Updated: February 3, 2026*
+*Session 39: Issues #13 (Photo Attachment) and #16 (Items per Meal Dialog)*
+*3,580 recipes. 170 backend tests. 319 Android unit tests. 65+ Android E2E tests. ~400 UI tests.*

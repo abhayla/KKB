@@ -18,7 +18,7 @@ uvicorn app.main:app --reload      # Start server → http://localhost:8000/docs
 PYTHONPATH=. pytest                # Run all 170 tests
 ```
 
-**Key numbers:** 3,580 recipes | 170 backend tests | ~400 Android UI tests | 15 screens
+**Key numbers:** 3,580 recipes | 170 backend tests | 319 Android unit tests | ~400 Android UI tests | 15 screens
 
 **Session context:** Check `docs/CONTINUE_PROMPT.md` for active work between sessions.
 
@@ -61,7 +61,7 @@ app ─────┬──────> core
 | Navigation | Navigation Compose |
 | Database | Room (Android cache), PostgreSQL (backend source of truth) |
 | Auth | Firebase Auth (Google OAuth only) |
-| LLM | Claude API (with tool calling for chat) |
+| LLM | Claude API (tool calling for chat), Gemini Vision (food photo analysis) |
 | Offline Support | Room as source of truth with sync to backend |
 
 ### Data Flow
@@ -245,6 +245,7 @@ PYTHONPATH=. python scripts/sync_config_postgres.py
 DATABASE_URL=postgresql+asyncpg://rasoiai_user:password@localhost:5432/rasoiai
 FIREBASE_CREDENTIALS_PATH=./rasoiai-firebase-service-account.json
 ANTHROPIC_API_KEY=sk-ant-...
+GOOGLE_AI_API_KEY=your-gemini-api-key
 JWT_SECRET_KEY=your-secret-key
 DEBUG=true
 ```
@@ -382,6 +383,7 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 | GET | `/api/v1/recipes/{id}` | Get recipe details |
 | GET | `/api/v1/grocery` | Get grocery list |
 | POST | `/api/v1/chat/message` | AI chat with tool calling |
+| POST | `/api/v1/chat/image` | Food photo analysis (Gemini Vision) |
 
 API docs: `http://localhost:8000/docs`
 
@@ -392,6 +394,7 @@ API docs: `http://localhost:8000/docs`
 | `app/services/meal_generation_service.py` | 2-item pairing logic |
 | `app/services/preference_update_service.py` | INCLUDE/EXCLUDE rules |
 | `app/ai/chat_assistant.py` | Tool calling orchestration |
+| `app/ai/gemini_client.py` | Google Gemini Vision API for food photo analysis |
 
 ## Meal Generation
 
