@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write(*)",
+        "hooks": [".claude/hooks/validate-workflow-step.sh Write"]
+      },
+      {
+        "matcher": "Edit(*)",
+        "hooks": [".claude/hooks/validate-workflow-step.sh Edit"]
+      },
+      {
+        "matcher": "Bash(git commit*)",
+        "hooks": [".claude/hooks/validate-workflow-step.sh Bash git-commit"]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash(*gradlew*test*)",
+        "hooks": [".claude/hooks/post-test-update.sh"]
+      },
+      {
+        "matcher": "Bash(*pytest*)",
+        "hooks": [".claude/hooks/post-test-update.sh"]
+      }
+    ]
+  }
+}

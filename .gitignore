@@ -106,8 +106,13 @@ test_*.log
 test_*.txt
 logcat*.txt
 
-# Claude Code
-.claude/
+# Claude Code - Track hooks and settings, ignore runtime state
+.claude/workflow-state.json
+.claude/logs/
+.claude/last_test_output.txt
+.claude/.fix_loop_iterations
+.claude/.*_completed
+.claude/settings.local.json
 
 # Misc
 Notes

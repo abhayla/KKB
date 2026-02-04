@@ -560,146 +560,164 @@ Configuration-driven meal planning with YAML source of truth synced to PostgreSQ
 
    **Reference:** See `docs/testing/Functional-Requirement-Rule.md` for the full traceability matrix.
 
-7. **Pre-Implementation Checklist (MANDATORY)**:
+7. **Mandatory Development Workflow (ALL Code Tasks)**:
 
-   Before writing ANY code for a new feature or bug fix, STOP and complete this checklist:
+   > **Full Reference:** See `docs/rules/Claude Code Enforced Workflow Rules.md` for complete documentation.
 
-   ```
-   ## Pre-Implementation Checklist
-   - [ ] Read Rule #6 (Functional Requirements Testing) in this file
-   - [ ] Check GitHub Issues: `gh issue list --search "keyword"`
-   - [ ] If no issue exists: Create one with `gh issue create`
-   - [ ] Note the Issue number: #___
-   - [ ] Identify E2E test location: `app/src/androidTest/java/com/rasoiai/app/e2e/flows/`
-   - [ ] Plan test file name: `___Test.kt`
-   - [ ] **SCREENSHOT: Capture pre-implementation state** (see below)
-   ```
+   **TRIGGER - This workflow applies when user asks to:**
+   - Implement a feature
+   - Fix a bug
+   - Refactor code
+   - Make any code change (`.kt`, `.py`, `.xml` files)
 
-   **After Implementation:**
-   ```
-   ## Post-Implementation Checklist
-   - [ ] **SCREENSHOT: Capture post-implementation state** (see below)
-   - [ ] **VERIFY: Compare pre vs post screenshots to confirm change**
-   - [ ] E2E test created with KDoc header: `/** Requirement: #XX - Description */`
-   - [ ] Functional-Requirement-Rule.md updated
-   ```
+   **DOES NOT APPLY to:**
+   - Answering questions (no code changes)
+   - Documentation-only changes (no code)
+   - Research/exploration tasks
 
-   **Test Execution (REQUIRED before commit):**
-   ```
-   ## Test Verification Loop
-   1. Run the feature-specific E2E test:
-      ```bash
-      ./gradlew :app:connectedDebugAndroidTest \
-        -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.flows.YourTestClass
-      ```
-   2. If tests FAIL:
-      - [ ] Fix the failing code
-      - [ ] Re-run tests
-      - [ ] Repeat until ALL tests pass
-   3. Only proceed to commit when tests are GREEN
-   ```
+   ---
 
-   **Commit (ONLY after tests pass):**
+   ### THE 7-STEP WORKFLOW
+
+   **STEP 1: Update Requirement Documentation**
+
+   Before writing ANY code:
+   ```bash
+   # a) Check for existing issue
+   gh issue list --search "keyword"
+
+   # b) Create issue if none exists
+   gh issue create --title "Feature: Description"
    ```
-   ## Git Commit Checklist
-   - [ ] All E2E tests for this feature are passing
-   - [ ] Commit message references issue: `Fix #XX: description`
-   - [ ] Push to remote
+   - Add requirement to `docs/requirements/screens/*.md` (BDD format)
+   - Add traceability row to `docs/testing/Functional-Requirement-Rule.md`
+
+   **Output:**
+   ```
+   ✅ Step 1 Complete:
+   - GitHub Issue: #XX (created/existing)
+   - Requirement ID: SCREEN-XXX
+   - Traceability: Added to Functional-Requirement-Rule.md
    ```
 
-   **CRITICAL - No Exceptions:**
-   - Do NOT rationalize partial test passes ("2 out of 3 is good enough")
-   - Do NOT mark failing tests as @Ignore to bypass this rule
-   - Do NOT create "fix later" issues as an excuse to commit with failures
-   - If a test is genuinely broken/flaky, FIX IT before committing
+   **STEP 2: Create/Update Tests**
 
-   **MANDATORY PROCESS FOR CLAUDE (AI ENFORCEMENT):**
+   - Create E2E test in `app/src/androidTest/java/com/rasoiai/app/e2e/flows/`
+   - Add KDoc header: `/** Requirement: #XX - Description */`
+   - Write test methods matching acceptance criteria
 
-   BEFORE writing ANY code or making ANY changes, you MUST:
-   1. OUTPUT the Pre-Implementation Checklist in your response
-   2. Complete EACH item with explicit confirmation:
-      - "Screenshot captured: docs/testing/screenshots/XX_before.png"
-      - "Issue checked: #XX exists" or "Issue created: #XX"
-   3. Do NOT proceed to implementation until ALL items show [x]
+   **Output:**
+   ```
+   ✅ Step 2 Complete:
+   - Test file: XXXFlowTest.kt
+   - Test methods: [list]
+   ```
 
-   BEFORE creating any commit, you MUST:
-   1. OUTPUT the Post-Implementation Checklist in your response
-   2. Complete EACH item with explicit confirmation:
-      - "Screenshot captured: docs/testing/screenshots/XX_after.png"
-      - "Screenshots compared: [describe the visible difference]"
-      - "Tests passing: [test output summary]"
-   3. If ANY item is unchecked, STOP and complete it first
+   **STEP 3: Implement the Feature**
 
-   **SELF-CHECK GATE (answer these in your response before proceeding):**
+   Write the minimum code to make tests pass.
+
+   **STEP 4: Run Functional Tests**
+
+   ```bash
+   # Android
+   ./gradlew :app:connectedDebugAndroidTest \
+     -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.flows.YourTestClass
+
+   # Backend
+   PYTHONPATH=. pytest tests/test_xxx.py -v
+   ```
+
+   **STEP 5: Fix Loop**
+
+   IF tests fail → fix code → re-run tests → repeat until ALL pass.
+
+   ⚠️ **DO NOT proceed to Step 6 until ALL tests pass**
+
+   **STEP 6: Capture Screenshots**
+
+   Platform-specific capture to `docs/testing/screenshots/`:
+   ```bash
+   # Android (ADB)
+   adb exec-out screencap -p > docs/testing/screenshots/{issue}_{feature}_before.png
+   adb exec-out screencap -p > docs/testing/screenshots/{issue}_{feature}_after.png
+   ```
+   ```javascript
+   // Web (Playwright)
+   await browser_take_screenshot({
+     filename: "docs/testing/screenshots/{issue}_{feature}_{state}.png",
+     type: "png"
+   })
+   ```
+
+   **STEP 7: Verify and Confirm**
+
+   1. Read both screenshots using Read tool
+   2. Describe the visible difference
+   3. Commit with issue reference
+
+   **Final Output:**
+   ```
+   ✅ WORKFLOW COMPLETE:
+   - GitHub Issue: #XX
+   - Requirement: SCREEN-XXX
+   - Tests: X/X passed
+   - Screenshots:
+     - Before: docs/testing/screenshots/XX_before.png
+     - After: docs/testing/screenshots/XX_after.png
+   - Verification: [describe visible change]
+
+   The feature has been implemented and all tests pass.
+   ```
+
+   ---
+
+   ### SELF-ENFORCEMENT GATES (MANDATORY)
+
+   **Claude MUST answer these in each response:**
+
+   **Pre-Implementation Gate (Before Step 3):**
    ```
    □ Pre-Implementation Gate:
-     - "Did I capture a BEFORE screenshot?" → [YES with path / NO - STOP]
-     - "Did I note the issue number?" → [YES: #___ / NO - STOP]
-
-   □ Pre-Commit Gate:
-     - "Did I capture an AFTER screenshot?" → [YES with path / NO - STOP]
-     - "Did I compare before/after?" → [YES: difference is ___ / NO - STOP]
-     - "Are ALL tests passing?" → [YES: X/X passed / NO - STOP]
+     - "Step 1 complete (Requirements)?" → [YES / NO - STOP]
+     - "Step 2 complete (Tests created)?" → [YES / NO - STOP]
+     - "BEFORE screenshot captured?" → [YES: path / NO - STOP]
+     - "Issue number noted?" → [YES: #___ / NO - STOP]
    ```
+
+   **Pre-Commit Gate (Before Step 7 commit):**
+   ```
+   □ Pre-Commit Gate:
+     - "ALL tests passing?" → [YES: X/X passed / NO - STOP]
+     - "AFTER screenshot captured?" → [YES: path / NO - STOP]
+     - "Before/after compared?" → [YES: difference is ___ / NO - STOP]
+   ```
+
+   ---
+
+   ### CRITICAL RULES - NO EXCEPTIONS
+
+   - **No partial test passes**: "2 out of 3 is good enough" = VIOLATION
+   - **No @Ignore bypasses**: Marking failing tests as `@Ignore` = VIOLATION
+   - **No "fix later" excuses**: Creating issues to bypass failures = VIOLATION
+   - **No step skipping**: Each step must complete before the next
+   - **No commits without tests**: Tests MUST pass before any commit
 
    **VIOLATION = PROCESS FAILURE. No exceptions. No "I'll do it later."**
 
-   **Screenshot Verification (REQUIRED for UI changes):**
+   ---
 
-   For any feature affecting the UI, capture screenshots before and after implementation:
+   ### QUICK REFERENCE
 
-   ```bash
-   # Screenshot location (MUST use this folder)
-   docs/testing/screenshots/
-
-   # Naming convention
-   {issue_number}_{feature}_before.png   # Pre-implementation
-   {issue_number}_{feature}_after.png    # Post-implementation
-
-   # Example for Issue #40
-   40_auto_favorite_before.png
-   40_auto_favorite_after.png
-   ```
-
-   **Capture Methods:**
-   - **Android Emulator (ADB):**
-     ```bash
-     adb exec-out screencap -p > docs/testing/screenshots/40_feature_before.png
-     ```
-   - **Playwright (Web/Browser):**
-     ```javascript
-     await browser_take_screenshot({
-       filename: "docs/testing/screenshots/40_feature_before.png",
-       type: "png"
-     })
-     ```
-
-   **Verification Steps:**
-   1. Capture "before" screenshot showing current behavior
-   2. Implement the feature
-   3. Capture "after" screenshot showing new behavior
-   4. Visually compare: Confirm the expected UI change is present
-   5. Include screenshot comparison in PR description or Issue comment
-
-   **POST-TEST PROOF (MANDATORY):**
-
-   After tests pass, you MUST present the user with visual proof:
-   1. Capture screenshot of the app showing the implemented feature
-   2. Read and display the screenshot to the user using the Read tool
-   3. Explicitly state: "Here is the screenshot proof of the passing test"
-   4. If pre/post screenshots were captured, show BOTH for comparison
-
-   ```
-   Example output after tests pass:
-   "All 3 tests passed ✅
-
-   Here is the screenshot proof:"
-   [Display screenshot using Read tool]
-
-   "The screenshot shows [describe what's visible that proves the feature works]"
-   ```
-
-   **CRITICAL:** If you find yourself writing code without completing the pre-implementation checklist, STOP immediately and complete it first.
+   | Step | Action | Output Required |
+   |------|--------|-----------------|
+   | 1 | Update requirements | Issue #, Requirement ID |
+   | 2 | Create tests | Test file, methods |
+   | 3 | Implement | Code changes |
+   | 4 | Run tests | Pass/fail count |
+   | 5 | Fix loop | All tests passing |
+   | 6 | Screenshots | Before/after paths |
+   | 7 | Verify & commit | Visual diff, commit hash |
 
 ## Key Documentation
 
@@ -711,6 +729,7 @@ Configuration-driven meal planning with YAML source of truth synced to PostgreSQ
 | Technical Design | `docs/design/RasoiAI Technical Design.md` |
 | Meal Generation Algorithm | `docs/design/Meal-Generation-Algorithm.md` |
 | Meal Generation Config | `docs/design/Meal-Generation-Config-Architecture.md` |
+| **Workflow Rules** | `docs/rules/Claude Code Enforced Workflow Rules.md` |
 | E2E Testing Guide | `docs/testing/E2E-Testing-Prompt.md` |
 | E2E Test Plan | `docs/testing/E2E-Test-Plan.md` |
 | Functional Requirements | `docs/testing/Functional-Requirements.md` |
