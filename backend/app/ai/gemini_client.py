@@ -28,7 +28,7 @@ def get_gemini_model():
         import google.generativeai as genai
 
         genai.configure(api_key=settings.google_ai_api_key)
-        _model = genai.GenerativeModel("gemini-1.5-flash")
+        _model = genai.GenerativeModel("gemini-2.0-flash")
         logger.info("Gemini model initialized successfully")
         return _model
     except Exception as e:
@@ -105,6 +105,57 @@ Format your response in a conversational, easy-to-read way."""
             "message": "I had trouble analyzing that image. Please try again with a clearer food photo, or ask me any cooking question!",
             "recipe_suggestions": []
         }
+
+
+async def generate_text(
+    prompt: str,
+    temperature: float = 0.8,
+    max_output_tokens: int = 8192,
+) -> str:
+    """Generate text using Gemini 1.5 Flash.
+
+    Args:
+        prompt: The prompt to send to Gemini
+        temperature: Sampling temperature (0.0-1.0, higher = more creative)
+        max_output_tokens: Maximum tokens in response
+
+    Returns:
+        Generated text (JSON format when response_mime_type is set)
+
+    Raises:
+        ServiceUnavailableError: If Gemini is not configured
+        Exception: If generation fails
+    """
+    from app.core.exceptions import ServiceUnavailableError
+
+    model = get_gemini_model()
+
+    if not model:
+        raise ServiceUnavailableError("Gemini AI service not configured. Set GOOGLE_AI_API_KEY.")
+
+    try:
+        import google.generativeai as genai
+
+        # Configure generation for JSON output
+        generation_config = genai.GenerationConfig(
+            temperature=temperature,
+            max_output_tokens=max_output_tokens,
+            response_mime_type="application/json",
+        )
+
+        response = model.generate_content(
+            prompt,
+            generation_config=generation_config,
+        )
+
+        if not response.text:
+            raise ValueError("Empty response from Gemini")
+
+        return response.text
+
+    except Exception as e:
+        logger.error(f"Gemini text generation failed: {e}")
+        raise
 
 
 def _extract_recipe_suggestions(text: str) -> list:

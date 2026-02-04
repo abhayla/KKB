@@ -22,7 +22,7 @@ from app.schemas.meal_plan import (
     FestivalDto,
     SwapMealRequest,
 )
-from app.services.meal_generation_service import MealGenerationService
+from app.services.ai_meal_service import AIMealService
 
 logger = logging.getLogger(__name__)
 
@@ -130,9 +130,9 @@ async def generate(
             week_start = date.today()
             week_start = week_start - timedelta(days=week_start.weekday())
 
-        # Generate meal plan using the service
-        generation_service = MealGenerationService()
-        generated_plan = await generation_service.generate_meal_plan(
+        # Generate meal plan using the AI service
+        ai_service = AIMealService()
+        generated_plan = await ai_service.generate_meal_plan(
             user_id=user_id,
             week_start_date=week_start,
         )

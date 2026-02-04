@@ -1,10 +1,10 @@
 """
 Meal Plan Generation API Test - Tabular Output
-Test Profile: Sharma Family (Vegetarian, North/West cuisine)
+Test Profile: Sharma Family (Eggetarian/Non-Veg, North/West cuisine)
 
 Validates:
-- INCLUDE rules (Chai daily, Dal 4x/week, Paneer 2x/week)
-- EXCLUDE rules (No mushroom, No onion on Tuesdays)
+- INCLUDE rules (Chai daily breakfast+snacks, Dal 4x/week, Paneer 2x/week, Egg 4x/week, Chicken 2x/week)
+- EXCLUDE rules (No mushroom, No onion on Tuesdays, No non-veg/egg on Tuesdays)
 - Allergies (No peanuts/groundnut)
 - Dislikes (No karela, lauki, turai)
 - 2-item pairing per meal slot
@@ -20,15 +20,7 @@ from datetime import date, timedelta
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.path.insert(0, '.')
 
-# Initialize Firebase
-import firebase_admin
-from firebase_admin import credentials, firestore
-
-if not firebase_admin._apps:
-    cred = credentials.Certificate("rasoiai-firebase-service-account.json")
-    firebase_admin.initialize_app(cred)
-
-db = firestore.client()
+from app.repositories.user_repository import UserRepository
 
 # ============================================================
 # TEST DATA: SHARMA FAMILY PROFILE (Based on Plan)
@@ -47,7 +39,7 @@ SHARMA_FAMILY = {
     ],
 
     # Dietary Preferences
-    "dietary_tags": ["vegetarian"],
+    "dietary_tags": ["eggetarian", "non_vegetarian"],
     "cuisine_preferences": ["north", "west"],
     "spice_level": "medium",
 
@@ -64,12 +56,12 @@ SHARMA_FAMILY = {
 
     # Recipe Rules
     "recipe_rules": [
-        # INCLUDE: Chai every morning
+        # INCLUDE: Chai every morning and snacks
         {
             "type": "INCLUDE",
             "target": "Chai",
             "frequency": "DAILY",
-            "meal_slot": ["breakfast"],
+            "meal_slot": ["breakfast", "snacks"],
             "is_active": True,
         },
         # INCLUDE: Dal 4 times per week
@@ -90,6 +82,24 @@ SHARMA_FAMILY = {
             "meal_slot": ["lunch", "dinner"],
             "is_active": True,
         },
+        # INCLUDE: Egg 4 times per week
+        {
+            "type": "INCLUDE",
+            "target": "Egg",
+            "frequency": "TIMES_PER_WEEK",
+            "times_per_week": 4,
+            "meal_slot": ["breakfast", "lunch", "dinner"],
+            "is_active": True,
+        },
+        # INCLUDE: Chicken twice a week
+        {
+            "type": "INCLUDE",
+            "target": "Chicken",
+            "frequency": "TIMES_PER_WEEK",
+            "times_per_week": 2,
+            "meal_slot": ["lunch", "dinner"],
+            "is_active": True,
+        },
         # EXCLUDE: No mushroom ever
         {
             "type": "EXCLUDE",
@@ -102,6 +112,24 @@ SHARMA_FAMILY = {
         {
             "type": "EXCLUDE",
             "target": "Onion",
+            "frequency": "SPECIFIC_DAYS",
+            "specific_days": ["TUESDAY"],
+            "reason": "religious",
+            "is_active": True,
+        },
+        # EXCLUDE: No non-veg on Tuesdays (religious)
+        {
+            "type": "EXCLUDE",
+            "target": "Non-Veg",
+            "frequency": "SPECIFIC_DAYS",
+            "specific_days": ["TUESDAY"],
+            "reason": "religious",
+            "is_active": True,
+        },
+        # EXCLUDE: No egg on Tuesdays (religious)
+        {
+            "type": "EXCLUDE",
+            "target": "Egg",
             "frequency": "SPECIFIC_DAYS",
             "specific_days": ["TUESDAY"],
             "reason": "religious",
@@ -194,37 +222,48 @@ def print_input_tables():
 
 
 async def setup_test_user():
-    """Create/update test user and preferences in Firestore."""
-    # Create test user
-    users_ref = db.collection("users")
-    user_doc = users_ref.document(TEST_USER_ID)
+    """Create/update test user and preferences in PostgreSQL."""
+    user_repo = UserRepository()
 
-    user_data = {
-        "id": TEST_USER_ID,
-        "email": "sharma.family@test.com",
-        "display_name": "Sharma Family",
-        "firebase_uid": TEST_USER_ID,
-        "is_active": True,
-        "is_onboarded": True,
-    }
-    user_doc.set(user_data)
+    # Check if user exists
+    existing_user = await user_repo.get_by_id(TEST_USER_ID)
 
-    # Set preferences
-    prefs_doc = user_doc.collection("preferences").document("settings")
-    prefs_doc.set(SHARMA_FAMILY)
+    if not existing_user:
+        # Create test user - need to use direct DB access since create() generates UUID
+        from app.db.postgres import async_session_maker
+        from app.models.user import User
 
-    return user_data
+        async with async_session_maker() as session:
+            user = User(
+                id=TEST_USER_ID,
+                firebase_uid=TEST_USER_ID,
+                email="sharma.family@test.com",
+                name="Sharma Family",
+                is_onboarded=True,
+                is_active=True,
+            )
+            session.add(user)
+            await session.commit()
+            print(f"  [OK] Created user: {TEST_USER_ID}")
+    else:
+        print(f"  [OK] User exists: {TEST_USER_ID}")
+
+    # Save preferences
+    await user_repo.save_preferences(TEST_USER_ID, SHARMA_FAMILY)
+    print(f"  [OK] Saved preferences to PostgreSQL")
+
+    return {"id": TEST_USER_ID, "name": "Sharma Family"}
 
 
 async def call_generation_api():
-    """Call the meal plan generation service directly."""
-    from app.services.meal_generation_service import MealGenerationService
+    """Call the AI meal plan generation service directly."""
+    from app.services.ai_meal_service import AIMealService
 
     # Start from Monday of current week
     today = date.today()
     week_start = today - timedelta(days=today.weekday())  # This Monday
 
-    service = MealGenerationService()
+    service = AIMealService()
     plan = await service.generate_meal_plan(
         user_id=TEST_USER_ID,
         week_start_date=week_start,
@@ -297,14 +336,15 @@ def validate_results(plan):
     results = {}
     rows = []
 
-    # 1. Vegetarian check
-    veg_count = sum(1 for r in all_recipes if 'vegetarian' in r['tags'] or 'vegan' in r['tags'])
-    passed = veg_count == len(all_recipes)
-    results['vegetarian'] = passed
+    # 1. Dietary check (eggetarian/non-veg allowed)
+    valid_tags = ['vegetarian', 'vegan', 'eggetarian', 'non_vegetarian']
+    diet_count = sum(1 for r in all_recipes if any(t in r['tags'] for t in valid_tags))
+    passed = diet_count == len(all_recipes)
+    results['dietary'] = passed
     status = "PASS" if passed else "FAIL"
-    rows.append(["All Vegetarian", f"{len(all_recipes)}/{len(all_recipes)}", f"{veg_count}/{len(all_recipes)}", status])
+    rows.append(["Valid Dietary Tags", f"{len(all_recipes)}/{len(all_recipes)}", f"{diet_count}/{len(all_recipes)}", status])
 
-    # 2. Chai in breakfast (DAILY)
+    # 2. Chai in breakfast AND snacks (DAILY)
     # Note: Only count actual chai/tea drinks, not recipes that happen to have "chai" substring
     # e.g., "luchi" contains "chai" but is bread, not tea
     def is_chai_recipe(name):
@@ -322,11 +362,13 @@ def validate_results(plan):
             return True
         return False
 
-    chai_recipes = [r for r in all_recipes if is_chai_recipe(r['name']) and r['meal'] == 'breakfast']
-    passed = len(chai_recipes) >= 7
+    chai_breakfast = [r for r in all_recipes if is_chai_recipe(r['name']) and r['meal'] == 'breakfast']
+    chai_snacks = [r for r in all_recipes if is_chai_recipe(r['name']) and r['meal'] == 'snacks']
+    chai_total = len(chai_breakfast) + len(chai_snacks)
+    passed = len(chai_breakfast) >= 7 and len(chai_snacks) >= 7
     results['chai_daily'] = passed
     status = "PASS" if passed else "FAIL"
-    rows.append(["Chai DAILY (breakfast)", "7", str(len(chai_recipes)), status])
+    rows.append(["Chai DAILY (breakfast+snacks)", "14", str(chai_total), status])
 
     # 3. Dal 4x/week
     dal_terms = ['dal', 'daal', 'lentil']
@@ -343,14 +385,30 @@ def validate_results(plan):
     status = "PASS" if passed else "FAIL"
     rows.append(["Paneer 2x/week (lunch/dinner)", ">=2", str(len(paneer_recipes)), status])
 
-    # 5. No Mushroom (EXCLUDE)
+    # 5. Egg 4x/week
+    egg_terms = ['egg', 'omelette', 'omelet', 'anda', 'bhurji']
+    egg_recipes = [r for r in all_recipes if any(t in r['name'].lower() for t in egg_terms)]
+    passed = len(egg_recipes) >= 4
+    results['egg_4x'] = passed
+    status = "PASS" if passed else "FAIL"
+    rows.append(["Egg 4x/week", ">=4", str(len(egg_recipes)), status])
+
+    # 6. Chicken 2x/week
+    chicken_terms = ['chicken', 'murgh', 'murg']
+    chicken_recipes = [r for r in all_recipes if any(t in r['name'].lower() for t in chicken_terms) and r['meal'] in ['lunch', 'dinner']]
+    passed = len(chicken_recipes) >= 2
+    results['chicken_2x'] = passed
+    status = "PASS" if passed else "FAIL"
+    rows.append(["Chicken 2x/week (lunch/dinner)", ">=2", str(len(chicken_recipes)), status])
+
+    # 7. No Mushroom (EXCLUDE)
     mushroom_found = [r for r in all_recipes if 'mushroom' in r['name'].lower()]
     passed = len(mushroom_found) == 0
     results['no_mushroom'] = passed
     status = "PASS" if passed else "FAIL"
     rows.append(["No Mushroom (EXCLUDE)", "0", str(len(mushroom_found)), status])
 
-    # 6. No Peanuts (ALLERGY)
+    # 8. No Peanuts (ALLERGY)
     peanut_terms = ['peanut', 'groundnut', 'moongphali']
     peanut_found = [r for r in all_recipes if any(t in r['name'].lower() for t in peanut_terms)]
     passed = len(peanut_found) == 0
@@ -358,7 +416,7 @@ def validate_results(plan):
     status = "PASS" if passed else "FAIL"
     rows.append(["No Peanuts (ALLERGY)", "0", str(len(peanut_found)), status])
 
-    # 7. No Dislikes (karela, lauki, turai)
+    # 9. No Dislikes (karela, lauki, turai)
     dislike_terms = ['karela', 'bitter gourd', 'lauki', 'bottle gourd', 'turai', 'ridge gourd']
     dislike_found = [r for r in all_recipes if any(d in r['name'].lower() for d in dislike_terms)]
     passed = len(dislike_found) == 0
@@ -366,7 +424,22 @@ def validate_results(plan):
     status = "PASS" if passed else "FAIL"
     rows.append(["No Dislikes (karela/lauki/turai)", "0", str(len(dislike_found)), status])
 
-    # 8. 2-item pairing check
+    # 10. No Non-Veg on Tuesdays
+    nonveg_terms = ['chicken', 'mutton', 'fish', 'prawn', 'shrimp', 'meat', 'murgh', 'gosht', 'keema']
+    tuesday_nonveg = [r for r in all_recipes if r['day'] == 'Tuesday' and any(t in r['name'].lower() for t in nonveg_terms)]
+    passed = len(tuesday_nonveg) == 0
+    results['no_nonveg_tuesday'] = passed
+    status = "PASS" if passed else "FAIL"
+    rows.append(["No Non-Veg on Tuesdays", "0", str(len(tuesday_nonveg)), status])
+
+    # 11. No Egg on Tuesdays
+    tuesday_egg = [r for r in all_recipes if r['day'] == 'Tuesday' and any(t in r['name'].lower() for t in egg_terms)]
+    passed = len(tuesday_egg) == 0
+    results['no_egg_tuesday'] = passed
+    status = "PASS" if passed else "FAIL"
+    rows.append(["No Egg on Tuesdays", "0", str(len(tuesday_egg)), status])
+
+    # 12. 2-item pairing check
     paired_slots = 0
     total_slots = 0
     for day in plan.days:
@@ -380,7 +453,7 @@ def validate_results(plan):
     status = "PASS" if passed else "FAIL"
     rows.append(["2-item Pairing", f"{total_slots}/{total_slots}", f"{paired_slots}/{total_slots}", status])
 
-    # 9. Cooking time limits (weekday <= 30m, weekend <= 60m)
+    # 13. Cooking time limits (weekday <= 30m, weekend <= 60m)
     weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     weekday_over = [r for r in all_recipes if r['day'] in weekdays and r['time'] > 30]
     weekend_over = [r for r in all_recipes if r['day'] in ['Saturday', 'Sunday'] and r['time'] > 60]
@@ -400,6 +473,10 @@ def validate_results(plan):
         print(f"\n  PEANUT VIOLATIONS: {[r['name'] for r in peanut_found]}")
     if dislike_found:
         print(f"\n  DISLIKE VIOLATIONS: {[r['name'] for r in dislike_found]}")
+    if tuesday_nonveg:
+        print(f"\n  TUESDAY NON-VEG VIOLATIONS: {[r['name'] for r in tuesday_nonveg]}")
+    if tuesday_egg:
+        print(f"\n  TUESDAY EGG VIOLATIONS: {[r['name'] for r in tuesday_egg]}")
     if weekday_over:
         print(f"\n  WEEKDAY TIME VIOLATIONS: {[(r['day'], r['name'], r['time']) for r in weekday_over[:5]]}")
 
@@ -441,13 +518,12 @@ def print_summary(results, plan):
 async def main():
     """Main test function."""
     print_box("MEAL GENERATION API TEST", 90)
-    print(f"  Test Profile: SHARMA FAMILY (4 members)")
+    print(f"  Test Profile: SHARMA FAMILY (4 members, Eggetarian/Non-Veg)")
     print(f"  Date: {date.today().isoformat()}")
 
     # Setup
-    print("\n  Setting up test user...")
+    print("\n  Setting up test user in PostgreSQL...")
     await setup_test_user()
-    print("  [OK] User created in Firestore")
 
     # Display input
     print_input_tables()
