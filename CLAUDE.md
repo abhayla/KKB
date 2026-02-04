@@ -613,6 +613,37 @@ Configuration-driven meal planning with YAML source of truth synced to PostgreSQ
    - Do NOT create "fix later" issues as an excuse to commit with failures
    - If a test is genuinely broken/flaky, FIX IT before committing
 
+   **MANDATORY PROCESS FOR CLAUDE (AI ENFORCEMENT):**
+
+   BEFORE writing ANY code or making ANY changes, you MUST:
+   1. OUTPUT the Pre-Implementation Checklist in your response
+   2. Complete EACH item with explicit confirmation:
+      - "Screenshot captured: docs/testing/screenshots/XX_before.png"
+      - "Issue checked: #XX exists" or "Issue created: #XX"
+   3. Do NOT proceed to implementation until ALL items show [x]
+
+   BEFORE creating any commit, you MUST:
+   1. OUTPUT the Post-Implementation Checklist in your response
+   2. Complete EACH item with explicit confirmation:
+      - "Screenshot captured: docs/testing/screenshots/XX_after.png"
+      - "Screenshots compared: [describe the visible difference]"
+      - "Tests passing: [test output summary]"
+   3. If ANY item is unchecked, STOP and complete it first
+
+   **SELF-CHECK GATE (answer these in your response before proceeding):**
+   ```
+   □ Pre-Implementation Gate:
+     - "Did I capture a BEFORE screenshot?" → [YES with path / NO - STOP]
+     - "Did I note the issue number?" → [YES: #___ / NO - STOP]
+
+   □ Pre-Commit Gate:
+     - "Did I capture an AFTER screenshot?" → [YES with path / NO - STOP]
+     - "Did I compare before/after?" → [YES: difference is ___ / NO - STOP]
+     - "Are ALL tests passing?" → [YES: X/X passed / NO - STOP]
+   ```
+
+   **VIOLATION = PROCESS FAILURE. No exceptions. No "I'll do it later."**
+
    **Screenshot Verification (REQUIRED for UI changes):**
 
    For any feature affecting the UI, capture screenshots before and after implementation:
