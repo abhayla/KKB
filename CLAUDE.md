@@ -681,6 +681,24 @@ Configuration-driven meal planning with YAML source of truth synced to PostgreSQ
    4. Visually compare: Confirm the expected UI change is present
    5. Include screenshot comparison in PR description or Issue comment
 
+   **POST-TEST PROOF (MANDATORY):**
+
+   After tests pass, you MUST present the user with visual proof:
+   1. Capture screenshot of the app showing the implemented feature
+   2. Read and display the screenshot to the user using the Read tool
+   3. Explicitly state: "Here is the screenshot proof of the passing test"
+   4. If pre/post screenshots were captured, show BOTH for comparison
+
+   ```
+   Example output after tests pass:
+   "All 3 tests passed ✅
+
+   Here is the screenshot proof:"
+   [Display screenshot using Read tool]
+
+   "The screenshot shows [describe what's visible that proves the feature works]"
+   ```
+
    **CRITICAL:** If you find yourself writing code without completing the pre-implementation checklist, STOP immediately and complete it first.
 
 ## Key Documentation
