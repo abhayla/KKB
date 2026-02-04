@@ -705,11 +705,13 @@ Configuration-driven meal planning with YAML source of truth synced to PostgreSQ
 
 | Document | Location |
 |----------|----------|
-| Requirements | `docs/requirements/RasoiAI Requirements.md` |
+| **Requirements Index** | `docs/requirements/README.md` |
+| Screen Requirements | `docs/requirements/screens/` (12 files) |
+| API Requirements | `docs/requirements/api/backend-api.md` |
 | Technical Design | `docs/design/RasoiAI Technical Design.md` |
 | Meal Generation Algorithm | `docs/design/Meal-Generation-Algorithm.md` |
 | Meal Generation Config | `docs/design/Meal-Generation-Config-Architecture.md` |
 | E2E Testing Guide | `docs/testing/E2E-Testing-Prompt.md` |
 | E2E Test Plan | `docs/testing/E2E-Test-Plan.md` |
-| Functional Requirements | `docs/testing/Functional-Requirement-Rule.md` |
+| Functional Requirements | `docs/testing/Functional-Requirements.md` |
 | Session Context | `docs/CONTINUE_PROMPT.md` |
