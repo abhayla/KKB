@@ -35,7 +35,7 @@ import java.time.DayOfWeek
  * - Added recipe appears in the meal list immediately
  *
  * @see backend/tests/test_recipe_search.py for corresponding backend tests
- * @see docs/testing/Functional-Requirements.md for full requirements traceability
+ * @see docs/testing/Functional-Requirement-Rule.md for full requirements traceability
  */
 @HiltAndroidTest
 class AddChaiToBreakfastTest : BaseE2ETest() {

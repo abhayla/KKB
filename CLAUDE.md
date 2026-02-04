@@ -542,7 +542,7 @@ Configuration-driven meal planning with YAML source of truth synced to PostgreSQ
    **After Implementation:**
    - Create Android E2E test in `app/src/androidTest/java/com/rasoiai/app/e2e/flows/`
    - Create Backend test in `backend/tests/` if API is involved
-   - Update `docs/testing/Functional-Requirements.md` with test links
+   - Update `docs/testing/Functional-Requirement-Rule.md` with test links
 
    **Test Documentation:**
    - Each test file MUST have KDoc/docstring header referencing the GitHub Issue
@@ -558,7 +558,7 @@ Configuration-driven meal planning with YAML source of truth synced to PostgreSQ
    PYTHONPATH=. pytest tests/test_file.py -v
    ```
 
-   **Reference:** See `docs/testing/Functional-Requirements.md` for the full traceability matrix.
+   **Reference:** See `docs/testing/Functional-Requirement-Rule.md` for the full traceability matrix.
 
 7. **Pre-Implementation Checklist (MANDATORY)**:
 
@@ -581,7 +581,7 @@ Configuration-driven meal planning with YAML source of truth synced to PostgreSQ
    - [ ] **SCREENSHOT: Capture post-implementation state** (see below)
    - [ ] **VERIFY: Compare pre vs post screenshots to confirm change**
    - [ ] E2E test created with KDoc header: `/** Requirement: #XX - Description */`
-   - [ ] Functional-Requirements.md updated
+   - [ ] Functional-Requirement-Rule.md updated
    ```
 
    **Test Execution (REQUIRED before commit):**
@@ -711,5 +711,5 @@ Configuration-driven meal planning with YAML source of truth synced to PostgreSQ
 | Meal Generation Config | `docs/design/Meal-Generation-Config-Architecture.md` |
 | E2E Testing Guide | `docs/testing/E2E-Testing-Prompt.md` |
 | E2E Test Plan | `docs/testing/E2E-Test-Plan.md` |
-| Functional Requirements | `docs/testing/Functional-Requirements.md` |
+| Functional Requirements | `docs/testing/Functional-Requirement-Rule.md` |
 | Session Context | `docs/CONTINUE_PROMPT.md` |

@@ -8,7 +8,7 @@ body:
       value: |
         ## Functional Requirement Template
         Use this template to document new functional requirements before implementation.
-        Replace XXX in the title with the next available FR number (check docs/testing/Functional-Requirements.md).
+        Replace XXX in the title with the next available FR number (check docs/testing/Functional-Requirement-Rule.md).
 
   - type: dropdown
     id: feature-area

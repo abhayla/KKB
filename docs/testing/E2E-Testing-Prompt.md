@@ -50,7 +50,7 @@ gh issue view <issue-number>
 **Create new requirement if needed:**
 - Go to GitHub Issues → New Issue → "Functional Requirement" template
 - Fill in: Feature Area, Description, Acceptance Criteria, Test Scenarios
-- Assign next FR-XXX number (check `docs/testing/Functional-Requirements.md`)
+- Assign next FR-XXX number (check `docs/testing/Functional-Requirement-Rule.md`)
 
 ### 2. After Implementation
 
@@ -65,7 +65,7 @@ gh issue view <issue-number>
  * - [ ] Criterion 1
  * - [ ] Criterion 2
  *
- * @see docs/testing/Functional-Requirements.md
+ * @see docs/testing/Functional-Requirement-Rule.md
  */
 @HiltAndroidTest
 class YourFeatureTest : BaseE2ETest() {
@@ -87,7 +87,7 @@ async def test_your_feature():
 
 ### 3. Update Traceability
 
-Add entry to `docs/testing/Functional-Requirements.md`:
+Add entry to `docs/testing/Functional-Requirement-Rule.md`:
 
 | ID | Requirement | GitHub Issue | Android E2E Test | Backend Test | Status |
 |----|-------------|--------------|------------------|--------------|--------|
@@ -113,7 +113,7 @@ PYTHONPATH=. pytest tests/test_your_feature.py -v
 | GitHub Issue | #TBD | Defines acceptance criteria |
 | Android E2E | `AddChaiToBreakfastTest.kt` | Tests UI search and add flow |
 | Backend Test | `test_recipe_search.py` | Tests API returns chai recipes |
-| Traceability | `Functional-Requirements.md` | Links all together |
+| Traceability | `Functional-Requirement-Rule.md` | Links all together |
 
 **See also:** `.github/ISSUE_TEMPLATE/functional_requirement.yml` for the issue template.
 
