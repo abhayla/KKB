@@ -397,14 +397,14 @@ API docs: `http://localhost:8000/docs`
 | File | Purpose |
 |------|---------|
 | `app/db/postgres.py` | PostgreSQL connection pool |
-| `app/services/meal_generation_service.py` | 2-item pairing logic |
+| `app/services/ai_meal_service.py` | Gemini-powered AI meal generation |
 | `app/services/preference_update_service.py` | INCLUDE/EXCLUDE rules |
 | `app/ai/chat_assistant.py` | Tool calling orchestration |
-| `app/ai/gemini_client.py` | Google Gemini Vision API for food photo analysis |
+| `app/ai/gemini_client.py` | Google Gemini API for vision and text generation |
 
 ## Meal Generation
 
-Configuration-driven meal planning with YAML source of truth synced to PostgreSQL.
+AI-powered meal planning using Google Gemini, with YAML config for pairing guidance.
 
 **Config files** in `backend/config/`:
 - `meal_generation.yaml` - Pairing rules, meal structure

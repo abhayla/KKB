@@ -638,79 +638,79 @@ python scripts/sync_config.py --dry-run
 
 ## Meal Generation Algorithm
 
-> **Note:** For detailed implementation including fallback strategies, allergen expansion, and daily ingredient tracking, see [Meal-Generation-Algorithm.md](./Meal-Generation-Algorithm.md).
+> **Note:** For detailed implementation including AI prompt structure, retry logic, and post-processing enforcement, see [Meal-Generation-Algorithm.md](./Meal-Generation-Algorithm.md).
 
 ### Flow (Summary)
+
+The meal generation now uses **Google Gemini AI** to generate recipe names freely, without database lookup.
 
 ```
 1. Load user preferences from PostgreSQL
    └── recipe_rules, allergies, dislikes, dietary_tags, cooking_time, busy_days
 
-2. Load system config from PostgreSQL
-   └── meal_structure, pairing_rules, recipe_categories
+2. Load festivals for the week from PostgreSQL
+   └── festival names, special foods, items to avoid
 
-3. For each day (7 days):
+3. Build comprehensive AI prompt containing:
    │
-   ├── Determine day type (weekday/weekend/busy)
-   │   └── Set max_cooking_time accordingly
-   │
-   ├── For each meal slot (breakfast, lunch, snacks, dinner):
-   │   │
-   │   ├── Count INCLUDE rules for this slot
-   │   │   │
-   │   │   ├── 0 rules: Use predefined pairing
-   │   │   │   └── Pick category pair (e.g., dal + rice)
-   │   │   │   └── Find recipes matching categories
-   │   │   │
-   │   │   ├── 1 rule: INCLUDE item + random recipe
-   │   │   │   └── Find recipe matching INCLUDE target
-   │   │   │   └── Pick any other recipe for slot
-   │   │   │
-   │   │   └── 2+ rules: All INCLUDE items
-   │   │       └── Find recipes for each INCLUDE target
-   │   │
-   │   ├── Apply EXCLUDE filters
-   │   │   └── Remove recipes with excluded ingredients
-   │   │   └── Remove recipes with allergens
-   │   │   └── Remove recipes with dislikes
-   │   │
-   │   ├── Apply cooking time filter
-   │   │   └── Only recipes <= max_cooking_time
-   │   │
-   │   └── Select final recipes (avoid duplicates in week)
-   │
-   └── Build meal plan day
+   ├── User preferences (dietary tags, cuisine)
+   ├── INCLUDE rules (DAILY, TIMES_PER_WEEK)
+   ├── EXCLUDE rules (NEVER, SPECIFIC_DAYS)
+   ├── Allergies (CRITICAL - safety)
+   ├── Dislikes (avoid when possible)
+   ├── Cooking time limits (weekday/weekend/busy)
+   ├── Festival context
+   └── Pairing guidance from config
 
-4. Save meal plan to PostgreSQL
+4. Call Gemini 2.0 Flash API
+   │
+   ├── JSON response mode (response_mime_type="application/json")
+   ├── Retry with exponential backoff (3 attempts)
+   └── Validate response structure (7 days, 4 slots each)
+
+5. Post-process for safety enforcement
+   │
+   ├── Remove any items containing allergens
+   ├── Remove any items violating EXCLUDE NEVER rules
+   └── Remove any items violating EXCLUDE SPECIFIC_DAYS rules
+
+6. Return GeneratedMealPlan
 ```
 
-### Pairing Selection Logic
+### AI Generation Approach
 
 ```python
-def select_meal_items(slot, include_rules, user_prefs, system_config):
-    """Select items for a meal slot."""
+async def generate_meal_plan(self, user_id: str, week_start_date: date) -> GeneratedMealPlan:
+    """Generate meal plan using Gemini AI."""
 
-    # Count INCLUDE rules for this slot
-    slot_rules = [r for r in include_rules if slot in r['meal_slots']]
+    # Load data
+    prefs = await self._load_user_preferences(user_id)
+    festivals = await self._load_festivals(week_start_date)
 
-    if len(slot_rules) == 0:
-        # Use predefined pairing
-        cuisine = user_prefs['cuisine_preferences'][0]
-        pairing = system_config['pairing_rules']['by_cuisine'][cuisine]
-        category_pair = random.choice(pairing['default_pairs'])
-        return find_recipes_by_categories(category_pair)
+    # Build prompt with all context
+    prompt = self._build_prompt(prefs, festivals, week_start_date)
 
-    elif len(slot_rules) == 1:
-        # INCLUDE item + random recipe
-        include_recipe = find_recipe_matching(slot_rules[0]['target'])
-        other_recipe = find_random_recipe_for_slot(slot, exclude=[include_recipe])
-        return [include_recipe, other_recipe]
+    # Call Gemini with retry
+    response = await self._generate_with_retry(prompt)
 
-    else:
-        # All INCLUDE items
-        recipes = [find_recipe_matching(r['target']) for r in slot_rules]
-        return recipes
+    # Parse JSON to dataclasses
+    plan = self._parse_response(response, week_start_date)
+
+    # Enforce critical safety rules
+    plan = self._enforce_rules(plan, prefs)
+
+    return plan
 ```
+
+### Key Differences from Database Approach
+
+| Aspect | Old (Database) | New (AI) |
+|--------|----------------|----------|
+| Recipe source | PostgreSQL lookup | AI generates freely |
+| Pairing logic | Code-driven | AI decides |
+| Fallbacks | 5-level relaxation | Retry with backoff |
+| Allergens | Pre-filter queries | Post-process removal |
+| Festivals | Not supported | Context in prompt |
 
 ---
 
@@ -744,4 +744,4 @@ def select_meal_items(slot, include_rules, user_prefs, system_config):
 
 ---
 
-*Last updated: January 28, 2026*
+*Last updated: February 2026 - Updated for Gemini-powered AI generation*

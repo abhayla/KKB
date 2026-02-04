@@ -1,55 +1,55 @@
 # Meal Generation Algorithm
 
-This document describes the detailed implementation of RasoiAI's meal plan generation algorithm.
+This document describes the implementation of RasoiAI's AI-powered meal plan generation using Google Gemini.
 
 **Related:** [Meal-Generation-Config-Architecture.md](./Meal-Generation-Config-Architecture.md) - Config structure and chat integration
 
 ---
 
-## Implementation Status (MVP)
+## Implementation Status
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| 2-item pairing logic | ✅ Implemented | Default 2 items per slot |
-| Variable items per cooking time | ✅ Implemented | Config-driven, defaults to 2 |
-| INCLUDE rules (DAILY/TIMES_PER_WEEK) | ✅ Implemented | Full tracking across week |
-| EXCLUDE rules (NEVER frequency) | ✅ Implemented | Ingredient-level filtering |
-| Allergy exclusion with variants | ✅ Implemented | Peanut, dairy, gluten, etc. |
-| Dislike filtering | ✅ Implemented | Simple name matching |
-| Cooking time limits | ✅ Implemented | Weekday/weekend/busy day |
-| Weekly deduplication | ✅ Implemented | Main recipes don't repeat |
-| Daily ingredient tracking | ✅ Implemented | Same ingredient not in lunch AND dinner |
-| Generic suggestions fallback | ✅ Implemented | "Make your own" when no DB recipe |
-| Progressive fallbacks | ✅ Implemented | 4 levels implemented |
-| User-configurable dedup settings | 🔮 Future | Currently hardcoded |
-| Per meal-type item override | 🔮 Future | Uses global setting |
-| Nutrition goals enforcement | 🔮 Future | Not implemented |
-| Festival/fasting day integration | 🔮 Future | Not implemented |
-| Allergen expansion toggle | 🔮 Future | Currently auto-expanded |
+| Gemini AI generation | ✅ Implemented | Uses Gemini 2.0 Flash |
+| 2-item pairing logic | ✅ Implemented | AI generates complementary pairs |
+| INCLUDE rules (DAILY/TIMES_PER_WEEK) | ✅ Implemented | Passed to AI in prompt |
+| EXCLUDE rules (NEVER/SPECIFIC_DAYS) | ✅ Implemented | Post-processing enforcement |
+| Allergy exclusion | ✅ Implemented | Post-processing enforcement |
+| Dislike filtering | ✅ Implemented | Included in AI prompt |
+| Cooking time limits | ✅ Implemented | AI estimates prep times |
+| Festival/fasting integration | ✅ Implemented | Context passed to AI |
+| Retry with exponential backoff | ✅ Implemented | 3 attempts max |
+| JSON response validation | ✅ Implemented | Structure validation |
 
-**Test Coverage:** 51 tests (22 structure + 29 integration)
+**Test Coverage:** 22 unit tests
 
 ---
 
 ## Overview
 
-The algorithm generates a **7-day personalized meal plan** with 4 meal slots per day (breakfast, lunch, dinner, snacks), each containing **2 complementary items** (e.g., Dal + Rice).
+The algorithm generates a **7-day personalized meal plan** using Google Gemini AI. The AI freely generates recipe names (no database lookup required) while respecting user preferences, INCLUDE/EXCLUDE rules, allergies, and festivals.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    MealGenerationService                             │
+│                       AIMealService                                  │
 ├─────────────────────────────────────────────────────────────────────┤
 │  Inputs:                                                            │
 │  ├── User Preferences (PostgreSQL)                                   │
-│  ├── Recipe Database (3,580 recipes)                                │
-│  └── Config Rules (YAML → PostgreSQL)                                │
+│  ├── Festivals (PostgreSQL)                                         │
+│  └── Pairing Config (YAML → PostgreSQL)                              │
+│                                                                     │
+│  Process:                                                           │
+│  ├── Build comprehensive prompt                                      │
+│  ├── Call Gemini 2.0 Flash (JSON output)                            │
+│  ├── Validate response structure                                     │
+│  └── Post-process: enforce allergens, EXCLUDE rules                  │
 │                                                                     │
 │  Outputs:                                                           │
 │  └── GeneratedMealPlan (7 days × 4 slots × 2 items = 56 items)     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-**Source Code:** `backend/app/services/meal_generation_service.py`
+**Source Code:** `backend/app/services/ai_meal_service.py`
 
 ---
 
@@ -59,388 +59,313 @@ The algorithm generates a **7-day personalized meal plan** with 4 meal slots per
 ```python
 @dataclass
 class MealItem:
-    id: str
-    recipe_id: str              # "GENERIC" for make-your-own suggestions
-    recipe_name: str
-    recipe_image_url: Optional[str]
-    prep_time_minutes: int = 30
-    calories: int = 0
+    id: str                              # UUID for each item
+    recipe_name: str                     # AI-generated recipe name
+    prep_time_minutes: int = 30          # AI-estimated time
+    dietary_tags: list[str] = field(default_factory=list)
+    category: str = ""                   # dal, sabzi, chai, etc.
     is_locked: bool = False
-    dietary_tags: list[str]
-    category: str
-    is_generic: bool = False    # True if no database recipe (user makes their own)
+    recipe_id: str = "AI_GENERATED"      # No database lookup
+    recipe_image_url: Optional[str] = None
+    calories: int = 0
 ```
 
 ### UserPreferences
 ```python
 @dataclass
 class UserPreferences:
-    dietary_tags: list[str]           # ["vegetarian"]
-    cuisine_type: Optional[str]       # "north"
-    allergies: list[dict]             # [{"ingredient": "peanuts", "severity": "SEVERE"}]
-    dislikes: list[str]               # ["karela", "lauki"]
-    weekday_cooking_time: int         # 30 min
-    weekend_cooking_time: int         # 60 min
-    busy_days: list[str]              # ["MONDAY", "WEDNESDAY"]
-    include_rules: list[dict]         # INCLUDE rules from recipe_rules
-    exclude_rules: list[dict]         # EXCLUDE rules from recipe_rules
-    nutrition_goals: list[dict]       # NUTRITION_GOAL rules
+    dietary_tags: list[str]              # ["vegetarian"]
+    cuisine_type: Optional[str]          # "north"
+    allergies: list[dict]                # [{"ingredient": "peanuts", "severity": "SEVERE"}]
+    dislikes: list[str]                  # ["karela", "lauki"]
+    weekday_cooking_time: int            # 30 min
+    weekend_cooking_time: int            # 60 min
+    busy_days: list[str]                 # ["MONDAY", "WEDNESDAY"]
+    include_rules: list[dict]            # INCLUDE rules from recipe_rules
+    exclude_rules: list[dict]            # EXCLUDE rules from recipe_rules
 ```
 
 ### GeneratedMealPlan
 ```python
 @dataclass
 class GeneratedMealPlan:
-    week_start_date: str              # "2026-01-27"
-    week_end_date: str                # "2026-02-02"
-    days: list[DayMeals]              # 7 days
-    rules_applied: dict               # Summary of rules applied
+    week_start_date: str                 # "2026-01-27"
+    week_end_date: str                   # "2026-02-02"
+    days: list[DayMeals]                 # 7 days
+    rules_applied: dict                  # Summary of rules applied
 ```
 
 ---
 
 ## Algorithm Phases
 
-### Phase 1: Initialization
+### Phase 1: Load Data
 
 ```python
-# 1. Load config (pairing rules from YAML/PostgreSQL)
-config = await self.config_service.get_config()
-
-# 2. Load user preferences
+# 1. Load user preferences from PostgreSQL
 prefs = await self._load_user_preferences(user_id)
 
-# 3. Build tracking structures
-used_recipe_ids: set[str] = set()           # Avoid duplicate recipes across week
-include_tracker = self._build_include_tracker()  # Track INCLUDE rule fulfillment
+# 2. Load festivals for the week
+festivals = await self._load_festivals(week_start_date)
+
+# 3. Get pairing config (optional, for prompt guidance)
+config = await self.config_service.get_config()
 ```
 
-**Include Tracker Structure:**
+---
+
+### Phase 2: Build AI Prompt
+
+The prompt is carefully structured to provide the AI with all necessary context:
+
 ```python
-include_tracker = {
-    "0": {
-        "rule": {...},
-        "target": "Chai",
-        "meal_slots": ["breakfast"],
-        "times_needed": 7,          # DAILY = 7
-        "times_assigned": 0,
-        "frequency": "DAILY"
-    },
-    "1": {
-        "rule": {...},
-        "target": "Dal",
-        "meal_slots": ["lunch", "dinner"],
-        "times_needed": 4,          # 4x per week
-        "times_assigned": 0,
-        "frequency": "TIMES_PER_WEEK"
+def _build_prompt(self, prefs, festivals, config, week_start_date) -> str:
+    """Build comprehensive prompt for Gemini."""
+```
+
+**Prompt Structure:**
+
+```
+You are RasoiAI, an Indian meal planning assistant. Generate a 7-day meal plan.
+
+## USER PREFERENCES (STRICT - MUST FOLLOW)
+
+### Dietary Tags: [vegetarian, eggetarian, etc.]
+
+### Allergies (NEVER INCLUDE - SAFETY CRITICAL):
+- peanuts (SEVERE)
+- shellfish (MODERATE)
+
+### Dislikes (AVOID WHEN POSSIBLE):
+- karela, lauki, turai
+
+### Cuisine Preference: north, west
+
+## INCLUDE RULES (MUST APPEAR)
+
+- Chai: DAILY at breakfast, snacks
+- Dal: 4x/week at lunch, dinner
+- Egg: 4x/week at breakfast, lunch, dinner
+- Chicken: 2x/week at lunch, dinner
+
+## EXCLUDE RULES (NEVER INCLUDE)
+
+- Mushroom: NEVER
+- Onion: On TUESDAY
+- Non-Veg: On TUESDAY
+
+## COOKING TIME LIMITS
+
+- Weekdays: Max 30 minutes
+- Weekends: Max 60 minutes
+- Busy days (MONDAY, WEDNESDAY): Max 30 minutes
+
+## FESTIVALS THIS WEEK
+
+- Tuesday 2026-02-10: Ekadashi (fasting day)
+  - Special foods: Sabudana Khichdi, fruits
+  - Avoid: grains, onion, garlic
+
+## PAIRING GUIDANCE
+
+- Dal pairs with: rice, roti, paratha, naan
+- Sabzi pairs with: roti, paratha, rice
+- Paratha pairs with: chai, raita, pickle
+- Dosa/Idli pairs with: sambar, chutney
+
+## OUTPUT FORMAT
+
+Return valid JSON:
+{
+  "days": [
+    {
+      "date": "2026-02-09",
+      "day_name": "Monday",
+      "breakfast": [
+        {"recipe_name": "Aloo Paratha", "prep_time_minutes": 25,
+         "dietary_tags": ["vegetarian"], "category": "paratha"},
+        {"recipe_name": "Masala Chai", "prep_time_minutes": 10,
+         "dietary_tags": ["vegetarian"], "category": "chai"}
+      ],
+      "lunch": [...],
+      "dinner": [...],
+      "snacks": [...]
     }
+  ]
 }
 ```
 
 ---
 
-### Phase 2: Build Exclusion List
-
-Creates a comprehensive set of ingredients that must **never appear** in any recipe.
+### Phase 3: Generate with Retry
 
 ```python
-def _build_exclude_list(self, prefs: UserPreferences) -> set[str]:
-    exclude = set()
+async def _generate_with_retry(self, prompt: str, max_retries: int = 3) -> str:
+    """Call Gemini with exponential backoff retry."""
 
-    # 1. EXCLUDE rules with NEVER frequency
-    for rule in prefs.exclude_rules:
-        if rule.get("frequency") == "NEVER":
-            target = rule.get("target", "").lower()
-            exclude.add(target)
-            # Add singular/plural variants
-            if target.endswith("s"):
-                exclude.add(target[:-1])    # peanuts -> peanut
-            else:
-                exclude.add(target + "s")   # mushroom -> mushrooms
+    for attempt in range(max_retries):
+        try:
+            response = await generate_text(prompt)
+            self._validate_response_structure(response)
+            return response
+        except Exception as e:
+            logger.warning(f"Attempt {attempt + 1} failed: {e}")
+            if attempt < max_retries - 1:
+                await asyncio.sleep(2 ** attempt)  # 1s, 2s, 4s
 
-    # 2. Allergies (CRITICAL - expanded to variants)
-    for allergy in prefs.allergies:
-        ingredient = allergy.get("ingredient", "").lower()
-        exclude.add(ingredient)
-        # Expand to known variants
-        if ingredient in allergen_variants:
-            exclude.update(allergen_variants[ingredient])
-
-    # 3. Dislikes
-    for dislike in prefs.dislikes:
-        exclude.add(dislike.lower())
-
-    return exclude
+    raise ServiceUnavailableError(f"Failed after {max_retries} attempts")
 ```
 
-**Allergen Variant Expansion:**
-
-| Allergen | Variants Added |
-|----------|----------------|
-| `peanut` | peanuts, groundnut, groundnuts, moongphali |
-| `dairy` | milk, cheese, paneer, curd, yogurt, cream, butter, ghee |
-| `gluten` | wheat, maida, atta, bread, roti, naan |
-| `shellfish` | shrimp, prawn, crab, lobster |
-| `tree nuts` | almond, cashew, walnut, pistachio, kaju, badam |
-
----
-
-### Phase 3: Daily Generation Loop
-
-```
-for day_index in range(7):  # Monday → Sunday
-    │
-    ├── Determine cooking time limit
-    │   ├── Weekday: weekday_cooking_time (default 30 min)
-    │   ├── Weekend: weekend_cooking_time (default 60 min)
-    │   └── Busy day: weekday_cooking_time (overrides weekend)
-    │
-    ├── Build per-day tracking
-    │   └── used_ingredients_today: set[str]  # Avoid same ingredient in lunch AND dinner
-    │
-    └── for slot in [breakfast, lunch, dinner, snacks]:
-            │
-            ├── Adjust slot cooking time
-            │   └── Dinner gets minimum 45 min (ensures good options)
-            │
-            ├── Process INCLUDE rules
-            │   └── If matched → add item + find complementary pair
-            │
-            └── If no INCLUDE → Generate default paired meal
-```
-
-**Cooking Time Logic:**
+**Gemini Configuration:**
 ```python
-max_time = prefs.weekday_cooking_time
-if is_busy_day:
-    max_time = prefs.weekday_cooking_time
-elif is_weekend:
-    max_time = prefs.weekend_cooking_time
-
-# Special case: Dinner gets minimum 45 min
-if slot == "dinner" and max_time < 45:
-    slot_max_time = 45
-```
-
----
-
-### Phase 4: INCLUDE Rule Processing
-
-The algorithm tracks INCLUDE rules across the week to ensure fulfillment.
-
-**Assignment Logic by Frequency:**
-
-| Frequency | Assignment Strategy |
-|-----------|---------------------|
-| `DAILY` | Always assign, allow recipe reuse |
-| `TIMES_PER_WEEK` | Spread evenly across week |
-| Fallback | Force assignment if running out of days |
-
-**TIMES_PER_WEEK Distribution:**
-```python
-# For Dal 4x/week:
-times_needed = 4
-times_assigned = tracker["times_assigned"]
-days_remaining = 7 - day_index
-times_remaining = times_needed - times_assigned
-
-# Must assign if running out of days
-if days_remaining <= times_remaining:
-    should_assign = True
-
-# Otherwise assign on evenly spaced days (0, 2, 4, 6 for 4x/week)
-elif (day_index % max(1, 7 // times_needed)) == 0:
-    should_assign = True
-```
-
-**Search Strategy for INCLUDE Rules:**
-
-```
-DAILY Rules (e.g., Chai):
-├── Search with cuisine filter, no meal_type filter, allow reuse
-├── If empty → Retry without cuisine filter
-└── Select random from results
-
-NON-DAILY Rules (e.g., Dal 4x/week):
-├── Search with cuisine + meal_type + exclude used recipes
-├── If empty → Retry without meal_type filter
-└── Select random from results
-```
-
-**Why DAILY rules allow reuse:**
-- Morning Chai is expected to be the same recipe (it's just chai)
-- Prevents running out of recipes for items needed every day
-- Makes the meal plan more realistic
-
----
-
-### Phase 5: 2-Item Pairing Logic
-
-Each meal slot gets **2 complementary items** based on Indian cuisine traditions.
-
-**Config-Driven Pairs:**
-```python
-meal_type_pairs = {
-    "breakfast": ["paratha:chai", "poha:chai", "idli:sambar", "dosa:chutney"],
-    "lunch": ["dal:rice", "sabzi:roti", "curry:rice"],
-    "dinner": ["dal:roti", "sabzi:paratha", "curry:rice", "dal:rice"],
-    "snacks": ["snack:chai", "snack:chutney"]
-}
-```
-
-**Pairing Process:**
-
-```
-Scenario 1: INCLUDE rule matched (e.g., "Dal")
-├── Add Dal recipe to slot
-└── Find complementary item using config lookup
-    └── Dal → pairs with: [rice, roti]
-    └── Search for Rice or Roti recipe
-
-Scenario 2: No INCLUDE rule
-├── Pick random pair from config (e.g., "dal:rice")
-├── Search for Dal recipe as primary
-└── Search for Rice recipe as accompaniment
-```
-
-**Complementary Item Categories:**
-```python
-default_pairs = {
-    "dal": ["rice", "roti"],
-    "sabzi": ["roti", "paratha"],
-    "curry": ["rice", "naan"],
-    "dosa": ["sambar", "chutney"],
-    "idli": ["sambar", "chutney"],
-    "paratha": ["chai", "curd"],
-    "poha": ["chai"],
-    "rice": ["dal", "sambar"],
-}
-```
-
----
-
-### Phase 6: Recipe Filtering Pipeline
-
-Every recipe candidate passes through multiple filter layers:
-
-```
-Recipe Candidate
-     │
-     ├── 1. Dietary filter
-     │   └── Must match: vegetarian, vegan, jain, etc.
-     │
-     ├── 2. Cuisine filter
-     │   └── Prefer: north, south, east, west
-     │
-     ├── 3. Cooking time filter
-     │   └── Must be ≤ max_cooking_time for the day/slot
-     │
-     ├── 4. Exclusion filter
-     │   ├── Check recipe name for excluded ingredients
-     │   └── Check ingredients list for excluded items
-     │
-     ├── 5. Used recipe filter
-     │   └── Exclude recipes already used this week
-     │
-     └── 6. Daily ingredient filter
-         └── Exclude if main ingredient already used today
-```
-
-**Exclusion Check Implementation:**
-```python
-def _recipe_matches_excludes(self, recipe: dict, exclude_ingredients: set[str]) -> bool:
-    # Check recipe name
-    name = recipe.get("name", "").lower()
-    for excluded in exclude_ingredients:
-        if excluded in name:
-            return True  # Recipe contains excluded ingredient
-
-    # Check ingredients list
-    for ing in recipe.get("ingredients", []):
-        ing_name = ing.get("name", "").lower() if isinstance(ing, dict) else str(ing).lower()
-        for excluded in exclude_ingredients:
-            if excluded in ing_name:
-                return True
-
-    return False
-```
-
-**Daily Ingredient Tracking:**
-```python
-main_ingredients = [
-    "rajma", "chole", "dal", "paneer", "aloo", "gobi", "palak",
-    "bhindi", "baingan", "matar", "chana", "moong", "toor",
-    "idli", "dosa", "paratha", "roti", "rice", "biryani", "pulao",
-    "sambar", "rasam", "curry", "sabzi", "khichdi", "poha", "upma"
-]
-
-# If "Rajma" is in lunch, don't allow "Rajma Curry" in dinner
-```
-
----
-
-### Phase 7: Fallback Strategies
-
-When recipe search fails, the algorithm progressively relaxes constraints:
-
-```
-Level 1: Full filters
-├── cuisine_type + meal_type + cooking_time + dietary + excludes
-│
-Level 2: Remove meal_type filter
-├── Some recipes don't have proper meal_type tags
-│
-Level 3: Remove cuisine_type filter
-├── Expand to all cuisines if preferred cuisine lacks options
-│
-Level 4: Remove cooking time limit
-├── For slots that are still empty
-│
-Level 5: For DAILY rules - Allow recipe reuse
-└── Same Chai recipe can appear every day
-```
-
-**Fallback Code Pattern:**
-```python
-# Primary search
-recipes = await self.recipe_repo.search_by_ingredient(
-    ingredient=target,
-    cuisine_type=prefs.cuisine_type,
-    meal_type=slot,
-    max_time_minutes=max_cooking_time,
-    exclude_ids=used_recipe_ids,
+generation_config = genai.GenerationConfig(
+    temperature=0.8,                    # Creative but consistent
+    max_output_tokens=8192,             # Enough for full week
+    response_mime_type="application/json",  # Structured output
 )
+```
 
-# Fallback 1: Remove meal_type
-if not recipes:
-    recipes = await self.recipe_repo.search_by_ingredient(
-        ingredient=target,
-        cuisine_type=prefs.cuisine_type,
-        meal_type=None,  # Removed
-        max_time_minutes=max_cooking_time,
-        exclude_ids=used_recipe_ids,
-    )
+---
 
-# Fallback 2: Remove cuisine_type
-if not recipes:
-    recipes = await self.recipe_repo.search_by_ingredient(
-        ingredient=target,
-        cuisine_type=None,  # Removed
-        meal_type=None,
-        max_time_minutes=max_cooking_time,
-        exclude_ids=used_recipe_ids,
-    )
+### Phase 4: Validate Response
 
-# Fallback 3: For DAILY rules, allow reuse
-if not recipes and frequency == "DAILY":
-    recipes = await self.recipe_repo.search_by_ingredient(
-        ingredient=target,
-        cuisine_type=None,
-        meal_type=None,
-        max_time_minutes=max_cooking_time,
-        exclude_ids=None,  # Allow reuse
+```python
+def _validate_response_structure(self, response_text: str) -> dict:
+    """Validate the JSON structure from Gemini."""
+
+    data = json.loads(response_text)
+
+    # Must have 'days' array
+    if "days" not in data:
+        raise ValueError("Response missing 'days' array")
+
+    # Must have 7 days
+    if len(data["days"]) != 7:
+        raise ValueError(f"Expected 7 days, got {len(data['days'])}")
+
+    # Each day must have required meal slots
+    for day in data["days"]:
+        for slot in ["breakfast", "lunch", "dinner", "snacks"]:
+            if slot not in day:
+                raise ValueError(f"Day missing '{slot}' slot")
+
+    return data
+```
+
+---
+
+### Phase 5: Parse Response
+
+```python
+def _parse_response(self, response_text: str, week_start_date: date) -> GeneratedMealPlan:
+    """Convert JSON response to GeneratedMealPlan dataclass."""
+
+    data = json.loads(response_text)
+    days = []
+
+    for i, day_data in enumerate(data["days"]):
+        current_date = week_start_date + timedelta(days=i)
+
+        day_meals = DayMeals(
+            date=current_date.isoformat(),
+            day_name=current_date.strftime("%A"),
+            breakfast=self._parse_meal_items(day_data.get("breakfast", [])),
+            lunch=self._parse_meal_items(day_data.get("lunch", [])),
+            dinner=self._parse_meal_items(day_data.get("dinner", [])),
+            snacks=self._parse_meal_items(day_data.get("snacks", [])),
+            festival=day_data.get("festival")
+        )
+        days.append(day_meals)
+
+    return GeneratedMealPlan(
+        week_start_date=week_start_date.isoformat(),
+        week_end_date=(week_start_date + timedelta(days=6)).isoformat(),
+        days=days,
+        rules_applied={}
     )
 ```
+
+---
+
+### Phase 6: Post-Processing Enforcement
+
+Even though the AI is instructed to follow rules, we enforce critical safety rules after generation:
+
+```python
+def _enforce_rules(self, plan: GeneratedMealPlan, prefs: UserPreferences) -> GeneratedMealPlan:
+    """Post-process to enforce allergens and EXCLUDE rules."""
+
+    # Build set of items to check against
+    allergens = {a["ingredient"].lower() for a in prefs.allergies}
+
+    # EXCLUDE NEVER rules
+    exclude_never = {
+        r["target"].lower()
+        for r in prefs.exclude_rules
+        if r.get("frequency") == "NEVER"
+    }
+
+    for day in plan.days:
+        day_name = day.day_name.upper()
+
+        # EXCLUDE SPECIFIC_DAYS rules for this day
+        exclude_today = {
+            r["target"].lower()
+            for r in prefs.exclude_rules
+            if r.get("frequency") == "SPECIFIC_DAYS"
+            and day_name in [d.upper() for d in r.get("specific_days", [])]
+        }
+
+        all_excluded = allergens | exclude_never | exclude_today
+
+        # Check each meal slot
+        for slot in ["breakfast", "lunch", "dinner", "snacks"]:
+            items = getattr(day, slot)
+            filtered_items = []
+
+            for item in items:
+                recipe_lower = item.recipe_name.lower()
+                # Check if any excluded ingredient appears in recipe name
+                should_exclude = any(
+                    excluded in recipe_lower
+                    for excluded in all_excluded
+                )
+
+                if should_exclude:
+                    logger.warning(
+                        f"Removing {item.recipe_name} on {day.date} "
+                        f"- contains excluded ingredient"
+                    )
+                else:
+                    filtered_items.append(item)
+
+            setattr(day, slot, filtered_items)
+
+    return plan
+```
+
+**What Gets Enforced:**
+
+| Rule Type | Enforcement |
+|-----------|-------------|
+| Allergies | Always removed (safety critical) |
+| EXCLUDE NEVER | Always removed |
+| EXCLUDE SPECIFIC_DAYS | Removed on specified days only |
+| Dislikes | Included in prompt (AI avoids) |
+| INCLUDE rules | Included in prompt (AI generates) |
+
+---
+
+## Rule Hierarchy
+
+The prompt instructs the AI to follow this priority order:
+
+1. **Allergies** → NEVER include (strict, safety)
+2. **EXCLUDE rules** → NEVER include on specified days
+3. **INCLUDE rules** → MUST appear at specified frequency
+4. **Dislikes** → Avoid when possible
+5. **Festivals** → Incorporate special_foods, respect fasting
+6. **Pairing** → AI decides within constraints
 
 ---
 
@@ -455,8 +380,22 @@ GeneratedMealPlan(
             date="2026-01-27",
             day_name="Monday",
             breakfast=[
-                MealItem(recipe_name="Masala Chai", category="beverage", ...),
-                MealItem(recipe_name="Aloo Paratha", category="paratha", ...)
+                MealItem(
+                    id="uuid-1",
+                    recipe_name="Masala Chai",
+                    prep_time_minutes=10,
+                    dietary_tags=["vegetarian"],
+                    category="chai",
+                    recipe_id="AI_GENERATED"
+                ),
+                MealItem(
+                    id="uuid-2",
+                    recipe_name="Aloo Paratha",
+                    prep_time_minutes=25,
+                    dietary_tags=["vegetarian"],
+                    category="paratha",
+                    recipe_id="AI_GENERATED"
+                )
             ],
             lunch=[
                 MealItem(recipe_name="Dal Fry", category="dal", ...),
@@ -464,21 +403,21 @@ GeneratedMealPlan(
             ],
             dinner=[
                 MealItem(recipe_name="Paneer Butter Masala", category="curry", ...),
-                MealItem(recipe_name="Butter Naan", category="roti", ...)
+                MealItem(recipe_name="Butter Naan", category="bread", ...)
             ],
             snacks=[
                 MealItem(recipe_name="Samosa", category="snack", ...),
-                MealItem(recipe_name="Green Chutney", category="chutney", ...)
-            ]
+                MealItem(recipe_name="Masala Chai", category="chai", ...)
+            ],
+            festival=None
         ),
         # ... 6 more days
     ],
     rules_applied={
         "include_rules": 3,
         "exclude_rules": 2,
-        "nutrition_goals": 0,
         "allergies_excluded": 1,
-        "dislikes_excluded": 3
+        "dislikes_noted": 3
     }
 )
 ```
@@ -487,326 +426,144 @@ GeneratedMealPlan(
 
 ## Key Design Decisions
 
-### Decision #1: Meal Structure (Main + Complementary Items)
+### Decision #1: AI-Generated Recipes (No Database Lookup)
 
-**Structure:** Each meal slot contains Main item(s) + Complementary item(s) for each main.
+**Rationale:**
+- AI can generate any Indian recipe name without being limited to database entries
+- Eliminates complex fallback logic when database lacks matching recipes
+- More creative and varied meal suggestions
+- Works even with empty/sparse recipe databases
 
-| Aspect | Decision |
-|--------|----------|
-| **Structure** | Main item(s) + Complementary item(s) for each main |
-| **Complementary** | Always added (never skip), even for complete dishes like Biryani |
-| **Generic items** | Both main and complementary can be suggested without database recipe (marked as "No recipe - make your own") |
+**Trade-offs:**
+- No recipe instructions available (recipe_id = "AI_GENERATED")
+- Prep times are AI estimates, not database values
+- No calorie/nutrition data from database
 
-**Number of Main Items (Based on Cooking Time):**
+### Decision #2: Prompt-Based Rule Communication
 
-| Cooking Time | Default Meal |
-|--------------|--------------|
-| ≤ 30 min | 1 main + complementary (simple) |
-| 30-45 min | 2 mains + complementary (full) |
-| > 45 min | 2+ mains + complementary (elaborate) |
+**Approach:** All user preferences are communicated to the AI in the prompt, not enforced through code filtering.
 
-**User Preference Options (all supported):**
+**Advantages:**
+- AI can make intelligent trade-offs
+- Natural language understanding of rules
+- Handles edge cases gracefully
 
-| Setting | Description |
-|---------|-------------|
-| **Items per meal (B)** | Range like "2-3 items", "3-4 items", "4+ items" |
-| **Per meal-type (C)** | Different config for breakfast/lunch/dinner/snacks |
-| **Override time (D)** | "Always full meals" or "Always simple" |
+**Disadvantages:**
+- AI may occasionally miss rules (hence post-processing enforcement)
 
-**Priority:** Per meal-type (C) > Items per meal (B) > Override (D) > Cooking Time Logic
+### Decision #3: Post-Processing Enforcement
 
-**Complementary Selection Logic:**
-1. Check what's already in the meal (avoid duplicates - variety first)
-2. From remaining options, pick based on cuisine preference (North = Roti, South = Rice)
-3. If variety not possible, allow duplicate (better to repeat than skip)
-4. Database recipes and generic suggestions treated equally
+**Approach:** Critical safety rules (allergies, EXCLUDE) are enforced after AI generation.
 
-**Pairing Configuration (config-driven):**
-```python
-pairings = {
-    "dal": ["rice", "roti", "paratha"],
-    "sabzi": ["roti", "paratha", "rice"],
-    "curry": ["rice", "naan", "roti"],
-    "biryani": ["raita", "salad"],
-    "dosa": ["sambar", "chutney"],
-    "khichdi": ["papad", "pickle", "curd"],
-}
-```
+**Why:**
+- AI is generally reliable but not 100%
+- Allergies are safety-critical - must guarantee exclusion
+- Simple string matching catches obvious violations
+- Better to remove items than serve allergens
 
----
+### Decision #4: Retry with Exponential Backoff
 
-### Decision #2: Weekly Deduplication
+**Implementation:**
+- 3 retry attempts maximum
+- Delays: 1s, 2s, 4s (exponential)
+- Validates JSON structure before accepting
+- Fails with ServiceUnavailableError after all retries
 
-**Approach:** User configurable preference for recipe repetition.
+### Decision #5: JSON Response Mode
 
-**Configuration Options:**
+**Approach:** Use Gemini's `response_mime_type="application/json"` for structured output.
 
-| Setting | Options | Default |
-|---------|---------|---------|
-| Global toggle (A) | "Allow recipe repeats" ON/OFF | OFF |
-| Per item type - Main (D) | "Main items can repeat" ON/OFF | OFF |
-| Per item type - Complementary (D) | "Complementary can repeat" ON/OFF | ON |
-| Per INCLUDE rule | "Allow repeat for this rule" checkbox | OFF |
-
-**Default behavior:** Main items no repeat, Complementary can repeat.
-
-**Priority:** Per rule > Per item type (D) > Global toggle (A)
-
-**Logic Flow:**
-```
-1. Check per-rule "Allow repeat" setting
-   └── If ON → Allow repeat for this rule
-2. Check per item type setting (D)
-   └── Main item → Check "Main items can repeat"
-   └── Complementary → Check "Complementary can repeat"
-3. Global toggle (A) only applies if D not configured
-```
+**Benefits:**
+- Guaranteed valid JSON format
+- Easier parsing
+- Consistent structure
+- No need to extract JSON from text
 
 ---
 
-### Decision #3: Daily Ingredient Tracking
+## Comparison: Old vs New Approach
 
-**Approach:** Same main ingredient cannot appear twice on same day (e.g., no Rajma at lunch AND dinner).
-
-| Aspect | Decision |
-|--------|----------|
-| **Tracking scope** | Only main items tracked, accompaniments can repeat |
-| **Classification method** | Based on recipe category |
-
-**Category Classification:**
-
-| Main Item Categories | Accompaniment Categories |
-|---------------------|-------------------------|
-| dal | rice |
-| sabzi | roti |
-| curry | paratha |
-| biryani | naan |
-| pulao | chutney |
-| khichdi | raita |
-| dosa | sambar |
-| idli | pickle |
-| poha | papad |
-| upma | salad |
-| paneer_dish | beverage |
-| egg_dish | chai |
-
-**Logic:**
-```
-1. When adding recipe to meal slot:
-   └── Get recipe category
-   └── If category is "main item":
-       └── Check if ingredient already used today
-       └── If yes → skip, find alternative
-       └── If no → add to used_ingredients_today
-   └── If category is "accompaniment":
-       └── Allow (no tracking)
-```
-
----
-
-### Decision #4: DAILY Rules Allow Reuse
-
-**Status:** Merged into Decision #2.
-
-DAILY rules (like "Chai every morning") follow the same per-rule "Allow repeat" checkbox from Decision #2. No special treatment - user enables repeat if needed.
-
----
-
-### Decision #5: Allergen Variant Expansion
-
-**Approach:** User can optionally enable regional variant expansion for allergens.
-
-| Aspect | Decision |
-|--------|----------|
-| **Default** | Auto-expand OFF - only exact term excluded |
-| **UI** | Simple toggle to enable/disable variants |
-| **Extendable** | Variants list can be updated over time |
-
-**Allergen Variants Map:**
-
-```python
-allergen_variants = {
-    "peanut": ["peanuts", "groundnut", "groundnuts", "moongphali"],
-    "dairy": ["milk", "cheese", "paneer", "curd", "yogurt", "cream", "butter", "ghee"],
-    "gluten": ["wheat", "maida", "atta", "bread", "roti", "naan"],
-    "shellfish": ["shrimp", "prawn", "crab", "lobster"],
-    "tree nuts": ["almond", "cashew", "walnut", "pistachio", "kaju", "badam"],
-    "soy": ["soya", "soybean", "soybeans", "tofu", "soy sauce", "soya chunks"],
-    "egg": ["eggs", "anda", "omelette", "egg white", "egg yolk"],
-    "sesame": ["til", "sesame seeds", "tahini", "gingelly"],
-}
-```
-
-**User Flow:**
-```
-1. User adds allergy: "Peanuts"
-2. System saves: peanuts (exact term only)
-3. User sees toggle: "Include regional variants (groundnut, moongphali)"
-4. If enabled → expands to all variants
-5. Can disable anytime in settings
-```
-
----
-
-### Decision #6: Cooking Time Minimums
-
-**Approach:** User configurable - Global minimum + meal-type override.
-
-| Setting | Default |
-|---------|---------|
-| Global minimum | 15 min |
-| Dinner override | Enabled, 45 min |
-| Other meal overrides | Disabled |
-
-**Configuration:**
-
-```
-Cooking Time Settings:
-├── Global minimum: [15] min (applies to all meals)
-└── Meal-type overrides:
-    ├── ☑ Dinner minimum: [45] min
-    ├── ☐ Lunch minimum: [__] min
-    ├── ☐ Breakfast minimum: [__] min
-    └── ☐ Snacks minimum: [__] min
-```
-
-**Logic:**
-```
-1. Get user's cooking time for the day (weekday/weekend/busy)
-2. Apply global minimum (max of user time vs global min)
-3. Apply meal-type override if enabled (max of step 2 vs meal min)
-4. Final cooking time = result of step 3
-```
-
----
-
-### Decision #7: Progressive Fallbacks
-
-**Approach:** Progressive fallbacks for database search, generic suggestion as final option.
-
-| Aspect | Decision |
-|--------|----------|
-| **Dietary tags** | User configurable "Strict dietary" toggle (default ON - never relax) |
-| **Allergies** | Never relax - safety critical |
-| **Dislikes** | Can relax as last resort, with warning to user |
-| **Final fallback** | Suggest generic item (no database recipe) |
-
-**Fallback Sequence:**
-
-```
-Level 1: Full filters (cuisine + meal_type + time + dietary + excludes)
-    ↓ (if empty)
-Level 2: Remove meal_type filter
-    ↓ (if empty)
-Level 3: Remove cuisine_type filter
-    ↓ (if empty)
-Level 4: Remove cooking time limit
-    ↓ (if empty)
-Level 5: Relax dislikes (with warning: "Could not avoid [item]")
-    ↓ (if empty)
-Level 6: Suggest generic item (no database recipe)
-
-NEVER RELAX:
-- Allergies (safety critical)
-- Dietary tags (if "Strict dietary" ON)
-```
-
-**User Settings:**
-
-| Setting | Default | Effect |
-|---------|---------|--------|
-| Strict dietary | ON | Never relax vegetarian/vegan/jain |
-| Strict dietary | OFF | Can relax dietary as last resort with warning |
-
----
-
-## Performance Considerations
-
-| Aspect | Approach |
-|--------|----------|
-| **Recipe search** | Uses PostgreSQL queries with filters, limited to needed results |
-| **Caching** | Config is loaded once per generation request |
-| **Deduplication** | `used_recipe_ids` set provides O(1) lookup |
-| **Ingredient tracking** | Simple string matching on recipe names |
+| Aspect | Old (Database Lookup) | New (AI Generation) |
+|--------|----------------------|---------------------|
+| Recipe source | PostgreSQL (3,580 recipes) | AI generates freely |
+| Fallback strategy | 5-level progressive relaxation | Retry with backoff |
+| Recipe deduplication | Track used_recipe_ids | AI manages variety |
+| Allergen handling | Pre-filter database queries | Post-process removal |
+| Cooking time | Filter by prep_time_minutes | AI estimates, prompt guidance |
+| Pairing logic | Code-driven category lookup | AI decides pairs |
+| Festival handling | Not implemented | Context in prompt |
+| Complexity | ~1100 lines | ~660 lines |
 
 ---
 
 ## Testing
 
-### Test Data: Sharma Family Profile
+### Test Coverage
 
-```python
-SHARMA_FAMILY = {
-    "household_size": 4,
-    "family_members": [
-        {"name": "Ramesh", "type": "ADULT", "age": 45},
-        {"name": "Sunita", "type": "ADULT", "age": 42, "special_needs": ["LOW_OIL"]},
-        {"name": "Arjun", "type": "CHILD", "age": 16, "special_needs": ["HIGH_PROTEIN"]},
-        {"name": "Priya", "type": "CHILD", "age": 12},
-    ],
-    "dietary_tags": ["vegetarian"],
-    "cuisine_preferences": ["north", "west"],
-    "allergies": [{"ingredient": "peanuts", "severity": "SEVERE"}],
-    "disliked_ingredients": ["karela", "lauki", "turai"],
-    "weekday_cooking_time_minutes": 30,
-    "weekend_cooking_time_minutes": 60,
-    "busy_days": ["MONDAY", "WEDNESDAY"],
-    "recipe_rules": [
-        {"type": "INCLUDE", "target": "Chai", "frequency": "DAILY", "meal_slot": ["breakfast"]},
-        {"type": "INCLUDE", "target": "Dal", "frequency": "TIMES_PER_WEEK", "times_per_week": 4, "meal_slot": ["lunch", "dinner"]},
-        {"type": "INCLUDE", "target": "Paneer", "frequency": "TIMES_PER_WEEK", "times_per_week": 2, "meal_slot": ["lunch", "dinner"]},
-        {"type": "EXCLUDE", "target": "Mushroom", "frequency": "NEVER"},
-        {"type": "EXCLUDE", "target": "Onion", "frequency": "SPECIFIC_DAYS", "specific_days": ["TUESDAY"]},
-    ],
-}
-```
-
-### Validation Checklist
-
-| Rule | Expected | Pass Criteria |
-|------|----------|---------------|
-| Chai (INCLUDE DAILY) | 7 in breakfast | Count >= 7 |
-| Dal (INCLUDE 4x/week) | 4 in lunch/dinner | Count >= 4 |
-| Paneer (INCLUDE 2x/week) | 2 in lunch/dinner | Count >= 2 |
-| Mushroom (EXCLUDE) | 0 anywhere | Count = 0 |
-| Peanuts (ALLERGY) | 0 anywhere | Count = 0 |
-| Dislikes (karela/lauki/turai) | 0 anywhere | Count = 0 |
-| 2-item pairing | All 28 slots have 2 items | No single-item slots |
-| Dietary compliance | All vegetarian | No non-veg recipes |
-| Cooking time | Weekday ≤30m, Weekend ≤60m | All within limits |
+| Test Class | Tests | Purpose |
+|------------|-------|---------|
+| TestPromptBuilding | 7 | Verify prompt includes all preferences |
+| TestResponseParsing | 3 | Verify JSON parsing to dataclasses |
+| TestValidation | 5 | Verify structure validation |
+| TestEnforcement | 4 | Verify post-processing rules |
+| TestIntegration | 3 | Full flow with mocked Gemini |
 
 ### Test Script
 
 ```bash
 cd backend
 source venv/Scripts/activate  # Windows
-python test_meal_api_tabular.py
+PYTHONPATH=. pytest tests/test_ai_meal_service.py -v
 ```
+
+### Validation Test (Tabular)
+
+```bash
+cd backend
+PYTHONPATH=. python test_meal_api_tabular.py
+```
+
+Tests the Sharma Family profile with constraints:
+- Chai DAILY in breakfast ✓
+- Dal 4x/week ✓
+- Mushroom NEVER ✓
+- Peanut allergy ✓
+- Cooking time limits ✓
+
+---
+
+## Performance
+
+| Metric | Value |
+|--------|-------|
+| Gemini API call | ~3-5 seconds |
+| Total generation | ~4-7 seconds |
+| Retry overhead | +1-4 seconds per retry |
+| Post-processing | <100ms |
 
 ---
 
 ## Future Improvements
 
-1. **Nutrition tracking** - Track weekly nutrition goals (protein, iron, etc.)
-2. **Festival menus** - Auto-suggest festival-appropriate meals
-3. **Leftovers handling** - Suggest using yesterday's dal for lunch
-4. **Seasonal ingredients** - Prefer in-season vegetables
-5. **Cost optimization** - Balance expensive and budget recipes
-6. **User-configurable deduplication** - Allow users to enable/disable recipe repeats
-7. **Per meal-type item counts** - Different item counts for breakfast vs dinner
-8. **Allergen expansion toggle** - Let users enable/disable variant expansion
-9. **6-level progressive fallbacks** - Currently 4 levels implemented
+1. **Recipe linking** - Match AI-generated names to database recipes for instructions
+2. **Nutrition estimation** - AI estimates calories based on recipe type
+3. **Feedback loop** - Learn from user swaps to improve future suggestions
+4. **Multi-language** - Support Hindi recipe names in output
+5. **Image generation** - Generate placeholder images for AI recipes
+6. **Caching** - Cache meal plans for offline regeneration
 
 ---
 
-## Known Limitations
+## Troubleshooting
 
-1. **Recipe Distribution Imbalance** - Database has 3,124 North Indian recipes but only 23 East Indian recipes. East cuisine users may see more generic suggestions.
-
-2. **Allergen Variants Hardcoded** - Variant expansion is automatic, not user-configurable. Some users may want more control.
-
-3. **No Severity-Based Filtering** - All allergies treated as critical regardless of MILD/MODERATE/SEVERE setting.
+| Issue | Solution |
+|-------|----------|
+| Gemini 404 error | Check model name (gemini-2.0-flash), verify API key |
+| Empty response | Retry logic handles this; check prompt size |
+| Invalid JSON | Validate response structure; retry automatically |
+| Missing items after enforcement | AI included allergen; post-processing removed it |
+| INCLUDE rule not satisfied | Check prompt format; AI may have misunderstood |
 
 ---
 
-*Last updated: January 29, 2026 - Implementation complete for MVP*
+*Last updated: February 2026 - Migrated to Gemini-powered AI generation*
