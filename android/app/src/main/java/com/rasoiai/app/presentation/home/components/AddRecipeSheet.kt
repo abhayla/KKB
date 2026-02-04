@@ -24,11 +24,13 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -48,8 +50,10 @@ fun AddRecipeSheet(
     mealType: MealType,
     suggestedRecipes: List<Recipe>,
     favoriteRecipes: List<Recipe>,
+    isLoadingSuggestions: Boolean = false,
     onDismiss: () -> Unit,
-    onRecipeSelected: (Recipe) -> Unit
+    onRecipeSelected: (Recipe) -> Unit,
+    onSearchQueryChange: (String) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var searchQuery by remember { mutableStateOf("") }
@@ -62,18 +66,8 @@ fun AddRecipeSheet(
         MealType.SNACKS -> "Snacks"
     }
 
-    // Filter recipes based on search query
-    val filteredSuggestions = remember(searchQuery, suggestedRecipes) {
-        if (searchQuery.isBlank()) {
-            suggestedRecipes
-        } else {
-            suggestedRecipes.filter {
-                it.name.contains(searchQuery, ignoreCase = true) ||
-                it.cuisineType.displayName.contains(searchQuery, ignoreCase = true)
-            }
-        }
-    }
-
+    // For Suggestions tab, use server-provided results (already filtered by search)
+    // For Favorites tab, filter locally since favorites are cached
     val filteredFavorites = remember(searchQuery, favoriteRecipes) {
         if (searchQuery.isBlank()) {
             favoriteRecipes
@@ -85,7 +79,18 @@ fun AddRecipeSheet(
         }
     }
 
-    val displayedRecipes = if (selectedTabIndex == 0) filteredSuggestions else filteredFavorites
+    val displayedRecipes = if (selectedTabIndex == 0) suggestedRecipes else filteredFavorites
+
+    // Debounce search query changes to avoid too many API calls
+    LaunchedEffect(searchQuery) {
+        if (searchQuery.isNotBlank()) {
+            delay(300) // 300ms debounce
+            onSearchQueryChange(searchQuery)
+        } else if (searchQuery.isBlank()) {
+            // When cleared, fetch default suggestions
+            onSearchQueryChange("")
+        }
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -154,7 +159,24 @@ fun AddRecipeSheet(
             Spacer(modifier = Modifier.height(spacing.sm))
 
             // Recipe Grid (2 columns)
-            if (displayedRecipes.isEmpty()) {
+            if (isLoadingSuggestions && selectedTabIndex == 0) {
+                // Show loading indicator while searching
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = spacing.xl),
+                    horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+                ) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        modifier = Modifier.padding(spacing.md)
+                    )
+                    Text(
+                        text = "Searching recipes...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else if (displayedRecipes.isEmpty()) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()

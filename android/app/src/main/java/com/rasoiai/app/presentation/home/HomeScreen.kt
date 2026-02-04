@@ -169,6 +169,7 @@ fun HomeScreen(
         onAddRecipeClick = viewModel::showAddRecipeSheet,  // Add Recipe button (Issue #4)
         onDismissAddRecipeSheet = viewModel::dismissAddRecipeSheet,
         onSelectAddRecipe = viewModel::addRecipeToMeal,  // Issue #23: Recipe selection
+        onSearchAddRecipes = viewModel::searchAddRecipes,  // Server-side search
         onFestivalBannerClick = viewModel::onFestivalBannerClick,
         onDismissFestivalRecipesSheet = viewModel::dismissFestivalRecipesSheet,
         onFestivalRecipeClick = viewModel::onFestivalRecipeClick,
@@ -213,6 +214,7 @@ private fun HomeScreenContent(
     onAddRecipeClick: (MealType) -> Unit,
     onDismissAddRecipeSheet: () -> Unit,
     onSelectAddRecipe: (Recipe) -> Unit,
+    onSearchAddRecipes: (String) -> Unit,
     onFestivalBannerClick: () -> Unit,
     onDismissFestivalRecipesSheet: () -> Unit,
     onFestivalRecipeClick: (Recipe) -> Unit,
@@ -457,8 +459,10 @@ private fun HomeScreenContent(
             mealType = uiState.addRecipeMealType,
             suggestedRecipes = uiState.addRecipeSuggestions,
             favoriteRecipes = uiState.addRecipeFavorites,
+            isLoadingSuggestions = uiState.isLoadingAddRecipeSuggestions,
             onDismiss = onDismissAddRecipeSheet,
-            onRecipeSelected = onSelectAddRecipe
+            onRecipeSelected = onSelectAddRecipe,
+            onSearchQueryChange = onSearchAddRecipes
         )
     }
 

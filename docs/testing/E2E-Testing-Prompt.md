@@ -32,6 +32,93 @@ cd android
 
 ---
 
+## Functional Requirements Workflow
+
+When implementing or testing features that affect user-facing functionality, follow this workflow to ensure requirements are properly tracked and tested.
+
+### 1. Before Implementation
+
+**Check for existing requirements:**
+```bash
+# List functional requirements issues
+gh issue list --label "functional-requirement"
+
+# View specific requirement
+gh issue view <issue-number>
+```
+
+**Create new requirement if needed:**
+- Go to GitHub Issues → New Issue → "Functional Requirement" template
+- Fill in: Feature Area, Description, Acceptance Criteria, Test Scenarios
+- Assign next FR-XXX number (check `docs/testing/Functional-Requirements.md`)
+
+### 2. After Implementation
+
+**Create E2E test with requirement reference:**
+```kotlin
+/**
+ * Requirement: #XX - FR-XXX: Brief description
+ *
+ * Detailed description of what this test verifies.
+ *
+ * Acceptance Criteria:
+ * - [ ] Criterion 1
+ * - [ ] Criterion 2
+ *
+ * @see docs/testing/Functional-Requirements.md
+ */
+@HiltAndroidTest
+class YourFeatureTest : BaseE2ETest() {
+    // Test implementation
+}
+```
+
+**Create backend test (if API involved):**
+```python
+"""
+Requirement: #XX - FR-XXX: Brief description
+
+Tests the API endpoint for this feature.
+"""
+@pytest.mark.asyncio
+async def test_your_feature():
+    # Test implementation
+```
+
+### 3. Update Traceability
+
+Add entry to `docs/testing/Functional-Requirements.md`:
+
+| ID | Requirement | GitHub Issue | Android E2E Test | Backend Test | Status |
+|----|-------------|--------------|------------------|--------------|--------|
+| FR-XXX | Your requirement | #XX | `YourFeatureTest.kt` | `test_your_feature.py` | ✅ |
+
+### 4. Verify Tests Pass
+
+```bash
+# Android E2E test
+cd android
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.flows.YourFeatureTest
+
+# Backend test
+cd backend
+PYTHONPATH=. pytest tests/test_your_feature.py -v
+```
+
+### Example: FR-001 Add Chai to Breakfast
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| GitHub Issue | #TBD | Defines acceptance criteria |
+| Android E2E | `AddChaiToBreakfastTest.kt` | Tests UI search and add flow |
+| Backend Test | `test_recipe_search.py` | Tests API returns chai recipes |
+| Traceability | `Functional-Requirements.md` | Links all together |
+
+**See also:** `.github/ISSUE_TEMPLATE/functional_requirement.yml` for the issue template.
+
+---
+
 ## Test Scenarios Reference
 
 The phases below describe **what scenarios should be tested**. These are implemented in the `*ScreenTest.kt` and `*IntegrationTest.kt` files in `app/src/androidTest/`.
@@ -2040,10 +2127,48 @@ adb uninstall com.rasoiai.app.debug
 
 **IMPORTANT:** All screenshots MUST be saved to `docs/testing/screenshots/`. This folder is gitignored.
 
+#### Screenshot Best Practices (Avoiding Image Processing Errors)
+
+When Claude Code captures screenshots for analysis, follow these guidelines to avoid API 400 "Could not process image" errors:
+
+| Rule | Why |
+|------|-----|
+| **Use PNG format** | Most reliable format for image processing |
+| **Limit dimensions** | Keep viewport ≤1280x720; avoid huge images |
+| **Avoid fullPage on long pages** | Can create 10,000+ px images that fail |
+| **Wait for page stability** | Ensure content is loaded before capture |
+| **Verify file saved** | Check file exists with non-zero size |
+
+**ADB Screenshot Pattern:**
 ```bash
-# Screenshot (save to designated folder)
+# Capture to designated folder
 adb exec-out screencap -p > docs/testing/screenshots/screenshot_$(date +%H%M%S).png
 
+# IMPORTANT: Verify file was captured successfully before reading
+ls -la docs/testing/screenshots/screenshot_$(date +%H%M%S).png
+```
+
+**Playwright MCP Screenshot Pattern:**
+```javascript
+// GOOD: Viewport screenshot with PNG format
+await browser_take_screenshot({
+  filename: "docs/testing/screenshots/home_after_login.png",
+  type: "png"
+})
+
+// BAD: Full page on long scrollable content - can create huge images
+await browser_take_screenshot({
+  fullPage: true  // Avoid on long pages
+})
+```
+
+**If Image Processing Fails:**
+1. Re-capture with smaller viewport/dimensions
+2. Try JPEG format instead of PNG (or vice versa)
+3. Capture specific element instead of full page
+4. Verify the original file isn't corrupt (open in image viewer)
+
+```bash
 # UI hierarchy
 adb shell uiautomator dump /data/local/tmp/ui.xml && adb pull /data/local/tmp/ui.xml
 
@@ -2227,11 +2352,23 @@ After each screen test, take a screenshot to verify pass/fail.
 FOR each screen in [Auth, Onboarding, Generation, Home, RecipeDetail, Grocery]:
     1. Run automated test step
     2. Take screenshot: adb exec-out screencap -p > docs/testing/screenshots/{step}_{screen}.png
-    3. Analyze screenshot to verify pass
-    4. IF PASS: Move to next screen
-    5. IF FAIL: Fix issue → Clear app data → Retest from start
-    6. Loop until all screens pass
+    3. Verify file saved: ls -la docs/testing/screenshots/{step}_{screen}.png
+    4. Analyze screenshot to verify pass
+    5. IF IMAGE PROCESSING ERROR:
+       - Re-capture screenshot
+       - If still fails, reduce emulator resolution or capture element only
+    6. IF PASS: Move to next screen
+    7. IF FAIL: Fix issue → Clear app data → Retest from start
+    8. Loop until all screens pass
 ```
+
+**Handling "Could not process image" Errors:**
+If you encounter API 400 errors when reading screenshots:
+1. Verify the file exists and has content (>0 bytes)
+2. Re-capture with default viewport (avoid fullPage)
+3. Use PNG format (most reliable)
+4. If emulator resolution is very high (4K), reduce to 1080p
+5. Try capturing a specific UI element instead of full screen
 
 | Step | Screenshot | Pass Criteria |
 |------|------------|---------------|

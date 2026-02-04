@@ -18,9 +18,11 @@ uvicorn app.main:app --reload      # Start server → http://localhost:8000/docs
 PYTHONPATH=. pytest                # Run all tests
 ```
 
-**Key numbers:** 3,580 recipes | 202 backend tests | 319 Android unit tests | 523 Android UI tests | 16 screens
+**Key numbers:** 3,580 recipes | 170 backend tests | 319 Android unit tests | 400+ UI tests | 65+ E2E tests | 15 screens
 
 **Session context:** Check `docs/CONTINUE_PROMPT.md` for active work between sessions.
+
+**Continuing a session?** Read `docs/CONTINUE_PROMPT.md` first - it has the latest implementation status, test results, and remaining work.
 
 ## Project Overview
 
@@ -234,6 +236,7 @@ PYTHONPATH=. pytest tests/test_preference_service.py::test_add_include_rule -v  
 # Database
 alembic upgrade head             # Run migrations
 PYTHONPATH=. python scripts/seed_festivals.py
+PYTHONPATH=. python scripts/seed_achievements.py
 PYTHONPATH=. python scripts/import_recipes_postgres.py
 PYTHONPATH=. python scripts/sync_config_postgres.py
 ```
@@ -263,16 +266,17 @@ GRANT ALL PRIVILEGES ON DATABASE rasoiai TO rasoiai_user;
 
 | Platform | Tests | Framework |
 |----------|-------|-----------|
-| Backend | 202 | pytest |
+| Backend | 170 | pytest |
 | Android Unit | 319 | JUnit + MockK |
-| Android UI/E2E | 523 | Compose UI Testing + Hilt |
+| Android UI | 400+ | Compose UI Testing |
+| Android E2E | 65+ | Compose UI Testing + Hilt + Real API |
 
-### Backend Tests (202 total)
+### Backend Tests (170 total)
 
 | Test File | Tests | Purpose |
 |-----------|-------|---------|
 | `test_health.py` | 2 | Health check endpoints |
-| `test_auth.py` | 6 | Firebase authentication |
+| `test_auth.py` | 3 | Firebase authentication |
 | `test_preference_service.py` | 26 | PreferenceUpdateService |
 | `test_chat_integration.py` | 27 | Chat tool calling flow |
 | `test_meal_generation.py` | 22 | Meal generation structures |
@@ -464,6 +468,9 @@ Configuration-driven meal planning with YAML source of truth synced to PostgreSQ
 | Backend import errors | Run from backend dir: `cd backend && PYTHONPATH=. pytest` |
 | MissingGreenlet errors | SQLAlchemy async requires `selectinload()` for eager loading |
 | Meal generation timeout | AI takes 4-7 seconds; E2E tests use 30-second timeout |
+| Room DB not found | Run `./gradlew clean` then rebuild - schema may have changed |
+| Test flakiness | Use `waitUntil {}` in E2E tests; check `RetryUtils.kt` for patterns |
+| Screenshot "Could not process image" | Use PNG format, avoid fullPage on long pages, limit to 1280x720, verify file saved before reading. See Screenshots rule above. |
 
 ## Rules for Claude
 
@@ -480,6 +487,37 @@ Configuration-driven meal planning with YAML source of truth synced to PostgreSQ
    - The folder is gitignored - screenshots are temporary debugging artifacts
    - Use descriptive filenames: `{feature}_{context}.png` (e.g., `home_after_login.png`, `onboarding_step2.png`)
 
+   **Avoiding Image Processing Errors (API 400 "Could not process image"):**
+   - **Use PNG format** - Most reliable format for Claude to process
+   - **Limit dimensions** - Keep viewport to 1280x720 or similar; avoid extremely large images
+   - **Avoid `fullPage: true`** on long pages - Can create 10,000+ px tall images that fail processing
+   - **Wait for page stability** - Ensure content is fully loaded before capture
+   - **Verify file was saved** - Check file exists and has non-zero size before reading
+   - **If reading fails**: Re-capture with smaller dimensions, try JPEG instead of PNG
+
+   **Playwright MCP Screenshot Pattern:**
+   ```javascript
+   // GOOD: Viewport screenshot with PNG
+   await browser_take_screenshot({
+     filename: "docs/testing/screenshots/home_after_login.png",
+     type: "png"
+   })
+
+   // BAD: Full page on long scrollable content
+   await browser_take_screenshot({
+     fullPage: true  // Can create huge images that fail processing
+   })
+   ```
+
+   **ADB Screenshot Pattern:**
+   ```bash
+   # Capture to designated folder
+   adb exec-out screencap -p > docs/testing/screenshots/screen_name.png
+
+   # Verify file was captured successfully
+   ls -la docs/testing/screenshots/screen_name.png
+   ```
+
 4. **Offline-First**: All features must use Room as source of truth with offline support.
 
 5. **Bug & Feature Tracking**:
@@ -489,6 +527,35 @@ Configuration-driven meal planning with YAML source of truth synced to PostgreSQ
    - **Use `/fix-issue <number>`**: To implement a fix for a specific GitHub Issue
    - **Labels**: `bug`, `enhancement`, `not-implemented`, `home-screen`, etc.
    - **Issue Templates**: `.github/ISSUE_TEMPLATE/` has templates for bug reports and feature requests
+
+6. **Functional Requirements Testing**:
+   When implementing a new feature or fixing a bug that affects user-facing functionality:
+
+   **Before Implementation:**
+   - Check for existing GitHub Issue with acceptance criteria
+   - If none exists, create one using the "Functional Requirement" template
+   - Reference the Issue ID (e.g., FR-001 = Issue #45)
+
+   **After Implementation:**
+   - Create Android E2E test in `app/src/androidTest/java/com/rasoiai/app/e2e/flows/`
+   - Create Backend test in `backend/tests/` if API is involved
+   - Update `docs/testing/Functional-Requirements.md` with test links
+
+   **Test Documentation:**
+   - Each test file MUST have KDoc/docstring header referencing the GitHub Issue
+   - Use format: `/** Requirement: #45 - FR-001: Add Chai to breakfast */`
+
+   **Verification:**
+   ```bash
+   # Android E2E test
+   ./gradlew :app:connectedDebugAndroidTest \
+     -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.flows.TestClassName
+
+   # Backend test
+   PYTHONPATH=. pytest tests/test_file.py -v
+   ```
+
+   **Reference:** See `docs/testing/Functional-Requirements.md` for the full traceability matrix.
 
 ## Key Documentation
 
@@ -500,4 +567,5 @@ Configuration-driven meal planning with YAML source of truth synced to PostgreSQ
 | Meal Generation Config | `docs/design/Meal-Generation-Config-Architecture.md` |
 | E2E Testing Guide | `docs/testing/E2E-Testing-Prompt.md` |
 | E2E Test Plan | `docs/testing/E2E-Test-Plan.md` |
+| Functional Requirements | `docs/testing/Functional-Requirements.md` |
 | Session Context | `docs/CONTINUE_PROMPT.md` |

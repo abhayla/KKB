@@ -597,10 +597,10 @@ class HomeViewModel @Inject constructor(
     /**
      * Fetch recipe suggestions for the Add Recipe sheet
      */
-    private fun fetchAddRecipeSuggestions(mealType: MealType) {
+    private fun fetchAddRecipeSuggestions(mealType: MealType, query: String? = null) {
         viewModelScope.launch {
-            // Fetch suggestions based on meal type
-            recipeRepository.searchRecipes(mealType = mealType, limit = 20)
+            // Fetch suggestions based on meal type and optional search query
+            recipeRepository.searchRecipes(query = query, mealType = mealType, limit = 20)
                 .onSuccess { recipes ->
                     _uiState.update {
                         it.copy(
@@ -620,15 +620,26 @@ class HomeViewModel @Inject constructor(
                 }
         }
 
-        // Fetch favorites
-        viewModelScope.launch {
-            try {
-                val favorites = recipeRepository.getFavoriteRecipes().first()
-                _uiState.update { it.copy(addRecipeFavorites = favorites) }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to fetch favorites")
+        // Fetch favorites (only on initial load, not on search)
+        if (query.isNullOrBlank()) {
+            viewModelScope.launch {
+                try {
+                    val favorites = recipeRepository.getFavoriteRecipes().first()
+                    _uiState.update { it.copy(addRecipeFavorites = favorites) }
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to fetch favorites")
+                }
             }
         }
+    }
+
+    /**
+     * Search recipes for the Add Recipe sheet with a query
+     */
+    fun searchAddRecipes(query: String) {
+        val mealType = _uiState.value.addRecipeMealType ?: return
+        _uiState.update { it.copy(isLoadingAddRecipeSuggestions = true) }
+        fetchAddRecipeSuggestions(mealType, query.takeIf { it.isNotBlank() })
     }
 
     /**

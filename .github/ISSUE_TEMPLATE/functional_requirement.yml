@@ -1,0 +1,111 @@
+name: Functional Requirement
+description: Document a new functional requirement with acceptance criteria and test scenarios
+title: "FR-XXX: "
+labels: ["functional-requirement", "needs-tests"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Functional Requirement Template
+        Use this template to document new functional requirements before implementation.
+        Replace XXX in the title with the next available FR number (check docs/testing/Functional-Requirements.md).
+
+  - type: dropdown
+    id: feature-area
+    attributes:
+      label: Feature Area
+      description: Which part of the app does this requirement affect?
+      options:
+        - Home Screen
+        - Authentication
+        - Onboarding
+        - Meal Plans
+        - Recipes
+        - Grocery List
+        - Chat/AI Assistant
+        - Favorites
+        - Statistics
+        - Settings
+        - Recipe Rules
+        - Notifications
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What should the feature do? Be specific about the expected behavior.
+      placeholder: |
+        Example: When a user searches for "Chai" in the Add Recipe sheet,
+        the app should query the backend database and display matching Chai recipes
+        that can be added to the selected meal slot.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: List testable criteria that must be met for this requirement to be complete.
+      placeholder: |
+        - [ ] Searching "Chai" returns at least one result from the database
+        - [ ] Search results display recipe name and cuisine type
+        - [ ] User can tap a result to add it to the meal slot
+        - [ ] Added recipe appears in the meal list immediately
+        - [ ] Works offline if recipe is cached locally
+    validations:
+      required: true
+
+  - type: textarea
+    id: test-scenarios
+    attributes:
+      label: Test Scenarios
+      description: Specific test cases that should be implemented (E2E and/or unit tests).
+      placeholder: |
+        **Android E2E Tests:**
+        1. `test_searchChai_returnsResultsFromDatabase()` - Verify search returns results
+        2. `test_addChaiToBreakfast_appearsInMealList()` - Verify item is added to meal
+
+        **Backend Tests:**
+        1. `test_search_chai_returns_results()` - Verify API returns chai recipes
+        2. `test_search_empty_query_returns_error()` - Verify validation
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How critical is this requirement?
+      options:
+        - Critical (Core functionality, blocking)
+        - High (Important feature, needed soon)
+        - Medium (Nice to have, can wait)
+        - Low (Future enhancement)
+    validations:
+      required: true
+
+  - type: textarea
+    id: related-issues
+    attributes:
+      label: Related Issues
+      description: Link any related bugs, features, or other functional requirements.
+      placeholder: |
+        - Depends on: #XX (Backend recipe search API)
+        - Related to: FR-YYY (Recipe filtering)
+    validations:
+      required: false
+
+  - type: textarea
+    id: implementation-notes
+    attributes:
+      label: Implementation Notes
+      description: Any technical details, constraints, or considerations for implementation.
+      placeholder: |
+        - Backend API: GET /api/v1/recipes/search?query=chai
+        - Use existing RecipeRepository.searchRecipes() method
+        - Follow offline-first pattern with Room cache
+    validations:
+      required: false
