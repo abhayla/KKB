@@ -43,6 +43,7 @@ import com.rasoiai.domain.model.Recipe
 /**
  * Bottom sheet for adding a recipe to a meal slot.
  * Displays recipes in a 2-column grid layout with search and tabs for Suggestions/Favorites.
+ * @param onRecipeSelected Callback with recipe and isFromSuggestions flag (true if from Suggestions tab, false if from Favorites tab)
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,7 +53,7 @@ fun AddRecipeSheet(
     favoriteRecipes: List<Recipe>,
     isLoadingSuggestions: Boolean = false,
     onDismiss: () -> Unit,
-    onRecipeSelected: (Recipe) -> Unit,
+    onRecipeSelected: (Recipe, Boolean) -> Unit,
     onSearchQueryChange: (String) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -137,6 +138,7 @@ fun AddRecipeSheet(
                 Tab(
                     selected = selectedTabIndex == 0,
                     onClick = { selectedTabIndex = 0 },
+                    modifier = Modifier.testTag(TestTags.ADD_RECIPE_SUGGESTIONS_TAB),
                     text = {
                         Text(
                             text = "Suggestions",
@@ -147,6 +149,7 @@ fun AddRecipeSheet(
                 Tab(
                     selected = selectedTabIndex == 1,
                     onClick = { selectedTabIndex = 1 },
+                    modifier = Modifier.testTag(TestTags.ADD_RECIPE_FAVORITES_TAB),
                     text = {
                         Text(
                             text = "Favorites",
@@ -198,6 +201,7 @@ fun AddRecipeSheet(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(400.dp) // Fixed height for the grid
+                        .testTag(TestTags.ADD_RECIPE_GRID)
                 ) {
                     items(
                         items = displayedRecipes,
@@ -205,7 +209,9 @@ fun AddRecipeSheet(
                     ) { recipe ->
                         RecipeSelectionGridItem(
                             recipe = recipe,
-                            onClick = { onRecipeSelected(recipe) }
+                            // Pass true if from Suggestions tab (index 0), false if from Favorites tab (index 1)
+                            onClick = { onRecipeSelected(recipe, selectedTabIndex == 0) },
+                            modifier = Modifier.testTag("${TestTags.ADD_RECIPE_ITEM_PREFIX}${recipe.id}")
                         )
                     }
                 }

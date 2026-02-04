@@ -107,6 +107,10 @@ object TestTags {
 
     // Home Screen - Add Recipe Sheet
     const val ADD_RECIPE_SHEET = "add_recipe_sheet"
+    const val ADD_RECIPE_SUGGESTIONS_TAB = "add_recipe_suggestions_tab"
+    const val ADD_RECIPE_FAVORITES_TAB = "add_recipe_favorites_tab"
+    const val ADD_RECIPE_GRID = "add_recipe_grid"
+    const val ADD_RECIPE_ITEM_PREFIX = "add_recipe_item_"
 
     // Navigation Drawer
     const val NAVIGATION_DRAWER = "navigation_drawer"

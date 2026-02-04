@@ -23,6 +23,7 @@ import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import com.rasoiai.app.e2e.base.clickTextWithRetry
 import com.rasoiai.app.e2e.base.clickWithRetry
 import com.rasoiai.app.e2e.base.waitForNetworkContent
@@ -1393,6 +1394,138 @@ class HomeRobot(private val composeTestRule: ComposeContentTestRule) {
         }
         composeTestRule.waitForIdle()
         Log.d("HomeRobot", "Add recipe sheet dismissed")
+    }
+
+    /**
+     * Tap the Suggestions tab in Add Recipe sheet.
+     */
+    fun tapAddRecipeSuggestionsTab() = apply {
+        composeTestRule.waitForIdle()
+        RetryUtils.retryWithBackoff(
+            config = RetryUtils.RetryConfig.FAST,
+            actionName = "tapAddRecipeSuggestionsTab"
+        ) {
+            composeTestRule.onNodeWithTag(TestTags.ADD_RECIPE_SUGGESTIONS_TAB, useUnmergedTree = true)
+                .performClick()
+        }
+        composeTestRule.waitForIdle()
+        Thread.sleep(300)
+        Log.d("HomeRobot", "Tapped Suggestions tab in Add Recipe sheet")
+    }
+
+    /**
+     * Tap the Favorites tab in Add Recipe sheet.
+     */
+    fun tapAddRecipeFavoritesTab() = apply {
+        composeTestRule.waitForIdle()
+        RetryUtils.retryWithBackoff(
+            config = RetryUtils.RetryConfig.FAST,
+            actionName = "tapAddRecipeFavoritesTab"
+        ) {
+            composeTestRule.onNodeWithTag(TestTags.ADD_RECIPE_FAVORITES_TAB, useUnmergedTree = true)
+                .performClick()
+        }
+        composeTestRule.waitForIdle()
+        Thread.sleep(300)
+        Log.d("HomeRobot", "Tapped Favorites tab in Add Recipe sheet")
+    }
+
+    /**
+     * Wait for Add Recipe grid to load and display recipes.
+     */
+    fun waitForAddRecipeGridLoaded(timeoutMillis: Long = 15000) = apply {
+        composeTestRule.waitUntilWithBackoff(
+            tag = TestTags.ADD_RECIPE_GRID,
+            timeoutMillis = timeoutMillis,
+            initialPollMs = 300,
+            maxPollMs = 600,
+            backoffMultiplier = 1.5
+        )
+        Log.d("HomeRobot", "Add Recipe grid loaded")
+    }
+
+    /**
+     * Select the first recipe from the Add Recipe grid.
+     * Clicks on the top-left area of the grid where the first item should be.
+     */
+    fun selectFirstRecipeFromAddRecipeGrid(): String {
+        composeTestRule.waitForIdle()
+
+        // Wait for grid to have items
+        waitForAddRecipeGridLoaded()
+
+        Log.d("HomeRobot", "Clicking first recipe in Add Recipe grid")
+
+        // Click on the grid - the first item should be in the top-left quadrant
+        // Since it's a 2-column grid, clicking in the left portion should hit the first item
+        composeTestRule.onNodeWithTag(TestTags.ADD_RECIPE_GRID, useUnmergedTree = true)
+            .performTouchInput {
+                // Click on top-left area where first item should be
+                click(center.copy(x = centerX - width * 0.25f, y = top + height * 0.15f))
+            }
+
+        composeTestRule.waitForIdle()
+        Thread.sleep(500) // Wait for action to complete
+        Log.d("HomeRobot", "Selected first recipe from Add Recipe grid")
+
+        return "Recipe" // Placeholder - actual name would need semantic extraction
+    }
+
+    /**
+     * Assert snackbar with specific text is displayed.
+     */
+    fun assertSnackbarDisplayed(text: String, substring: Boolean = true, timeoutMillis: Long = 8000) = apply {
+        val startTime = System.currentTimeMillis()
+        var found = false
+
+        while (!found && (System.currentTimeMillis() - startTime) < timeoutMillis) {
+            try {
+                val nodes = if (substring) {
+                    composeTestRule.onAllNodesWithText(text, substring = true, useUnmergedTree = true)
+                        .fetchSemanticsNodes()
+                } else {
+                    composeTestRule.onAllNodesWithText(text, useUnmergedTree = true)
+                        .fetchSemanticsNodes()
+                }
+                if (nodes.isNotEmpty()) {
+                    found = true
+                    Log.d("HomeRobot", "Found snackbar with text: $text")
+                }
+            } catch (e: Exception) {
+                // Continue waiting
+            }
+            if (!found) {
+                Thread.sleep(200)
+            }
+        }
+
+        if (!found) {
+            throw AssertionError("Snackbar with text '$text' not displayed within ${timeoutMillis}ms")
+        }
+    }
+
+    /**
+     * Assert snackbar with "added to favorites" text is displayed.
+     */
+    fun assertFavoriteAddedSnackbarDisplayed() = apply {
+        assertSnackbarDisplayed("added to favorites", substring = true)
+        Log.d("HomeRobot", "Favorite added snackbar is displayed")
+    }
+
+    /**
+     * Assert snackbar with "added to favorites" text is NOT displayed.
+     * Waits briefly then verifies no such snackbar exists.
+     */
+    fun assertFavoriteAddedSnackbarNotDisplayed() = apply {
+        Thread.sleep(1500) // Wait for any potential snackbar to appear
+
+        val nodes = composeTestRule.onAllNodesWithText("added to favorites", substring = true, useUnmergedTree = true)
+            .fetchSemanticsNodes()
+
+        if (nodes.isNotEmpty()) {
+            throw AssertionError("Favorite added snackbar should NOT be displayed but was found")
+        }
+        Log.d("HomeRobot", "Favorite added snackbar is NOT displayed (as expected)")
     }
 
     // ===================== Festival Banner =====================

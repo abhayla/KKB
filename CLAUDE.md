@@ -529,6 +529,9 @@ Configuration-driven meal planning with YAML source of truth synced to PostgreSQ
    - **Issue Templates**: `.github/ISSUE_TEMPLATE/` has templates for bug reports and feature requests
 
 6. **Functional Requirements Testing**:
+
+   > ⚠️ **STOP**: Complete the Pre-Implementation Checklist in Rule #7 BEFORE writing any code.
+
    When implementing a new feature or fixing a bug that affects user-facing functionality:
 
    **Before Implementation:**
@@ -556,6 +559,71 @@ Configuration-driven meal planning with YAML source of truth synced to PostgreSQ
    ```
 
    **Reference:** See `docs/testing/Functional-Requirements.md` for the full traceability matrix.
+
+7. **Pre-Implementation Checklist (MANDATORY)**:
+
+   Before writing ANY code for a new feature or bug fix, STOP and complete this checklist:
+
+   ```
+   ## Pre-Implementation Checklist
+   - [ ] Read Rule #6 (Functional Requirements Testing) in this file
+   - [ ] Check GitHub Issues: `gh issue list --search "keyword"`
+   - [ ] If no issue exists: Create one with `gh issue create`
+   - [ ] Note the Issue number: #___
+   - [ ] Identify E2E test location: `app/src/androidTest/java/com/rasoiai/app/e2e/flows/`
+   - [ ] Plan test file name: `___Test.kt`
+   - [ ] **SCREENSHOT: Capture pre-implementation state** (see below)
+   ```
+
+   **After Implementation:**
+   ```
+   ## Post-Implementation Checklist
+   - [ ] **SCREENSHOT: Capture post-implementation state** (see below)
+   - [ ] **VERIFY: Compare pre vs post screenshots to confirm change**
+   - [ ] E2E test created and passing
+   - [ ] Functional-Requirements.md updated
+   - [ ] Test has KDoc header: `/** Requirement: #XX - Description */`
+   - [ ] Commit references issue: `Fix #XX: description`
+   ```
+
+   **Screenshot Verification (REQUIRED for UI changes):**
+
+   For any feature affecting the UI, capture screenshots before and after implementation:
+
+   ```bash
+   # Screenshot location (MUST use this folder)
+   docs/testing/screenshots/
+
+   # Naming convention
+   {issue_number}_{feature}_before.png   # Pre-implementation
+   {issue_number}_{feature}_after.png    # Post-implementation
+
+   # Example for Issue #40
+   40_auto_favorite_before.png
+   40_auto_favorite_after.png
+   ```
+
+   **Capture Methods:**
+   - **Android Emulator (ADB):**
+     ```bash
+     adb exec-out screencap -p > docs/testing/screenshots/40_feature_before.png
+     ```
+   - **Playwright (Web/Browser):**
+     ```javascript
+     await browser_take_screenshot({
+       filename: "docs/testing/screenshots/40_feature_before.png",
+       type: "png"
+     })
+     ```
+
+   **Verification Steps:**
+   1. Capture "before" screenshot showing current behavior
+   2. Implement the feature
+   3. Capture "after" screenshot showing new behavior
+   4. Visually compare: Confirm the expected UI change is present
+   5. Include screenshot comparison in PR description or Issue comment
+
+   **CRITICAL:** If you find yourself writing code without completing the pre-implementation checklist, STOP immediately and complete it first.
 
 ## Key Documentation
 

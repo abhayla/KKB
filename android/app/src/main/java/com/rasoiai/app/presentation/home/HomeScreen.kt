@@ -143,6 +143,14 @@ fun HomeScreen(
         }
     }
 
+    // Show favorite added message in snackbar
+    LaunchedEffect(uiState.favoriteAddedMessage) {
+        uiState.favoriteAddedMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.clearFavoriteAddedMessage()
+        }
+    }
+
     HomeScreenContent(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
@@ -168,7 +176,9 @@ fun HomeScreen(
         onRemoveRecipeDirect = viewModel::removeRecipeFromMealDirect,
         onAddRecipeClick = viewModel::showAddRecipeSheet,  // Add Recipe button (Issue #4)
         onDismissAddRecipeSheet = viewModel::dismissAddRecipeSheet,
-        onSelectAddRecipe = viewModel::addRecipeToMeal,  // Issue #23: Recipe selection
+        onSelectAddRecipe = { recipe, isFromSuggestions ->
+            viewModel.addRecipeToMeal(recipe, isFromSuggestions)
+        },  // Issue #23: Recipe selection + auto-favorite
         onSearchAddRecipes = viewModel::searchAddRecipes,  // Server-side search
         onFestivalBannerClick = viewModel::onFestivalBannerClick,
         onDismissFestivalRecipesSheet = viewModel::dismissFestivalRecipesSheet,
@@ -213,7 +223,7 @@ private fun HomeScreenContent(
     onRemoveRecipeDirect: (MealItem, MealType) -> Unit,
     onAddRecipeClick: (MealType) -> Unit,
     onDismissAddRecipeSheet: () -> Unit,
-    onSelectAddRecipe: (Recipe) -> Unit,
+    onSelectAddRecipe: (Recipe, Boolean) -> Unit,
     onSearchAddRecipes: (String) -> Unit,
     onFestivalBannerClick: () -> Unit,
     onDismissFestivalRecipesSheet: () -> Unit,

@@ -60,7 +60,9 @@ data class HomeUiState(
     // Festival Recipes Sheet state
     val showFestivalRecipesSheet: Boolean = false,
     val festivalRecipes: List<Recipe> = emptyList(),
-    val isLoadingFestivalRecipes: Boolean = false
+    val isLoadingFestivalRecipes: Boolean = false,
+    // Favorite added feedback message (for Snackbar)
+    val favoriteAddedMessage: String? = null
 ) {
     /** Check if the selected day is locked */
     val isSelectedDayLocked: Boolean
@@ -643,9 +645,10 @@ class HomeViewModel @Inject constructor(
     }
 
     /**
-     * Add a recipe to the current meal slot
+     * Add a recipe to the current meal slot.
+     * If added from Suggestions tab (isFromSuggestions=true), also auto-add to favorites.
      */
-    fun addRecipeToMeal(recipe: Recipe) {
+    fun addRecipeToMeal(recipe: Recipe, isFromSuggestions: Boolean = true) {
         val state = _uiState.value
         val mealPlan = state.mealPlan ?: return
         val mealType = state.addRecipeMealType ?: return
@@ -664,6 +667,11 @@ class HomeViewModel @Inject constructor(
             ).onSuccess { updatedPlan ->
                 Timber.i("Recipe added to meal: ${recipe.name}")
                 updateStateWithMealPlan(updatedPlan)
+
+                // Auto-add to favorites if from Suggestions tab
+                if (isFromSuggestions) {
+                    autoAddToFavorites(recipe)
+                }
             }.onFailure { e ->
                 Timber.e(e, "Failed to add recipe to meal")
                 _uiState.update { it.copy(errorMessage = "Failed to add recipe") }
@@ -671,6 +679,42 @@ class HomeViewModel @Inject constructor(
         }
 
         dismissAddRecipeSheet()
+    }
+
+    /**
+     * Auto-add recipe to favorites (if not already a favorite).
+     * Shows feedback message via Snackbar.
+     */
+    private suspend fun autoAddToFavorites(recipe: Recipe) {
+        // toggleFavorite returns the new favorite state
+        // We only want to add, not toggle off, so check first if already favorite
+        // The recipe.isFavorite might not be reliable, so use toggleFavorite which handles this
+        // If recipe is already a favorite, toggleFavorite would remove it, which we don't want
+        // So we check if the recipe is already favorite from the favorites list
+        val isAlreadyFavorite = _uiState.value.addRecipeFavorites.any { it.id == recipe.id }
+
+        if (!isAlreadyFavorite) {
+            recipeRepository.toggleFavorite(recipe.id)
+                .onSuccess { isFavorite ->
+                    if (isFavorite) {
+                        Timber.i("Recipe auto-added to favorites: ${recipe.name}")
+                        _uiState.update {
+                            it.copy(favoriteAddedMessage = "${recipe.name} added to favorites")
+                        }
+                    }
+                }
+                .onFailure { e ->
+                    Timber.e(e, "Failed to auto-add recipe to favorites")
+                    // Don't show error - this is a secondary action
+                }
+        }
+    }
+
+    /**
+     * Clear the favorite added message after showing Snackbar
+     */
+    fun clearFavoriteAddedMessage() {
+        _uiState.update { it.copy(favoriteAddedMessage = null) }
     }
 
     /**
