@@ -474,6 +474,15 @@ Configuration-driven meal planning with YAML source of truth synced to PostgreSQ
 
 ## Rules for Claude
 
+<!-- ========================================================== -->
+<!-- PROTECTED SECTION - DO NOT MODIFY                          -->
+<!-- These rules are carefully crafted and tested.              -->
+<!-- Do NOT condense, rewrite, reorganize, or "improve" them.   -->
+<!-- Do NOT remove content even if it appears redundant.        -->
+<!-- Any /init or optimization request must SKIP this section.  -->
+<!-- Authority: Project owner directive (2026-02-04)            -->
+<!-- ========================================================== -->
+
 1. **Bash Syntax (CRITICAL)**: Use forward slashes `/`, use `./gradlew` (not `.\gradlew`), quote paths with spaces. Shell is Unix-style bash even on Windows.
 
 2. **Document Output**:
@@ -702,6 +711,11 @@ Configuration-driven meal planning with YAML source of truth synced to PostgreSQ
    - **No "fix later" excuses**: Creating issues to bypass failures = VIOLATION
    - **No step skipping**: Each step must complete before the next
    - **No commits without tests**: Tests MUST pass before any commit
+   - **No screenshot skipping**: Screenshots are MANDATORY for Steps 6-7, even when:
+     - "Documenting existing behavior" - STILL REQUIRES SCREENSHOTS
+     - "No code changes made" - STILL REQUIRES SCREENSHOTS
+     - "Tests already pass" - STILL REQUIRES SCREENSHOTS
+     - ADB/screenshot tools fail - MUST troubleshoot and retry, never skip
 
    **VIOLATION = PROCESS FAILURE. No exceptions. No "I'll do it later."**
 

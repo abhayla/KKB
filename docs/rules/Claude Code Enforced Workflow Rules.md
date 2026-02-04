@@ -343,6 +343,11 @@ File: `.claude/workflow-state.json` (auto-generated, gitignored)
 3. **No "Fix Later" Excuses**: Do NOT create "fix later" issues to bypass failures
 4. **No Step Skipping**: Each step must complete before the next begins
 5. **No Commits Without Tests**: Tests MUST pass before any commit
+6. **No Screenshot Skipping**: Screenshots are MANDATORY for Steps 6-7, even when:
+   - "Documenting existing behavior" - STILL REQUIRES SCREENSHOTS
+   - "No code changes made" - STILL REQUIRES SCREENSHOTS
+   - "Tests already pass" - STILL REQUIRES SCREENSHOTS
+   - ADB/screenshot tools fail - MUST troubleshoot and retry, never skip
 
 **VIOLATION = PROCESS FAILURE. No exceptions. No "I'll do it later."**
 

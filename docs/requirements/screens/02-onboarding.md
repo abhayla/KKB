@@ -39,6 +39,7 @@
 | ONB-033 | Generating Screen | Show plan generation progress | Implemented | `OnboardingScreenTest.kt` |
 | ONB-034 | Save Preferences | Persist to backend | Implemented | `OnboardingViewModelTest.kt` |
 | ONB-035 | Validation | Require minimum selections | Implemented | `OnboardingViewModelTest.kt` |
+| ONB-036 | Entry/Skip Logic | First-time vs returning user navigation | Implemented | `OnboardingNavigationTest.kt` |
 
 ---
 
@@ -524,6 +525,62 @@
 | UI Tests | `app/src/androidTest/java/com/rasoiai/app/presentation/onboarding/OnboardingScreenTest.kt` |
 | Unit Tests | `app/src/test/java/com/rasoiai/app/presentation/onboarding/OnboardingViewModelTest.kt` |
 | E2E Flow | `app/src/androidTest/java/com/rasoiai/app/e2e/flows/OnboardingFlowTest.kt` |
+
+---
+
+### ONB-036: Onboarding Entry/Skip Logic
+
+| Field | Value |
+|-------|-------|
+| **Screen** | Onboarding / Navigation |
+| **Element** | Entry decision logic |
+| **Trigger** | User authenticated |
+| **Status** | Implemented |
+| **Test** | `OnboardingNavigationTest.kt` |
+| **GitHub Issue** | [#41](https://github.com/abhayla/KKB/issues/41) |
+
+**Acceptance Criteria:**
+
+**Scenario A: First-time user sees onboarding**
+- Given: User completed Google Sign-In
+- And: User has NOT previously completed onboarding (`isOnboarded = false`)
+- When: Auth flow completes
+- Then: Navigate to Onboarding Step 1
+- And: User must complete all 5 steps
+
+**Scenario B: Returning user skips onboarding**
+- Given: User completed Google Sign-In
+- And: User HAS previously completed onboarding (`isOnboarded = true`)
+- When: Auth flow completes
+- Then: Navigate directly to Home screen
+- And: Onboarding is NOT shown
+
+**Scenario C: App restart for onboarded user**
+- Given: User previously completed onboarding
+- And: App was closed/restarted
+- When: App launches (Splash screen)
+- Then: Navigate directly to Home screen (after splash delay)
+- And: Onboarding is NOT shown
+
+**Scenario D: App restart for non-onboarded user**
+- Given: User authenticated but did not complete onboarding
+- And: App was closed/restarted
+- When: App launches (Splash screen)
+- Then: Navigate to Onboarding screen (after splash delay)
+- And: User must complete onboarding
+
+**State Persistence:**
+- `isOnboarded` flag stored in Android DataStore (`UserPreferencesDataStore.kt`)
+- Flag set to `true` when user taps "Create My Meal Plan" on Step 5
+- Flag persists across app restarts
+
+**Implementation Files:**
+| Component | File | Logic |
+|-----------|------|-------|
+| State Storage | `UserPreferencesDataStore.kt:128` | `isOnboarded: Flow<Boolean>` |
+| Splash Decision | `SplashViewModel.kt:82-87` | `if (!isOnboarded && !hasMealPlan) → Onboarding` |
+| Post-Auth Decision | `AuthViewModel.kt:133-138` | `if (isOnboarded) → Home else → Onboarding` |
+| Set Complete | `OnboardingViewModel.kt:333` | `saveOnboardingComplete()` sets flag |
 
 ---
 
