@@ -1415,6 +1415,7 @@ class HomeRobot(private val composeTestRule: ComposeContentTestRule) {
 
     /**
      * Tap the Favorites tab in Add Recipe sheet.
+     * Waits for the tab to be selected and grid to reload.
      */
     fun tapAddRecipeFavoritesTab() = apply {
         composeTestRule.waitForIdle()
@@ -1426,8 +1427,26 @@ class HomeRobot(private val composeTestRule: ComposeContentTestRule) {
                 .performClick()
         }
         composeTestRule.waitForIdle()
-        Thread.sleep(300)
-        Log.d("HomeRobot", "Tapped Favorites tab in Add Recipe sheet")
+
+        // Wait for tab selection to complete and verify it's selected
+        val timeout = 3000L
+        val startTime = System.currentTimeMillis()
+        var isSelected = false
+
+        while (!isSelected && (System.currentTimeMillis() - startTime) < timeout) {
+            try {
+                composeTestRule.onNodeWithTag(TestTags.ADD_RECIPE_FAVORITES_TAB, useUnmergedTree = true)
+                    .assertIsSelected()
+                isSelected = true
+            } catch (e: Exception) {
+                Thread.sleep(100)
+            }
+        }
+
+        // Additional wait for grid content to update
+        Thread.sleep(500)
+        composeTestRule.waitForIdle()
+        Log.d("HomeRobot", "Tapped Favorites tab in Add Recipe sheet (selected: $isSelected)")
     }
 
     /**
@@ -1442,6 +1461,51 @@ class HomeRobot(private val composeTestRule: ComposeContentTestRule) {
             backoffMultiplier = 1.5
         )
         Log.d("HomeRobot", "Add Recipe grid loaded")
+    }
+
+    /**
+     * Wait for Add Recipe content to load (either grid with recipes or empty state).
+     * Returns true if grid has recipes, false if empty state is shown.
+     */
+    fun waitForAddRecipeContentLoaded(timeoutMillis: Long = 15000): Boolean {
+        val startTime = System.currentTimeMillis()
+
+        while ((System.currentTimeMillis() - startTime) < timeoutMillis) {
+            // Check for grid with recipes
+            val gridNodes = composeTestRule.onAllNodesWithTag(TestTags.ADD_RECIPE_GRID, useUnmergedTree = true)
+                .fetchSemanticsNodes()
+            if (gridNodes.isNotEmpty()) {
+                Log.d("HomeRobot", "Add Recipe grid found with recipes")
+                return true
+            }
+
+            // Check for empty state text
+            val emptyStateTexts = listOf(
+                "No recipes match your search",
+                "No recipes available"
+            )
+            for (text in emptyStateTexts) {
+                val emptyNodes = composeTestRule.onAllNodesWithText(text, useUnmergedTree = true)
+                    .fetchSemanticsNodes()
+                if (emptyNodes.isNotEmpty()) {
+                    Log.d("HomeRobot", "Add Recipe empty state found: $text")
+                    return false
+                }
+            }
+
+            Thread.sleep(200)
+        }
+
+        throw AssertionError("Add Recipe content did not load within ${timeoutMillis}ms")
+    }
+
+    /**
+     * Check if the Add Recipe grid has items (recipes available).
+     */
+    fun hasAddRecipeGridItems(): Boolean {
+        val gridNodes = composeTestRule.onAllNodesWithTag(TestTags.ADD_RECIPE_GRID, useUnmergedTree = true)
+            .fetchSemanticsNodes()
+        return gridNodes.isNotEmpty()
     }
 
     /**

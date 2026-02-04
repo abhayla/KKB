@@ -580,11 +580,38 @@ Configuration-driven meal planning with YAML source of truth synced to PostgreSQ
    ## Post-Implementation Checklist
    - [ ] **SCREENSHOT: Capture post-implementation state** (see below)
    - [ ] **VERIFY: Compare pre vs post screenshots to confirm change**
-   - [ ] E2E test created and passing
+   - [ ] E2E test created with KDoc header: `/** Requirement: #XX - Description */`
    - [ ] Functional-Requirements.md updated
-   - [ ] Test has KDoc header: `/** Requirement: #XX - Description */`
-   - [ ] Commit references issue: `Fix #XX: description`
    ```
+
+   **Test Execution (REQUIRED before commit):**
+   ```
+   ## Test Verification Loop
+   1. Run the feature-specific E2E test:
+      ```bash
+      ./gradlew :app:connectedDebugAndroidTest \
+        -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.flows.YourTestClass
+      ```
+   2. If tests FAIL:
+      - [ ] Fix the failing code
+      - [ ] Re-run tests
+      - [ ] Repeat until ALL tests pass
+   3. Only proceed to commit when tests are GREEN
+   ```
+
+   **Commit (ONLY after tests pass):**
+   ```
+   ## Git Commit Checklist
+   - [ ] All E2E tests for this feature are passing
+   - [ ] Commit message references issue: `Fix #XX: description`
+   - [ ] Push to remote
+   ```
+
+   **CRITICAL - No Exceptions:**
+   - Do NOT rationalize partial test passes ("2 out of 3 is good enough")
+   - Do NOT mark failing tests as @Ignore to bypass this rule
+   - Do NOT create "fix later" issues as an excuse to commit with failures
+   - If a test is genuinely broken/flaky, FIX IT before committing
 
    **Screenshot Verification (REQUIRED for UI changes):**
 

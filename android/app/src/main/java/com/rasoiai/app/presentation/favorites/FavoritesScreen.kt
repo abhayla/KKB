@@ -292,7 +292,9 @@ internal fun FavoritesScreenContent(
                             ),
                             horizontalArrangement = Arrangement.spacedBy(spacing.sm),
                             verticalArrangement = Arrangement.spacedBy(spacing.sm),
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .testTag(TestTags.FAVORITES_LIST)
                         ) {
                             itemsIndexed(
                                 items = uiState.filteredRecipes,
