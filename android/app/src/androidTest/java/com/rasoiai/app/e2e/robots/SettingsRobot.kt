@@ -146,6 +146,23 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
     }
 
     /**
+     * Assert family member name is displayed in settings.
+     */
+    fun assertFamilyMemberDisplayed(memberName: String) = apply {
+        composeTestRule.onNodeWithText(memberName, substring = true)
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    /**
+     * Assert household size value is displayed.
+     */
+    fun assertHouseholdSizeDisplayed(size: Int) = apply {
+        composeTestRule.onNodeWithText("$size", substring = true)
+            .assertIsDisplayed()
+    }
+
+    /**
      * Navigate to recipe rules screen.
      */
     fun navigateToRecipeRules() = apply {

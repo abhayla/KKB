@@ -620,6 +620,25 @@ class HomeRobot(private val composeTestRule: ComposeContentTestRule) {
         composeTestRule.waitForIdle()
     }
 
+    /**
+     * Tap Settings item in the navigation drawer.
+     * Call after tapMenuButton() to open the drawer.
+     */
+    fun tapSettingsInDrawer() = apply {
+        composeTestRule.waitForIdle()
+        Thread.sleep(300) // Wait for drawer animation
+
+        RetryUtils.retryWithBackoff(
+            config = RetryUtils.RetryConfig.FAST,
+            actionName = "tapSettingsInDrawer"
+        ) {
+            composeTestRule.onNodeWithTag(TestTags.DRAWER_SETTINGS_ITEM, useUnmergedTree = true)
+                .performClick()
+        }
+        composeTestRule.waitForIdle()
+        Log.d("HomeRobot", "Tapped Settings in navigation drawer")
+    }
+
     // ===================== Bottom Navigation =====================
 
     /**

@@ -392,6 +392,79 @@ object BackendTestHelper {
     }
 
     /**
+     * Retrieves the current user's profile and preferences from the backend.
+     * Uses the /api/v1/users/me endpoint.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param authToken JWT Bearer token for authentication
+     * @return JSONObject containing user data, or null if failed
+     */
+    fun getCurrentUser(baseUrl: String, authToken: String): JSONObject? {
+        Log.d(TAG, "Fetching current user from: $baseUrl/api/v1/users/me")
+
+        return retryBackendCall(maxRetries = 3) {
+            val client = createClient()
+
+            val request = Request.Builder()
+                .url("$baseUrl/api/v1/users/me")
+                .addHeader("Authorization", "Bearer $authToken")
+                .get()
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    val responseBody = response.body?.string() ?: return@use null
+                    Log.d(TAG, "getCurrentUser response: $responseBody")
+                    JSONObject(responseBody)
+                } else {
+                    Log.w(TAG, "getCurrentUser failed: ${response.code} ${response.message}")
+                    null
+                }
+            }
+        }
+    }
+
+    /**
+     * Updates user preferences on the backend.
+     * Uses the PUT /api/v1/users/preferences endpoint.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param authToken JWT Bearer token for authentication
+     * @param preferences JSONObject containing the preferences to update
+     * @return true if update was successful, false otherwise
+     */
+    fun updateUserPreferences(
+        baseUrl: String,
+        authToken: String,
+        preferences: JSONObject
+    ): Boolean {
+        Log.d(TAG, "Updating user preferences at: $baseUrl/api/v1/users/preferences")
+
+        return retryBackendCall(maxRetries = 3) {
+            val client = createClient()
+
+            val requestBody = preferences.toString()
+                .toRequestBody("application/json".toMediaType())
+
+            val request = Request.Builder()
+                .url("$baseUrl/api/v1/users/preferences")
+                .addHeader("Authorization", "Bearer $authToken")
+                .put(requestBody)
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    Log.d(TAG, "updateUserPreferences successful")
+                    true
+                } else {
+                    Log.w(TAG, "updateUserPreferences failed: ${response.code} ${response.message}")
+                    null  // Return null to trigger retry
+                }
+            }
+        } ?: false
+    }
+
+    /**
      * Checks backend connectivity and logs diagnostic information.
      * Useful for debugging test setup issues.
      *
