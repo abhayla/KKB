@@ -652,7 +652,8 @@ private fun FamilyMemberBottomSheet(
                             onClick = {
                                 age = a
                                 ageExpanded = false
-                            }
+                            },
+                            modifier = Modifier.testTag("${TestTags.MEMBER_AGE_OPTION_PREFIX}$a")
                         )
                     }
                 }

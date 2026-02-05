@@ -1,14 +1,20 @@
 package com.rasoiai.app.e2e.robots
 
+import android.util.Log
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiScrollable
+import androidx.test.uiautomator.UiSelector
 import com.rasoiai.app.e2e.base.FamilyMember
 import com.rasoiai.app.e2e.base.HealthNeed
 import com.rasoiai.app.e2e.base.MemberType
@@ -17,6 +23,7 @@ import com.rasoiai.app.e2e.base.waitUntilNodeWithTagExists
 import com.rasoiai.app.e2e.base.waitUntilNodeWithTextExists
 import com.rasoiai.app.presentation.common.TestTags
 import com.rasoiai.domain.model.CuisineType
+import com.rasoiai.domain.model.DietaryRestriction
 import com.rasoiai.domain.model.DietaryTag
 import java.time.DayOfWeek
 
@@ -25,6 +32,13 @@ import java.time.DayOfWeek
  * Handles all 5 onboarding steps.
  */
 class OnboardingRobot(private val composeTestRule: ComposeContentTestRule) {
+
+    private val uiDevice: UiDevice
+        get() = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+
+    companion object {
+        private const val TAG = "OnboardingRobot"
+    }
 
     // ===================== Step 1: Household Size & Family Members =====================
 
@@ -59,25 +73,36 @@ class OnboardingRobot(private val composeTestRule: ComposeContentTestRule) {
      * Add a family member in the bottom sheet.
      */
     fun addFamilyMember(member: FamilyMember) = apply {
+        Log.i(TAG, "Adding family member: ${member.name}, age ${member.age}, type ${member.type}")
         tapAddFamilyMember()
 
         // Enter name
         composeTestRule.onNodeWithTag(TestTags.MEMBER_NAME_FIELD).performTextInput(member.name)
+        Log.d(TAG, "Entered name: ${member.name}")
 
-        // Select type
+        // Select type - use last matching node since dropdown is overlaid on top
         composeTestRule.onNodeWithTag(TestTags.MEMBER_TYPE_DROPDOWN).performClick()
         composeTestRule.waitForIdle()
+        Thread.sleep(200) // Wait for dropdown animation
         val typeOption = when (member.type) {
             MemberType.ADULT -> "Adult"
             MemberType.CHILD -> "Child"
             MemberType.SENIOR -> "Senior"
         }
-        composeTestRule.onNodeWithText(typeOption).performClick()
-
-        // Select age
-        composeTestRule.onNodeWithTag(TestTags.MEMBER_AGE_DROPDOWN).performClick()
+        // When multiple nodes match (e.g., "Adult" in member list + dropdown),
+        // click the last one which is the dropdown menu item (rendered on top)
+        val typeNodes = composeTestRule.onAllNodesWithText(typeOption).fetchSemanticsNodes()
+        if (typeNodes.size > 1) {
+            Log.d(TAG, "Found ${typeNodes.size} '$typeOption' nodes, clicking last (dropdown)")
+            composeTestRule.onAllNodesWithText(typeOption)[typeNodes.size - 1].performClick()
+        } else {
+            composeTestRule.onNodeWithText(typeOption).performClick()
+        }
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithText("${member.age}").performClick()
+        Log.d(TAG, "Selected type: $typeOption")
+
+        // Select age using UIAutomator for reliable scrolling
+        selectAgeInDropdown(member.age)
 
         // Select health needs
         for (need in member.healthNeeds) {
@@ -89,6 +114,7 @@ class OnboardingRobot(private val composeTestRule: ComposeContentTestRule) {
                 HealthNeed.HIGH_PROTEIN -> "high_protein"
                 HealthNeed.LOW_CARB -> "low_carb"
             }
+            Log.d(TAG, "Selecting health need: $needTag")
             composeTestRule.onNodeWithTag("${TestTags.MEMBER_DIETARY_NEED_PREFIX}$needTag")
                 .performScrollTo()
                 .performClick()
@@ -97,6 +123,98 @@ class OnboardingRobot(private val composeTestRule: ComposeContentTestRule) {
         // Save
         composeTestRule.onNodeWithTag(TestTags.MEMBER_SAVE_BUTTON).performClick()
         composeTestRule.waitForIdle()
+        Log.i(TAG, "Family member added: ${member.name}")
+    }
+
+    /**
+     * Select age in the dropdown using Compose test APIs with test tags.
+     * The dropdown has 100 items (1-100 years), so ages > ~10 require scrolling.
+     *
+     * FIX for Issue #42: Use Compose test tags + performScrollTo() for reliable age selection.
+     * Each dropdown item now has a testTag like "member_age_option_12" for age 12.
+     *
+     * IMPORTANT: Never call pressBack() as it dismisses the entire bottom sheet!
+     * The dropdown will auto-dismiss when an item is clicked.
+     */
+    private fun selectAgeInDropdown(targetAge: Int) {
+        val ageText = "$targetAge years"
+        val ageTag = "${TestTags.MEMBER_AGE_OPTION_PREFIX}$targetAge"
+        Log.d(TAG, "Selecting age: $ageText using tag: $ageTag")
+
+        // Open age dropdown
+        composeTestRule.onNodeWithTag(TestTags.MEMBER_AGE_DROPDOWN).performClick()
+        composeTestRule.waitForIdle()
+        Thread.sleep(500) // Wait for dropdown menu to fully render
+
+        try {
+            // Primary strategy: Use test tag with performScrollTo()
+            // This is the most reliable method for Compose dropdowns
+            Log.d(TAG, "Using Compose test tag to select age $targetAge")
+            composeTestRule.onNodeWithTag(ageTag)
+                .performScrollTo()
+                .performClick()
+            composeTestRule.waitForIdle()
+            Thread.sleep(300)
+            Log.i(TAG, "Successfully selected age: $targetAge (Compose testTag method)")
+            return
+
+        } catch (e: AssertionError) {
+            Log.w(TAG, "Compose testTag method failed for age $targetAge: ${e.message}")
+
+            // Fallback: Try UIAutomator scroll + click
+            try {
+                Log.d(TAG, "Falling back to UIAutomator for age $targetAge")
+                val scrollable = UiScrollable(UiSelector().scrollable(true))
+                if (scrollable.exists()) {
+                    scrollable.setAsVerticalList()
+                    scrollable.maxSearchSwipes = 50
+
+                    // Reset to beginning and scroll forward to target
+                    scrollable.scrollToBeginning(25)
+                    Thread.sleep(300)
+
+                    val found = scrollable.scrollTextIntoView(ageText)
+                    if (found) {
+                        Thread.sleep(200)
+                        val ageObject = uiDevice.findObject(UiSelector().text(ageText))
+                        if (ageObject.exists()) {
+                            ageObject.click()
+                            composeTestRule.waitForIdle()
+                            Thread.sleep(300)
+                            Log.i(TAG, "Successfully selected age: $targetAge (UIAutomator fallback)")
+                            return
+                        }
+                    }
+                }
+            } catch (e2: Exception) {
+                Log.e(TAG, "UIAutomator fallback also failed: ${e2.message}")
+            }
+
+            // Close dropdown and fail explicitly
+            Log.e(TAG, "FAILED to select age $targetAge - closing dropdown")
+            try {
+                val anyAge = uiDevice.findObject(UiSelector().textContains("years"))
+                if (anyAge.exists()) {
+                    anyAge.click()
+                    composeTestRule.waitForIdle()
+                }
+            } catch (ignored: Exception) {}
+
+            throw AssertionError("Could not select age $targetAge in dropdown: ${e.message}")
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error selecting age $targetAge: ${e.message}", e)
+            // Try to close dropdown
+            try {
+                val anyAge = uiDevice.findObject(UiSelector().textContains("years"))
+                if (anyAge.exists()) {
+                    anyAge.click()
+                    composeTestRule.waitForIdle()
+                }
+            } catch (ignored: Exception) {}
+
+            throw AssertionError("Failed to select age $targetAge: ${e.message}", e)
+        }
     }
 
     /**
@@ -144,12 +262,22 @@ class OnboardingRobot(private val composeTestRule: ComposeContentTestRule) {
 
     /**
      * Select dietary restriction (multi-select).
+     * Uses the display name from DietaryRestriction enum since UI doesn't have test tags.
      */
     fun selectDietaryRestriction(restriction: DietaryTag) = apply {
-        val restrictionTag = restriction.name.lowercase()
-        composeTestRule.onNodeWithTag("${TestTags.DIETARY_RESTRICTION_PREFIX}$restrictionTag")
+        // Map DietaryTag to DietaryRestriction display name
+        val displayName = when (restriction) {
+            DietaryTag.JAIN -> "Jain (No root vegetables)"
+            DietaryTag.SATTVIC -> "Sattvic (No onion/garlic)"
+            DietaryTag.HALAL -> "Halal only"
+            DietaryTag.VEGAN -> "Vegan"
+            else -> restriction.displayName
+        }
+        Log.d("OnboardingRobot", "Selecting dietary restriction: $displayName")
+        composeTestRule.onNodeWithText(displayName, substring = true)
             .performScrollTo()
             .performClick()
+        composeTestRule.waitForIdle()
     }
 
     /**
@@ -164,54 +292,75 @@ class OnboardingRobot(private val composeTestRule: ComposeContentTestRule) {
 
     /**
      * Select cuisine (multi-select cards).
+     * The UI shows cuisine.displayName.uppercase() (e.g., "NORTH INDIAN")
      */
     fun selectCuisine(cuisine: CuisineType) = apply {
-        val cuisineTag = cuisine.name.lowercase()
-        composeTestRule.onNodeWithTag("${TestTags.CUISINE_CARD_PREFIX}$cuisineTag")
+        // Cuisine cards display displayName in uppercase
+        val displayText = cuisine.displayName.uppercase()
+        Log.d("OnboardingRobot", "Selecting cuisine: $displayText")
+        composeTestRule.onNodeWithText(displayText)
             .performScrollTo()
             .performClick()
+        composeTestRule.waitForIdle()
     }
 
     /**
      * Assert cuisine is selected.
+     * Note: We verify by checking the text is displayed. Selection state is visual only.
      */
     fun assertCuisineSelected(cuisine: CuisineType) = apply {
-        val cuisineTag = cuisine.name.lowercase()
-        composeTestRule.onNodeWithTag("${TestTags.CUISINE_CARD_PREFIX}$cuisineTag").assertIsDisplayed()
+        val displayText = cuisine.displayName.uppercase()
+        composeTestRule.onNodeWithText(displayText).assertIsDisplayed()
     }
 
     /**
      * Select spice level from dropdown.
+     * The dropdown doesn't have a test tag, so we click on the current value to expand.
      */
     fun selectSpiceLevel(level: SpiceLevel) = apply {
-        composeTestRule.onNodeWithTag(TestTags.SPICE_LEVEL_DROPDOWN).performClick()
-        composeTestRule.waitForIdle()
         val levelText = when (level) {
             SpiceLevel.MILD -> "Mild"
             SpiceLevel.MEDIUM -> "Medium"
             SpiceLevel.SPICY -> "Spicy"
             SpiceLevel.VERY_SPICY -> "Very Spicy"
         }
-        composeTestRule.onNodeWithText(levelText).performClick()
+        // Default value is "Medium" - click on it to expand dropdown
+        // Try to find and click on current spice level value
+        val currentValues = listOf("Mild", "Medium", "Spicy", "Very Spicy")
+        for (currentVal in currentValues) {
+            val nodes = composeTestRule.onAllNodesWithText(currentVal).fetchSemanticsNodes()
+            if (nodes.isNotEmpty()) {
+                Log.d("OnboardingRobot", "Found spice dropdown with value '$currentVal', clicking to expand")
+                composeTestRule.onNodeWithText(currentVal).performScrollTo().performClick()
+                composeTestRule.waitForIdle()
+                Thread.sleep(200) // Wait for dropdown animation
+                break
+            }
+        }
+        // Now select the desired level
+        val levelNodes = composeTestRule.onAllNodesWithText(levelText).fetchSemanticsNodes()
+        if (levelNodes.size > 1) {
+            // Click the last one (dropdown menu item rendered on top)
+            Log.d("OnboardingRobot", "Found ${levelNodes.size} '$levelText' nodes, clicking last (dropdown)")
+            composeTestRule.onAllNodesWithText(levelText)[levelNodes.size - 1].performClick()
+        } else if (levelNodes.isNotEmpty()) {
+            composeTestRule.onNodeWithText(levelText).performClick()
+        }
+        composeTestRule.waitForIdle()
     }
 
     // ===================== Step 4: Disliked Ingredients =====================
 
     /**
      * Select disliked ingredient from common list.
+     * The ingredient chips don't have test tags, so we use text-based selection.
      */
     fun selectDislikedIngredient(ingredientName: String) = apply {
-        // First try to find by tag, fallback to text
-        try {
-            val ingredientTag = ingredientName.lowercase().replace(" ", "_")
-            composeTestRule.onNodeWithTag("${TestTags.INGREDIENT_CHIP_PREFIX}$ingredientTag")
-                .performScrollTo()
-                .performClick()
-        } catch (e: Exception) {
-            composeTestRule.onNodeWithText(ingredientName, substring = true)
-                .performScrollTo()
-                .performClick()
-        }
+        Log.d("OnboardingRobot", "Selecting disliked ingredient: $ingredientName")
+        composeTestRule.onNodeWithText(ingredientName, substring = true)
+            .performScrollTo()
+            .performClick()
+        composeTestRule.waitForIdle()
     }
 
     /**
@@ -251,30 +400,97 @@ class OnboardingRobot(private val composeTestRule: ComposeContentTestRule) {
 
     /**
      * Set weekday cooking time.
+     * The dropdown doesn't have a test tag, so we use text-based selection.
      */
     fun setWeekdayCookingTime(minutes: Int) = apply {
-        composeTestRule.onNodeWithTag(TestTags.WEEKDAY_TIME_DROPDOWN).performClick()
+        Log.d("OnboardingRobot", "Setting weekday cooking time: $minutes minutes")
+        // Scroll to and click on "Weekdays:" label area to trigger dropdown
+        composeTestRule.onNodeWithText("Weekdays:").performScrollTo()
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithText("$minutes minutes", substring = true).performClick()
+
+        // Find the current dropdown value and click to expand
+        // The dropdown shows "X minutes" format - try common time values
+        val timeOptions = listOf(15, 30, 45, 60, 90)
+        for (time in timeOptions) {
+            val timeText = "$time minutes"
+            val nodes = composeTestRule.onAllNodesWithText(timeText).fetchSemanticsNodes()
+            if (nodes.isNotEmpty()) {
+                Log.d("OnboardingRobot", "Found weekday dropdown with value '$timeText', clicking to expand")
+                composeTestRule.onNodeWithText(timeText).performClick()
+                composeTestRule.waitForIdle()
+                Thread.sleep(200)
+                break
+            }
+        }
+
+        // Select the desired time - if already selected, it may close dropdown
+        val targetText = "$minutes minutes"
+        val targetNodes = composeTestRule.onAllNodesWithText(targetText).fetchSemanticsNodes()
+        if (targetNodes.size > 1) {
+            // Click the dropdown menu item (last one, rendered on top)
+            composeTestRule.onAllNodesWithText(targetText)[targetNodes.size - 1].performClick()
+        }
+        composeTestRule.waitForIdle()
     }
 
     /**
      * Set weekend cooking time.
+     * The dropdown doesn't have a test tag, so we use text-based selection.
      */
     fun setWeekendCookingTime(minutes: Int) = apply {
-        composeTestRule.onNodeWithTag(TestTags.WEEKEND_TIME_DROPDOWN).performClick()
+        Log.d("OnboardingRobot", "Setting weekend cooking time: $minutes minutes")
+        // Scroll to and click on "Weekends:" label area to trigger dropdown
+        composeTestRule.onNodeWithText("Weekends:").performScrollTo()
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithText("$minutes minutes", substring = true).performClick()
+
+        // Find the current dropdown value and click to expand
+        val timeOptions = listOf(15, 30, 45, 60, 90)
+        for (time in timeOptions) {
+            val timeText = "$time minutes"
+            val nodes = composeTestRule.onAllNodesWithText(timeText).fetchSemanticsNodes()
+            if (nodes.isNotEmpty()) {
+                // Need to be careful not to click the weekday dropdown again
+                // Weekday comes first, weekend comes second, so if we see multiple nodes, click the last one
+                if (nodes.size > 1) {
+                    Log.d("OnboardingRobot", "Found ${nodes.size} '$timeText' nodes, clicking last for weekend")
+                    composeTestRule.onAllNodesWithText(timeText)[nodes.size - 1].performClick()
+                } else {
+                    composeTestRule.onNodeWithText(timeText).performClick()
+                }
+                composeTestRule.waitForIdle()
+                Thread.sleep(200)
+                break
+            }
+        }
+
+        // Select the desired time
+        val targetText = "$minutes minutes"
+        val targetNodes = composeTestRule.onAllNodesWithText(targetText).fetchSemanticsNodes()
+        if (targetNodes.size > 1) {
+            composeTestRule.onAllNodesWithText(targetText)[targetNodes.size - 1].performClick()
+        }
+        composeTestRule.waitForIdle()
     }
 
     /**
      * Select busy day.
+     * The day chips may not have test tags, so we use text-based selection as fallback.
      */
     fun selectBusyDay(day: DayOfWeek) = apply {
-        val dayTag = day.name.lowercase()
-        composeTestRule.onNodeWithTag("${TestTags.BUSY_DAY_CHIP_PREFIX}$dayTag")
+        val dayText = when (day) {
+            DayOfWeek.MONDAY -> "Mon"
+            DayOfWeek.TUESDAY -> "Tue"
+            DayOfWeek.WEDNESDAY -> "Wed"
+            DayOfWeek.THURSDAY -> "Thu"
+            DayOfWeek.FRIDAY -> "Fri"
+            DayOfWeek.SATURDAY -> "Sat"
+            DayOfWeek.SUNDAY -> "Sun"
+        }
+        Log.d("OnboardingRobot", "Selecting busy day: $dayText")
+        composeTestRule.onNodeWithText(dayText, substring = true)
             .performScrollTo()
             .performClick()
+        composeTestRule.waitForIdle()
     }
 
     // ===================== Navigation =====================
