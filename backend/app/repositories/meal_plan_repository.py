@@ -100,9 +100,9 @@ class MealPlanRepository:
                         # Handle list of items or single item
                         items_list = meal_data if isinstance(meal_data, list) else [meal_data]
                         for meal_item in items_list:
-                            # Convert "GENERIC" or invalid recipe_id to None
+                            # Convert placeholder recipe_ids to None for AI-generated meals
                             recipe_id = meal_item.get("recipe_id")
-                            if recipe_id == "GENERIC":
+                            if recipe_id in ("GENERIC", "AI_GENERATED"):
                                 recipe_id = None
 
                             item = MealPlanItem(
@@ -161,9 +161,9 @@ class MealPlanRepository:
                     for meal_type in ["breakfast", "lunch", "dinner", "snacks"]:
                         meal_data = day.get(meal_type)
                         if meal_data:
-                            # Convert "GENERIC" or invalid recipe_id to None
+                            # Convert placeholder recipe_ids to None for AI-generated meals
                             recipe_id = meal_data.get("recipe_id")
-                            if recipe_id == "GENERIC":
+                            if recipe_id in ("GENERIC", "AI_GENERATED"):
                                 recipe_id = None
 
                             item = MealPlanItem(
