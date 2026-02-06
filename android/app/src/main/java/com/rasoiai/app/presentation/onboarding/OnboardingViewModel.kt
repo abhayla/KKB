@@ -126,7 +126,8 @@ object CommonDislikedIngredients {
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
     private val userPreferencesDataStore: UserPreferencesDataStoreInterface,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val generateMealPlanUseCase: com.rasoiai.domain.usecase.GenerateMealPlanUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OnboardingUiState())
@@ -314,10 +315,7 @@ class OnboardingViewModel @Inject constructor(
             _uiState.update { it.copy(isGenerating = true) }
 
             try {
-                // Simulate generating meal plan with progress
-                simulateGeneratingProgress()
-
-                // Save preferences
+                // Save preferences FIRST (required for meal generation)
                 val state = _uiState.value
                 val preferences = UserPreferences(
                     householdSize = state.householdSize,
@@ -336,6 +334,9 @@ class OnboardingViewModel @Inject constructor(
                 settingsRepository.updateUserPreferences(preferences)
                 Timber.i("Onboarding complete, preferences saved and synced to backend")
 
+                // Actually generate meal plan with real progress UI
+                generateMealPlanWithProgress()
+
                 _navigationEvent.send(OnboardingNavigationEvent.NavigateToHome)
 
             } catch (e: Exception) {
@@ -350,6 +351,87 @@ class OnboardingViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Generate meal plan with real progress UI.
+     *
+     * Shows progress stages as the backend AI service works:
+     * 1. Analyzing preferences (delay for UI smoothness)
+     * 2. Checking festivals (delay for UI smoothness)
+     * 3. Generating recipes (actual API call to backend Gemini service)
+     * 4. Building grocery list (delay for UI smoothness)
+     *
+     * Fix for Issue #43: Actually call the meal plan generation API instead of
+     * just simulating progress. The backend AI generation takes 4-7 seconds.
+     */
+    private suspend fun generateMealPlanWithProgress() {
+        // Analyzing preferences (UI stage)
+        _uiState.update {
+            it.copy(generatingProgress = it.generatingProgress.copy(analyzingPreferences = true))
+        }
+        delay(800)
+        _uiState.update {
+            it.copy(
+                generatingProgress = it.generatingProgress.copy(
+                    analyzingPreferences = false,
+                    analyzingPreferencesDone = true,
+                    checkingFestivals = true
+                )
+            )
+        }
+
+        // Checking festivals (UI stage)
+        delay(600)
+        _uiState.update {
+            it.copy(
+                generatingProgress = it.generatingProgress.copy(
+                    checkingFestivals = false,
+                    checkingFestivalsDone = true,
+                    generatingRecipes = true
+                )
+            )
+        }
+
+        // Generating recipes (ACTUAL API CALL - 4-7 seconds)
+        Timber.d("Calling backend to generate meal plan...")
+        val result = generateMealPlanUseCase()
+
+        if (result.isFailure) {
+            Timber.e(result.exceptionOrNull(), "Failed to generate meal plan during onboarding")
+            throw result.exceptionOrNull() ?: Exception("Failed to generate meal plan")
+        }
+
+        Timber.i("Meal plan generated successfully: ${result.getOrNull()?.id}")
+
+        _uiState.update {
+            it.copy(
+                generatingProgress = it.generatingProgress.copy(
+                    generatingRecipes = false,
+                    generatingRecipesDone = true,
+                    buildingGroceryList = true
+                )
+            )
+        }
+
+        // Building grocery list (UI stage)
+        delay(600)
+        _uiState.update {
+            it.copy(
+                generatingProgress = it.generatingProgress.copy(
+                    buildingGroceryList = false,
+                    buildingGroceryListDone = true
+                )
+            )
+        }
+        delay(400)
+    }
+
+    /**
+     * Simulate generating meal plan with progress (OLD METHOD - DEPRECATED).
+     * Kept for reference but no longer used.
+     *
+     * @deprecated Use generateMealPlanWithProgress() instead which makes real API calls.
+     */
+    @Deprecated("Use generateMealPlanWithProgress() instead")
     private suspend fun simulateGeneratingProgress() {
         // Analyzing preferences
         _uiState.update {

@@ -46,6 +46,7 @@
 | HOME-040 | Long Press Meal | Quick lock toggle | Implemented | `HomeScreenTest.kt` |
 | HOME-041 | Bottom Navigation | 5 nav items | Implemented | `HomeScreenTest.kt` |
 | HOME-042 | Auto-Favorite | Add to favorites from suggestions | Implemented | `HomeViewModelTest.kt` |
+| HOME-043 | E2E Test Infrastructure | Meal generation API calls reach backend in E2E tests | Implemented | `MealPlanGenerationFlowTest.kt` |
 
 ---
 
@@ -469,6 +470,42 @@ This includes locked days, meals, and individual recipes.
 - And: Recipe is automatically added to Favorites
 - And: Snackbar shows "Added to Favorites"
 - And: Does NOT auto-favorite from "All Recipes" or "Search"
+
+---
+
+### HOME-043: E2E Test Infrastructure - Meal Generation API Connectivity
+
+| Field | Value |
+|-------|-------|
+| **Screen** | Home (E2E Test Infrastructure) |
+| **Element** | Meal generation flow in E2E tests |
+| **Trigger** | MealPlanGenerationFlowTest execution |
+| **Status** | Implemented |
+| **Test** | `MealPlanGenerationFlowTest.kt` |
+
+**Problem:**
+- Meal generation E2E test completes onboarding but meal cards don't appear
+- No API requests reach backend during test execution
+- Backend is healthy (`/health` returns 200) but `/api/v1/meal-plans/generate` never called
+
+**Acceptance Criteria:**
+- Given: User completes onboarding in E2E test
+- When: GeneratingScreen appears
+- Then: App calls `POST /api/v1/meal-plans/generate` to backend
+- And: Backend logs show meal generation request
+- And: Home screen displays meal cards (breakfast, lunch, dinner)
+- And: Test passes within 60 seconds
+
+**Root Cause Investigation:**
+- Auth token storage/retrieval in E2E environment
+- GeneratingViewModel API call triggering
+- Network interceptor configuration for test builds
+- Room offline-first caching behavior
+
+**Related Files:**
+- `app/src/androidTest/java/com/rasoiai/app/e2e/flows/MealPlanGenerationFlowTest.kt`
+- `app/src/main/java/com/rasoiai/app/presentation/generating/GeneratingViewModel.kt`
+- `data/src/main/java/com/rasoiai/data/repository/MealPlanRepositoryImpl.kt`
 
 ---
 
