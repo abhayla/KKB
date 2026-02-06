@@ -179,8 +179,8 @@ class SharmaRecipeRulesVerificationTest : BaseE2ETest() {
         recipeRulesRobot.addNutritionGoal(TestDataFactory.RecipeRules.greenLeafyGoal)
 
         // ==================== VERIFY UI ====================
-        Log.i(TAG, "Verifying UI: all rules displayed on Ingredient tab")
-        recipeRulesRobot.selectIngredientTab()
+        Log.i(TAG, "Verifying UI: all rules displayed on Rules tab")
+        recipeRulesRobot.selectRulesTab()
         composeTestRule.waitForIdle()
         Thread.sleep(2000) // Wait for tab content to load and rule cards to render
         composeTestRule.waitForIdle()

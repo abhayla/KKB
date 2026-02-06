@@ -34,10 +34,8 @@ import java.time.DayOfWeek
 /**
  * Robot for Recipe Rules screen interactions.
  *
- * The Recipe Rules screen has 4 tabs:
- * - 📖 Recipe
- * - 🥕 Ingredient
- * - 🍽️ Meal-Slot
+ * The Recipe Rules screen has 2 tabs:
+ * - 🍽️ Rules (all rule types: recipe, ingredient, meal-slot)
  * - 🥗 Nutrition
  *
  * Include/Exclude is selected via radio buttons within the Add Rule bottom sheet.
@@ -104,24 +102,10 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
     }
 
     /**
-     * Select Recipe tab (📖 Recipe).
+     * Select Rules tab (🍽️ Rules).
      */
-    fun selectRecipeTab() = apply {
-        clickTab("Recipe", "📖")
-    }
-
-    /**
-     * Select Ingredient tab (🥕 Ingredient).
-     */
-    fun selectIngredientTab() = apply {
-        clickTab("Ingredient", "🥕")
-    }
-
-    /**
-     * Select Meal-Slot tab (🍽️ Meal-Slot).
-     */
-    fun selectMealSlotTab() = apply {
-        clickTab("Meal-Slot", "🍽️")
+    fun selectRulesTab() = apply {
+        clickTab("Rules", "🍽️")
     }
 
     /**
@@ -135,25 +119,18 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
 
     /**
      * Tap the add rule button.
-     * The button text is "+ ADD <TAB> RULE" where TAB is RECIPE/INGREDIENT/MEAL-SLOT/NUTRITION.
-     *
-     * Issue #42: Fixed to use more specific text matching to avoid
-     * ambiguity with other "Add" text on the screen.
+     * The button text is "+ ADD RULE" on Rules tab or "+ ADD NUTRITION GOAL" on Nutrition tab.
      */
     fun tapAddRuleButton() = apply {
         Log.d(TAG, "Tapping Add Rule button")
         try {
             // Try the specific button text pattern first: "+ Add ... Rule"
-            // The UI shows buttons like "+ Add Ingredient Rule" or "+ ADD INGREDIENT RULE"
+            // The UI shows buttons like "+ ADD RULE" or "+ ADD NUTRITION GOAL"
             val buttonPatterns = listOf(
-                "+ Add Ingredient Rule",
-                "+ ADD INGREDIENT RULE",
-                "+ Add Recipe Rule",
-                "+ ADD RECIPE RULE",
-                "+ Add Meal-Slot Rule",
-                "+ ADD MEAL-SLOT RULE",
-                "+ Add Nutrition Goal",
-                "+ ADD NUTRITION GOAL"
+                "+ ADD RULE",
+                "+ Add Rule",
+                "+ ADD NUTRITION GOAL",
+                "+ Add Nutrition Goal"
             )
 
             for (pattern in buttonPatterns) {
@@ -199,7 +176,7 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
      */
     fun selectIncludeAction() = apply {
         Log.d(TAG, "Selecting Include action")
-        composeTestRule.onNodeWithText("Include this", substring = true).performClick()
+        composeTestRule.onNodeWithText("Include", substring = true, ignoreCase = true).performClick()
         composeTestRule.waitForIdle()
     }
 
@@ -208,7 +185,7 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
      */
     fun selectExcludeAction() = apply {
         Log.d(TAG, "Selecting Exclude action")
-        composeTestRule.onNodeWithText("Exclude this", substring = true).performClick()
+        composeTestRule.onNodeWithText("Exclude", substring = true, ignoreCase = true).performClick()
         composeTestRule.waitForIdle()
     }
 
@@ -355,8 +332,8 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
      */
     fun selectEnforcement(enforcement: RuleEnforcement) = apply {
         val fullText = when (enforcement) {
-            RuleEnforcement.REQUIRED -> "Required (must include)"
-            RuleEnforcement.PREFERRED -> "Preferred (try to include)"
+            RuleEnforcement.REQUIRED -> "Required"
+            RuleEnforcement.PREFERRED -> "Preferred"
         }
         val shortText = when (enforcement) {
             RuleEnforcement.REQUIRED -> "Required"
@@ -431,10 +408,10 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
      * Also handles "SAVE GOAL" button for nutrition goals.
      */
     fun tapSaveRule() = apply {
-        Log.d(TAG, "Tapping Save Rule/Goal button")
+        Log.d(TAG, "Tapping Save button")
 
-        // Try "SAVE RULE" first, then "SAVE GOAL"
-        val saveRuleNodes = composeTestRule.onAllNodesWithText("SAVE RULE", ignoreCase = true)
+        // Priority: "SAVE ANYWAY" (conflict override) > "SAVE GOAL" (nutrition) > "SAVE" (rule)
+        val saveAnywayNodes = composeTestRule.onAllNodesWithText("SAVE ANYWAY", ignoreCase = true)
             .fetchSemanticsNodes()
         val saveGoalNodes = composeTestRule.onAllNodesWithText("SAVE GOAL", ignoreCase = true)
             .fetchSemanticsNodes()
@@ -442,9 +419,9 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
             .fetchSemanticsNodes()
 
         when {
-            saveRuleNodes.isNotEmpty() -> {
-                Log.d(TAG, "Found 'SAVE RULE' button")
-                composeTestRule.onNodeWithText("SAVE RULE", ignoreCase = true)
+            saveAnywayNodes.isNotEmpty() -> {
+                Log.d(TAG, "Found 'SAVE ANYWAY' button (conflict override)")
+                composeTestRule.onNodeWithText("SAVE ANYWAY", ignoreCase = true)
                     .performScrollTo()
                     .performClick()
             }
@@ -455,7 +432,7 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
                     .performClick()
             }
             saveNodes.isNotEmpty() -> {
-                Log.d(TAG, "Found generic 'SAVE' button")
+                Log.d(TAG, "Found 'SAVE' button")
                 composeTestRule.onAllNodesWithText("SAVE", ignoreCase = true)[0]
                     .performScrollTo()
                     .performClick()
@@ -478,7 +455,7 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
      * Add an INCLUDE rule for an ingredient.
      *
      * Steps:
-     * 1. Select Ingredient tab
+     * 1. Select Rules tab
      * 2. Tap Add Rule button
      * 3. Select Include action
      * 4. Search and select ingredient
@@ -495,7 +472,7 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
     ) = apply {
         Log.i(TAG, "Adding INCLUDE rule for ingredient: $ingredientName")
 
-        selectIngredientTab()
+        selectRulesTab()
         tapAddRuleButton()
         selectIncludeAction()
         enterSearchQuery(ingredientName)
@@ -525,7 +502,7 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
     ) = apply {
         Log.i(TAG, "Adding EXCLUDE rule for ingredient: $ingredientName")
 
-        selectIngredientTab()
+        selectRulesTab()
         tapAddRuleButton()
         selectExcludeAction()
         enterSearchQuery(ingredientName)
@@ -551,10 +528,8 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
         Log.d(TAG, "Adding rule: ${rule.targetName}, isInclude=$isInclude")
 
         when (rule.type) {
-            RuleType.RECIPE -> selectRecipeTab()
-            RuleType.INGREDIENT -> selectIngredientTab()
-            RuleType.MEAL_SLOT -> selectMealSlotTab()
             RuleType.NUTRITION -> selectNutritionTab()
+            else -> selectRulesTab()
         }
 
         tapAddRuleButton()
@@ -586,21 +561,21 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
     // ===================== Legacy Methods (For Backwards Compatibility) =====================
 
     /**
-     * @deprecated Use selectIngredientTab() and selectIncludeAction() in bottom sheet.
+     * @deprecated Use selectRulesTab() and selectIncludeAction() in bottom sheet.
      */
     @Deprecated("Include/Exclude are now radio buttons in bottom sheet, not tabs")
     fun selectIncludeTab() = apply {
         Log.w(TAG, "selectIncludeTab() is deprecated - use addIngredientIncludeRule() instead")
-        selectIngredientTab()
+        selectRulesTab()
     }
 
     /**
-     * @deprecated Use selectIngredientTab() and selectExcludeAction() in bottom sheet.
+     * @deprecated Use selectRulesTab() and selectExcludeAction() in bottom sheet.
      */
     @Deprecated("Include/Exclude are now radio buttons in bottom sheet, not tabs")
     fun selectExcludeTab() = apply {
         Log.w(TAG, "selectExcludeTab() is deprecated - use addIngredientExcludeRule() instead")
-        selectIngredientTab()
+        selectRulesTab()
     }
 
     /**
@@ -832,7 +807,11 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
         if (!menuClicked) {
             // Debug: print semantics tree to understand what's on screen
             Log.e(TAG, "Could not find menu button. Printing semantics tree...")
-            composeTestRule.onRoot().printToLog(TAG)
+            try {
+                composeTestRule.onRoot().printToLog(TAG)
+            } catch (e: Exception) {
+                Log.e(TAG, "Could not print semantics tree (multiple roots): ${e.message}")
+            }
             throw AssertionError("Could not find 'More options' menu button after 5 attempts")
         }
 
@@ -861,8 +840,8 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
     fun toggleRuleActive(targetName: String) = apply {
         Log.d(TAG, "Toggling active state for rule: $targetName")
 
-        // Wait for rule card to be fully displayed
-        Thread.sleep(1000)
+        // Wait for rule card to be fully displayed after add/save
+        Thread.sleep(2000)
         composeTestRule.waitForIdle()
 
         // Scroll to the rule card
@@ -913,7 +892,11 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
         if (!menuClicked) {
             // Debug: print semantics tree to understand what's on screen
             Log.e(TAG, "Could not find menu button. Printing semantics tree...")
-            composeTestRule.onRoot().printToLog(TAG)
+            try {
+                composeTestRule.onRoot().printToLog(TAG)
+            } catch (e: Exception) {
+                Log.e(TAG, "Could not print semantics tree (multiple roots): ${e.message}")
+            }
             throw AssertionError("Could not find 'More options' menu button after 5 attempts")
         }
 

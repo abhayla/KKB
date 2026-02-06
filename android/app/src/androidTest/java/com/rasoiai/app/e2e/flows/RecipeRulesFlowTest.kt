@@ -15,8 +15,8 @@ import org.junit.Test
  * Phase 11: Recipe Rules Screen Testing
  *
  * Tests:
- * 11.1 Include Rules Tab
- * 11.2 Exclude Rules Tab
+ * 11.1 Include Rule (Rules Tab)
+ * 11.2 Exclude Rule (Rules Tab)
  * 11.3 Nutrition Goals Tab
  */
 @HiltAndroidTest
@@ -44,11 +44,11 @@ class RecipeRulesFlowTest : BaseE2ETest() {
     }
 
     /**
-     * Test 11.1: Include Rules Tab
+     * Test 11.1: Include Rule (Rules Tab)
      *
      * Steps:
      * 1. Navigate to Recipe Rules screen
-     * 2. Verify 4 tabs: Include, Exclude, Nutrition, Settings
+     * 2. Verify 2 tabs: Rules, Nutrition
      * 3. On Include tab, add rule:
      *    - Type: RECIPE
      *    - Target: "Dal Tadka"
@@ -71,17 +71,17 @@ class RecipeRulesFlowTest : BaseE2ETest() {
     }
 
     /**
-     * Test 11.2: Exclude Rules
+     * Test 11.2: Exclude Rule (Rules Tab)
      *
      * Steps:
-     * 1. Select Ingredient tab
+     * 1. Select Rules tab
      * 2. Add ingredient exclusion (via bottom sheet):
      *    - Type: INGREDIENT
      *    - Target: "Paneer"
      *    - Frequency: NEVER
      *    - Enforcement: REQUIRED
      * 3. Save rule
-     * 4. Verify rule is displayed on Ingredient tab
+     * 4. Verify rule is displayed on Rules tab
      */
     @Test
     fun test_11_2_excludeRulesTab() {
@@ -90,8 +90,8 @@ class RecipeRulesFlowTest : BaseE2ETest() {
         // Add exclude rule (uses Ingredient tab and selects Exclude in bottom sheet)
         recipeRulesRobot.addExcludeRule(TestDataFactory.RecipeRules.excludePaneer)
 
-        // Verify rule card is displayed on Ingredient tab
-        recipeRulesRobot.selectIngredientTab()
+        // Verify rule card is displayed on Rules tab
+        recipeRulesRobot.selectRulesTab()
         recipeRulesRobot.assertRuleCardDisplayed("Paneer")
     }
 
@@ -120,17 +120,15 @@ class RecipeRulesFlowTest : BaseE2ETest() {
 
     /**
      * Test: Tab navigation
-     * Tabs are: Recipe, Ingredient, Meal-Slot, Nutrition
-     * (Include/Exclude is selected within the add rule bottom sheet)
+     * Tabs are: Rules, Nutrition
      */
     @Test
     fun tabNavigation_works() {
         recipeRulesRobot.waitForRecipeRulesScreen()
 
-        recipeRulesRobot.selectRecipeTab()
-        recipeRulesRobot.selectIngredientTab()
-        recipeRulesRobot.selectMealSlotTab()
+        recipeRulesRobot.selectRulesTab()
         recipeRulesRobot.selectNutritionTab()
+        recipeRulesRobot.selectRulesTab()
     }
 
     /**
@@ -278,8 +276,8 @@ class RecipeRulesFlowTest : BaseE2ETest() {
         // Rule 4+5: Nutrition goal
         recipeRulesRobot.addNutritionGoal(TestDataFactory.RecipeRules.greenLeafyGoal)
 
-        // Verify ingredient rules are displayed
-        recipeRulesRobot.selectIngredientTab()
+        // Verify ingredient rules are displayed on Rules tab
+        recipeRulesRobot.selectRulesTab()
         recipeRulesRobot.assertRuleCardDisplayed("Chai")
         recipeRulesRobot.assertRuleCardDisplayed("Paneer")
         recipeRulesRobot.assertRuleCardDisplayed("Moringa")
