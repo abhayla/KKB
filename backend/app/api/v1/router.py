@@ -9,6 +9,7 @@ from app.api.v1.endpoints import (
     grocery,
     meal_plans,
     notifications,
+    recipe_rules,
     recipes,
     stats,
     users,
@@ -26,3 +27,5 @@ api_router.include_router(festivals.router)
 api_router.include_router(chat.router)
 api_router.include_router(stats.router)
 api_router.include_router(notifications.router)
+api_router.include_router(recipe_rules.router)
+api_router.include_router(recipe_rules.nutrition_goals_router)

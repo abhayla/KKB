@@ -24,6 +24,7 @@ from app.models import (  # noqa: F401
     meal_plan,
     notification,
     recipe,
+    recipe_rule,
     stats,
     user,
 )

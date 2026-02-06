@@ -20,9 +20,12 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 from typing import Any, Optional
 
+from sqlalchemy import select
+
 from app.ai.gemini_client import generate_text
 from app.core.exceptions import ServiceUnavailableError
 from app.db.postgres import async_session_maker
+from app.models.recipe_rule import NutritionGoal, RecipeRule
 from app.repositories.user_repository import UserRepository
 from app.services.config_service import ConfigService
 from app.services.festival_service import get_festivals_for_date_range
@@ -162,30 +165,93 @@ class AIMealService:
         return plan
 
     async def _load_user_preferences(self, user_id: str) -> UserPreferences:
-        """Load user preferences from PostgreSQL."""
+        """Load user preferences from PostgreSQL.
+
+        Reads rules from the new recipe_rules table (normalized) with fallback
+        to legacy JSON field for backward compatibility.
+        """
         prefs_data = await self.user_repo.get_preferences(user_id)
 
         if not prefs_data:
             logger.warning(f"No preferences found for user {user_id}, using defaults")
             return UserPreferences()
 
-        # Parse recipe rules by type
-        recipe_rules = prefs_data.get("recipe_rules", [])
-        include_rules = [r for r in recipe_rules if r.get("type") == "INCLUDE" and r.get("is_active", True)]
-        exclude_rules = [r for r in recipe_rules if r.get("type") == "EXCLUDE" and r.get("is_active", True)]
+        # Load rules from new recipe_rules table
+        include_rules = []
+        exclude_rules = []
+
+        try:
+            async with async_session_maker() as db:
+                # Query active INCLUDE rules
+                include_result = await db.execute(
+                    select(RecipeRule).where(
+                        RecipeRule.user_id == user_id,
+                        RecipeRule.action == "INCLUDE",
+                        RecipeRule.is_active == True,
+                    )
+                )
+                include_db_rules = include_result.scalars().all()
+
+                # Query active EXCLUDE rules
+                exclude_result = await db.execute(
+                    select(RecipeRule).where(
+                        RecipeRule.user_id == user_id,
+                        RecipeRule.action == "EXCLUDE",
+                        RecipeRule.is_active == True,
+                    )
+                )
+                exclude_db_rules = exclude_result.scalars().all()
+
+                # Convert to dict format expected by the prompt builder
+                for rule in include_db_rules:
+                    include_rules.append({
+                        "id": rule.id,
+                        "type": rule.action,
+                        "target": rule.target_name,
+                        "frequency": rule.frequency_type,
+                        "times_per_week": rule.frequency_count,
+                        "specific_days": rule.frequency_days.split(",") if rule.frequency_days else [],
+                        "meal_slot": [rule.meal_slot] if rule.meal_slot else ["breakfast", "lunch", "dinner", "snacks"],
+                        "enforcement": rule.enforcement,
+                    })
+
+                for rule in exclude_db_rules:
+                    exclude_rules.append({
+                        "id": rule.id,
+                        "type": rule.action,
+                        "target": rule.target_name,
+                        "frequency": rule.frequency_type,
+                        "times_per_week": rule.frequency_count,
+                        "specific_days": rule.frequency_days.split(",") if rule.frequency_days else [],
+                        "meal_slot": [rule.meal_slot] if rule.meal_slot else ["breakfast", "lunch", "dinner", "snacks"],
+                        "enforcement": rule.enforcement,
+                    })
+
+                logger.info(
+                    f"Loaded {len(include_rules)} INCLUDE rules and "
+                    f"{len(exclude_rules)} EXCLUDE rules from recipe_rules table"
+                )
+
+        except Exception as e:
+            logger.warning(f"Failed to load rules from recipe_rules table: {e}")
+            # Fallback to legacy JSON field
+            recipe_rules = prefs_data.get("recipe_rules") or []
+            include_rules = [r for r in recipe_rules if r.get("type") == "INCLUDE" and r.get("is_active", True)]
+            exclude_rules = [r for r in recipe_rules if r.get("type") == "EXCLUDE" and r.get("is_active", True)]
+            logger.info(f"Using legacy recipe_rules JSON field")
 
         return UserPreferences(
-            dietary_tags=prefs_data.get("dietary_tags", ["vegetarian"]),
-            cuisine_preferences=prefs_data.get("cuisine_preferences", ["north"]),
-            allergies=prefs_data.get("allergies", []),
-            dislikes=prefs_data.get("disliked_ingredients", []),
-            weekday_cooking_time=prefs_data.get("weekday_cooking_time_minutes", 30),
-            weekend_cooking_time=prefs_data.get("weekend_cooking_time_minutes", 60),
-            busy_days=[d.upper() for d in prefs_data.get("busy_days", [])],
+            dietary_tags=prefs_data.get("dietary_tags") or ["vegetarian"],
+            cuisine_preferences=prefs_data.get("cuisine_preferences") or ["north"],
+            allergies=prefs_data.get("allergies") or [],
+            dislikes=prefs_data.get("disliked_ingredients") or [],
+            weekday_cooking_time=prefs_data.get("weekday_cooking_time_minutes") or 30,
+            weekend_cooking_time=prefs_data.get("weekend_cooking_time_minutes") or 60,
+            busy_days=[d.upper() for d in (prefs_data.get("busy_days") or [])],
             include_rules=include_rules,
             exclude_rules=exclude_rules,
-            family_size=prefs_data.get("family_size", 4),
-            spice_level=prefs_data.get("spice_level", "medium"),
+            family_size=prefs_data.get("family_size") or 4,
+            spice_level=prefs_data.get("spice_level") or "medium",
         )
 
     async def _load_festivals(self, week_start: date) -> dict[date, dict]:

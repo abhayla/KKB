@@ -11,6 +11,7 @@ This document serves as the single source of truth for tracking functional requi
 | FR-003 | First-time vs returning user navigation (ONB-036) | [#41](https://github.com/abhayla/KKB/issues/41) | [`OnboardingNavigationTest.kt`](../../android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/OnboardingNavigationTest.kt) | N/A (Android-only) | ✅ |
 | FR-004 | MealPlanGenerationFlowTest fixes + diet conflict warnings | [#42](https://github.com/abhayla/KKB/issues/42) | [`MealPlanGenerationFlowTest.kt`](../../android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/MealPlanGenerationFlowTest.kt) | N/A (Android-only) | ✅ |
 | FR-005 | Family Profile Data Persistence (Onboarding & Settings) | [#44](https://github.com/abhayla/KKB/issues/44) | [`FamilyProfileFlowTest.kt`](../../android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/FamilyProfileFlowTest.kt) | N/A (Android-only) | ✅ |
+| FR-006 | Recipe Rules Backend Sync (Offline-First) | [#45](https://github.com/abhayla/KKB/issues/45) | `RecipeRulesSyncFlowTest.kt` | `test_recipe_rules_api.py` | 🚧 |
 
 **Status Legend:**
 - ✅ Implemented and tested

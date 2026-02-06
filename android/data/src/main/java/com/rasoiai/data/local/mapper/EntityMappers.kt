@@ -68,6 +68,10 @@ import com.rasoiai.data.local.entity.NotificationEntity
 import com.rasoiai.data.local.entity.OfflineQueueEntity
 import com.rasoiai.data.remote.dto.NotificationDto
 import com.rasoiai.data.remote.dto.NotificationActionDataDto
+import com.rasoiai.data.remote.dto.NutritionGoalDto
+import com.rasoiai.data.remote.dto.RecipeRuleDto
+import com.rasoiai.data.remote.dto.RecipeRuleSyncItem
+import com.rasoiai.data.remote.dto.NutritionGoalSyncItem
 import timber.log.Timber
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -499,7 +503,7 @@ fun RecipeRuleEntity.toDomain(): RecipeRule {
     )
 }
 
-fun RecipeRule.toEntity(): RecipeRuleEntity = RecipeRuleEntity(
+fun RecipeRule.toEntity(syncStatus: String = "SYNCED"): RecipeRuleEntity = RecipeRuleEntity(
     id = id,
     type = type.value,
     action = action.value,
@@ -511,6 +515,7 @@ fun RecipeRule.toEntity(): RecipeRuleEntity = RecipeRuleEntity(
     enforcement = enforcement.value,
     mealSlot = mealSlot?.value,
     isActive = isActive,
+    syncStatus = syncStatus,
     createdAt = createdAt.format(dateTimeFormatter),
     updatedAt = updatedAt.format(dateTimeFormatter)
 )
@@ -526,13 +531,14 @@ fun NutritionGoalEntity.toDomain(): NutritionGoal = NutritionGoal(
     updatedAt = LocalDateTime.parse(updatedAt, dateTimeFormatter)
 )
 
-fun NutritionGoal.toEntity(): NutritionGoalEntity = NutritionGoalEntity(
+fun NutritionGoal.toEntity(syncStatus: String = "SYNCED"): NutritionGoalEntity = NutritionGoalEntity(
     id = id,
     foodCategory = foodCategory.value,
     weeklyTarget = weeklyTarget,
     currentProgress = currentProgress,
     enforcement = enforcement.value,
     isActive = isActive,
+    syncStatus = syncStatus,
     createdAt = createdAt.format(dateTimeFormatter),
     updatedAt = updatedAt.format(dateTimeFormatter)
 )
@@ -711,3 +717,73 @@ private fun parseTimestamp(timestamp: String): Long {
         }
     }
 }
+
+// ==================== Recipe Rule DTO Mappers ====================
+
+/**
+ * Convert API DTO to Room Entity.
+ */
+fun RecipeRuleDto.toEntity(): RecipeRuleEntity = RecipeRuleEntity(
+    id = id,
+    type = targetType, // API uses targetType, Room uses type
+    action = action,
+    targetId = targetId ?: "",
+    targetName = targetName,
+    frequencyType = frequencyType,
+    frequencyCount = frequencyCount,
+    frequencyDays = frequencyDays,
+    enforcement = enforcement,
+    mealSlot = mealSlot,
+    isActive = isActive,
+    syncStatus = syncStatus,
+    createdAt = createdAt,
+    updatedAt = updatedAt
+)
+
+/**
+ * Convert Room Entity to API sync item.
+ */
+fun RecipeRuleEntity.toSyncItem(): RecipeRuleSyncItem = RecipeRuleSyncItem(
+    id = id,
+    targetType = type, // Room uses type, API uses targetType
+    action = action,
+    targetId = targetId.takeIf { it.isNotEmpty() },
+    targetName = targetName,
+    frequencyType = frequencyType,
+    frequencyCount = frequencyCount,
+    frequencyDays = frequencyDays,
+    enforcement = enforcement,
+    mealSlot = mealSlot,
+    isActive = isActive,
+    localUpdatedAt = updatedAt
+)
+
+// ==================== Nutrition Goal DTO Mappers ====================
+
+/**
+ * Convert API DTO to Room Entity.
+ */
+fun NutritionGoalDto.toEntity(): NutritionGoalEntity = NutritionGoalEntity(
+    id = id,
+    foodCategory = foodCategory,
+    weeklyTarget = weeklyTarget,
+    currentProgress = currentProgress,
+    enforcement = enforcement,
+    isActive = isActive,
+    syncStatus = syncStatus,
+    createdAt = createdAt,
+    updatedAt = updatedAt
+)
+
+/**
+ * Convert Room Entity to API sync item.
+ */
+fun NutritionGoalEntity.toSyncItem(): NutritionGoalSyncItem = NutritionGoalSyncItem(
+    id = id,
+    foodCategory = foodCategory,
+    weeklyTarget = weeklyTarget,
+    currentProgress = currentProgress,
+    enforcement = enforcement,
+    isActive = isActive,
+    localUpdatedAt = updatedAt
+)

@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from app.models.grocery import GroceryList
     from app.models.meal_plan import MealPlan
     from app.models.notification import FcmToken, Notification
+    from app.models.recipe_rule import NutritionGoal, RecipeRule
     from app.models.stats import CookingStreak, UserAchievement
 
 
@@ -101,6 +102,16 @@ class User(Base, TimestampMixin):
     )
     fcm_tokens: Mapped[list["FcmToken"]] = relationship(
         "FcmToken",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    recipe_rules: Mapped[list["RecipeRule"]] = relationship(
+        "RecipeRule",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    nutrition_goals: Mapped[list["NutritionGoal"]] = relationship(
+        "NutritionGoal",
         back_populates="user",
         cascade="all, delete-orphan",
     )

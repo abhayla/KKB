@@ -4,6 +4,15 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 /**
+ * Sync status for offline-first architecture.
+ */
+object SyncStatus {
+    const val SYNCED = "SYNCED"
+    const val PENDING = "PENDING"
+    const val CONFLICT = "CONFLICT"
+}
+
+/**
  * Room entity for recipe rules.
  */
 @Entity(tableName = "recipe_rules")
@@ -20,6 +29,7 @@ data class RecipeRuleEntity(
     val enforcement: String, // RuleEnforcement value
     val mealSlot: String? = null, // MealType value
     val isActive: Boolean = true,
+    val syncStatus: String = SyncStatus.SYNCED, // SYNCED, PENDING, CONFLICT
     val createdAt: String, // ISO datetime
     val updatedAt: String // ISO datetime
 )
@@ -36,6 +46,7 @@ data class NutritionGoalEntity(
     val currentProgress: Int = 0,
     val enforcement: String, // RuleEnforcement value
     val isActive: Boolean = true,
+    val syncStatus: String = SyncStatus.SYNCED, // SYNCED, PENDING, CONFLICT
     val createdAt: String, // ISO datetime
     val updatedAt: String // ISO datetime
 )

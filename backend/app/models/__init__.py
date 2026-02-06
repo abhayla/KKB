@@ -7,6 +7,7 @@ from app.models.grocery import GroceryItem, GroceryList
 from app.models.meal_plan import MealPlan, MealPlanItem
 from app.models.notification import FcmToken, Notification
 from app.models.recipe import Recipe, RecipeIngredient, RecipeInstruction, RecipeNutrition
+from app.models.recipe_rule import NutritionGoal, RecipeRule
 from app.models.stats import Achievement, CookingDay, CookingStreak, UserAchievement
 from app.models.user import FamilyMember, User, UserPreferences
 
@@ -32,4 +33,6 @@ __all__ = [
     "ReferenceData",
     "Notification",
     "FcmToken",
+    "RecipeRule",
+    "NutritionGoal",
 ]

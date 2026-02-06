@@ -32,17 +32,36 @@ interface RecipeRulesDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRule(rule: RecipeRuleEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertRules(rules: List<RecipeRuleEntity>)
+
     @Update
     suspend fun updateRule(rule: RecipeRuleEntity)
 
     @Query("DELETE FROM recipe_rules WHERE id = :ruleId")
     suspend fun deleteRule(ruleId: String)
 
+    @Query("DELETE FROM recipe_rules WHERE id IN (:ruleIds)")
+    suspend fun deleteRules(ruleIds: List<String>)
+
     @Query("UPDATE recipe_rules SET isActive = :isActive, updatedAt = :updatedAt WHERE id = :ruleId")
     suspend fun updateRuleActive(ruleId: String, isActive: Boolean, updatedAt: String)
 
     @Query("SELECT COUNT(*) FROM recipe_rules")
     suspend fun getRuleCount(): Int
+
+    // Sync-related queries
+    @Query("SELECT * FROM recipe_rules WHERE syncStatus = :status")
+    suspend fun getRulesBySyncStatus(status: String): List<RecipeRuleEntity>
+
+    @Query("SELECT * FROM recipe_rules WHERE syncStatus = 'PENDING'")
+    suspend fun getPendingRules(): List<RecipeRuleEntity>
+
+    @Query("UPDATE recipe_rules SET syncStatus = :syncStatus, updatedAt = :updatedAt WHERE id = :ruleId")
+    suspend fun updateRuleSyncStatus(ruleId: String, syncStatus: String, updatedAt: String)
+
+    @Query("UPDATE recipe_rules SET syncStatus = :syncStatus WHERE id IN (:ruleIds)")
+    suspend fun updateRulesSyncStatus(ruleIds: List<String>, syncStatus: String)
 
     // ==================== Nutrition Goals ====================
 
@@ -61,11 +80,17 @@ interface RecipeRulesDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertNutritionGoal(goal: NutritionGoalEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertNutritionGoals(goals: List<NutritionGoalEntity>)
+
     @Update
     suspend fun updateNutritionGoal(goal: NutritionGoalEntity)
 
     @Query("DELETE FROM nutrition_goals WHERE id = :goalId")
     suspend fun deleteNutritionGoal(goalId: String)
+
+    @Query("DELETE FROM nutrition_goals WHERE id IN (:goalIds)")
+    suspend fun deleteNutritionGoals(goalIds: List<String>)
 
     @Query("UPDATE nutrition_goals SET isActive = :isActive, updatedAt = :updatedAt WHERE id = :goalId")
     suspend fun updateNutritionGoalActive(goalId: String, isActive: Boolean, updatedAt: String)
@@ -78,4 +103,17 @@ interface RecipeRulesDao {
 
     @Query("SELECT foodCategory FROM nutrition_goals WHERE isActive = 1")
     suspend fun getActiveFoodCategories(): List<String>
+
+    // Sync-related queries
+    @Query("SELECT * FROM nutrition_goals WHERE syncStatus = :status")
+    suspend fun getNutritionGoalsBySyncStatus(status: String): List<NutritionGoalEntity>
+
+    @Query("SELECT * FROM nutrition_goals WHERE syncStatus = 'PENDING'")
+    suspend fun getPendingNutritionGoals(): List<NutritionGoalEntity>
+
+    @Query("UPDATE nutrition_goals SET syncStatus = :syncStatus, updatedAt = :updatedAt WHERE id = :goalId")
+    suspend fun updateNutritionGoalSyncStatus(goalId: String, syncStatus: String, updatedAt: String)
+
+    @Query("UPDATE nutrition_goals SET syncStatus = :syncStatus WHERE id IN (:goalIds)")
+    suspend fun updateNutritionGoalsSyncStatus(goalIds: List<String>, syncStatus: String)
 }

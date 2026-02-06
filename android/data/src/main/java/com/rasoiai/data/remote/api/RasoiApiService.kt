@@ -8,11 +8,21 @@ import com.rasoiai.data.remote.dto.FcmTokenRequest
 import com.rasoiai.data.remote.dto.GenerateMealPlanRequest
 import com.rasoiai.data.remote.dto.MealPlanResponse
 import com.rasoiai.data.remote.dto.NotificationsResponse
+import com.rasoiai.data.remote.dto.NutritionGoalCreateRequest
+import com.rasoiai.data.remote.dto.NutritionGoalDto
+import com.rasoiai.data.remote.dto.NutritionGoalsListResponse
+import com.rasoiai.data.remote.dto.NutritionGoalUpdateRequest
 import com.rasoiai.data.remote.dto.RecipeResponse
+import com.rasoiai.data.remote.dto.RecipeRuleCreateRequest
+import com.rasoiai.data.remote.dto.RecipeRuleDto
+import com.rasoiai.data.remote.dto.RecipeRulesListResponse
+import com.rasoiai.data.remote.dto.RecipeRuleUpdateRequest
 import com.rasoiai.data.remote.dto.RefreshTokenRequest
 import com.rasoiai.data.remote.dto.RefreshTokenResponse
 import com.rasoiai.data.remote.dto.SuccessResponse
 import com.rasoiai.data.remote.dto.SwapMealRequest
+import com.rasoiai.data.remote.dto.SyncRequest
+import com.rasoiai.data.remote.dto.SyncResponse
 import com.rasoiai.data.remote.dto.UserResponse
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -133,4 +143,45 @@ interface RasoiApiService {
 
     @DELETE("api/v1/notifications/fcm-token")
     suspend fun unregisterFcmToken(@Query("fcm_token") fcmToken: String): SuccessResponse
+
+    // Recipe Rules
+    @GET("api/v1/recipe-rules")
+    suspend fun getRecipeRules(): RecipeRulesListResponse
+
+    @POST("api/v1/recipe-rules")
+    suspend fun createRecipeRule(@Body rule: RecipeRuleCreateRequest): RecipeRuleDto
+
+    @GET("api/v1/recipe-rules/{id}")
+    suspend fun getRecipeRuleById(@Path("id") id: String): RecipeRuleDto
+
+    @PUT("api/v1/recipe-rules/{id}")
+    suspend fun updateRecipeRule(
+        @Path("id") id: String,
+        @Body rule: RecipeRuleUpdateRequest
+    ): RecipeRuleDto
+
+    @DELETE("api/v1/recipe-rules/{id}")
+    suspend fun deleteRecipeRule(@Path("id") id: String)
+
+    @POST("api/v1/recipe-rules/sync")
+    suspend fun syncRecipeRules(@Body request: SyncRequest): SyncResponse
+
+    // Nutrition Goals
+    @GET("api/v1/nutrition-goals")
+    suspend fun getNutritionGoals(): NutritionGoalsListResponse
+
+    @POST("api/v1/nutrition-goals")
+    suspend fun createNutritionGoal(@Body goal: NutritionGoalCreateRequest): NutritionGoalDto
+
+    @GET("api/v1/nutrition-goals/{id}")
+    suspend fun getNutritionGoalById(@Path("id") id: String): NutritionGoalDto
+
+    @PUT("api/v1/nutrition-goals/{id}")
+    suspend fun updateNutritionGoal(
+        @Path("id") id: String,
+        @Body goal: NutritionGoalUpdateRequest
+    ): NutritionGoalDto
+
+    @DELETE("api/v1/nutrition-goals/{id}")
+    suspend fun deleteNutritionGoal(@Path("id") id: String)
 }
