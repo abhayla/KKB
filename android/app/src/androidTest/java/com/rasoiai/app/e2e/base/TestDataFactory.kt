@@ -15,7 +15,7 @@ object TestDataFactory {
      * Used across all E2E tests for consistent testing.
      */
     val sharmaFamily = FamilyTestData(
-        email = "test.sharma@gmail.com",
+        email = "abhayinfosys@gmail.com",
         householdSize = 3,
         primaryDiet = DietaryTag.VEGETARIAN,
         dietaryRestrictions = listOf(DietaryTag.SATTVIC),

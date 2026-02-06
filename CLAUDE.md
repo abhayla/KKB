@@ -260,6 +260,17 @@ CREATE USER rasoiai_user WITH PASSWORD 'your_password';
 GRANT ALL PRIVILEGES ON DATABASE rasoiai TO rasoiai_user;
 ```
 
+### CI/CD Pipeline
+
+GitHub Actions workflow (`.github/workflows/android-ci.yml`) runs on push/PR to main/develop:
+
+| Job | Triggers | Actions |
+|-----|----------|---------|
+| `build` | All pushes | Lint, unit tests, build APK |
+| `instrumented-tests` | PRs only | Emulator tests (API 29) |
+
+**Artifacts uploaded:** lint-results, test-results, debug-apk
+
 ## Testing
 
 ### Test Distribution

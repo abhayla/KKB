@@ -120,7 +120,7 @@ async def generate(
     """
     import traceback
     try:
-        user_id = current_user.get("id")
+        user_id = current_user.id
         logger.info(f"Generating meal plan for user {user_id}")
 
         # Parse week start date

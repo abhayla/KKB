@@ -5,13 +5,16 @@ import androidx.lifecycle.viewModelScope
 import com.rasoiai.domain.model.FoodCategory
 import com.rasoiai.domain.model.MealType
 import com.rasoiai.domain.model.NutritionGoal
+import com.rasoiai.domain.model.PrimaryDiet
 import com.rasoiai.domain.model.Recipe
 import com.rasoiai.domain.model.RecipeRule
 import com.rasoiai.domain.model.RuleAction
 import com.rasoiai.domain.model.RuleEnforcement
 import com.rasoiai.domain.model.RuleFrequency
 import com.rasoiai.domain.model.RuleType
+import com.rasoiai.domain.model.UserPreferences
 import com.rasoiai.domain.repository.RecipeRulesRepository
+import com.rasoiai.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -95,7 +98,11 @@ data class RecipeRulesUiState(
     // Delete confirmation
     val showDeleteConfirmation: Boolean = false,
     val ruleToDelete: RecipeRule? = null,
-    val goalToDelete: NutritionGoal? = null
+    val goalToDelete: NutritionGoal? = null,
+
+    // Diet conflict warning (Issue #42)
+    val conflictWarning: String? = null,
+    val hasConflict: Boolean = false
 ) {
     val rulesForCurrentTab: List<RecipeRule>
         get() = when (selectedTab) {
@@ -144,7 +151,8 @@ sealed class RecipeRulesNavigationEvent {
 
 @HiltViewModel
 class RecipeRulesViewModel @Inject constructor(
-    private val repository: RecipeRulesRepository
+    private val repository: RecipeRulesRepository,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RecipeRulesUiState())
@@ -153,8 +161,20 @@ class RecipeRulesViewModel @Inject constructor(
     private val _navigationEvent = Channel<RecipeRulesNavigationEvent>()
     val navigationEvent: Flow<RecipeRulesNavigationEvent> = _navigationEvent.receiveAsFlow()
 
+    // Cached user preferences for diet conflict checking
+    private var userPreferences: UserPreferences? = null
+
     init {
         loadData()
+        loadUserPreferences()
+    }
+
+    private fun loadUserPreferences() {
+        viewModelScope.launch {
+            settingsRepository.getCurrentUser().collect { user ->
+                userPreferences = user?.preferences
+            }
+        }
     }
 
     private fun loadData() {
@@ -272,7 +292,9 @@ class RecipeRulesViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 showAddRuleSheet = false,
-                editingRule = null
+                editingRule = null,
+                conflictWarning = null,
+                hasConflict = false
             )
         }
     }
@@ -317,7 +339,20 @@ class RecipeRulesViewModel @Inject constructor(
     // region Form Updates
 
     fun updateAction(action: RuleAction) {
-        _uiState.update { it.copy(selectedAction = action) }
+        // Clear conflict warning when switching to EXCLUDE (Issue #42)
+        val conflict = if (action == RuleAction.INCLUDE && _uiState.value.selectedTargetName.isNotBlank()) {
+            checkDietConflict(_uiState.value.selectedTargetName)
+        } else {
+            null
+        }
+
+        _uiState.update {
+            it.copy(
+                selectedAction = action,
+                conflictWarning = conflict,
+                hasConflict = conflict != null
+            )
+        }
     }
 
     fun updateSearchQuery(query: String) {
@@ -353,14 +388,73 @@ class RecipeRulesViewModel @Inject constructor(
     }
 
     fun selectIngredient(ingredient: String) {
+        // Check for diet conflicts when selecting INCLUDE action (Issue #42)
+        val conflict = if (_uiState.value.selectedAction == RuleAction.INCLUDE) {
+            checkDietConflict(ingredient)
+        } else {
+            null
+        }
+
         _uiState.update {
             it.copy(
                 selectedTargetId = "ingredient-${ingredient.lowercase().replace(" ", "-")}",
                 selectedTargetName = ingredient,
                 searchQuery = ingredient,
-                ingredientSearchResults = emptyList()
+                ingredientSearchResults = emptyList(),
+                conflictWarning = conflict,
+                hasConflict = conflict != null
             )
         }
+    }
+
+    /**
+     * Check if the selected ingredient conflicts with user's diet preferences.
+     * Issue #42: Diet conflict detection for INCLUDE rules.
+     *
+     * High-priority conflicts detected:
+     * 1. Vegetarian diet + Non-veg ingredient (chicken, mutton, fish, etc.)
+     * 2. Vegetarian diet + Egg ingredient
+     * 3. Any allergy + Same ingredient as INCLUDE rule
+     *
+     * @param ingredient The ingredient name to check
+     * @return A warning message if conflict detected, null otherwise
+     */
+    private fun checkDietConflict(ingredient: String): String? {
+        val prefs = userPreferences ?: return null
+
+        val nonVegIngredients = setOf(
+            "chicken", "mutton", "fish", "prawns", "pork", "beef",
+            "lamb", "goat", "crab", "lobster", "shrimp", "meat",
+            "keema", "bacon", "ham", "sausage", "salami"
+        )
+        val eggIngredients = setOf("egg", "eggs", "omelette", "omelet", "anda")
+
+        val ingredientLower = ingredient.lowercase()
+
+        // Check vegetarian diet conflicts
+        if (prefs.primaryDiet == PrimaryDiet.VEGETARIAN) {
+            if (nonVegIngredients.any { ingredientLower.contains(it) }) {
+                return "\"$ingredient\" conflicts with your Vegetarian diet preference."
+            }
+            if (eggIngredients.any { ingredientLower.contains(it) }) {
+                return "\"$ingredient\" conflicts with your Vegetarian diet preference."
+            }
+        }
+
+        // Check eggetarian diet conflicts (no meat, but eggs allowed)
+        if (prefs.primaryDiet == PrimaryDiet.EGGETARIAN) {
+            if (nonVegIngredients.any { ingredientLower.contains(it) }) {
+                return "\"$ingredient\" conflicts with your Eggetarian diet preference."
+            }
+        }
+
+        // Check allergy conflicts
+        val userAllergies = prefs.dislikedIngredients.map { it.lowercase() }
+        if (userAllergies.any { ingredientLower.contains(it) || it.contains(ingredientLower) }) {
+            return "\"$ingredient\" is in your disliked/allergy list. Adding it as INCLUDE may cause issues."
+        }
+
+        return null
     }
 
     fun updateFrequencyType(type: FrequencyType) {

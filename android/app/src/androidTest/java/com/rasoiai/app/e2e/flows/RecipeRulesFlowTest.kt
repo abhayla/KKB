@@ -69,26 +69,27 @@ class RecipeRulesFlowTest : BaseE2ETest() {
     }
 
     /**
-     * Test 11.2: Exclude Rules Tab
+     * Test 11.2: Exclude Rules
      *
      * Steps:
-     * 1. Switch to Exclude tab
-     * 2. Add ingredient exclusion:
+     * 1. Select Ingredient tab
+     * 2. Add ingredient exclusion (via bottom sheet):
      *    - Type: INGREDIENT
      *    - Target: "Paneer"
      *    - Frequency: NEVER
      *    - Enforcement: REQUIRED
      * 3. Save rule
+     * 4. Verify rule is displayed on Ingredient tab
      */
     @Test
     fun test_11_2_excludeRulesTab() {
         recipeRulesRobot.waitForRecipeRulesScreen()
 
-        // Add exclude rule
+        // Add exclude rule (uses Ingredient tab and selects Exclude in bottom sheet)
         recipeRulesRobot.addExcludeRule(TestDataFactory.RecipeRules.excludePaneer)
 
-        // Verify rule card is displayed
-        recipeRulesRobot.selectExcludeTab()
+        // Verify rule card is displayed on Ingredient tab
+        recipeRulesRobot.selectIngredientTab()
         recipeRulesRobot.assertRuleCardDisplayed("Paneer")
     }
 
@@ -117,15 +118,17 @@ class RecipeRulesFlowTest : BaseE2ETest() {
 
     /**
      * Test: Tab navigation
+     * Tabs are: Recipe, Ingredient, Meal-Slot, Nutrition
+     * (Include/Exclude is selected within the add rule bottom sheet)
      */
     @Test
     fun tabNavigation_works() {
         recipeRulesRobot.waitForRecipeRulesScreen()
 
-        recipeRulesRobot.selectIncludeTab()
-        recipeRulesRobot.selectExcludeTab()
+        recipeRulesRobot.selectRecipeTab()
+        recipeRulesRobot.selectIngredientTab()
+        recipeRulesRobot.selectMealSlotTab()
         recipeRulesRobot.selectNutritionTab()
-        recipeRulesRobot.selectSettingsTab()
     }
 
     /**

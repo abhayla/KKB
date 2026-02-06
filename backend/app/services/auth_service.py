@@ -54,12 +54,12 @@ async def authenticate_with_firebase(firebase_token: str) -> AuthResponse:
     preferences_dto = None
     if preferences:
         preferences_dto = UserPreferencesDto(
-            household_size=preferences.get("family_size", 2),
-            dietary_restrictions=preferences.get("dietary_tags", []),
-            cuisine_preferences=preferences.get("cuisine_preferences", []),
-            disliked_ingredients=preferences.get("disliked_ingredients", []),
-            cooking_time_preference=preferences.get("cooking_time_preference", "moderate"),
-            spice_level=preferences.get("spice_level", "medium"),
+            household_size=preferences.get("family_size") or 2,
+            dietary_restrictions=preferences.get("dietary_tags") or [],
+            cuisine_preferences=preferences.get("cuisine_preferences") or [],
+            disliked_ingredients=preferences.get("disliked_ingredients") or [],
+            cooking_time_preference=preferences.get("cooking_time_preference") or "moderate",
+            spice_level=preferences.get("spice_level") or "medium",
         )
 
     # Build user response

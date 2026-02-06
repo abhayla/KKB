@@ -1,27 +1,34 @@
 package com.rasoiai.app.e2e.di
 
 import com.rasoiai.core.network.NetworkMonitor
+import com.rasoiai.data.di.NetworkModule
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.components.SingletonComponent
-import dagger.hilt.InstallIn
+import dagger.hilt.testing.TestInstallIn
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import javax.inject.Singleton
 
 /**
- * Test module that provides a fake NetworkMonitor for offline testing.
- * This module is installed alongside other modules and provides FakeNetworkMonitor
- * for tests that need to control network state.
- *
- * Note: This doesn't replace any module - it just provides an additional binding
- * for FakeNetworkMonitor that tests can inject.
+ * Test module that REPLACES NetworkModule with fake implementation.
+ * Uses @TestInstallIn to ensure all code injecting NetworkMonitor
+ * receives FakeNetworkMonitor during E2E tests.
  */
 @Module
-@InstallIn(SingletonComponent::class)
+@TestInstallIn(
+    components = [SingletonComponent::class],
+    replaces = [NetworkModule::class]
+)
 object FakeNetworkModule {
 
     private val _fakeNetworkMonitor = FakeNetworkMonitor()
+
+    @Provides
+    @Singleton
+    fun provideNetworkMonitor(): NetworkMonitor {
+        return _fakeNetworkMonitor
+    }
 
     @Provides
     @Singleton
@@ -31,31 +38,14 @@ object FakeNetworkModule {
 }
 
 /**
- * Fake NetworkMonitor that allows tests to control online/offline state.
+ * Fake NetworkMonitor for tests. Defaults to ONLINE.
  */
 class FakeNetworkMonitor : NetworkMonitor {
-
     private val _isOnline = MutableStateFlow(true)
     override val isOnline: Flow<Boolean> = _isOnline
 
-    /**
-     * Set the network state for testing.
-     */
-    fun setOnline(online: Boolean) {
-        _isOnline.value = online
-    }
-
-    /**
-     * Simulate going offline.
-     */
-    fun goOffline() {
-        _isOnline.value = false
-    }
-
-    /**
-     * Simulate coming back online.
-     */
-    fun goOnline() {
-        _isOnline.value = true
-    }
+    fun setOnline(online: Boolean) { _isOnline.value = online }
+    fun goOffline() { _isOnline.value = false }
+    fun goOnline() { _isOnline.value = true }
+    fun reset() { _isOnline.value = true }
 }

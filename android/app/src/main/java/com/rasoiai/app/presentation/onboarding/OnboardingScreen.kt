@@ -1084,7 +1084,9 @@ private fun DislikedIngredientsStep(
             value = searchQuery,
             onValueChange = onSearchQueryChange,
             placeholder = { Text("Search ingredients...") },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(TestTags.INGREDIENT_SEARCH_FIELD),
             shape = RoundedCornerShape(spacing.sm),
             singleLine = true,
             trailingIcon = {

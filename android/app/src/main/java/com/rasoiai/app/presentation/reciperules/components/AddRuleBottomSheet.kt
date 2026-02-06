@@ -19,7 +19,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -32,6 +34,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -237,6 +240,42 @@ fun AddRuleBottomSheet(
                 }
             }
 
+            // Diet Conflict Warning (Issue #42)
+            if (uiState.conflictWarning != null) {
+                Spacer(modifier = Modifier.height(spacing.md))
+
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(spacing.md),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Warning,
+                            contentDescription = "Warning",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.width(spacing.sm))
+                        Column {
+                            Text(
+                                text = "Diet Conflict",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Text(
+                                text = uiState.conflictWarning,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(spacing.md))
             HorizontalDivider()
             Spacer(modifier = Modifier.height(spacing.md))
@@ -410,14 +449,21 @@ fun AddRuleBottomSheet(
 
             Spacer(modifier = Modifier.height(spacing.lg))
 
-            // Save Button
+            // Save Button - shows warning state if conflict exists (Issue #42)
             Button(
                 onClick = onSave,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = uiState.canSaveRule
+                enabled = uiState.canSaveRule,
+                colors = if (uiState.hasConflict) {
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                } else {
+                    ButtonDefaults.buttonColors()
+                }
             ) {
                 Text(
-                    text = "SAVE RULE",
+                    text = if (uiState.hasConflict) "SAVE ANYWAY" else "SAVE RULE",
                     modifier = Modifier.padding(vertical = spacing.sm)
                 )
             }

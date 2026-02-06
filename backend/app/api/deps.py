@@ -1,30 +1,32 @@
 """API dependencies for dependency injection."""
 
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import Depends, Header
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import AuthenticationError, NotFoundError
 from app.core.security import verify_token_and_get_user_id
-from app.db.database import get_db
-from app.repositories.user_repository import UserRepository
+from app.db.postgres import get_db
+from app.models.user import User
 
-# Keep DbSession for backward compatibility with other endpoints
-# These endpoints still use PostgreSQL and will fail until migrated to Firestore
+# Database session dependency
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 
 
 async def get_current_user(
+    db: DbSession,
     authorization: Annotated[str | None, Header()] = None,
-) -> dict[str, Any]:
-    """Dependency to get the current authenticated user from Firestore.
+) -> User:
+    """Dependency to get the current authenticated user from PostgreSQL.
 
     Args:
+        db: Database session
         authorization: Bearer token from Authorization header
 
     Returns:
-        Current user dict from Firestore
+        Current user model from PostgreSQL
 
     Raises:
         AuthenticationError: If token is missing or invalid
@@ -39,21 +41,18 @@ async def get_current_user(
     token = authorization.replace("Bearer ", "")
     user_id = verify_token_and_get_user_id(token)
 
-    # Use Firestore-based UserRepository instead of PostgreSQL
-    user_repo = UserRepository()
-    user = await user_repo.get_by_id(user_id)
+    # Get user from PostgreSQL
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
 
     if not user:
         raise NotFoundError("User not found")
 
-    if not user.get("is_active", True) is False:
-        # User is active (default to True if not set)
-        pass
-    else:
+    if not user.is_active:
         raise AuthenticationError("User account is deactivated")
 
     return user
 
 
 # Type alias for current user dependency
-CurrentUser = Annotated[dict[str, Any], Depends(get_current_user)]
+CurrentUser = Annotated[User, Depends(get_current_user)]

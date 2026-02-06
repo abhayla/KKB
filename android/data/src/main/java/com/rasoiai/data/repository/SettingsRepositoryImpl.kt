@@ -11,12 +11,15 @@ import com.rasoiai.domain.model.User
 import com.rasoiai.domain.model.UserPreferences
 import com.rasoiai.domain.repository.SettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -94,30 +97,34 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun updateUserPreferences(preferences: UserPreferences): Result<Unit> {
         return try {
-            // Save to DataStore
+            // Save to DataStore (synchronous - must complete before returning)
             userPreferencesDataStore.saveOnboardingComplete(preferences)
 
-            // Try to sync with server if online
-            if (networkMonitor.isOnline.first()) {
+            // Sync to backend asynchronously (non-blocking)
+            // Use GlobalScope to ensure sync continues even if caller scope is cancelled
+            @Suppress("OPT_IN_USAGE")
+            GlobalScope.launch(Dispatchers.IO) {
                 try {
-                    val prefsMap = mapOf(
-                        "household_size" to preferences.householdSize,
-                        "primary_diet" to preferences.primaryDiet.value,
-                        "spice_level" to preferences.spiceLevel.value,
-                        "dietary_restrictions" to preferences.dietaryRestrictions.map { it.value },
-                        "cuisine_preferences" to preferences.cuisinePreferences.map { it.value },
-                        "disliked_ingredients" to preferences.dislikedIngredients,
-                        "weekday_cooking_time" to preferences.weekdayCookingTimeMinutes,
-                        "weekend_cooking_time" to preferences.weekendCookingTimeMinutes,
-                        "busy_days" to preferences.busyDays.map { it.value },
-                        // Meal generation settings
-                        "items_per_meal" to preferences.itemsPerMeal,
-                        "strict_allergen_mode" to preferences.strictAllergenMode,
-                        "strict_dietary_mode" to preferences.strictDietaryMode,
-                        "allow_recipe_repeat" to preferences.allowRecipeRepeat
-                    )
-                    apiService.updateUserPreferences(prefsMap)
-                    Timber.i("Synced preferences to server")
+                    if (networkMonitor.isOnline.first()) {
+                        val prefsMap = mapOf(
+                            "household_size" to preferences.householdSize,
+                            "primary_diet" to preferences.primaryDiet.value,
+                            "spice_level" to preferences.spiceLevel.value,
+                            "dietary_restrictions" to preferences.dietaryRestrictions.map { it.value },
+                            "cuisine_preferences" to preferences.cuisinePreferences.map { it.value },
+                            "disliked_ingredients" to preferences.dislikedIngredients,
+                            "weekday_cooking_time" to preferences.weekdayCookingTimeMinutes,
+                            "weekend_cooking_time" to preferences.weekendCookingTimeMinutes,
+                            "busy_days" to preferences.busyDays.map { it.value },
+                            // Meal generation settings
+                            "items_per_meal" to preferences.itemsPerMeal,
+                            "strict_allergen_mode" to preferences.strictAllergenMode,
+                            "strict_dietary_mode" to preferences.strictDietaryMode,
+                            "allow_recipe_repeat" to preferences.allowRecipeRepeat
+                        )
+                        apiService.updateUserPreferences(prefsMap)
+                        Timber.i("Synced preferences to server")
+                    }
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to sync preferences to server, saved locally")
                 }

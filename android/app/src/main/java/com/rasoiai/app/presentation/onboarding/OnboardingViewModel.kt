@@ -12,6 +12,7 @@ import com.rasoiai.domain.model.PrimaryDiet
 import com.rasoiai.domain.model.SpecialDietaryNeed
 import com.rasoiai.domain.model.SpiceLevel
 import com.rasoiai.domain.model.UserPreferences
+import com.rasoiai.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -124,7 +125,8 @@ object CommonDislikedIngredients {
 
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
-    private val userPreferencesDataStore: UserPreferencesDataStoreInterface
+    private val userPreferencesDataStore: UserPreferencesDataStoreInterface,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OnboardingUiState())
@@ -330,8 +332,9 @@ class OnboardingViewModel @Inject constructor(
                     busyDays = state.busyDays.toList()
                 )
 
-                userPreferencesDataStore.saveOnboardingComplete(preferences)
-                Timber.i("Onboarding complete, preferences saved")
+                // Save locally and sync to backend PostgreSQL
+                settingsRepository.updateUserPreferences(preferences)
+                Timber.i("Onboarding complete, preferences saved and synced to backend")
 
                 _navigationEvent.send(OnboardingNavigationEvent.NavigateToHome)
 

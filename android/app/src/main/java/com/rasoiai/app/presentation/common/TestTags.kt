@@ -199,4 +199,5 @@ object TestTags {
 
     // Recipe Rules Screen
     const val RECIPE_RULES_SCREEN = "recipe_rules_screen"
+    const val RULE_CARD_MENU_BUTTON = "rule_card_menu_button"
 }

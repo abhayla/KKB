@@ -47,8 +47,8 @@ class FakeGoogleAuthClient @Inject constructor() : GoogleAuthClientInterface {
 
     // Fake user data
     private val fakeUserId = "fake-user-id"
-    private val fakeUserEmail = "test@example.com"
-    private val fakeUserName = "Test User"
+    private val fakeUserEmail = "abhayinfosys@gmail.com"
+    private val fakeUserName = "Abhay Sharma"
     private val fakeFirebaseToken = "fake-firebase-token"
 
     override val currentUser: FirebaseUser?

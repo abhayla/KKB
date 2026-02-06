@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 9,
-    "identityHash": "cfd50e34fea1a4c5420cd7170b52ae1b",
+    "identityHash": "39087a08cad8ef8400240373d8051195",
     "entities": [
       {
         "tableName": "meal_plans",
@@ -780,7 +780,7 @@
       },
       {
         "tableName": "recipe_rules",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `type` TEXT NOT NULL, `action` TEXT NOT NULL, `targetId` TEXT NOT NULL, `targetName` TEXT NOT NULL, `frequencyType` TEXT NOT NULL, `frequencyCount` INTEGER, `frequencyDays` TEXT, `enforcement` TEXT NOT NULL, `mealSlot` TEXT, `isActive` INTEGER NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `type` TEXT NOT NULL, `action` TEXT NOT NULL, `targetId` TEXT NOT NULL, `targetName` TEXT NOT NULL, `frequencyType` TEXT NOT NULL, `frequencyCount` INTEGER, `frequencyDays` TEXT, `enforcement` TEXT NOT NULL, `mealSlot` TEXT, `isActive` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -849,6 +849,12 @@
             "notNull": true
           },
           {
+            "fieldPath": "syncStatus",
+            "columnName": "syncStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
             "fieldPath": "createdAt",
             "columnName": "createdAt",
             "affinity": "TEXT",
@@ -872,7 +878,7 @@
       },
       {
         "tableName": "nutrition_goals",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `foodCategory` TEXT NOT NULL, `weeklyTarget` INTEGER NOT NULL, `currentProgress` INTEGER NOT NULL, `enforcement` TEXT NOT NULL, `isActive` INTEGER NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `foodCategory` TEXT NOT NULL, `weeklyTarget` INTEGER NOT NULL, `currentProgress` INTEGER NOT NULL, `enforcement` TEXT NOT NULL, `isActive` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -908,6 +914,12 @@
             "fieldPath": "isActive",
             "columnName": "isActive",
             "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "syncStatus",
+            "affinity": "TEXT",
             "notNull": true
           },
           {
@@ -1228,7 +1240,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'cfd50e34fea1a4c5420cd7170b52ae1b')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '39087a08cad8ef8400240373d8051195')"
     ]
   }
 }

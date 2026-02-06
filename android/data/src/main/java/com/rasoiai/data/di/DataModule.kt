@@ -1,8 +1,6 @@
 package com.rasoiai.data.di
 
 import android.content.Context
-import com.rasoiai.core.network.NetworkMonitor
-import com.rasoiai.core.network.NetworkMonitorImpl
 import com.rasoiai.data.local.RasoiDatabase
 import com.rasoiai.data.local.dao.CollectionDao
 import com.rasoiai.data.local.dao.FavoriteDao
@@ -82,12 +80,6 @@ object DataModule {
     @Singleton
     fun provideRasoiDatabase(@ApplicationContext context: Context): RasoiDatabase {
         return RasoiDatabase.create(context)
-    }
-
-    @Provides
-    @Singleton
-    fun provideNetworkMonitor(@ApplicationContext context: Context): NetworkMonitor {
-        return NetworkMonitorImpl(context)
     }
 
     @Provides
