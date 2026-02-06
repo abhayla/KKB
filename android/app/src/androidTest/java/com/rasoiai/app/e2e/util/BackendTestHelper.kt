@@ -465,6 +465,180 @@ object BackendTestHelper {
     }
 
     /**
+     * Retrieves the current user's recipe rules from the backend.
+     * Uses the GET /api/v1/recipe-rules endpoint.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param authToken JWT Bearer token for authentication
+     * @return JSONObject containing recipe rules data, or null if failed
+     */
+    fun getRecipeRules(baseUrl: String, authToken: String): JSONObject? {
+        Log.d(TAG, "Fetching recipe rules from: $baseUrl/api/v1/recipe-rules")
+
+        return retryBackendCall(maxRetries = 3) {
+            val client = createClient()
+
+            val request = Request.Builder()
+                .url("$baseUrl/api/v1/recipe-rules")
+                .addHeader("Authorization", "Bearer $authToken")
+                .get()
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    val responseBody = response.body?.string() ?: return@use null
+                    Log.d(TAG, "getRecipeRules response: $responseBody")
+                    JSONObject(responseBody)
+                } else {
+                    Log.w(TAG, "getRecipeRules failed: ${response.code} ${response.message}")
+                    null
+                }
+            }
+        }
+    }
+
+    /**
+     * Retrieves the current user's nutrition goals from the backend.
+     * Uses the GET /api/v1/nutrition-goals endpoint.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param authToken JWT Bearer token for authentication
+     * @return JSONObject containing nutrition goals data, or null if failed
+     */
+    fun getNutritionGoals(baseUrl: String, authToken: String): JSONObject? {
+        Log.d(TAG, "Fetching nutrition goals from: $baseUrl/api/v1/nutrition-goals")
+
+        return retryBackendCall(maxRetries = 3) {
+            val client = createClient()
+
+            val request = Request.Builder()
+                .url("$baseUrl/api/v1/nutrition-goals")
+                .addHeader("Authorization", "Bearer $authToken")
+                .get()
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    val responseBody = response.body?.string() ?: return@use null
+                    Log.d(TAG, "getNutritionGoals response: $responseBody")
+                    JSONObject(responseBody)
+                } else {
+                    Log.w(TAG, "getNutritionGoals failed: ${response.code} ${response.message}")
+                    null
+                }
+            }
+        }
+    }
+
+    /**
+     * Deletes a single recipe rule from the backend.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param authToken JWT Bearer token for authentication
+     * @param ruleId The ID of the recipe rule to delete
+     * @return true if deletion was successful (204), false otherwise
+     */
+    fun deleteRecipeRule(baseUrl: String, authToken: String, ruleId: String): Boolean {
+        return retryBackendCall(maxRetries = 2) {
+            val client = createClient()
+            val request = Request.Builder()
+                .url("$baseUrl/api/v1/recipe-rules/$ruleId")
+                .addHeader("Authorization", "Bearer $authToken")
+                .delete()
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (response.code == 204 || response.isSuccessful) {
+                    Log.d(TAG, "Deleted recipe rule: $ruleId")
+                    true
+                } else {
+                    Log.w(TAG, "Delete recipe rule $ruleId failed: ${response.code}")
+                    null
+                }
+            }
+        } ?: false
+    }
+
+    /**
+     * Deletes a single nutrition goal from the backend.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param authToken JWT Bearer token for authentication
+     * @param goalId The ID of the nutrition goal to delete
+     * @return true if deletion was successful (204), false otherwise
+     */
+    fun deleteNutritionGoal(baseUrl: String, authToken: String, goalId: String): Boolean {
+        return retryBackendCall(maxRetries = 2) {
+            val client = createClient()
+            val request = Request.Builder()
+                .url("$baseUrl/api/v1/nutrition-goals/$goalId")
+                .addHeader("Authorization", "Bearer $authToken")
+                .delete()
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (response.code == 204 || response.isSuccessful) {
+                    Log.d(TAG, "Deleted nutrition goal: $goalId")
+                    true
+                } else {
+                    Log.w(TAG, "Delete nutrition goal $goalId failed: ${response.code}")
+                    null
+                }
+            }
+        } ?: false
+    }
+
+    /**
+     * Clears all recipe rules and nutrition goals from the backend.
+     * Fetches all rules/goals via GET, then deletes each one individually.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param authToken JWT Bearer token for authentication
+     * @return Pair of (rulesDeleted, goalsDeleted) counts
+     */
+    fun clearAllRecipeRulesAndGoals(baseUrl: String, authToken: String): Pair<Int, Int> {
+        var rulesDeleted = 0
+        var goalsDeleted = 0
+
+        // Delete all recipe rules
+        try {
+            val rulesResponse = getRecipeRules(baseUrl, authToken)
+            if (rulesResponse != null) {
+                val rulesArray = rulesResponse.getJSONArray("rules")
+                for (i in 0 until rulesArray.length()) {
+                    val rule = rulesArray.getJSONObject(i)
+                    val ruleId = rule.getString("id")
+                    if (deleteRecipeRule(baseUrl, authToken, ruleId)) {
+                        rulesDeleted++
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Error clearing recipe rules: ${e.message}")
+        }
+
+        // Delete all nutrition goals
+        try {
+            val goalsResponse = getNutritionGoals(baseUrl, authToken)
+            if (goalsResponse != null) {
+                val goalsArray = goalsResponse.getJSONArray("goals")
+                for (i in 0 until goalsArray.length()) {
+                    val goal = goalsArray.getJSONObject(i)
+                    val goalId = goal.getString("id")
+                    if (deleteNutritionGoal(baseUrl, authToken, goalId)) {
+                        goalsDeleted++
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Error clearing nutrition goals: ${e.message}")
+        }
+
+        Log.i(TAG, "Cleared $rulesDeleted recipe rules and $goalsDeleted nutrition goals from backend")
+        return Pair(rulesDeleted, goalsDeleted)
+    }
+
+    /**
      * Checks backend connectivity and logs diagnostic information.
      * Useful for debugging test setup issues.
      *

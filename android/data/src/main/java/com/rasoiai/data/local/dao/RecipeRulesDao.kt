@@ -44,6 +44,9 @@ interface RecipeRulesDao {
     @Query("DELETE FROM recipe_rules WHERE id IN (:ruleIds)")
     suspend fun deleteRules(ruleIds: List<String>)
 
+    @Query("DELETE FROM recipe_rules")
+    suspend fun deleteAllRules()
+
     @Query("UPDATE recipe_rules SET isActive = :isActive, updatedAt = :updatedAt WHERE id = :ruleId")
     suspend fun updateRuleActive(ruleId: String, isActive: Boolean, updatedAt: String)
 
@@ -106,6 +109,9 @@ interface RecipeRulesDao {
 
     @Query("DELETE FROM nutrition_goals WHERE id IN (:goalIds)")
     suspend fun deleteNutritionGoals(goalIds: List<String>)
+
+    @Query("DELETE FROM nutrition_goals")
+    suspend fun deleteAllNutritionGoals()
 
     @Query("UPDATE nutrition_goals SET isActive = :isActive, updatedAt = :updatedAt WHERE id = :goalId")
     suspend fun updateNutritionGoalActive(goalId: String, isActive: Boolean, updatedAt: String)

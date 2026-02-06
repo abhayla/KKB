@@ -9,6 +9,7 @@ import com.rasoiai.app.e2e.di.FakeGoogleAuthClient
 import com.rasoiai.app.e2e.rules.RetryRule
 import com.rasoiai.app.e2e.util.BackendTestHelper
 import com.rasoiai.app.e2e.util.RetryUtils
+import com.rasoiai.data.local.dao.RecipeRulesDao
 import com.rasoiai.data.local.datastore.UserPreferencesDataStoreInterface
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -17,6 +18,7 @@ import com.rasoiai.domain.model.DayOfWeek
 import com.rasoiai.domain.model.PrimaryDiet
 import com.rasoiai.domain.model.SpiceLevel
 import com.rasoiai.domain.model.UserPreferences
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
@@ -72,6 +74,9 @@ abstract class BaseE2ETest {
 
     @Inject
     lateinit var userPreferencesDataStore: UserPreferencesDataStoreInterface
+
+    @Inject
+    lateinit var recipeRulesDao: RecipeRulesDao
 
     protected val context: Context
         get() = ApplicationProvider.getApplicationContext()
@@ -193,6 +198,31 @@ abstract class BaseE2ETest {
         fakeGoogleAuthClient.reset()
         FakeGoogleAuthClient.resetStaticState()
         Log.d(TAG, "Cleared all state for fresh test")
+    }
+
+    /**
+     * Clears all recipe rules and nutrition goals from both Room DB and backend.
+     * Call this in test @Before methods to prevent DuplicateRuleException
+     * when rules from prior test runs still exist.
+     */
+    protected fun clearRecipeRulesAndGoals() {
+        // 1. Clear Room DB
+        runBlocking {
+            recipeRulesDao.deleteAllRules()
+            recipeRulesDao.deleteAllNutritionGoals()
+        }
+        Log.d(TAG, "Cleared recipe rules and nutrition goals from Room DB")
+
+        // 2. Clear backend (needs auth token from DataStore)
+        val authToken = runBlocking { userPreferencesDataStore.accessToken.first() }
+        if (authToken != null) {
+            val (rulesDeleted, goalsDeleted) = BackendTestHelper.clearAllRecipeRulesAndGoals(
+                BACKEND_BASE_URL, authToken
+            )
+            Log.d(TAG, "Cleared backend: $rulesDeleted rules, $goalsDeleted goals")
+        } else {
+            Log.w(TAG, "No auth token available — skipping backend cleanup")
+        }
     }
 
     /**
