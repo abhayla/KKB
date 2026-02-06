@@ -83,6 +83,34 @@ object TestDataFactory {
             weeklyTarget = 5,
             enforcement = RuleEnforcement.PREFERRED
         )
+
+        // Sharma family specific rules
+        val includeChaiBreakfast = RecipeRuleTestData(
+            type = RuleType.INGREDIENT,
+            targetName = "Chai",
+            frequency = 1,
+            frequencyType = FrequencyType.DAILY,
+            mealSlot = listOf(MealSlot.BREAKFAST),
+            enforcement = RuleEnforcement.REQUIRED
+        )
+
+        val includeChaiSnacks = RecipeRuleTestData(
+            type = RuleType.INGREDIENT,
+            targetName = "Chai",
+            frequency = 1,
+            frequencyType = FrequencyType.DAILY,
+            mealSlot = listOf(MealSlot.SNACKS),
+            enforcement = RuleEnforcement.REQUIRED
+        )
+
+        val includeMoringa = RecipeRuleTestData(
+            type = RuleType.INGREDIENT,
+            targetName = "Moringa",
+            frequency = 1,
+            frequencyType = FrequencyType.TIMES_PER_WEEK,
+            mealSlot = emptyList(),
+            enforcement = RuleEnforcement.PREFERRED
+        )
     }
 
     /**

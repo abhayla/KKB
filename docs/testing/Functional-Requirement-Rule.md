@@ -16,6 +16,7 @@ This document serves as the single source of truth for tracking functional requi
 | FR-008 | E2E Test Infrastructure - Meal generation API connectivity | [#43](https://github.com/abhayla/KKB/issues/43) | [`MealPlanGenerationFlowTest.kt`](../../android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/MealPlanGenerationFlowTest.kt) | N/A (Android E2E infrastructure) | ✅ |
 | FR-009 | NotificationsScreen UI Tests | [#36](https://github.com/abhayla/KKB/issues/36) | [`NotificationsScreenTest.kt`](../../android/app/src/androidTest/java/com/rasoiai/app/presentation/notifications/NotificationsScreenTest.kt) | N/A (Android UI tests) | 🚧 |
 | FR-010 | AI Recipe Catalog — shared recipe search for Recipe Rules | [#47](https://github.com/abhayla/KKB/issues/47) | `RecipeRulesFlowTest.kt` | [`test_ai_recipe_catalog.py`](../../backend/tests/test_ai_recipe_catalog.py) | ✅ |
+| FR-011 | Sharma family Recipe Rules E2E test suite | [#48](https://github.com/abhayla/KKB/issues/48) | [`RecipeRulesFlowTest.kt`](../../android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/RecipeRulesFlowTest.kt) | [`test_sharma_recipe_rules.py`](../../backend/tests/test_sharma_recipe_rules.py) | ✅ |
 
 **Status Legend:**
 - ✅ Implemented and tested

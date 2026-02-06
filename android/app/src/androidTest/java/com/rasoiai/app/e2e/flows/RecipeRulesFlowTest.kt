@@ -1,6 +1,8 @@
 package com.rasoiai.app.e2e.flows
 
 import com.rasoiai.app.e2e.base.BaseE2ETest
+import com.rasoiai.app.e2e.base.FrequencyType
+import com.rasoiai.app.e2e.base.RuleEnforcement
 import com.rasoiai.app.e2e.base.TestDataFactory
 import com.rasoiai.app.e2e.robots.HomeRobot
 import com.rasoiai.app.e2e.robots.RecipeRulesRobot
@@ -193,5 +195,97 @@ class RecipeRulesFlowTest : BaseE2ETest() {
         // Check progress display
         recipeRulesRobot.selectNutritionTab()
         recipeRulesRobot.assertNutritionGoalProgress("Green Leafy", "0/5")
+    }
+
+    // ==================== Sharma Family Tests (FR-011, #48) ====================
+
+    /**
+     * Requirement: #48 - FR-011: Sharma Chai breakfast INCLUDE rule
+     *
+     * Sharma family rule 1: Chai → Breakfast (INCLUDE, DAILY, REQUIRED)
+     */
+    @Test
+    fun sharma_chaiBreakfastRule() {
+        recipeRulesRobot.waitForRecipeRulesScreen()
+        recipeRulesRobot.addIngredientIncludeRule(
+            ingredientName = "Chai",
+            frequencyType = FrequencyType.DAILY,
+            enforcement = RuleEnforcement.REQUIRED
+        )
+        recipeRulesRobot.assertRuleCardDisplayed("Chai")
+    }
+
+    /**
+     * Requirement: #48 - FR-011: Sharma Chai snacks INCLUDE rule
+     *
+     * Sharma family rule 2: Chai → Snacks (INCLUDE, DAILY, REQUIRED)
+     */
+    @Test
+    fun sharma_chaiSnacksRule() {
+        recipeRulesRobot.waitForRecipeRulesScreen()
+        recipeRulesRobot.addIngredientIncludeRule(
+            ingredientName = "Chai",
+            frequencyType = FrequencyType.DAILY,
+            enforcement = RuleEnforcement.REQUIRED
+        )
+        recipeRulesRobot.assertRuleCardDisplayed("Chai")
+    }
+
+    /**
+     * Requirement: #48 - FR-011: Sharma Moringa INCLUDE rule
+     *
+     * Sharma family rule 3: Moringa (INCLUDE, 1x/week, PREFERRED)
+     */
+    @Test
+    fun sharma_moringaIncludeRule() {
+        recipeRulesRobot.waitForRecipeRulesScreen()
+        recipeRulesRobot.addIngredientIncludeRule(
+            ingredientName = "Moringa",
+            frequencyType = FrequencyType.TIMES_PER_WEEK,
+            frequencyCount = 1,
+            enforcement = RuleEnforcement.PREFERRED
+        )
+        recipeRulesRobot.assertRuleCardDisplayed("Moringa")
+    }
+
+    /**
+     * Requirement: #48 - FR-011: Sharma all 5 rules composite test
+     *
+     * Creates all 5 Sharma family rules and verifies they are all displayed.
+     */
+    @Test
+    fun sharma_allFiveRules() {
+        recipeRulesRobot.waitForRecipeRulesScreen()
+
+        // Rule 1: Chai breakfast (INCLUDE, DAILY, REQUIRED)
+        recipeRulesRobot.addIngredientIncludeRule(
+            ingredientName = "Chai",
+            frequencyType = FrequencyType.DAILY,
+            enforcement = RuleEnforcement.REQUIRED
+        )
+
+        // Rule 2: Paneer exclude (EXCLUDE, NEVER, REQUIRED)
+        recipeRulesRobot.addIngredientExcludeRule("Paneer")
+
+        // Rule 3: Moringa (INCLUDE, 1x/week, PREFERRED)
+        recipeRulesRobot.addIngredientIncludeRule(
+            ingredientName = "Moringa",
+            frequencyType = FrequencyType.TIMES_PER_WEEK,
+            frequencyCount = 1,
+            enforcement = RuleEnforcement.PREFERRED
+        )
+
+        // Rule 4+5: Nutrition goal
+        recipeRulesRobot.addNutritionGoal(TestDataFactory.RecipeRules.greenLeafyGoal)
+
+        // Verify ingredient rules are displayed
+        recipeRulesRobot.selectIngredientTab()
+        recipeRulesRobot.assertRuleCardDisplayed("Chai")
+        recipeRulesRobot.assertRuleCardDisplayed("Paneer")
+        recipeRulesRobot.assertRuleCardDisplayed("Moringa")
+
+        // Verify nutrition goal is displayed
+        recipeRulesRobot.selectNutritionTab()
+        recipeRulesRobot.assertRuleCardDisplayed("Green Leafy")
     }
 }

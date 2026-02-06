@@ -33,6 +33,8 @@
 | RULE-027 | Add Goal Sheet | Nutrition goal form | Implemented | `RecipeRulesScreenTest.kt` |
 | RULE-028 | Food Category Selector | Select food group | Implemented | `RecipeRulesScreenTest.kt` |
 | RULE-029 | Weekly Target Input | Set frequency | Implemented | `RecipeRulesScreenTest.kt` |
+| RULE-030 | AI Recipe Catalog Search | AI-powered recipe search | Implemented | `test_ai_recipe_catalog.py`, `RecipeRulesFlowTest.kt` |
+| RULE-031 | Sharma Family E2E | All 5 Sharma rules create/list/verify | Implemented | `test_sharma_recipe_rules.py`, `RecipeRulesFlowTest.kt` |
 
 ---
 
@@ -483,6 +485,26 @@ At least [N] times per [period]
 - When the AI produces recipe names
 - Then each recipe name is cataloged with dietary_tags, cuisine_type, ingredients, nutrition
 - And duplicate names increment usage_count instead of creating new entries
+
+---
+
+### RULE-031: Sharma Family E2E Test Suite
+
+| Field | Value |
+|-------|-------|
+| **Screen** | Recipe Rules |
+| **Element** | Full E2E flow for Sharma family rules |
+| **Trigger** | Automated test execution |
+| **Status** | Implemented |
+| **Test** | `test_sharma_recipe_rules.py`, `RecipeRulesFlowTest.kt` |
+
+**Acceptance Criteria:**
+- Given a Sharma family user (vegetarian, sattvic, family_size=3)
+- When they create all 5 recipe rules via API
+- Then GET /recipe-rules returns 4 rules with correct fields
+- And GET /nutrition-goals returns 1 goal with correct fields
+- And each rule has the correct target_name, frequency_type, enforcement, and meal_slot
+- And duplicate nutrition goals are rejected with 409
 
 ---
 
