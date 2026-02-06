@@ -1,12 +1,14 @@
 """
 Requirement: #48 - FR-011: Sharma family Recipe Rules test suite with UI-to-DB verification
 
-Tests all 5 Sharma family recipe rules:
+Tests all 7 Sharma family recipe rules:
 1. Chai → Breakfast (INCLUDE, DAILY, REQUIRED)
 2. Chai → Snacks (INCLUDE, DAILY, REQUIRED)
 3. Moringa (INCLUDE, 1x/week, PREFERRED)
 4. Paneer (EXCLUDE, NEVER, REQUIRED)
-5. Green Leafy goal (5/week, PREFERRED)
+5. Eggs (INCLUDE, 4x/week, PREFERRED)
+6. Chicken (INCLUDE, 2x/week, PREFERRED)
+7. Green Leafy goal (5/week, PREFERRED)
 """
 
 import pytest
@@ -42,7 +44,7 @@ async def sharma_user(db_session: AsyncSession) -> User:
     prefs = UserPreferences(
         id=str(uuid4()),
         user_id=user_id,
-        dietary_type="vegetarian",
+        dietary_type="non_vegetarian",
         family_size=3,
     )
     db_session.add(prefs)
@@ -76,7 +78,29 @@ async def sharma_client(
     app.dependency_overrides.clear()
 
 
-# ==================== Helper ====================
+# ==================== Onboarding Data Constants ====================
+
+
+SHARMA_ONBOARDING_PREFERENCES = {
+    "household_size": 3,
+    "primary_diet": "non_vegetarian",
+    "dietary_restrictions": [],
+    "cuisine_preferences": ["north", "west"],
+    "spice_level": "medium",
+    "disliked_ingredients": ["Karela", "Baingan"],
+    "weekday_cooking_time": 30,
+    "weekend_cooking_time": 60,
+    "busy_days": ["MONDAY", "WEDNESDAY"],
+}
+
+SHARMA_FAMILY_MEMBERS = [
+    {"name": "Priya Sharma", "age_group": "adult", "dietary_restrictions": [], "health_conditions": []},
+    {"name": "Amit Sharma", "age_group": "child", "dietary_restrictions": [], "health_conditions": []},
+    {"name": "Dadi Sharma", "age_group": "senior", "dietary_restrictions": ["low_salt"], "health_conditions": ["diabetes"]},
+]
+
+
+# ==================== Recipe Rule Constants ====================
 
 
 CHAI_BREAKFAST_RULE = {
@@ -115,6 +139,26 @@ PANEER_EXCLUDE_RULE = {
     "target_name": "Paneer",
     "frequency_type": "NEVER",
     "enforcement": "REQUIRED",
+    "is_active": True,
+}
+
+EGGS_RULE = {
+    "target_type": "INGREDIENT",
+    "action": "INCLUDE",
+    "target_name": "Eggs",
+    "frequency_type": "TIMES_PER_WEEK",
+    "frequency_count": 4,
+    "enforcement": "PREFERRED",
+    "is_active": True,
+}
+
+CHICKEN_RULE = {
+    "target_type": "INGREDIENT",
+    "action": "INCLUDE",
+    "target_name": "Chicken",
+    "frequency_type": "TIMES_PER_WEEK",
+    "frequency_count": 2,
+    "enforcement": "PREFERRED",
     "is_active": True,
 }
 
@@ -198,6 +242,40 @@ async def test_sharma_create_paneer_exclude_rule(sharma_client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_sharma_create_eggs_rule(sharma_client: AsyncClient):
+    """Test creating Eggs INCLUDE rule (4x/week, PREFERRED)."""
+    response = await sharma_client.post(
+        "/api/v1/recipe-rules",
+        json=EGGS_RULE,
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["target_name"] == "Eggs"
+    assert data["action"] == "INCLUDE"
+    assert data["frequency_type"] == "TIMES_PER_WEEK"
+    assert data["frequency_count"] == 4
+    assert data["enforcement"] == "PREFERRED"
+
+
+@pytest.mark.asyncio
+async def test_sharma_create_chicken_rule(sharma_client: AsyncClient):
+    """Test creating Chicken INCLUDE rule (2x/week, PREFERRED)."""
+    response = await sharma_client.post(
+        "/api/v1/recipe-rules",
+        json=CHICKEN_RULE,
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["target_name"] == "Chicken"
+    assert data["action"] == "INCLUDE"
+    assert data["frequency_type"] == "TIMES_PER_WEEK"
+    assert data["frequency_count"] == 2
+    assert data["enforcement"] == "PREFERRED"
+
+
+@pytest.mark.asyncio
 async def test_sharma_create_green_leafy_goal(sharma_client: AsyncClient):
     """Test creating Green Leafy nutrition goal (5/week, PREFERRED)."""
     response = await sharma_client.post(
@@ -218,9 +296,9 @@ async def test_sharma_create_green_leafy_goal(sharma_client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_sharma_all_rules_listed(sharma_client: AsyncClient):
-    """Create all 4 rules + 1 goal, verify GET returns correct counts."""
-    # Create all 4 recipe rules
-    for rule_data in [CHAI_BREAKFAST_RULE, CHAI_SNACKS_RULE, MORINGA_RULE, PANEER_EXCLUDE_RULE]:
+    """Create all 6 rules + 1 goal, verify GET returns correct counts."""
+    # Create all 6 recipe rules
+    for rule_data in [CHAI_BREAKFAST_RULE, CHAI_SNACKS_RULE, MORINGA_RULE, PANEER_EXCLUDE_RULE, EGGS_RULE, CHICKEN_RULE]:
         resp = await sharma_client.post("/api/v1/recipe-rules", json=rule_data)
         assert resp.status_code == 201
 
@@ -232,8 +310,8 @@ async def test_sharma_all_rules_listed(sharma_client: AsyncClient):
     rules_resp = await sharma_client.get("/api/v1/recipe-rules")
     assert rules_resp.status_code == 200
     rules_data = rules_resp.json()
-    assert rules_data["total_count"] == 4
-    assert len(rules_data["rules"]) == 4
+    assert rules_data["total_count"] == 6
+    assert len(rules_data["rules"]) == 6
 
     # Verify nutrition goals count
     goals_resp = await sharma_client.get("/api/v1/nutrition-goals")
@@ -330,3 +408,37 @@ async def test_sharma_duplicate_nutrition_goal_rejected(sharma_client: AsyncClie
     # Duplicate should fail
     resp2 = await sharma_client.post("/api/v1/nutrition-goals", json=GREEN_LEAFY_GOAL)
     assert resp2.status_code == 409
+
+
+# ==================== Onboarding Preferences Roundtrip Test ====================
+
+
+@pytest.mark.asyncio
+async def test_sharma_onboarding_preferences_roundtrip(sharma_client: AsyncClient):
+    """Requirement: #52 - FR-014: PUT preferences → GET /users/me → verify all fields roundtrip."""
+    # PUT preferences using the onboarding data
+    put_resp = await sharma_client.put(
+        "/api/v1/users/preferences",
+        json=SHARMA_ONBOARDING_PREFERENCES,
+    )
+    assert put_resp.status_code == 200
+
+    # GET /users/me to verify persistence
+    get_resp = await sharma_client.get("/api/v1/users/me")
+    assert get_resp.status_code == 200
+    data = get_resp.json()
+
+    # Verify user is marked as onboarded
+    assert data["is_onboarded"] is True
+
+    # Verify preferences roundtrip
+    prefs = data["preferences"]
+    assert prefs["household_size"] == SHARMA_ONBOARDING_PREFERENCES["household_size"]
+    assert prefs["dietary_type"] == SHARMA_ONBOARDING_PREFERENCES["primary_diet"]
+    assert prefs["dietary_restrictions"] == SHARMA_ONBOARDING_PREFERENCES["dietary_restrictions"]
+    assert prefs["cuisine_preferences"] == SHARMA_ONBOARDING_PREFERENCES["cuisine_preferences"]
+    assert prefs["spice_level"] == SHARMA_ONBOARDING_PREFERENCES["spice_level"]
+    assert prefs["disliked_ingredients"] == SHARMA_ONBOARDING_PREFERENCES["disliked_ingredients"]
+    assert prefs["weekday_cooking_time_minutes"] == SHARMA_ONBOARDING_PREFERENCES["weekday_cooking_time"]
+    assert prefs["weekend_cooking_time_minutes"] == SHARMA_ONBOARDING_PREFERENCES["weekend_cooking_time"]
+    assert prefs["busy_days"] == SHARMA_ONBOARDING_PREFERENCES["busy_days"]

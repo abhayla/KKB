@@ -399,75 +399,40 @@ class OnboardingRobot(private val composeTestRule: ComposeContentTestRule) {
     // ===================== Step 5: Cooking Time & Busy Days =====================
 
     /**
-     * Set weekday cooking time.
-     * The dropdown doesn't have a test tag, so we use text-based selection.
+     * Set weekday cooking time using testTag-based dropdown selection.
      */
     fun setWeekdayCookingTime(minutes: Int) = apply {
         Log.d("OnboardingRobot", "Setting weekday cooking time: $minutes minutes")
-        // Scroll to and click on "Weekdays:" label area to trigger dropdown
-        composeTestRule.onNodeWithText("Weekdays:").performScrollTo()
+        composeTestRule.onNodeWithTag(TestTags.WEEKDAY_TIME_DROPDOWN)
+            .performScrollTo()
+            .performClick()
         composeTestRule.waitForIdle()
+        Thread.sleep(300)
 
-        // Find the current dropdown value and click to expand
-        // The dropdown shows "X minutes" format - try common time values
-        val timeOptions = listOf(15, 30, 45, 60, 90)
-        for (time in timeOptions) {
-            val timeText = "$time minutes"
-            val nodes = composeTestRule.onAllNodesWithText(timeText).fetchSemanticsNodes()
-            if (nodes.isNotEmpty()) {
-                Log.d("OnboardingRobot", "Found weekday dropdown with value '$timeText', clicking to expand")
-                composeTestRule.onNodeWithText(timeText).performClick()
-                composeTestRule.waitForIdle()
-                Thread.sleep(200)
-                break
-            }
-        }
-
-        // Select the desired time - if already selected, it may close dropdown
         val targetText = "$minutes minutes"
-        val targetNodes = composeTestRule.onAllNodesWithText(targetText).fetchSemanticsNodes()
-        if (targetNodes.size > 1) {
-            // Click the dropdown menu item (last one, rendered on top)
-            composeTestRule.onAllNodesWithText(targetText)[targetNodes.size - 1].performClick()
+        val nodes = composeTestRule.onAllNodesWithText(targetText).fetchSemanticsNodes()
+        if (nodes.isNotEmpty()) {
+            // Click the last match (menu item when dropdown is open)
+            composeTestRule.onAllNodesWithText(targetText)[nodes.size - 1].performClick()
         }
         composeTestRule.waitForIdle()
     }
 
     /**
-     * Set weekend cooking time.
-     * The dropdown doesn't have a test tag, so we use text-based selection.
+     * Set weekend cooking time using testTag-based dropdown selection.
      */
     fun setWeekendCookingTime(minutes: Int) = apply {
         Log.d("OnboardingRobot", "Setting weekend cooking time: $minutes minutes")
-        // Scroll to and click on "Weekends:" label area to trigger dropdown
-        composeTestRule.onNodeWithText("Weekends:").performScrollTo()
+        composeTestRule.onNodeWithTag(TestTags.WEEKEND_TIME_DROPDOWN)
+            .performScrollTo()
+            .performClick()
         composeTestRule.waitForIdle()
+        Thread.sleep(300)
 
-        // Find the current dropdown value and click to expand
-        val timeOptions = listOf(15, 30, 45, 60, 90)
-        for (time in timeOptions) {
-            val timeText = "$time minutes"
-            val nodes = composeTestRule.onAllNodesWithText(timeText).fetchSemanticsNodes()
-            if (nodes.isNotEmpty()) {
-                // Need to be careful not to click the weekday dropdown again
-                // Weekday comes first, weekend comes second, so if we see multiple nodes, click the last one
-                if (nodes.size > 1) {
-                    Log.d("OnboardingRobot", "Found ${nodes.size} '$timeText' nodes, clicking last for weekend")
-                    composeTestRule.onAllNodesWithText(timeText)[nodes.size - 1].performClick()
-                } else {
-                    composeTestRule.onNodeWithText(timeText).performClick()
-                }
-                composeTestRule.waitForIdle()
-                Thread.sleep(200)
-                break
-            }
-        }
-
-        // Select the desired time
         val targetText = "$minutes minutes"
-        val targetNodes = composeTestRule.onAllNodesWithText(targetText).fetchSemanticsNodes()
-        if (targetNodes.size > 1) {
-            composeTestRule.onAllNodesWithText(targetText)[targetNodes.size - 1].performClick()
+        val nodes = composeTestRule.onAllNodesWithText(targetText).fetchSemanticsNodes()
+        if (nodes.isNotEmpty()) {
+            composeTestRule.onAllNodesWithText(targetText)[nodes.size - 1].performClick()
         }
         composeTestRule.waitForIdle()
     }

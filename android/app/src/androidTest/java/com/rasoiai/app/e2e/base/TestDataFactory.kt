@@ -48,6 +48,44 @@ object TestDataFactory {
     )
 
     /**
+     * Sharma Family non-vegetarian profile for onboarding verification (FR-014, Issue #52).
+     * Uses NORTH + WEST cuisines, NON_VEGETARIAN diet, and different family members
+     * from the original sharmaFamily to avoid breaking existing tests.
+     */
+    val sharmaFamilyNonVeg = FamilyTestData(
+        email = "abhayinfosys@gmail.com",
+        householdSize = 3,
+        primaryDiet = DietaryTag.NON_VEGETARIAN,
+        dietaryRestrictions = emptyList(),
+        cuisines = listOf(CuisineType.NORTH, CuisineType.WEST),
+        spiceLevel = SpiceLevel.MEDIUM,
+        members = listOf(
+            FamilyMember(
+                name = "Priya Sharma",
+                type = MemberType.ADULT,
+                age = 35,
+                healthNeeds = emptyList()
+            ),
+            FamilyMember(
+                name = "Amit Sharma",
+                type = MemberType.CHILD,
+                age = 16,
+                healthNeeds = emptyList()
+            ),
+            FamilyMember(
+                name = "Dadi Sharma",
+                type = MemberType.SENIOR,
+                age = 68,
+                healthNeeds = listOf(HealthNeed.DIABETIC, HealthNeed.LOW_SALT)
+            )
+        ),
+        dislikedIngredients = listOf("Karela", "Baingan"),
+        weekdayCookingTime = 30,
+        weekendCookingTime = 60,
+        busyDays = listOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY)
+    )
+
+    /**
      * Sample chat messages for testing
      */
     object ChatMessages {

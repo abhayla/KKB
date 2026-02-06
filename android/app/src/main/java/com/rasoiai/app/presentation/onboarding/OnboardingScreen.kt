@@ -1247,7 +1247,8 @@ private fun CookingTimeStep(
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = weekdayExpanded) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor(),
+                    .menuAnchor()
+                    .testTag(TestTags.WEEKDAY_TIME_DROPDOWN),
                 shape = RoundedCornerShape(spacing.sm)
             )
             ExposedDropdownMenu(
@@ -1288,7 +1289,8 @@ private fun CookingTimeStep(
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = weekendExpanded) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor(),
+                    .menuAnchor()
+                    .testTag(TestTags.WEEKEND_TIME_DROPDOWN),
                 shape = RoundedCornerShape(spacing.sm)
             )
             ExposedDropdownMenu(
