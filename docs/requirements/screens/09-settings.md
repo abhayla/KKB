@@ -40,6 +40,70 @@
 
 ---
 
+## Screen Layout
+
+### Main Settings View
+```
+┌─────────────────────────────────────┐
+│  ←  Settings                        │
+│─────────────────────────────────────│
+│                                     │
+│  ┌─────────────────────────────┐    │
+│  │  👤  Amit Sharma            │    │
+│  │      amit@example.com       │    │
+│  │      [Edit Profile]         │    │
+│  └─────────────────────────────┘    │
+│─────────────────────────────────────│
+│  Family                             │
+│  ┌─────────────────────────────┐    │
+│  │ 👤 Amit (Adult, 35)    ✎   │    │
+│  │ 👤 Priya (Adult, 32)   ✎   │    │
+│  │ 👤 Ananya (Child, 8)   ✎   │    │
+│  │ + Add Family Member         │    │
+│  └─────────────────────────────┘    │
+│─────────────────────────────────────│
+│  Meal Preferences                   │
+│    Dietary Restrictions         >   │
+│    Disliked Ingredients         >   │
+│    Cuisine Preferences          >   │
+│    Cooking Time                 >   │
+│    Spice Level                  >   │
+│    Recipe Rules                 >   │
+│─────────────────────────────────────│
+│  Meal Generation                    │
+│    Items per Meal            4  >   │
+│    Strict Allergen Mode        ◉   │
+│    Strict Dietary Mode         ○   │
+│    Allow Recipe Repeat         ◉   │
+│─────────────────────────────────────│
+│  App Settings                       │
+│    Notifications                >   │
+│    Dark Mode              System >  │
+│    Units & Measurements         >   │
+│─────────────────────────────────────│
+│  Social                             │
+│    Friends & Leaderboard        >   │
+│    Connected Accounts           >   │
+│    Share App with Friends       >   │
+│─────────────────────────────────────│
+│  Support                            │
+│    Help & FAQ                   >   │
+│    Contact Us                   >   │
+│    Rate App on Play Store       >   │
+│    Privacy Policy               >   │
+│    Terms of Service             >   │
+│─────────────────────────────────────│
+│                                     │
+│  ┌─────────────────────────────┐    │
+│  │       🚪 Sign Out           │    │
+│  └─────────────────────────────┘    │
+│                                     │
+│        App Version 1.0.0            │
+└─────────────────────────────────────┘
+```
+
+---
+
 ## Detailed Requirements
 
 ### SET-001: Settings Screen Display

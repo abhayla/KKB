@@ -24,6 +24,75 @@
 
 ---
 
+## Screen Layout
+
+### Bottom Navigation Bar
+```
+┌─────────────────────────────────────┐
+│                                     │
+│  🏠     📋     💬     ❤️     📊   │
+│  Home  Grocery  Chat  Favs  Stats   │
+│                                     │
+└─────────────────────────────────────┘
+
+Active item: filled icon + primary color
+Inactive items: outlined icon + muted color
+```
+
+### Error State
+```
+┌─────────────────────────────────────┐
+│                                     │
+│                                     │
+│                                     │
+│             ⚠️                      │
+│                                     │
+│      Something went wrong           │
+│                                     │
+│  Unable to load data. Please        │
+│  check your connection and try      │
+│  again.                             │
+│                                     │
+│  ┌─────────────────────────────┐    │
+│  │         Retry               │    │
+│  └─────────────────────────────┘    │
+│                                     │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+### Loading State
+```
+┌─────────────────────────────────────┐
+│                                     │
+│                                     │
+│                                     │
+│                                     │
+│              ◯                      │
+│          (spinning)                 │
+│                                     │
+│                                     │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+### Offline Banner
+```
+┌─────────────────────────────────────┐
+│ ☁✕ You're offline. Some features   │
+│     may be limited.                 │
+│─────────────────────────────────────│
+│                                     │
+│  (rest of screen content)           │
+│                                     │
+└─────────────────────────────────────┘
+
+Appears at top of any screen when offline.
+Background: errorContainer color.
+```
+
+---
+
 ## Detailed Requirements
 
 ### COM-001: Bottom Navigation Bar

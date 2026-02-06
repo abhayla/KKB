@@ -27,6 +27,58 @@
 
 ---
 
+## Screen Layout
+
+### Default Chat View
+```
+┌─────────────────────────────────────┐
+│  ←  RasoiAI Assistant          ⋮   │
+│─────────────────────────────────────│
+│                                     │
+│  ┌─────────────────────────┐        │
+│  │ 🤖 Hi! I'm your RasoiAI│        │
+│  │ assistant. I can help    │        │
+│  │ with meal planning,      │        │
+│  │ recipes, and dietary     │        │
+│  │ preferences.             │        │
+│  │                          │        │
+│  │ Quick actions:           │        │
+│  │ [What's for dinner?]     │        │
+│  │ [Add a recipe rule]      │        │
+│  │ [Suggest a snack]        │        │
+│  └─────────────────────────┘        │
+│                                     │
+│        ┌─────────────────────────┐  │
+│        │ Make tomorrow's lunch   │  │
+│        │ something with paneer   │  │
+│        └─────────────────────────┘  │
+│                                     │
+│  ┌─────────────────────────┐        │
+│  │ 🤖 I'll add paneer as   │        │
+│  │ an INCLUDE rule for      │        │
+│  │ tomorrow's lunch!        │        │
+│  │                          │        │
+│  │ 🍲 Paneer Butter Masala  │        │
+│  │ [View Recipe]            │        │
+│  └─────────────────────────┘        │
+│                                     │
+│  ┌─────────────────────────┐        │
+│  │ 🤖 ...                  │        │
+│  │ (typing indicator)       │        │
+│  └─────────────────────────┘        │
+│                                     │
+│─────────────────────────────────────│
+│ 📎 ┌──────────────────────┐ 🎙 ➤  │
+│    │ Type a message...     │        │
+│    └──────────────────────┘         │
+│─────────────────────────────────────│
+│  🏠     📋     💬     ❤️     📊   │
+│  Home  Grocery  Chat  Favs  Stats   │
+└─────────────────────────────────────┘
+```
+
+---
+
 ## Detailed Requirements
 
 ### CHAT-001: Chat Screen Display

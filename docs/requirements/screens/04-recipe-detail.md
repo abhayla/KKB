@@ -43,6 +43,91 @@
 
 ---
 
+## Screen Layout
+
+### Ingredients Tab (Default)
+```
+┌─────────────────────────────────────┐
+│  ←                        ❤️  ⋮    │
+│─────────────────────────────────────│
+│  ┌─────────────────────────────┐    │
+│  │                             │    │
+│  │      [Recipe Image]         │    │
+│  │                             │    │
+│  └─────────────────────────────┘    │
+│                                     │
+│  Dal Tadka                    🔒    │
+│  North Indian · 30 min · 4 srv     │
+│  250 cal                            │
+│  [VEG] [GLUTEN-FREE]               │
+│                                     │
+│  ┌─ Nutrition ─────────────────┐    │
+│  │  Protein  Carbs  Fat  Fiber │    │
+│  │   12g     35g    8g    6g   │    │
+│  └─────────────────────────────┘    │
+│─────────────────────────────────────│
+│  INGREDIENTS     │  INSTRUCTIONS    │
+│  ════════════    │                  │
+│─────────────────────────────────────│
+│  Servings:  [ - ]  4  [ + ]        │
+│                                     │
+│  ☐ 1 cup toor dal                  │
+│  ☐ 2 tomatoes, chopped             │
+│  ☐ 1 tsp turmeric                  │
+│  ☐ 2 tbsp ghee                     │
+│  ☐ 1 tsp cumin seeds               │
+│  ...                                │
+│                                     │
+│  [🛒 Add All to Grocery List]      │
+│─────────────────────────────────────│
+│  ┌─────────────────────────────┐    │
+│  │   🍳 START COOKING MODE     │    │
+│  └─────────────────────────────┘    │
+│  ┌─────────────────────────────┐    │
+│  │   💬 Modify with AI         │    │
+│  └─────────────────────────────┘    │
+└─────────────────────────────────────┘
+```
+
+### Instructions Tab
+```
+┌─────────────────────────────────────┐
+│  ←                        ❤️  ⋮    │
+│─────────────────────────────────────│
+│  [Recipe Image + Header]            │
+│  [Nutrition Card]                   │
+│─────────────────────────────────────│
+│  INGREDIENTS     │  INSTRUCTIONS    │
+│                  │  ════════════    │
+│─────────────────────────────────────│
+│                                     │
+│  Step 1                             │
+│  ┌─────────────────────────────┐    │
+│  │ Wash and soak toor dal for  │    │
+│  │ 30 minutes. Pressure cook   │    │
+│  │ with turmeric until soft.   │    │
+│  └─────────────────────────────┘    │
+│                                     │
+│  Step 2                             │
+│  ┌─────────────────────────────┐    │
+│  │ Heat ghee in a pan. Add     │    │
+│  │ cumin seeds, onions, and    │    │
+│  │ tomatoes. Cook until soft.  │    │
+│  └─────────────────────────────┘    │
+│                                     │
+│  Step 3                             │
+│  ┌─────────────────────────────┐    │
+│  │ Add cooked dal, salt, and   │    │
+│  │ spices. Simmer for 5 min.   │    │
+│  └─────────────────────────────┘    │
+│                                     │
+│  [🍳 START COOKING MODE]           │
+│  [💬 Modify with AI]               │
+└─────────────────────────────────────┘
+```
+
+---
+
 ## Detailed Requirements
 
 ### REC-001: Recipe Detail Screen

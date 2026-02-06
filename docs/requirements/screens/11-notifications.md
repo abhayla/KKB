@@ -25,6 +25,72 @@
 
 ---
 
+## Screen Layout
+
+### Default List View
+```
+┌─────────────────────────────────────┐
+│  ←  Notifications         ✓✓ All   │
+│─────────────────────────────────────│
+│  [All]  [Unread (3)]               │
+│─────────────────────────────────────│
+│                                     │
+│  Today                              │
+│  ┌─────────────────────────────┐    │
+│  │ 🎉 Festival Reminder    ●  │    │
+│  │ Makar Sankranti is         │    │
+│  │ tomorrow! Special recipes   │    │
+│  │ available.          2h ago  │    │
+│  └─────────────────────────────┘    │
+│  ┌─────────────────────────────┐    │
+│  │ 🍽 Meal Plan Ready      ●  │    │
+│  │ Your weekly meal plan has   │    │
+│  │ been generated!     5h ago  │    │
+│  └─────────────────────────────┘    │
+│                                     │
+│  Yesterday                          │
+│  ┌─────────────────────────────┐    │
+│  │ 🏆 Achievement Unlocked    │    │
+│  │ You earned "7-Day Streak"  │    │
+│  │ badge!              1d ago  │    │
+│  └─────────────────────────────┘    │
+│  ┌─────────────────────────────┐    │
+│  │ 🔔 Cooking Reminder        │    │
+│  │ Time to start dinner!      │    │
+│  │ Dal Tadka tonight.  1d ago  │    │
+│  └─────────────────────────────┘    │
+│                                     │
+│  ● = unread indicator               │
+│  Swipe left → [🗑 Delete]          │
+└─────────────────────────────────────┘
+```
+
+### Empty State
+```
+┌─────────────────────────────────────┐
+│  ←  Notifications         ✓✓ All   │
+│─────────────────────────────────────│
+│  [All]  [Unread]                    │
+│─────────────────────────────────────│
+│                                     │
+│                                     │
+│                                     │
+│           🔔                        │
+│                                     │
+│     No notifications yet            │
+│                                     │
+│     You'll see festival             │
+│     reminders, meal updates,        │
+│     and shopping list               │
+│     notifications here.             │
+│                                     │
+│                                     │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+---
+
 ## Detailed Requirements
 
 ### NOTIF-001: Notifications Screen Display

@@ -24,6 +24,117 @@
 
 ---
 
+## Screen Layout
+
+### Splash - Default State
+```
+┌─────────────────────────────────────┐
+│                                     │
+│                                     │
+│                                     │
+│            ┌─────────┐              │
+│            │  🍲     │              │
+│            │  Logo   │              │
+│            └─────────┘              │
+│                                     │
+│             RasoiAI                 │
+│                                     │
+│     AI Meal Planning for Indian     │
+│              Families               │
+│                                     │
+│                                     │
+│          ◯ Loading...               │
+│                                     │
+│                                     │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+### Splash - Offline State
+```
+┌─────────────────────────────────────┐
+│ ☁✕ You're offline. Some features   │
+│     may be limited.                 │
+│─────────────────────────────────────│
+│                                     │
+│                                     │
+│            ┌─────────┐              │
+│            │  🍲     │              │
+│            │  Logo   │              │
+│            └─────────┘              │
+│                                     │
+│             RasoiAI                 │
+│                                     │
+│     AI Meal Planning for Indian     │
+│              Families               │
+│                                     │
+│                                     │
+│          ◯ Loading...               │
+│                                     │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+### Auth - Default State
+```
+┌─────────────────────────────────────┐
+│                                     │
+│                                     │
+│            ┌─────────┐              │
+│            │  🍲     │              │
+│            │  Logo   │              │
+│            └─────────┘              │
+│                                     │
+│             RasoiAI                 │
+│                                     │
+│                                     │
+│            Welcome!                 │
+│                                     │
+│     AI Meal Planning for Indian     │
+│              Families               │
+│                                     │
+│                                     │
+│  ┌─────────────────────────────┐    │
+│  │  G  Continue with Google    │    │
+│  └─────────────────────────────┘    │
+│                                     │
+│                                     │
+│    By continuing, you agree to      │
+│    Terms of Service · Privacy       │
+└─────────────────────────────────────┘
+```
+
+### Auth - Loading State
+```
+┌─────────────────────────────────────┐
+│                                     │
+│                                     │
+│            ┌─────────┐              │
+│            │  🍲     │              │
+│            │  Logo   │              │
+│            └─────────┘              │
+│                                     │
+│             RasoiAI                 │
+│                                     │
+│                                     │
+│            Welcome!                 │
+│                                     │
+│     AI Meal Planning for Indian     │
+│              Families               │
+│                                     │
+│                                     │
+│  ┌─────────────────────────────┐    │
+│  │  ◯  Signing in...          │    │
+│  └─────────────────────────────┘    │
+│         (button disabled)           │
+│                                     │
+│    By continuing, you agree to      │
+│    Terms of Service · Privacy       │
+└─────────────────────────────────────┘
+```
+
+---
+
 ## Detailed Requirements
 
 ### SPLASH-001: Splash Screen Display
