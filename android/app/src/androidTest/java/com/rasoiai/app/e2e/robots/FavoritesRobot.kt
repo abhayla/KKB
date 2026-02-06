@@ -165,6 +165,34 @@ class FavoritesRobot(private val composeTestRule: ComposeContentTestRule) {
         composeTestRule.waitForIdle()
     }
 
+    // ===================== Search =====================
+
+    /**
+     * Tap search button to toggle search bar.
+     */
+    fun tapSearchButton() = apply {
+        composeTestRule.onNodeWithText("Search", substring = true, ignoreCase = true)
+            .performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    /**
+     * Assert search field is displayed.
+     */
+    fun assertSearchFieldDisplayed() = apply {
+        composeTestRule.onNodeWithText("Search favorites", substring = true, ignoreCase = true)
+            .assertIsDisplayed()
+    }
+
+    /**
+     * Enter search text.
+     */
+    fun enterSearchQuery(query: String) = apply {
+        composeTestRule.onNodeWithText("Search favorites", substring = true, ignoreCase = true)
+            .performTextInput(query)
+        composeTestRule.waitForIdle()
+    }
+
     // ===================== Tabs =====================
 
     /**
@@ -180,6 +208,45 @@ class FavoritesRobot(private val composeTestRule: ComposeContentTestRule) {
      */
     fun selectCollectionsTab() = apply {
         composeTestRule.onNodeWithText("Collections", ignoreCase = true).performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    // ===================== Recipe Info =====================
+
+    /**
+     * Assert recipe count text is visible.
+     */
+    fun assertRecipeCountDisplayed() = apply {
+        // Look for the count display like "All (X)" or just the number
+        composeTestRule.onNodeWithText("(", substring = true)
+            .assertIsDisplayed()
+    }
+
+    /**
+     * Assert the Favorites title is displayed.
+     */
+    fun assertFavoritesTitleDisplayed() = apply {
+        composeTestRule.onNodeWithText("Favorites", ignoreCase = true)
+            .assertIsDisplayed()
+    }
+
+    // ===================== Reorder =====================
+
+    /**
+     * Tap reorder button.
+     */
+    fun tapReorderButton() = apply {
+        composeTestRule.onNodeWithText("Reorder", ignoreCase = true)
+            .performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    /**
+     * Tap done button (in reorder mode).
+     */
+    fun tapDoneButton() = apply {
+        composeTestRule.onNodeWithText("Done", ignoreCase = true)
+            .performClick()
         composeTestRule.waitForIdle()
     }
 }

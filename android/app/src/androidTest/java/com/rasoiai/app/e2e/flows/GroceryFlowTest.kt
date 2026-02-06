@@ -1,33 +1,38 @@
 package com.rasoiai.app.e2e.flows
 
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import com.rasoiai.app.e2e.base.BaseE2ETest
 import com.rasoiai.app.e2e.robots.GroceryRobot
 import com.rasoiai.app.e2e.robots.HomeRobot
 import com.rasoiai.app.e2e.util.PerformanceTracker
-import com.rasoiai.domain.model.MealType
+import com.rasoiai.app.presentation.common.TestTags
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
 /**
- * Phase 5: Grocery Screen Testing
+ * Requirement: #39 - FR-007: Expanded E2E tests for Grocery screen
  *
- * Tests:
- * 5.1 Grocery List Display
- * 5.2 Check/Uncheck Items
- * 5.3 WhatsApp Share
+ * Phase 5: Grocery Screen Testing (18 tests)
  *
- * ## Auth State (E2ETestSuite Context)
- * When running via E2ETestSuite, CoreDataFlowTest runs first and:
- * - Authenticates with backend (stores JWT in REAL DataStore)
- * - Completes onboarding (stores preferences in REAL DataStore)
- * - Generates meal plan (stores in Room DB)
+ * Test Categories:
+ * 5.1  Grocery List Display (2 tests)
+ * 5.2  Check/Uncheck Items (1 test)
+ * 5.3  WhatsApp Share (3 tests)
+ * 5.4  Category Expand/Collapse (2 tests)
+ * 5.5  Week Header (2 tests)
+ * 5.6  Add Custom Item (2 tests)
+ * 5.7  Menu Options (2 tests)
+ * 5.8  Bottom Navigation (4 tests)
  *
- * This test then:
- * - Sets FakeGoogleAuthClient.simulateSignedIn() so SplashViewModel sees user as signed in
- * - Real DataStore already has JWT + onboarded flag from CoreDataFlowTest
+ * ## Auth State
+ * - Sets up authenticated state via BaseE2ETest
  * - Navigates to Grocery screen via bottom nav
+ * - Grocery list is derived from AI-generated meal plan
  */
 @HiltAndroidTest
 class GroceryFlowTest : BaseE2ETest() {
@@ -39,30 +44,21 @@ class GroceryFlowTest : BaseE2ETest() {
     override fun setUp() {
         super.setUp()
 
-        // Reset performance tracker for this test class
         PerformanceTracker.reset()
-
-        // Set up authenticated state - gets real JWT from backend
-        // This makes the test self-contained (doesn't depend on CoreDataFlowTest running first)
         setUpAuthenticatedState()
 
         homeRobot = HomeRobot(composeTestRule)
         groceryRobot = GroceryRobot(composeTestRule)
 
-        // Wait for home screen (should navigate directly due to persisted auth state)
         homeRobot.waitForHomeScreen(LONG_TIMEOUT)
 
-        // CRITICAL: Wait for meal data to load before navigating to grocery
-        // Grocery list is derived from meal plan data
         try {
-            homeRobot.assertMealCardDisplayed(MealType.BREAKFAST, timeoutMillis = 60000)
+            homeRobot.waitForMealListToLoad(60000)
             android.util.Log.i("GroceryFlowTest", "Meal data loaded, navigating to Grocery")
         } catch (e: Exception) {
             android.util.Log.w("GroceryFlowTest", "Meal data may not have loaded: ${e.message}")
-            // Continue anyway - grocery screen should still display even if empty
         }
 
-        // Measure grocery list load time
         PerformanceTracker.measure(
             "Grocery List Load",
             PerformanceTracker.GROCERY_LIST_LOAD_MS
@@ -71,129 +67,245 @@ class GroceryFlowTest : BaseE2ETest() {
             groceryRobot.waitForGroceryScreen(LONG_TIMEOUT)
         }
 
-        // Wait for grocery data to load
         waitFor(MEDIUM_TIMEOUT)
     }
 
     @After
     override fun tearDown() {
-        // Print performance summary to Logcat
         PerformanceTracker.printSummary()
         super.tearDown()
     }
 
+    // ===================== 5.1 Grocery List Display =====================
+
     /**
      * Test 5.1: Grocery List Display
      *
-     * Steps:
-     * 1. Navigate to Grocery screen
-     * 2. Verify grocery items grouped by category
-     * 3. Check quantities match meal plan servings
-     * 4. Verify all ingredients from week's recipes present
-     *
-     * Expected:
-     * - Categories: Vegetables, Dairy, Grains, Spices, Pulses, etc.
-     * - Items show: name, quantity, unit
-     * - Items are unchecked by default
+     * Verifies the grocery screen loads with categories and items.
      */
     @Test
     fun test_5_1_groceryListDisplay() {
-        // Verify screen is displayed
         groceryRobot.assertGroceryScreenDisplayed()
-
-        // Verify categories are displayed (flexible - doesn't fail if category missing)
         groceryRobot.assertCommonCategoriesDisplayed()
-
-        // Note: We don't assert specific items like "Rice" or "Dal" because
-        // the generated meal plan may have different ingredients.
-        // The screen being displayed with categories is sufficient validation.
     }
 
     /**
-     * Test 5.2: Check/Uncheck Items
-     *
-     * Steps:
-     * 1. Open more options menu
-     * 2. Use "Clear purchased items" option
-     *
-     * Note: This test validates the menu workflow exists.
-     * Individual item checking would require knowing specific item names.
+     * Test 5.1b: Grocery screen shows title "Grocery List"
+     */
+    @Test
+    fun test_5_1b_groceryTitle_isDisplayed() {
+        composeTestRule.onNodeWithText("Grocery List")
+            .assertIsDisplayed()
+    }
+
+    // ===================== 5.2 Check/Uncheck Items =====================
+
+    /**
+     * Test 5.2: Check/Uncheck Items via menu clear
      */
     @Test
     fun test_5_2_checkUncheckItems() {
-        // Open menu and use clear purchased items
         groceryRobot.openMoreOptionsMenu()
         waitFor(ANIMATION_DURATION)
-
         groceryRobot.clearPurchasedItems()
         waitFor(ANIMATION_DURATION)
     }
 
+    // ===================== 5.3 WhatsApp Share =====================
+
     /**
-     * Test 5.3: WhatsApp Share
-     *
-     * Steps:
-     * 1. Tap WhatsApp share button
-     * 2. Verify formatted text generated
-     * 3. Verify WhatsApp app opens with pre-filled message
-     *
-     * Note: This test verifies the button is present and clickable.
-     * Actual WhatsApp intent verification requires additional setup.
+     * Test 5.3: WhatsApp share button is displayed and clickable
      */
     @Test
     fun test_5_3_whatsAppShare() {
-        // Verify share button is displayed
         groceryRobot.assertWhatsAppShareDisplayed()
-
-        // Tap share button
         groceryRobot.tapWhatsAppShare()
-
-        // Note: Intent verification would require IntentsTestRule
-        // For now, we just verify the button is clickable
     }
 
     /**
-     * Test: Categories can be expanded/collapsed
-     *
-     * Note: Uses flexible category check - test passes if any category is toggleable.
-     * Category names use IngredientCategory enum names in lowercase.
+     * Test 5.3b: WhatsApp share dialog shows share options
      */
     @Test
-    fun categories_canBeToggled() {
-        // Try to toggle any common category that exists
-        // These are IngredientCategory enum names in lowercase
+    fun test_5_3b_whatsAppShareDialog_showsOptions() {
+        groceryRobot.tapWhatsAppShare()
+        waitFor(ANIMATION_DURATION)
+
+        composeTestRule.onNodeWithText("Share to WhatsApp", substring = true, ignoreCase = true)
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("Full list", substring = true, ignoreCase = true)
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("Unpurchased only", substring = true, ignoreCase = true)
+            .assertIsDisplayed()
+    }
+
+    /**
+     * Test 5.3c: WhatsApp share dialog can be cancelled
+     */
+    @Test
+    fun test_5_3c_whatsAppShareDialog_canBeCancelled() {
+        groceryRobot.tapWhatsAppShare()
+        waitFor(ANIMATION_DURATION)
+
+        composeTestRule.onNodeWithText("Cancel", ignoreCase = true)
+            .performClick()
+        waitFor(ANIMATION_DURATION)
+
+        groceryRobot.assertGroceryScreenDisplayed()
+    }
+
+    // ===================== 5.4 Category Expand/Collapse =====================
+
+    /**
+     * Test 5.4: Categories can be expanded and collapsed
+     */
+    @Test
+    fun test_5_4_categories_canBeToggled() {
         val categories = listOf("vegetables", "grains", "spices", "dairy", "pulses")
-        var categoryToggled = false
 
         for (category in categories) {
             try {
                 groceryRobot.assertCategoryDisplayed(category)
                 groceryRobot.toggleCategory(category)
                 waitFor(ANIMATION_DURATION)
-                categoryToggled = true
-                break  // Success - at least one category was toggled
+                groceryRobot.toggleCategory(category)
+                waitFor(ANIMATION_DURATION)
+                break
             } catch (e: Exception) {
                 // Category not found, try next
             }
         }
-
-        // Test passes if at least one category could be toggled
-        // If no categories found, we still pass since grocery screen is displayed
     }
 
     /**
-     * Test: Menu options work correctly
-     *
-     * Note: Uses menu navigation instead of bulk actions.
+     * Test 5.4b: Multiple categories are present in grocery list
      */
     @Test
-    fun checkedCount_updatesCorrectly() {
-        // Open menu and verify it works
+    fun test_5_4b_multipleCategories_displayed() {
+        val categories = listOf("vegetables", "grains", "spices", "dairy", "pulses", "oils", "nuts")
+        var categoriesFound = 0
+
+        for (category in categories) {
+            try {
+                groceryRobot.assertCategoryDisplayed(category)
+                categoriesFound++
+            } catch (e: Exception) {
+                // Category not in this meal plan
+            }
+        }
+
+        assert(categoriesFound >= 2) {
+            "Expected at least 2 categories but found $categoriesFound"
+        }
+    }
+
+    // ===================== 5.5 Week Header =====================
+
+    /**
+     * Test 5.5: Week header displays date range
+     */
+    @Test
+    fun test_5_5_weekHeader_displaysDateRange() {
+        groceryRobot.assertWeekHeaderDisplayed()
+        composeTestRule.onNodeWithText("Week of", substring = true, ignoreCase = true)
+            .assertIsDisplayed()
+    }
+
+    /**
+     * Test 5.5b: Total items count is displayed
+     */
+    @Test
+    fun test_5_5b_totalItemsCount_isDisplayed() {
+        groceryRobot.assertTotalItemsDisplayed()
+        groceryRobot.assertItemsCountVisible()
+    }
+
+    // ===================== 5.6 Add Custom Item =====================
+
+    /**
+     * Test 5.6: Add custom item button is displayed
+     */
+    @Test
+    fun test_5_6_addCustomItemButton_isDisplayed() {
+        groceryRobot.assertAddCustomItemButtonDisplayed()
+    }
+
+    /**
+     * Test 5.6b: Add custom item button opens dialog
+     */
+    @Test
+    fun test_5_6b_addCustomItemButton_opensDialog() {
+        groceryRobot.tapAddCustomItemButton()
+        waitFor(ANIMATION_DURATION)
+
+        composeTestRule.onNodeWithText("Add Custom Item", ignoreCase = true)
+            .assertIsDisplayed()
+    }
+
+    // ===================== 5.7 Menu Options =====================
+
+    /**
+     * Test 5.7: More options menu opens and shows all items
+     */
+    @Test
+    fun test_5_7_moreOptionsMenu_opens() {
         groceryRobot.openMoreOptionsMenu()
         waitFor(ANIMATION_DURATION)
 
-        // Clear purchased items (menu action)
-        groceryRobot.clearPurchasedItems()
+        composeTestRule.onNodeWithText("Clear purchased items", ignoreCase = true)
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("Share as text", ignoreCase = true)
+            .assertIsDisplayed()
+    }
+
+    /**
+     * Test 5.7b: Share as text menu option is clickable
+     */
+    @Test
+    fun test_5_7b_shareAsText_menuOption() {
+        groceryRobot.openMoreOptionsMenu()
         waitFor(ANIMATION_DURATION)
+        groceryRobot.shareAsText()
+    }
+
+    // ===================== 5.8 Bottom Navigation =====================
+
+    /**
+     * Test 5.8a: Bottom navigation to Home works
+     */
+    @Test
+    fun test_5_8a_bottomNav_toHome() {
+        homeRobot.navigateToHome()
+        waitFor(MEDIUM_TIMEOUT)
+        composeTestRule.onNodeWithTag(TestTags.HOME_SCREEN).assertIsDisplayed()
+    }
+
+    /**
+     * Test 5.8b: Bottom navigation to Chat works
+     */
+    @Test
+    fun test_5_8b_bottomNav_toChat() {
+        homeRobot.navigateToChat()
+        waitFor(MEDIUM_TIMEOUT)
+        composeTestRule.onNodeWithTag(TestTags.CHAT_SCREEN).assertIsDisplayed()
+    }
+
+    /**
+     * Test 5.8c: Bottom navigation to Favorites works
+     */
+    @Test
+    fun test_5_8c_bottomNav_toFavorites() {
+        homeRobot.navigateToFavorites()
+        waitFor(MEDIUM_TIMEOUT)
+        composeTestRule.onNodeWithTag(TestTags.FAVORITES_SCREEN).assertIsDisplayed()
+    }
+
+    /**
+     * Test 5.8d: Bottom navigation to Stats works
+     */
+    @Test
+    fun test_5_8d_bottomNav_toStats() {
+        homeRobot.navigateToStats()
+        waitFor(MEDIUM_TIMEOUT)
+        composeTestRule.onNodeWithTag(TestTags.STATS_SCREEN).assertIsDisplayed()
     }
 }

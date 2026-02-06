@@ -1,5 +1,7 @@
 package com.rasoiai.app.e2e.flows
 
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onNodeWithText
 import com.rasoiai.app.e2e.base.BaseE2ETest
 import com.rasoiai.app.e2e.base.TestDataFactory
 import com.rasoiai.app.e2e.robots.HomeRobot
@@ -9,13 +11,28 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * Phase 9: Settings Screen Testing
+ * Requirement: #39 - FR-007: Expanded E2E tests for Settings screen
  *
- * Tests:
- * 9.1 Profile Section
- * 9.2 Preference Updates
- * 9.3 Notifications Toggle
- * 9.5 Meal Generation Settings
+ * Phase 9: Settings Screen Testing (22 tests)
+ *
+ * Test Categories:
+ * 9.1  Profile Section (2 tests)
+ * 9.2  Preference Updates (1 test)
+ * 9.3  Notifications Toggle (1 test)
+ * 9.4  Theme Selection (1 test)
+ * 9.5  Meal Generation Settings (4 tests)
+ * 9.6  About Section (1 test)
+ * 9.7  Sign Out Flow (2 tests)
+ * 9.8  Family Members (1 test)
+ * 9.9  Cooking Time (1 test)
+ * 9.10 Cuisine Preferences (1 test)
+ * 9.11 Spice Level (1 test)
+ * 9.12 Recipe Rules (1 test)
+ * 9.13 Dark Mode Dialog (1 test)
+ * 9.14 Items Per Meal Dialog (1 test)
+ * 9.15 All Sections Scroll (1 test)
+ * 9.16 Disliked Ingredients (1 test)
+ * 9.17 Settings Item Navigation (1 test)
  */
 @HiltAndroidTest
 class SettingsFlowTest : BaseE2ETest() {
@@ -26,126 +43,155 @@ class SettingsFlowTest : BaseE2ETest() {
     @Before
     override fun setUp() {
         super.setUp()
-        // Set up authenticated and onboarded user state
         setUpAuthenticatedState()
 
         homeRobot = HomeRobot(composeTestRule)
         settingsRobot = SettingsRobot(composeTestRule)
 
-        // Navigate to settings via profile icon from home
         homeRobot.waitForHomeScreen(LONG_TIMEOUT)
         homeRobot.navigateToSettings()
     }
 
+    // ===================== 9.1 Profile Section =====================
+
     /**
-     * Test 9.1: Profile Section
-     *
-     * Steps:
-     * 1. Navigate to Settings (gear icon from Home)
-     * 2. Verify user profile displayed
-     * 3. Check email matches Google account
-     *
-     * Expected:
-     * - Profile image (from Google)
-     * - Name and email displayed
-     * - Edit profile option available
+     * Test 9.1: Profile Section displays user info
      */
     @Test
     fun test_9_1_profileSection() {
         settingsRobot.waitForSettingsScreen()
         settingsRobot.assertSettingsScreenDisplayed()
-
-        // Verify profile section
         settingsRobot.assertProfileSectionDisplayed()
         settingsRobot.assertEmailDisplayed(TestDataFactory.sharmaFamily.email)
     }
 
     /**
-     * Test 9.2: Preference Updates
-     *
-     * Steps:
-     * 1. Navigate to dietary preferences section
-     * 2. Change primary diet to EGGETARIAN
-     * 3. Save changes
-     * 4. Verify confirmation
-     *
-     * Test Variations:
-     * - Update cuisine preferences
-     * - Update cooking times
-     * - Update family members
+     * Test 9.1b: Profile email is displayed in the profile section
+     */
+    @Test
+    fun test_9_1b_profileEmail_isVisible() {
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.assertEmailDisplayed(TestDataFactory.sharmaFamily.email)
+    }
+
+    // ===================== 9.2 Preference Updates =====================
+
+    /**
+     * Test 9.2: Preference Updates - change primary diet
      */
     @Test
     fun test_9_2_preferenceUpdates() {
         settingsRobot.waitForSettingsScreen()
-
-        // Navigate to dietary preferences
         settingsRobot.navigateToDietaryPreferences()
-
-        // Change diet
         settingsRobot.changePrimaryDiet("Eggetarian")
-
-        // Save
         settingsRobot.savePreferences()
-
-        // Verify confirmation
         settingsRobot.assertSaveConfirmation()
     }
 
+    // ===================== 9.3 Notifications Toggle =====================
+
     /**
      * Test 9.3: Notifications Toggle
-     *
-     * Steps:
-     * 1. Find notification settings
-     * 2. Toggle meal reminders ON/OFF
-     * 3. Toggle shopping day reminder ON/OFF
-     *
-     * Expected:
-     * - Toggle switches work
-     * - Settings persist after app restart
      */
     @Test
     fun test_9_3_notificationsToggle() {
         settingsRobot.waitForSettingsScreen()
-
-        // Navigate to notifications
         settingsRobot.navigateToNotifications()
-
-        // Toggle meal reminders
         settingsRobot.toggleMealReminders()
         settingsRobot.assertMealRemindersOn()
-
-        // Toggle shopping reminder
         settingsRobot.toggleShoppingReminder()
     }
 
+    // ===================== 9.4 Theme Selection =====================
+
     /**
-     * Test: Theme selection
+     * Test 9.4: Theme selection works
      */
     @Test
-    fun themeSelection_works() {
+    fun test_9_4_themeSelection_works() {
         settingsRobot.waitForSettingsScreen()
         settingsRobot.navigateToTheme()
-
         settingsRobot.selectLightTheme()
         settingsRobot.selectDarkTheme()
         settingsRobot.selectSystemTheme()
     }
 
+    // ===================== 9.5 Meal Generation Settings =====================
+
     /**
-     * Test: About section displays version
+     * Test 9.5.1: Meal Generation Section Display
      */
     @Test
-    fun aboutSection_displaysVersion() {
+    fun test_9_5_1_mealGenerationSection_isDisplayed() {
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.assertMealGenerationSectionDisplayed()
+        settingsRobot.assertItemsPerMealValue("2 items")
+    }
+
+    /**
+     * Test 9.5.2: Strict Allergen Mode Toggle
+     */
+    @Test
+    fun test_9_5_2_strictAllergenMode_toggle() {
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.scrollToMealGenerationSection()
+
+        settingsRobot.assertStrictAllergenModeOn()
+        settingsRobot.toggleStrictAllergenMode()
+        settingsRobot.assertStrictAllergenModeOff()
+        settingsRobot.toggleStrictAllergenMode()
+        settingsRobot.assertStrictAllergenModeOn()
+    }
+
+    /**
+     * Test 9.5.3: Strict Dietary Mode Toggle
+     */
+    @Test
+    fun test_9_5_3_strictDietaryMode_toggle() {
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.scrollToMealGenerationSection()
+
+        settingsRobot.assertStrictDietaryModeOn()
+        settingsRobot.toggleStrictDietaryMode()
+        settingsRobot.assertStrictDietaryModeOff()
+        settingsRobot.toggleStrictDietaryMode()
+        settingsRobot.assertStrictDietaryModeOn()
+    }
+
+    /**
+     * Test 9.5.4: Allow Recipe Repeat Toggle
+     */
+    @Test
+    fun test_9_5_4_allowRecipeRepeat_toggle() {
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.scrollToMealGenerationSection()
+
+        settingsRobot.assertAllowRecipeRepeatOff()
+        settingsRobot.toggleAllowRecipeRepeat()
+        settingsRobot.assertAllowRecipeRepeatOn()
+        settingsRobot.toggleAllowRecipeRepeat()
+        settingsRobot.assertAllowRecipeRepeatOff()
+    }
+
+    // ===================== 9.6 About Section =====================
+
+    /**
+     * Test 9.6: About section displays version
+     */
+    @Test
+    fun test_9_6_aboutSection_displaysVersion() {
         settingsRobot.waitForSettingsScreen()
         settingsRobot.navigateToAbout()
         settingsRobot.assertAppVersionDisplayed()
     }
 
+    // ===================== 9.7 Sign Out Flow =====================
+
     /**
-     * Test: Sign out flow
+     * Test 9.7: Sign out flow with cancel and confirm
      */
     @Test
-    fun signOut_flow() {
+    fun test_9_7_signOut_flow() {
         settingsRobot.waitForSettingsScreen()
 
         // Tap sign out
@@ -157,157 +203,159 @@ class SettingsFlowTest : BaseE2ETest() {
         // Confirm sign out
         settingsRobot.tapSignOut()
         settingsRobot.confirmSignOut()
-
-        // Should navigate to auth screen
     }
 
     /**
-     * Test: Family members can be updated
+     * Test 9.7b: Sign out dialog shows confirmation message
      */
     @Test
-    fun familyMembers_canBeUpdated() {
+    fun test_9_7b_signOutDialog_showsConfirmation() {
+        settingsRobot.waitForSettingsScreen()
+
+        settingsRobot.tapSignOut()
+        settingsRobot.assertSignOutDialogDisplayed()
+        settingsRobot.cancelSignOut()
+    }
+
+    // ===================== 9.8 Family Members =====================
+
+    /**
+     * Test 9.8: Family members can be updated
+     */
+    @Test
+    fun test_9_8_familyMembers_canBeUpdated() {
         settingsRobot.waitForSettingsScreen()
         settingsRobot.navigateToFamilyMembers()
-        // Family member edit sheet should appear
     }
 
+    // ===================== 9.9 Cooking Time =====================
+
     /**
-     * Test: Cooking time can be updated
+     * Test 9.9: Cooking time can be updated
      */
     @Test
-    fun cookingTime_canBeUpdated() {
+    fun test_9_9_cookingTime_canBeUpdated() {
         settingsRobot.waitForSettingsScreen()
         settingsRobot.navigateToCookingTime()
-        // Cooking time settings should appear
     }
 
-    // ===================== Test 9.5: Meal Generation Settings =====================
+    // ===================== 9.10 Cuisine Preferences =====================
 
     /**
-     * Test 9.5.1: Meal Generation Section Display
-     *
-     * Steps:
-     * 1. Navigate to Settings
-     * 2. Scroll to Meal Generation section
-     * 3. Verify all settings are displayed
-     *
-     * Expected:
-     * - Section header "MEAL GENERATION" displayed
-     * - Items per meal row with value (default: 2 items)
-     * - Strict Allergen Mode toggle (default: ON)
-     * - Strict Dietary Mode toggle (default: ON)
-     * - Allow Recipe Repeat toggle (default: OFF)
+     * Test 9.10: Cuisine preferences can be accessed
      */
     @Test
-    fun test_9_5_1_mealGenerationSection_isDisplayed() {
+    fun test_9_10_cuisinePreferences_canBeAccessed() {
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.navigateToCuisinePreferences()
+    }
+
+    // ===================== 9.11 Spice Level =====================
+
+    /**
+     * Test 9.11: Spice level settings can be accessed
+     */
+    @Test
+    fun test_9_11_spiceLevel_canBeAccessed() {
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.navigateToSpiceLevel()
+    }
+
+    // ===================== 9.12 Recipe Rules =====================
+
+    /**
+     * Test 9.12: Recipe rules navigation works
+     */
+    @Test
+    fun test_9_12_recipeRules_navigation() {
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.navigateToRecipeRules()
+    }
+
+    // ===================== 9.13 Dark Mode Dialog =====================
+
+    /**
+     * Test 9.13: Dark mode dialog opens with three options
+     */
+    @Test
+    fun test_9_13_darkModeDialog_showsOptions() {
         settingsRobot.waitForSettingsScreen()
 
-        // Verify meal generation section
+        settingsRobot.tapSettingItem("Dark Mode")
+        waitFor(ANIMATION_DURATION)
+
+        // Verify dialog shows all options
+        composeTestRule.onNodeWithText("System", ignoreCase = true)
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("Light", ignoreCase = true)
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("Dark", ignoreCase = true)
+            .assertIsDisplayed()
+
+        settingsRobot.dismissDarkModeDialog()
+    }
+
+    // ===================== 9.14 Items Per Meal Dialog =====================
+
+    /**
+     * Test 9.14: Items per meal dialog opens with count options
+     */
+    @Test
+    fun test_9_14_itemsPerMealDialog_showsOptions() {
+        settingsRobot.waitForSettingsScreen()
+
+        settingsRobot.tapItemsPerMealSetting()
+        waitFor(ANIMATION_DURATION)
+
+        // Verify dialog shows options
+        composeTestRule.onNodeWithText("Items per Meal", ignoreCase = true)
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("1 item", substring = true, ignoreCase = true)
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("2 items", substring = true, ignoreCase = true)
+            .assertIsDisplayed()
+
+        settingsRobot.dismissItemsPerMealDialog()
+    }
+
+    // ===================== 9.15 All Sections Scroll =====================
+
+    /**
+     * Test 9.15: All settings sections are scrollable and visible
+     */
+    @Test
+    fun test_9_15_allSections_areScrollable() {
+        settingsRobot.waitForSettingsScreen()
+
+        // Verify all major sections can be scrolled to
+        settingsRobot.assertProfileSectionDisplayed()
+        settingsRobot.assertFamilySectionDisplayed()
+        settingsRobot.assertMealPreferencesSectionDisplayed()
         settingsRobot.assertMealGenerationSectionDisplayed()
-
-        // Verify items per meal shows default value
-        settingsRobot.assertItemsPerMealValue("2 items")
+        settingsRobot.assertAppSettingsSectionDisplayed()
+        settingsRobot.assertSocialSectionDisplayed()
+        settingsRobot.assertSupportSectionDisplayed()
     }
 
+    // ===================== 9.16 Disliked Ingredients =====================
+
     /**
-     * Test 9.5.2: Strict Allergen Mode Toggle
-     *
-     * Steps:
-     * 1. Navigate to Settings → Meal Generation section
-     * 2. Verify toggle is ON by default
-     * 3. Toggle OFF
-     * 4. Verify toggle state changed
-     *
-     * Expected:
-     * - Toggle switches smoothly
-     * - Setting affects next meal plan generation
+     * Test 9.16: Disliked ingredients can be accessed
      */
     @Test
-    fun test_9_5_2_strictAllergenMode_toggle() {
+    fun test_9_16_dislikedIngredients_canBeAccessed() {
         settingsRobot.waitForSettingsScreen()
-
-        // Scroll to section
-        settingsRobot.scrollToMealGenerationSection()
-
-        // Verify default ON state
-        settingsRobot.assertStrictAllergenModeOn()
-
-        // Toggle OFF
-        settingsRobot.toggleStrictAllergenMode()
-
-        // Verify toggled state
-        settingsRobot.assertStrictAllergenModeOff()
-
-        // Toggle back ON
-        settingsRobot.toggleStrictAllergenMode()
-        settingsRobot.assertStrictAllergenModeOn()
+        settingsRobot.navigateToDislikedIngredients()
     }
 
-    /**
-     * Test 9.5.3: Strict Dietary Mode Toggle
-     *
-     * Steps:
-     * 1. Navigate to Settings → Meal Generation section
-     * 2. Verify toggle is ON by default (SATTVIC/JAIN strictly enforced)
-     * 3. Toggle OFF
-     * 4. Verify toggle state changed
-     *
-     * Expected:
-     * - Toggle state saved to DataStore
-     * - API syncs preference
-     */
-    @Test
-    fun test_9_5_3_strictDietaryMode_toggle() {
-        settingsRobot.waitForSettingsScreen()
-
-        // Scroll to section
-        settingsRobot.scrollToMealGenerationSection()
-
-        // Verify default ON state
-        settingsRobot.assertStrictDietaryModeOn()
-
-        // Toggle OFF
-        settingsRobot.toggleStrictDietaryMode()
-
-        // Verify toggled state
-        settingsRobot.assertStrictDietaryModeOff()
-
-        // Toggle back ON
-        settingsRobot.toggleStrictDietaryMode()
-        settingsRobot.assertStrictDietaryModeOn()
-    }
+    // ===================== 9.17 Settings Item Navigation =====================
 
     /**
-     * Test 9.5.4: Allow Recipe Repeat Toggle
-     *
-     * Steps:
-     * 1. Navigate to Settings → Meal Generation section
-     * 2. Verify toggle is OFF by default
-     * 3. Toggle ON
-     * 4. Verify toggle state changed
-     *
-     * Expected:
-     * - Toggle state saved locally
-     * - Same recipe can appear multiple times in weekly plan
+     * Test 9.17: Units & Measurements can be accessed
      */
     @Test
-    fun test_9_5_4_allowRecipeRepeat_toggle() {
+    fun test_9_17_unitsAndMeasurements_canBeAccessed() {
         settingsRobot.waitForSettingsScreen()
-
-        // Scroll to section
-        settingsRobot.scrollToMealGenerationSection()
-
-        // Verify default OFF state
-        settingsRobot.assertAllowRecipeRepeatOff()
-
-        // Toggle ON
-        settingsRobot.toggleAllowRecipeRepeat()
-
-        // Verify toggled state
-        settingsRobot.assertAllowRecipeRepeatOn()
-
-        // Toggle back OFF
-        settingsRobot.toggleAllowRecipeRepeat()
-        settingsRobot.assertAllowRecipeRepeatOff()
+        settingsRobot.navigateToUnitsAndMeasurements()
     }
 }

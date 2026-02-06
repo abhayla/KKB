@@ -345,6 +345,7 @@ private fun WeekHeader(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = spacing.md, vertical = spacing.sm)
+            .testTag(TestTags.GROCERY_WEEK_HEADER)
     ) {
         Text(
             text = "Week of $dateRange",
@@ -354,7 +355,8 @@ private fun WeekHeader(
         Text(
             text = "$totalItems items",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.testTag(TestTags.GROCERY_TOTAL_ITEMS)
         )
     }
 }
@@ -578,7 +580,8 @@ private fun AddCustomItemButton(onClick: () -> Unit) {
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = spacing.md, vertical = spacing.sm),
+            .padding(horizontal = spacing.md, vertical = spacing.sm)
+            .testTag(TestTags.GROCERY_ADD_ITEM_BUTTON),
         shape = RoundedCornerShape(spacing.sm)
     ) {
         Icon(

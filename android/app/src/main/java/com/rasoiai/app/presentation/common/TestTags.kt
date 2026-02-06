@@ -159,6 +159,9 @@ object TestTags {
     const val GROCERY_ITEM_PREFIX = "grocery_item_"
     const val GROCERY_CATEGORY_PREFIX = "grocery_category_"
     const val GROCERY_WHATSAPP_BUTTON = "grocery_whatsapp_button"
+    const val GROCERY_WEEK_HEADER = "grocery_week_header"
+    const val GROCERY_ADD_ITEM_BUTTON = "grocery_add_item_button"
+    const val GROCERY_TOTAL_ITEMS = "grocery_total_items"
 
     // Recipe Detail Screen
     const val RECIPE_DETAIL_SCREEN = "recipe_detail_screen"
@@ -177,6 +180,10 @@ object TestTags {
     // Favorites Screen
     const val FAVORITES_SCREEN = "favorites_screen"
     const val FAVORITES_LIST = "favorites_list"
+    const val FAVORITES_SEARCH_BUTTON = "favorites_search_button"
+    const val FAVORITES_EMPTY_STATE = "favorites_empty_state"
+    const val FAVORITES_COLLECTION_PREFIX = "favorites_collection_"
+    const val FAVORITES_RECIPE_CARD_PREFIX = "favorites_recipe_card_"
 
     // Stats Screen
     const val STATS_SCREEN = "stats_screen"
@@ -190,6 +197,11 @@ object TestTags {
     const val SETTINGS_STRICT_ALLERGEN_TOGGLE = "settings_strict_allergen_toggle"
     const val SETTINGS_STRICT_DIETARY_TOGGLE = "settings_strict_dietary_toggle"
     const val SETTINGS_ALLOW_REPEAT_TOGGLE = "settings_allow_repeat_toggle"
+    const val SETTINGS_SIGN_OUT_BUTTON = "settings_sign_out_button"
+    const val SETTINGS_PROFILE_SECTION = "settings_profile_section"
+    const val SETTINGS_FAMILY_SECTION = "settings_family_section"
+    const val SETTINGS_MEAL_PREFERENCES_SECTION = "settings_meal_preferences_section"
+    const val SETTINGS_APP_SETTINGS_SECTION = "settings_app_settings_section"
 
     // Cooking Mode Screen
     const val COOKING_MODE_SCREEN = "cooking_mode_screen"

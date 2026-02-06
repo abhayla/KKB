@@ -231,6 +231,62 @@ class GroceryRobot(private val composeTestRule: ComposeContentTestRule) {
         composeTestRule.onNodeWithTag(TestTags.GROCERY_WHATSAPP_BUTTON).assertIsDisplayed()
     }
 
+    // ===================== Week Header =====================
+
+    /**
+     * Assert week header is displayed.
+     */
+    fun assertWeekHeaderDisplayed() = apply {
+        composeTestRule.onNodeWithTag(TestTags.GROCERY_WEEK_HEADER).assertIsDisplayed()
+    }
+
+    /**
+     * Assert total items count is displayed.
+     */
+    fun assertTotalItemsDisplayed() = apply {
+        composeTestRule.onNodeWithTag(TestTags.GROCERY_TOTAL_ITEMS).assertIsDisplayed()
+    }
+
+    /**
+     * Assert the "items" text appears (any count).
+     */
+    fun assertItemsCountVisible() = apply {
+        composeTestRule.onNodeWithText("items", substring = true, ignoreCase = true)
+            .assertIsDisplayed()
+    }
+
+    // ===================== Add Custom Item =====================
+
+    /**
+     * Assert add custom item button is displayed.
+     */
+    fun assertAddCustomItemButtonDisplayed() = apply {
+        composeTestRule.onNodeWithTag(TestTags.GROCERY_ADD_ITEM_BUTTON)
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    /**
+     * Tap add custom item button.
+     */
+    fun tapAddCustomItemButton() = apply {
+        composeTestRule.onNodeWithTag(TestTags.GROCERY_ADD_ITEM_BUTTON)
+            .performScrollTo()
+            .performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    // ===================== Menu Actions =====================
+
+    /**
+     * Tap "Share as text" menu option.
+     */
+    fun shareAsText() = apply {
+        composeTestRule.onNodeWithText("Share as text", ignoreCase = true)
+            .performClick()
+        composeTestRule.waitForIdle()
+    }
+
     // ===================== Offline Indicator =====================
 
     /**

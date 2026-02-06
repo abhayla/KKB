@@ -437,10 +437,191 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
             .assertIsDisplayed()
     }
 
+    // ===================== Meal Preferences Navigation =====================
+
+    /**
+     * Navigate to disliked ingredients.
+     */
+    fun navigateToDislikedIngredients() = apply {
+        composeTestRule.onNodeWithText("Disliked Ingredients", ignoreCase = true)
+            .performScrollTo()
+            .performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    /**
+     * Navigate to spice level.
+     */
+    fun navigateToSpiceLevel() = apply {
+        composeTestRule.onNodeWithText("Spice Level", ignoreCase = true)
+            .performScrollTo()
+            .performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    /**
+     * Navigate to units & measurements.
+     */
+    fun navigateToUnitsAndMeasurements() = apply {
+        composeTestRule.onNodeWithText("Units & Measurements", ignoreCase = true)
+            .performScrollTo()
+            .performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    // ===================== Section Assertions =====================
+
+    /**
+     * Assert meal preferences section is displayed.
+     */
+    fun assertMealPreferencesSectionDisplayed() = apply {
+        composeTestRule.onNodeWithText("MEAL PREFERENCES", ignoreCase = true)
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    /**
+     * Assert app settings section is displayed.
+     */
+    fun assertAppSettingsSectionDisplayed() = apply {
+        composeTestRule.onNodeWithText("APP SETTINGS", ignoreCase = true)
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    /**
+     * Assert social section is displayed.
+     */
+    fun assertSocialSectionDisplayed() = apply {
+        composeTestRule.onNodeWithText("SOCIAL", ignoreCase = true)
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    /**
+     * Assert support section is displayed.
+     */
+    fun assertSupportSectionDisplayed() = apply {
+        composeTestRule.onNodeWithText("SUPPORT", ignoreCase = true)
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    /**
+     * Assert family section is displayed.
+     */
+    fun assertFamilySectionDisplayed() = apply {
+        composeTestRule.onNodeWithText("FAMILY", ignoreCase = true)
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    // ===================== Dark Mode Dialog =====================
+
+    /**
+     * Select dark mode option: System.
+     */
+    fun selectDarkModeSystem() = apply {
+        composeTestRule.onNodeWithText("System", ignoreCase = true).performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    /**
+     * Select dark mode option: Light.
+     */
+    fun selectDarkModeLight() = apply {
+        composeTestRule.onNodeWithText("Light", ignoreCase = true).performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    /**
+     * Select dark mode option: Dark.
+     */
+    fun selectDarkModeDark() = apply {
+        composeTestRule.onNodeWithText("Dark", ignoreCase = true).performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    /**
+     * Dismiss dark mode dialog.
+     */
+    fun dismissDarkModeDialog() = apply {
+        composeTestRule.onNodeWithText("Cancel", ignoreCase = true).performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    // ===================== Items Per Meal Dialog =====================
+
+    /**
+     * Tap items per meal setting.
+     */
+    fun tapItemsPerMealSetting() = apply {
+        composeTestRule.onNodeWithTag(TestTags.SETTINGS_ITEMS_PER_MEAL)
+            .performScrollTo()
+            .performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    /**
+     * Select items per meal count.
+     */
+    fun selectItemsPerMealCount(count: Int) = apply {
+        composeTestRule.onNodeWithText("$count item", substring = true, ignoreCase = true)
+            .performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    /**
+     * Dismiss items per meal dialog.
+     */
+    fun dismissItemsPerMealDialog() = apply {
+        composeTestRule.onNodeWithText("Cancel", ignoreCase = true).performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    // ===================== Setting Row Assertions =====================
+
+    /**
+     * Assert a specific setting item is displayed.
+     */
+    fun assertSettingItemDisplayed(settingName: String) = apply {
+        composeTestRule.onNodeWithText(settingName, ignoreCase = true)
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    /**
+     * Tap a specific setting item.
+     */
+    fun tapSettingItem(settingName: String) = apply {
+        composeTestRule.onNodeWithText(settingName, ignoreCase = true)
+            .performScrollTo()
+            .performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    /**
+     * Assert "Coming soon!" snackbar appears after tapping a setting.
+     */
+    fun assertComingSoonSnackbar() = apply {
+        composeTestRule.onNodeWithText("Coming soon!", ignoreCase = true)
+            .assertIsDisplayed()
+    }
+
+    // ===================== Sign Out Dialog =====================
+
+    /**
+     * Assert sign out confirmation dialog is displayed.
+     */
+    fun assertSignOutDialogDisplayed() = apply {
+        composeTestRule.onNodeWithText("Are you sure you want to sign out", substring = true, ignoreCase = true)
+            .assertIsDisplayed()
+    }
+
     // ===================== Navigation =====================
 
     /**
-     * Go back from settings.
+     * Go back from settings via back button.
      */
     fun goBack() = apply {
         composeTestRule.onNodeWithText("Back", ignoreCase = true).performClick()

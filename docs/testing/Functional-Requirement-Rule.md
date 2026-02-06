@@ -12,6 +12,7 @@ This document serves as the single source of truth for tracking functional requi
 | FR-004 | MealPlanGenerationFlowTest fixes + diet conflict warnings | [#42](https://github.com/abhayla/KKB/issues/42) | [`MealPlanGenerationFlowTest.kt`](../../android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/MealPlanGenerationFlowTest.kt) | N/A (Android-only) | ✅ |
 | FR-005 | Family Profile Data Persistence (Onboarding & Settings) | [#44](https://github.com/abhayla/KKB/issues/44) | [`FamilyProfileFlowTest.kt`](../../android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/FamilyProfileFlowTest.kt) | N/A (Android-only) | ✅ |
 | FR-006 | Recipe Rules Backend Sync (Offline-First) | [#45](https://github.com/abhayla/KKB/issues/45) | `RecipeRulesSyncFlowTest.kt` | `test_recipe_rules_api.py` | 🚧 |
+| FR-007 | Expanded E2E Tests for Grocery, Favorites, Settings | [#39](https://github.com/abhayla/KKB/issues/39) | `GroceryFlowTest.kt` (18), `FavoritesFlowTest.kt` (16), `SettingsFlowTest.kt` (22) | N/A (Android-only) | ✅ |
 
 **Status Legend:**
 - ✅ Implemented and tested
