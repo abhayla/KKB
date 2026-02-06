@@ -18,7 +18,7 @@ uvicorn app.main:app --reload      # Start server → http://localhost:8000/docs
 PYTHONPATH=. pytest                # Run all tests
 ```
 
-**Key numbers:** 3,580 recipes | 217 backend tests | 319 Android unit tests | 400+ UI tests | 65+ E2E tests | 15 screens
+**Key numbers:** 3,580 recipes | 227 backend tests | 319 Android unit tests | 400+ UI tests | 65+ E2E tests | 15 screens
 
 **Session context:** Check `docs/CONTINUE_PROMPT.md` for active work between sessions.
 
@@ -277,12 +277,12 @@ GitHub Actions workflow (`.github/workflows/android-ci.yml`) runs on push/PR to 
 
 | Platform | Tests | Framework |
 |----------|-------|-----------|
-| Backend | 202 | pytest |
+| Backend | 227 | pytest |
 | Android Unit | 319 | JUnit + MockK |
 | Android UI | 400+ | Compose UI Testing |
 | Android E2E | 65+ | Compose UI Testing + Hilt + Real API |
 
-### Backend Tests (217 total)
+### Backend Tests (227 total)
 
 | Test File | Tests | Purpose |
 |-----------|-------|---------|
@@ -293,12 +293,13 @@ GitHub Actions workflow (`.github/workflows/android-ci.yml`) runs on push/PR to 
 | `test_ai_meal_service.py` | 22 | AI meal generation service |
 | `test_chat_api.py` | 12 | Chat API endpoints |
 | `test_recipe_cache.py` | 35 | Recipe cache operations |
-| `test_recipe_rules_api.py` | 21 | Recipe rules API endpoints |
+| `test_recipe_rules_api.py` | 20 | Recipe rules API endpoints |
 | `test_recipe_search.py` | 10 | Recipe search functionality |
 | `test_notification_service.py` | 19 | Notification service logic |
 | `test_notification_api.py` | 11 | Notification API endpoints |
 | `test_migrate_legacy_rules.py` | 11 | Legacy rule migration |
 | `test_ai_recipe_catalog.py` | 16 | AI recipe catalog (dedup, dietary filter, search) |
+| `test_sharma_recipe_rules.py` | 10 | Sharma family recipe rules E2E (FR-011) |
 
 ### Android UI Tests
 
