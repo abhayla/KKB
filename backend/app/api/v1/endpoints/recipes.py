@@ -1,12 +1,55 @@
 """Recipe endpoints."""
 
 from fastapi import APIRouter, Query
+from sqlalchemy import select
 
 from app.api.deps import CurrentUser, DbSession
-from app.schemas.recipe import RecipeResponse, RecipeSearchParams
+from app.models.user import UserPreferences
+from app.schemas.recipe import AiRecipeCatalogResponse, RecipeResponse, RecipeSearchParams
+from app.services.ai_recipe_catalog_service import search_catalog
 from app.services.recipe_service import get_recipe_by_id, scale_recipe, search_recipes
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
+
+
+@router.get("/ai-catalog/search", response_model=list[AiRecipeCatalogResponse])
+async def search_ai_catalog(
+    db: DbSession,
+    current_user: CurrentUser,
+    q: str = Query(default="", description="Search query"),
+    favorites: str = Query(default="", description="Comma-separated favorite recipe names"),
+    limit: int = Query(default=10, ge=1, le=50),
+) -> list[AiRecipeCatalogResponse]:
+    """Search the AI recipe catalog for recipe names.
+
+    Returns recipes filtered by dietary compatibility and sorted with
+    favorites first, then by popularity (usage_count).
+
+    - **q**: Text search in recipe name
+    - **favorites**: Comma-separated list of favorite recipe names for priority sorting
+    - **limit**: Maximum results (1-50, default 10)
+    """
+    # Load user dietary preferences
+    user_dietary_tags = []
+    result = await db.execute(
+        select(UserPreferences).where(UserPreferences.user_id == current_user.id)
+    )
+    prefs = result.scalar_one_or_none()
+    if prefs and prefs.dietary_type:
+        user_dietary_tags = [prefs.dietary_type]
+
+    # Parse favorites
+    favorite_names = [n.strip() for n in favorites.split(",") if n.strip()] if favorites else []
+
+    results = await search_catalog(
+        db=db,
+        query=q,
+        user_dietary_tags=user_dietary_tags,
+        favorite_names=favorite_names,
+        limit=limit,
+    )
+
+    return [AiRecipeCatalogResponse(**r) for r in results]
 
 
 @router.get("/search", response_model=list[RecipeResponse])

@@ -1,5 +1,6 @@
 package com.rasoiai.data.remote.api
 
+import com.rasoiai.data.remote.dto.AiRecipeCatalogResponse
 import com.rasoiai.data.remote.dto.AuthRequest
 import com.rasoiai.data.remote.dto.AuthResponse
 import com.rasoiai.data.remote.dto.ChatImageRequest
@@ -78,6 +79,13 @@ interface RasoiApiService {
     ): MealPlanResponse
 
     // Recipes
+    @GET("api/v1/recipes/ai-catalog/search")
+    suspend fun searchAiRecipeCatalog(
+        @Query("q") query: String,
+        @Query("favorites") favorites: String? = null,
+        @Query("limit") limit: Int = 10
+    ): List<AiRecipeCatalogResponse>
+
     @GET("api/v1/recipes/{id}")
     suspend fun getRecipeById(@Path("id") id: String): RecipeResponse
 

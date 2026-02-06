@@ -52,6 +52,9 @@ class MealItem:
     recipe_id: str = "AI_GENERATED"
     recipe_image_url: Optional[str] = None
     calories: int = 0
+    # Rich data for AI recipe catalog
+    ingredients: Optional[list[dict]] = None
+    nutrition: Optional[dict] = None
 
 
 @dataclass
@@ -433,27 +436,28 @@ class AIMealService:
 7. Vary recipes across the week - avoid repeating the same dish
 
 ## OUTPUT FORMAT
-Return ONLY valid JSON (no markdown, no explanation):
+Return ONLY valid JSON (no markdown, no explanation).
+Each item must include: recipe_name, prep_time_minutes, dietary_tags, category, calories, ingredients, nutrition.
 {{
   "days": [
     {{
       "date": "YYYY-MM-DD",
       "day_name": "Monday",
       "breakfast": [
-        {{"recipe_name": "Aloo Paratha", "prep_time_minutes": 25, "dietary_tags": ["vegetarian"], "category": "paratha"}},
-        {{"recipe_name": "Masala Chai", "prep_time_minutes": 10, "dietary_tags": ["vegetarian"], "category": "chai"}}
+        {{"recipe_name": "Aloo Paratha", "prep_time_minutes": 25, "dietary_tags": ["vegetarian"], "category": "paratha", "calories": 350, "ingredients": [{{"name": "Wheat Flour", "quantity": 2, "unit": "cup", "category": "grains"}}, {{"name": "Potato", "quantity": 3, "unit": "medium", "category": "vegetables"}}, {{"name": "Ghee", "quantity": 2, "unit": "tbsp", "category": "dairy"}}], "nutrition": {{"protein_g": 8, "carbs_g": 45, "fat_g": 15, "fiber_g": 3}}}},
+        {{"recipe_name": "Masala Chai", "prep_time_minutes": 10, "dietary_tags": ["vegetarian"], "category": "chai", "calories": 80, "ingredients": [{{"name": "Tea Leaves", "quantity": 2, "unit": "tsp", "category": "other"}}, {{"name": "Milk", "quantity": 1, "unit": "cup", "category": "dairy"}}], "nutrition": {{"protein_g": 3, "carbs_g": 10, "fat_g": 3, "fiber_g": 0}}}}
       ],
       "lunch": [
-        {{"recipe_name": "Dal Tadka", "prep_time_minutes": 30, "dietary_tags": ["vegetarian", "vegan"], "category": "dal"}},
-        {{"recipe_name": "Jeera Rice", "prep_time_minutes": 20, "dietary_tags": ["vegetarian", "vegan"], "category": "rice"}}
+        {{"recipe_name": "Dal Tadka", "prep_time_minutes": 30, "dietary_tags": ["vegetarian", "vegan"], "category": "dal", "calories": 250, "ingredients": [{{"name": "Toor Dal", "quantity": 1, "unit": "cup", "category": "pulses"}}, {{"name": "Ghee", "quantity": 2, "unit": "tbsp", "category": "dairy"}}], "nutrition": {{"protein_g": 12, "carbs_g": 35, "fat_g": 8, "fiber_g": 6}}}},
+        {{"recipe_name": "Jeera Rice", "prep_time_minutes": 20, "dietary_tags": ["vegetarian", "vegan"], "category": "rice", "calories": 200, "ingredients": [{{"name": "Basmati Rice", "quantity": 1, "unit": "cup", "category": "grains"}}, {{"name": "Cumin Seeds", "quantity": 1, "unit": "tsp", "category": "spices"}}], "nutrition": {{"protein_g": 4, "carbs_g": 40, "fat_g": 3, "fiber_g": 1}}}}
       ],
       "dinner": [
-        {{"recipe_name": "Paneer Butter Masala", "prep_time_minutes": 30, "dietary_tags": ["vegetarian"], "category": "curry"}},
-        {{"recipe_name": "Butter Naan", "prep_time_minutes": 15, "dietary_tags": ["vegetarian"], "category": "naan"}}
+        {{"recipe_name": "Paneer Butter Masala", "prep_time_minutes": 30, "dietary_tags": ["vegetarian"], "category": "curry", "calories": 350, "ingredients": [{{"name": "Paneer", "quantity": 250, "unit": "g", "category": "dairy"}}, {{"name": "Tomato", "quantity": 3, "unit": "medium", "category": "vegetables"}}], "nutrition": {{"protein_g": 18, "carbs_g": 12, "fat_g": 25, "fiber_g": 2}}}},
+        {{"recipe_name": "Butter Naan", "prep_time_minutes": 15, "dietary_tags": ["vegetarian"], "category": "naan", "calories": 260, "ingredients": [{{"name": "Maida", "quantity": 2, "unit": "cup", "category": "grains"}}, {{"name": "Butter", "quantity": 2, "unit": "tbsp", "category": "dairy"}}], "nutrition": {{"protein_g": 7, "carbs_g": 40, "fat_g": 8, "fiber_g": 1}}}}
       ],
       "snacks": [
-        {{"recipe_name": "Samosa", "prep_time_minutes": 20, "dietary_tags": ["vegetarian"], "category": "snack"}},
-        {{"recipe_name": "Masala Chai", "prep_time_minutes": 10, "dietary_tags": ["vegetarian"], "category": "chai"}}
+        {{"recipe_name": "Samosa", "prep_time_minutes": 20, "dietary_tags": ["vegetarian"], "category": "snack", "calories": 250, "ingredients": [{{"name": "Maida", "quantity": 1, "unit": "cup", "category": "grains"}}, {{"name": "Potato", "quantity": 2, "unit": "medium", "category": "vegetables"}}], "nutrition": {{"protein_g": 4, "carbs_g": 30, "fat_g": 12, "fiber_g": 2}}}},
+        {{"recipe_name": "Masala Chai", "prep_time_minutes": 10, "dietary_tags": ["vegetarian"], "category": "chai", "calories": 80, "ingredients": [{{"name": "Tea Leaves", "quantity": 2, "unit": "tsp", "category": "other"}}, {{"name": "Milk", "quantity": 1, "unit": "cup", "category": "dairy"}}], "nutrition": {{"protein_g": 3, "carbs_g": 10, "fat_g": 3, "fiber_g": 0}}}}
       ]
     }}
   ]
@@ -567,6 +571,9 @@ Generate the complete 7-day meal plan now:"""
                             dietary_tags=item.get("dietary_tags", []),
                             category=item.get("category", "other"),
                             is_locked=False,
+                            calories=item.get("calories", 0),
+                            ingredients=item.get("ingredients"),
+                            nutrition=item.get("nutrition"),
                         )
                     )
                 return items

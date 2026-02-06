@@ -20,6 +20,7 @@ from app.models.user import User
 
 # Import all models to register them with SQLAlchemy
 from app.models import (  # noqa: F401
+    ai_recipe_catalog,
     chat,
     config,
     festival,

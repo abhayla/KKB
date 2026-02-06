@@ -60,6 +60,7 @@ async def init_db() -> None:
 
     # Import all models to register them with SQLAlchemy
     from app.models import (  # noqa: F401
+        ai_recipe_catalog,
         chat,
         config,
         festival,
@@ -85,6 +86,7 @@ async def create_tables() -> None:
     """
     from app.db.base import Base
     from app.models import (  # noqa: F401
+        ai_recipe_catalog,
         chat,
         config,
         festival,
@@ -107,6 +109,7 @@ async def drop_tables() -> None:
     """
     from app.db.base import Base
     from app.models import (  # noqa: F401
+        ai_recipe_catalog,
         chat,
         config,
         festival,

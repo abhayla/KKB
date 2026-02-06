@@ -166,6 +166,29 @@ async def generate(
         created_plan = await meal_plan_repo.create(plan_data)
         logger.info(f"Created meal plan {created_plan.get('id')} for user {user_id}")
 
+        # Catalog AI-generated recipes into the shared catalog
+        try:
+            from app.db.postgres import async_session_maker
+            from app.services.ai_recipe_catalog_service import catalog_recipes as catalog_recipes_fn
+
+            # Get user cuisine preference
+            user_repo = UserRepository()
+            prefs_data = await user_repo.get_preferences(user_id)
+            cuisine_type = "north"
+            if prefs_data and prefs_data.get("cuisine_preferences"):
+                cuisine_type = prefs_data["cuisine_preferences"][0]
+
+            async with async_session_maker() as catalog_db:
+                await catalog_recipes_fn(
+                    db=catalog_db,
+                    user_id=user_id,
+                    generated_plan={"days": days},
+                    cuisine_type=cuisine_type,
+                )
+        except Exception as e:
+            # Non-critical: don't fail meal plan creation if cataloging fails
+            logger.warning(f"Failed to catalog recipes: {e}")
+
         return _build_response_from_firestore(created_plan)
     except Exception as e:
         logger.error(f"Error generating meal plan: {e}")
@@ -175,7 +198,7 @@ async def generate(
 
 def _meal_item_to_dict(item) -> dict:
     """Convert MealItem dataclass to dictionary."""
-    return {
+    d = {
         "id": item.id,
         "recipe_id": item.recipe_id,
         "recipe_name": item.recipe_name,
@@ -185,6 +208,14 @@ def _meal_item_to_dict(item) -> dict:
         "is_locked": item.is_locked,
         "dietary_tags": item.dietary_tags,
     }
+    # Include rich data for catalog (ingredients/nutrition may be None)
+    if hasattr(item, "ingredients") and item.ingredients:
+        d["ingredients"] = item.ingredients
+    if hasattr(item, "nutrition") and item.nutrition:
+        d["nutrition"] = item.nutrition
+    if hasattr(item, "category"):
+        d["category"] = item.category
+    return d
 
 
 @router.get("/current", response_model=MealPlanResponse)

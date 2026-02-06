@@ -462,4 +462,28 @@ At least [N] times per [period]
 
 ---
 
+### RULE-030: AI Recipe Catalog Search
+
+| Field | Value |
+|-------|-------|
+| **Screen** | Recipe Rules - Add Sheet |
+| **Element** | Recipe search with AI catalog backend |
+| **Trigger** | User types in recipe search field |
+| **Status** | Implemented |
+| **Test** | `test_ai_recipe_catalog.py`, `RecipeRulesFlowTest.kt` |
+
+**Acceptance Criteria:**
+- Given a user opens Add Rule bottom sheet
+- When they search for a recipe name (e.g., "Dal Tadka")
+- Then they see recipe chips from the AI recipe catalog
+- And results are filtered by their dietary profile (vegetarians don't see non-veg)
+- And results are sorted: user's favorites first, then by popularity
+
+- Given a user generates a meal plan
+- When the AI produces recipe names
+- Then each recipe name is cataloged with dietary_tags, cuisine_type, ingredients, nutrition
+- And duplicate names increment usage_count instead of creating new entries
+
+---
+
 *Requirements derived from wireframe: `13-recipe-rules.md`*

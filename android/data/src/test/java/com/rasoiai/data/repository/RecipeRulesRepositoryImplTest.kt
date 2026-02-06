@@ -1,6 +1,7 @@
 package com.rasoiai.data.repository
 
 import app.cash.turbine.test
+import com.rasoiai.data.local.dao.FavoriteDao
 import com.rasoiai.data.local.dao.RecipeDao
 import com.rasoiai.data.local.dao.RecipeRulesDao
 import com.rasoiai.data.local.entity.NutritionGoalEntity
@@ -42,6 +43,7 @@ class RecipeRulesRepositoryImplTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var mockRecipeRulesDao: RecipeRulesDao
     private lateinit var mockRecipeDao: RecipeDao
+    private lateinit var mockFavoriteDao: FavoriteDao
     private lateinit var mockApiService: RasoiApiService
     private lateinit var mockNetworkMonitor: NetworkMonitor
     private lateinit var repository: RecipeRulesRepositoryImpl
@@ -98,6 +100,7 @@ class RecipeRulesRepositoryImplTest {
         Dispatchers.setMain(testDispatcher)
         mockRecipeRulesDao = mockk(relaxed = true)
         mockRecipeDao = mockk(relaxed = true)
+        mockFavoriteDao = mockk(relaxed = true)
         mockApiService = mockk(relaxed = true)
         mockNetworkMonitor = mockk(relaxed = true)
 
@@ -107,6 +110,7 @@ class RecipeRulesRepositoryImplTest {
         repository = RecipeRulesRepositoryImpl(
             recipeRulesDao = mockRecipeRulesDao,
             recipeDao = mockRecipeDao,
+            favoriteDao = mockFavoriteDao,
             apiService = mockApiService,
             networkMonitor = mockNetworkMonitor
         )

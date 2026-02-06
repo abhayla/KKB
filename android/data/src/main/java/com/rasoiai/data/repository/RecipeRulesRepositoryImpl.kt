@@ -1,6 +1,7 @@
 package com.rasoiai.data.repository
 
 import com.rasoiai.core.network.NetworkMonitor
+import com.rasoiai.data.local.dao.FavoriteDao
 import com.rasoiai.data.local.dao.RecipeDao
 import com.rasoiai.data.local.dao.RecipeRulesDao
 import com.rasoiai.data.local.entity.SyncStatus
@@ -8,9 +9,10 @@ import com.rasoiai.data.local.mapper.toDomain
 import com.rasoiai.data.local.mapper.toEntity
 import com.rasoiai.data.local.mapper.toSyncItem
 import com.rasoiai.data.remote.api.RasoiApiService
-import com.rasoiai.data.remote.dto.RecipeRuleCreateRequest
 import com.rasoiai.data.remote.dto.NutritionGoalCreateRequest
+import com.rasoiai.data.remote.dto.RecipeRuleCreateRequest
 import com.rasoiai.data.remote.dto.SyncRequest
+import com.rasoiai.data.remote.dto.toDomain
 import com.rasoiai.domain.model.FoodCategory
 import com.rasoiai.domain.model.NutritionGoal
 import com.rasoiai.domain.model.Recipe
@@ -19,6 +21,7 @@ import com.rasoiai.domain.model.RuleType
 import com.rasoiai.domain.repository.RecipeRulesRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
@@ -42,6 +45,7 @@ import javax.inject.Singleton
 class RecipeRulesRepositoryImpl @Inject constructor(
     private val recipeRulesDao: RecipeRulesDao,
     private val recipeDao: RecipeDao,
+    private val favoriteDao: FavoriteDao,
     private val apiService: RasoiApiService,
     private val networkMonitor: NetworkMonitor
 ) : RecipeRulesRepository {
@@ -513,19 +517,93 @@ class RecipeRulesRepositoryImpl @Inject constructor(
             return flowOf(emptyList())
         }
 
-        // Search cached recipes by name
-        return recipeDao.getAllRecipes().map { entities ->
-            entities.filter { entity ->
-                entity.name.contains(query, ignoreCase = true) ||
-                entity.description.contains(query, ignoreCase = true)
-            }.take(10).map { it.toDomain() }
+        return flow {
+            // First try local cache
+            val localResults = recipeDao.getAllRecipes().first()
+                .filter { entity ->
+                    entity.name.contains(query, ignoreCase = true) ||
+                    entity.description.contains(query, ignoreCase = true)
+                }
+                .take(10)
+                .map { it.toDomain() }
+
+            if (localResults.isNotEmpty()) {
+                emit(localResults)
+                return@flow
+            }
+
+            // Fallback to AI catalog if local cache is empty/no results
+            if (networkMonitor.isOnline.first()) {
+                try {
+                    val favoriteNames = getFavoriteNamesForCatalog()
+                    val catalogResults = apiService.searchAiRecipeCatalog(
+                        query = query,
+                        favorites = favoriteNames,
+                        limit = 10
+                    )
+                    emit(catalogResults.map { it.toDomain() })
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to search AI recipe catalog")
+                    emit(emptyList())
+                }
+            } else {
+                emit(emptyList())
+            }
         }
     }
 
     override fun getPopularRecipes(): Flow<List<Recipe>> {
-        // Return a subset of cached recipes as "popular"
-        return recipeDao.getAllRecipes().map { entities ->
-            entities.take(10).map { it.toDomain() }
+        return flow {
+            // First try local cache
+            val localResults = recipeDao.getAllRecipes().first()
+                .take(10)
+                .map { it.toDomain() }
+
+            if (localResults.isNotEmpty()) {
+                emit(localResults)
+                return@flow
+            }
+
+            // Fallback to AI catalog for popular recipes (empty query = popular)
+            if (networkMonitor.isOnline.first()) {
+                try {
+                    val favoriteNames = getFavoriteNamesForCatalog()
+                    val catalogResults = apiService.searchAiRecipeCatalog(
+                        query = "",
+                        favorites = favoriteNames,
+                        limit = 10
+                    )
+                    emit(catalogResults.map { it.toDomain() })
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to get popular recipes from AI catalog")
+                    emit(emptyList())
+                }
+            } else {
+                emit(emptyList())
+            }
+        }
+    }
+
+    /**
+     * Get comma-separated favorite recipe names for AI catalog sorting.
+     */
+    private suspend fun getFavoriteNamesForCatalog(): String? {
+        return try {
+            val favorites = favoriteDao.getAllFavorites().first()
+            if (favorites.isEmpty()) return null
+            // FavoriteEntity stores recipeId, we need the recipe name
+            val names = favorites.mapNotNull { fav ->
+                try {
+                    val recipes = recipeDao.getAllRecipes().first()
+                    recipes.find { it.id == fav.recipeId }?.name
+                } catch (e: Exception) {
+                    null
+                }
+            }
+            names.joinToString(",").takeIf { it.isNotEmpty() }
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to get favorite names for catalog")
+            null
         }
     }
 

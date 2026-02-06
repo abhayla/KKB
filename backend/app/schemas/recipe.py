@@ -81,6 +81,26 @@ class RecipeSearchParams(BaseModel):
     limit: int = Field(default=20, ge=1, le=100)
 
 
+class AiRecipeCatalogResponse(BaseModel):
+    """Response for AI recipe catalog search results."""
+
+    id: str
+    display_name: str
+    normalized_name: str
+    dietary_tags: list[str] = []
+    cuisine_type: Optional[str] = None
+    meal_types: list[str] = []
+    category: Optional[str] = None
+    prep_time_minutes: Optional[int] = None
+    calories: Optional[int] = None
+    ingredients: Optional[list[dict]] = None
+    nutrition: Optional[dict] = None
+    usage_count: int = 1
+
+    class Config:
+        from_attributes = True
+
+
 class RecipeCreate(BaseModel):
     """Create a new recipe (admin)."""
 
