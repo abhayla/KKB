@@ -3,7 +3,14 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+def _normalize_upper(v: str | None) -> str | None:
+    """Normalize a string value to UPPERCASE if not None."""
+    if v is not None:
+        return v.strip().upper()
+    return v
 
 
 # ==================== Recipe Rule Schemas ====================
@@ -33,6 +40,16 @@ class RecipeRuleCreate(BaseModel):
     )
     is_active: bool = Field(default=True)
 
+    @field_validator("target_type", "action", "frequency_type", "enforcement", mode="before")
+    @classmethod
+    def normalize_enum_upper(cls, v: str) -> str:
+        return v.strip().upper() if v else v
+
+    @field_validator("meal_slot", mode="before")
+    @classmethod
+    def normalize_meal_slot_upper(cls, v: str | None) -> str | None:
+        return _normalize_upper(v)
+
 
 class RecipeRuleUpdate(BaseModel):
     """Request schema for updating a recipe rule."""
@@ -47,6 +64,16 @@ class RecipeRuleUpdate(BaseModel):
     enforcement: Optional[str] = None
     meal_slot: Optional[str] = None
     is_active: Optional[bool] = None
+
+    @field_validator("target_type", "action", "frequency_type", "enforcement", mode="before")
+    @classmethod
+    def normalize_enum_upper(cls, v: str | None) -> str | None:
+        return _normalize_upper(v)
+
+    @field_validator("meal_slot", mode="before")
+    @classmethod
+    def normalize_meal_slot_upper(cls, v: str | None) -> str | None:
+        return _normalize_upper(v)
 
 
 class RecipeRuleResponse(BaseModel):
@@ -132,6 +159,16 @@ class RecipeRuleSyncItem(BaseModel):
     meal_slot: Optional[str] = None
     is_active: bool = True
     local_updated_at: datetime  # Client's timestamp for conflict resolution
+
+    @field_validator("target_type", "action", "frequency_type", "enforcement", mode="before")
+    @classmethod
+    def normalize_enum_upper(cls, v: str) -> str:
+        return v.strip().upper() if v else v
+
+    @field_validator("meal_slot", mode="before")
+    @classmethod
+    def normalize_meal_slot_upper(cls, v: str | None) -> str | None:
+        return _normalize_upper(v)
 
 
 class NutritionGoalSyncItem(BaseModel):

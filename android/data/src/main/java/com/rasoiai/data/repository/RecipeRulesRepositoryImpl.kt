@@ -13,6 +13,7 @@ import com.rasoiai.data.remote.dto.NutritionGoalCreateRequest
 import com.rasoiai.data.remote.dto.RecipeRuleCreateRequest
 import com.rasoiai.data.remote.dto.SyncRequest
 import com.rasoiai.data.remote.dto.toDomain
+import com.rasoiai.domain.model.DuplicateRuleException
 import com.rasoiai.domain.model.FoodCategory
 import com.rasoiai.domain.model.NutritionGoal
 import com.rasoiai.domain.model.Recipe
@@ -88,6 +89,22 @@ class RecipeRulesRepositoryImpl @Inject constructor(
 
     override suspend fun createRule(rule: RecipeRule): Result<RecipeRule> {
         return try {
+            // Check for duplicate rule locally before inserting
+            val existingDup = recipeRulesDao.findDuplicate(
+                targetName = rule.targetName,
+                action = rule.action.value,
+                targetType = rule.type.value,
+                mealSlot = rule.mealSlot?.value
+            )
+            if (existingDup != null) {
+                return Result.failure(
+                    DuplicateRuleException(
+                        message = "A ${rule.action.displayName} rule for '${rule.targetName}' already exists",
+                        existingRuleId = existingDup.id
+                    )
+                )
+            }
+
             val now = LocalDateTime.now()
             val newRule = rule.copy(
                 id = if (rule.id.isEmpty()) UUID.randomUUID().toString() else rule.id,

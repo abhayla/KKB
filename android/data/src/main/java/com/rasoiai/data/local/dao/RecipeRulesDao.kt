@@ -50,6 +50,21 @@ interface RecipeRulesDao {
     @Query("SELECT COUNT(*) FROM recipe_rules")
     suspend fun getRuleCount(): Int
 
+    @Query(
+        """SELECT * FROM recipe_rules
+        WHERE UPPER(targetName) = UPPER(:targetName)
+        AND UPPER(action) = UPPER(:action)
+        AND UPPER(type) = UPPER(:targetType)
+        AND (CASE WHEN :mealSlot IS NULL THEN mealSlot IS NULL ELSE UPPER(mealSlot) = UPPER(:mealSlot) END)
+        LIMIT 1"""
+    )
+    suspend fun findDuplicate(
+        targetName: String,
+        action: String,
+        targetType: String,
+        mealSlot: String?
+    ): RecipeRuleEntity?
+
     // Sync-related queries
     @Query("SELECT * FROM recipe_rules WHERE syncStatus = :status")
     suspend fun getRulesBySyncStatus(status: String): List<RecipeRuleEntity>

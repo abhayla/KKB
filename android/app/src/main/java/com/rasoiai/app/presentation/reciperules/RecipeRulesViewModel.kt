@@ -531,7 +531,11 @@ class RecipeRulesViewModel @Inject constructor(
                 Timber.i("Rule saved: ${rule.targetName}")
             }.onFailure { e ->
                 Timber.e(e, "Failed to save rule")
-                _uiState.update { it.copy(errorMessage = "Failed to save rule") }
+                if (e is com.rasoiai.domain.model.DuplicateRuleException) {
+                    _uiState.update { it.copy(errorMessage = "This rule already exists") }
+                } else {
+                    _uiState.update { it.copy(errorMessage = "Failed to save rule") }
+                }
             }
         }
     }

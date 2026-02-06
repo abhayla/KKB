@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 
 from app.api.deps import CurrentUser, DbSession
 from app.core.exceptions import NotFoundError
@@ -73,6 +73,27 @@ async def create_recipe_rule(
 ) -> RecipeRuleResponse:
     """Create a new recipe rule."""
     user_id = current_user.id
+
+    # Check for duplicate rule (same user + target_name + action + target_type + meal_slot)
+    dup_query = select(RecipeRule).where(
+        RecipeRule.user_id == user_id,
+        func.upper(RecipeRule.target_name) == rule.target_name.strip().upper(),
+        RecipeRule.action == rule.action,
+        RecipeRule.target_type == rule.target_type,
+    )
+    # NULL-safe meal_slot comparison
+    if rule.meal_slot is not None:
+        dup_query = dup_query.where(RecipeRule.meal_slot == rule.meal_slot)
+    else:
+        dup_query = dup_query.where(RecipeRule.meal_slot.is_(None))
+
+    dup_result = await db.execute(dup_query)
+    if dup_result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"A {rule.action} rule for '{rule.target_name}' already exists"
+            + (f" in {rule.meal_slot}" if rule.meal_slot else ""),
+        )
 
     now = datetime.now(timezone.utc)
     new_rule = RecipeRule(
@@ -396,7 +417,24 @@ async def sync_recipe_rules(
                 # Server wins - mark as conflict
                 conflict_rule_ids.append(client_rule.id)
         else:
-            # New rule from client
+            # New rule from client - check for duplicate before inserting
+            dup_query = select(RecipeRule).where(
+                RecipeRule.user_id == user_id,
+                func.upper(RecipeRule.target_name) == client_rule.target_name.strip().upper(),
+                RecipeRule.action == client_rule.action,
+                RecipeRule.target_type == client_rule.target_type,
+            )
+            if client_rule.meal_slot is not None:
+                dup_query = dup_query.where(RecipeRule.meal_slot == client_rule.meal_slot)
+            else:
+                dup_query = dup_query.where(RecipeRule.meal_slot.is_(None))
+
+            dup_result = await db.execute(dup_query)
+            if dup_result.scalar_one_or_none():
+                # Skip duplicate, treat as conflict
+                conflict_rule_ids.append(client_rule.id)
+                continue
+
             new_rule = RecipeRule(
                 id=client_rule.id,
                 user_id=user_id,

@@ -23,11 +23,15 @@ def build_user_response(user: User) -> UserResponse:
     if user.preferences:
         preferences_dto = UserPreferencesDto(
             household_size=user.preferences.family_size,
+            dietary_type=user.preferences.dietary_type,
             dietary_restrictions=user.preferences.dietary_tags or [],
             cuisine_preferences=user.preferences.cuisine_preferences or [],
             disliked_ingredients=user.preferences.disliked_ingredients or [],
             cooking_time_preference=user.preferences.cooking_time_preference or "moderate",
             spice_level=user.preferences.spice_level or "medium",
+            busy_days=user.preferences.busy_days or [],
+            weekday_cooking_time_minutes=user.preferences.weekday_cooking_time_minutes,
+            weekend_cooking_time_minutes=user.preferences.weekend_cooking_time_minutes,
         )
 
     return UserResponse(
@@ -101,6 +105,14 @@ async def update_user_preferences(
         preferences.cooking_time_preference = preferences_update.cooking_time_preference
     if preferences_update.spice_level is not None:
         preferences.spice_level = preferences_update.spice_level
+    if preferences_update.primary_diet is not None:
+        preferences.dietary_type = preferences_update.primary_diet
+    if preferences_update.busy_days is not None:
+        preferences.busy_days = preferences_update.busy_days
+    if preferences_update.weekday_cooking_time is not None:
+        preferences.weekday_cooking_time_minutes = preferences_update.weekday_cooking_time
+    if preferences_update.weekend_cooking_time is not None:
+        preferences.weekend_cooking_time_minutes = preferences_update.weekend_cooking_time
 
     # Mark user as onboarded if not already
     if not user.is_onboarded:

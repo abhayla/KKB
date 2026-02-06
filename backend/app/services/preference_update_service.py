@@ -118,6 +118,9 @@ class PreferenceUpdateService:
         Returns:
             UpdateResult with success status and message
         """
+        # Strip whitespace from target name
+        target = target.strip()
+
         prefs = await self.user_repo.get_preferences(user_id) or {}
 
         # Recipe rules are stored as {include: [], exclude: []}
