@@ -41,7 +41,7 @@ async def send_message(
     - "Show my settings" -> Displays current configuration
     - "Undo that" -> Reverts the last change
     """
-    user_id = current_user["id"]
+    user_id = current_user.id
     return await process_chat_message(user_id, request.message)
 
 
@@ -53,7 +53,7 @@ async def get_history(
 
     Returns text messages only (tool_use and tool_result messages are filtered).
     """
-    user_id = current_user["id"]
+    user_id = current_user.id
     messages = await get_chat_history(user_id)
 
     return ChatHistoryResponse(

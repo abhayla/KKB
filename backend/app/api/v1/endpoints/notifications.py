@@ -24,7 +24,7 @@ async def get_notifications(
     Returns notifications sorted by creation date (newest first).
     Excludes expired notifications by default.
     """
-    user_id = current_user.get("id")
+    user_id = current_user.id
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
@@ -37,7 +37,7 @@ async def mark_all_notifications_as_read(
     current_user: CurrentUser,
 ) -> SuccessResponse:
     """Mark all notifications as read for the current user."""
-    user_id = current_user.get("id")
+    user_id = current_user.id
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
@@ -59,7 +59,7 @@ async def register_fcm_token(
     - User logs in
     - App is restored from background
     """
-    user_id = current_user.get("id")
+    user_id = current_user.id
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
@@ -98,7 +98,7 @@ async def mark_notification_as_read(
     notification_id: str,
 ) -> SuccessResponse:
     """Mark a notification as read."""
-    user_id = current_user.get("id")
+    user_id = current_user.id
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
@@ -116,7 +116,7 @@ async def delete_notification(
     notification_id: str,
 ) -> SuccessResponse:
     """Delete a notification."""
-    user_id = current_user.get("id")
+    user_id = current_user.id
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 

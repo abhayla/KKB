@@ -12,61 +12,33 @@ from httpx import ASGITransport, AsyncClient
 
 from app.main import app
 from app.schemas.chat import ChatResponse, ChatMessageResponse, ChatHistoryResponse
+from app.models.user import User
 
 
 class TestChatMessageEndpoint:
     """Tests for POST /api/v1/chat/message endpoint."""
 
-    @pytest.fixture
-    def mock_auth_and_services(self):
-        """Mock authentication and services."""
-        # Patch at the endpoint module level where it's imported
-        with patch('app.api.deps.verify_token_and_get_user_id') as mock_verify, \
-             patch('app.api.deps.UserRepository') as mock_user_repo, \
-             patch('app.api.v1.endpoints.chat.process_chat_message') as mock_process:
-
-            # Configure auth mock
-            mock_verify.return_value = "test-user-id"
-
-            # Configure user repo mock
-            mock_user_repo.return_value.get_by_id = AsyncMock(return_value={
-                "id": "test-user-id",
-                "firebase_uid": "test-firebase-uid",
-                "email": "test@example.com",
-                "is_active": True,
-            })
-
-            # Configure chat processing mock - needs to be AsyncMock since it's awaited
-            mock_process.return_value = ChatResponse(
-                message=ChatMessageResponse(
-                    id="msg_123",
-                    role="assistant",
-                    content="Namaste! How can I help you today?",
-                    message_type="text",
-                    created_at=datetime.now(timezone.utc).isoformat(),
-                    recipe_suggestions=None,
-                ),
-                has_recipe_suggestions=False,
-                recipe_ids=[],
-            )
-
-            yield {
-                "verify": mock_verify,
-                "user_repo": mock_user_repo,
-                "process": mock_process,
-            }
-
     @pytest.mark.asyncio
-    async def test_send_message_success(self, mock_auth_and_services):
+    async def test_send_message_success(self, authenticated_client: AsyncClient, test_user: User):
         """Test successful message send."""
-        async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test",
-        ) as client:
-            response = await client.post(
+        # Mock the chat processing
+        mock_response = ChatResponse(
+            message=ChatMessageResponse(
+                id="msg_123",
+                role="assistant",
+                content="Namaste! How can I help you today?",
+                message_type="text",
+                created_at=datetime.now(timezone.utc).isoformat(),
+                recipe_suggestions=None,
+            ),
+            has_recipe_suggestions=False,
+            recipe_ids=[],
+        )
+
+        with patch('app.api.v1.endpoints.chat.process_chat_message', new=AsyncMock(return_value=mock_response)):
+            response = await authenticated_client.post(
                 "/api/v1/chat/message",
                 json={"message": "Hello!"},
-                headers={"Authorization": "Bearer valid-token"},
             )
 
         assert response.status_code == 200
@@ -75,39 +47,39 @@ class TestChatMessageEndpoint:
         assert data["message"]["content"] is not None
 
     @pytest.mark.asyncio
-    async def test_send_message_empty_fails(self, mock_auth_and_services):
+    async def test_send_message_empty_fails(self, authenticated_client: AsyncClient, test_user: User):
         """Test that empty message fails validation."""
-        async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test",
-        ) as client:
-            response = await client.post(
-                "/api/v1/chat/message",
-                json={"message": ""},
-                headers={"Authorization": "Bearer valid-token"},
-            )
+        response = await authenticated_client.post(
+            "/api/v1/chat/message",
+            json={"message": ""},
+        )
 
         assert response.status_code == 422  # Validation error
 
     @pytest.mark.asyncio
-    async def test_send_message_no_auth(self):
+    async def test_send_message_no_auth(self, client: AsyncClient):
         """Test that missing auth returns 401."""
-        async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test",
-        ) as client:
-            response = await client.post(
-                "/api/v1/chat/message",
-                json={"message": "Hello!"},
-            )
+        from app.api.deps import get_current_user
+        from app.core.exceptions import AuthenticationError
+
+        async def no_auth():
+            raise AuthenticationError("Missing authorization header")
+
+        app.dependency_overrides[get_current_user] = no_auth
+
+        response = await client.post(
+            "/api/v1/chat/message",
+            json={"message": "Hello!"},
+        )
 
         assert response.status_code == 401
 
+        app.dependency_overrides.pop(get_current_user, None)
+
     @pytest.mark.asyncio
-    async def test_send_message_tool_response(self, mock_auth_and_services):
+    async def test_send_message_tool_response(self, authenticated_client: AsyncClient, test_user: User):
         """Test message that triggers tool usage."""
-        # Configure mock to return tool-triggered response
-        mock_auth_and_services["process"].return_value = ChatResponse(
+        mock_response = ChatResponse(
             message=ChatMessageResponse(
                 id="msg_456",
                 role="assistant",
@@ -120,14 +92,10 @@ class TestChatMessageEndpoint:
             recipe_ids=[],
         )
 
-        async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test",
-        ) as client:
-            response = await client.post(
+        with patch('app.api.v1.endpoints.chat.process_chat_message', new=AsyncMock(return_value=mock_response)):
+            response = await authenticated_client.post(
                 "/api/v1/chat/message",
                 json={"message": "I want chai every morning"},
-                headers={"Authorization": "Bearer valid-token"},
             )
 
         assert response.status_code == 200
@@ -138,60 +106,28 @@ class TestChatMessageEndpoint:
 class TestChatHistoryEndpoint:
     """Tests for GET /api/v1/chat/history endpoint."""
 
-    @pytest.fixture
-    def mock_auth_and_history(self):
-        """Mock authentication and history service."""
-        # Patch at the endpoint module level where it's imported
-        with patch('app.api.deps.verify_token_and_get_user_id') as mock_verify, \
-             patch('app.api.deps.UserRepository') as mock_user_repo, \
-             patch('app.api.v1.endpoints.chat.get_chat_history') as mock_history:
-
-            # Configure auth mock
-            mock_verify.return_value = "test-user-id"
-
-            # Configure user repo mock
-            mock_user_repo.return_value.get_by_id = AsyncMock(return_value={
-                "id": "test-user-id",
-                "firebase_uid": "test-firebase-uid",
-                "email": "test@example.com",
-                "is_active": True,
-            })
-
-            # Configure history mock
-            mock_history.return_value = [
-                {
-                    "id": "msg_1",
-                    "role": "user",
-                    "content": "Hello!",
-                    "message_type": "text",
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                },
-                {
-                    "id": "msg_2",
-                    "role": "assistant",
-                    "content": "Namaste! How can I help you?",
-                    "message_type": "text",
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                },
-            ]
-
-            yield {
-                "verify": mock_verify,
-                "user_repo": mock_user_repo,
-                "history": mock_history,
-            }
-
     @pytest.mark.asyncio
-    async def test_get_history_success(self, mock_auth_and_history):
+    async def test_get_history_success(self, authenticated_client: AsyncClient, test_user: User):
         """Test successful history retrieval."""
-        async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test",
-        ) as client:
-            response = await client.get(
-                "/api/v1/chat/history",
-                headers={"Authorization": "Bearer valid-token"},
-            )
+        mock_history = [
+            {
+                "id": "msg_1",
+                "role": "user",
+                "content": "Hello!",
+                "message_type": "text",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            },
+            {
+                "id": "msg_2",
+                "role": "assistant",
+                "content": "Namaste! How can I help you?",
+                "message_type": "text",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            },
+        ]
+
+        with patch('app.api.v1.endpoints.chat.get_chat_history', new=AsyncMock(return_value=mock_history)):
+            response = await authenticated_client.get("/api/v1/chat/history")
 
         assert response.status_code == 200
         data = response.json()
@@ -200,29 +136,27 @@ class TestChatHistoryEndpoint:
         assert data["total_count"] == 2
 
     @pytest.mark.asyncio
-    async def test_get_history_no_auth(self):
+    async def test_get_history_no_auth(self, client: AsyncClient):
         """Test that missing auth returns 401."""
-        async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test",
-        ) as client:
-            response = await client.get("/api/v1/chat/history")
+        from app.api.deps import get_current_user
+        from app.core.exceptions import AuthenticationError
+
+        async def no_auth():
+            raise AuthenticationError("Missing authorization header")
+
+        app.dependency_overrides[get_current_user] = no_auth
+
+        response = await client.get("/api/v1/chat/history")
 
         assert response.status_code == 401
 
-    @pytest.mark.asyncio
-    async def test_get_history_empty(self, mock_auth_and_history):
-        """Test empty history."""
-        mock_auth_and_history["history"].return_value = []
+        app.dependency_overrides.pop(get_current_user, None)
 
-        async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test",
-        ) as client:
-            response = await client.get(
-                "/api/v1/chat/history",
-                headers={"Authorization": "Bearer valid-token"},
-            )
+    @pytest.mark.asyncio
+    async def test_get_history_empty(self, authenticated_client: AsyncClient, test_user: User):
+        """Test empty history."""
+        with patch('app.api.v1.endpoints.chat.get_chat_history', new=AsyncMock(return_value=[])):
+            response = await authenticated_client.get("/api/v1/chat/history")
 
         assert response.status_code == 200
         data = response.json()
@@ -304,13 +238,9 @@ class TestChatEndpointDocumentation:
     """Tests for chat endpoint documentation."""
 
     @pytest.mark.asyncio
-    async def test_openapi_has_chat_endpoints(self):
+    async def test_openapi_has_chat_endpoints(self, client: AsyncClient):
         """Test that OpenAPI schema includes chat endpoints."""
-        async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test",
-        ) as client:
-            response = await client.get("/openapi.json")
+        response = await client.get("/openapi.json")
 
         assert response.status_code == 200
         openapi = response.json()
