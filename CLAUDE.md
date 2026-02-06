@@ -18,7 +18,7 @@ uvicorn app.main:app --reload      # Start server → http://localhost:8000/docs
 PYTHONPATH=. pytest                # Run all tests
 ```
 
-**Key numbers:** 3,580 recipes | 170 backend tests | 319 Android unit tests | 400+ UI tests | 65+ E2E tests | 15 screens
+**Key numbers:** 3,580 recipes | 217 backend tests | 319 Android unit tests | 400+ UI tests | 65+ E2E tests | 15 screens
 
 **Session context:** Check `docs/CONTINUE_PROMPT.md` for active work between sessions.
 
@@ -63,7 +63,7 @@ app ─────┬──────> core
 | Navigation | Navigation Compose |
 | Database | Room (Android cache), PostgreSQL (backend source of truth) |
 | Auth | Firebase Auth (Google OAuth only) |
-| LLM | Claude API (tool calling for chat), Gemini Vision (food photo analysis) |
+| LLM | Claude API (chat tool calling), Gemini (meal generation + food photo analysis) |
 | Offline Support | Room as source of truth with sync to backend |
 
 ### Data Flow
@@ -277,26 +277,28 @@ GitHub Actions workflow (`.github/workflows/android-ci.yml`) runs on push/PR to 
 
 | Platform | Tests | Framework |
 |----------|-------|-----------|
-| Backend | 170 | pytest |
+| Backend | 202 | pytest |
 | Android Unit | 319 | JUnit + MockK |
 | Android UI | 400+ | Compose UI Testing |
 | Android E2E | 65+ | Compose UI Testing + Hilt + Real API |
 
-### Backend Tests (170 total)
+### Backend Tests (217 total)
 
 | Test File | Tests | Purpose |
 |-----------|-------|---------|
 | `test_health.py` | 2 | Health check endpoints |
-| `test_auth.py` | 3 | Firebase authentication |
+| `test_auth.py` | 6 | Firebase authentication |
 | `test_preference_service.py` | 26 | PreferenceUpdateService |
 | `test_chat_integration.py` | 27 | Chat tool calling flow |
-| `test_meal_generation.py` | 22 | Meal generation structures |
-| `test_meal_generation_integration.py` | 29 | Rule enforcement |
-| `test_meal_generation_e2e.py` | 14 | E2E against PostgreSQL |
+| `test_ai_meal_service.py` | 22 | AI meal generation service |
 | `test_chat_api.py` | 12 | Chat API endpoints |
 | `test_recipe_cache.py` | 35 | Recipe cache operations |
+| `test_recipe_rules_api.py` | 21 | Recipe rules API endpoints |
+| `test_recipe_search.py` | 10 | Recipe search functionality |
 | `test_notification_service.py` | 19 | Notification service logic |
-| `test_notification_api.py` | 10 | Notification API endpoints |
+| `test_notification_api.py` | 11 | Notification API endpoints |
+| `test_migrate_legacy_rules.py` | 11 | Legacy rule migration |
+| `test_ai_recipe_catalog.py` | 16 | AI recipe catalog (dedup, dietary filter, search) |
 
 ### Android UI Tests
 
@@ -397,10 +399,14 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 | POST | `/api/v1/meal-plans/generate` | Generate meal plan (AI) |
 | GET | `/api/v1/meal-plans/current` | Get current week's plan |
 | POST | `/api/v1/meal-plans/{planId}/items/{itemId}/swap` | Swap meal |
+| GET | `/api/v1/recipes/ai-catalog/search` | Search AI-cataloged recipes (for Recipe Rules) |
 | GET | `/api/v1/recipes/{id}` | Get recipe details |
 | GET | `/api/v1/grocery` | Get grocery list |
 | POST | `/api/v1/chat/message` | AI chat with tool calling |
 | POST | `/api/v1/chat/image` | Food photo analysis (Gemini Vision) |
+| GET | `/api/v1/recipe-rules` | List user's recipe rules |
+| POST | `/api/v1/recipe-rules` | Create recipe rule |
+| DELETE | `/api/v1/recipe-rules/{id}` | Delete recipe rule |
 
 API docs: `http://localhost:8000/docs`
 
@@ -412,6 +418,7 @@ API docs: `http://localhost:8000/docs`
 | `app/services/preference_update_service.py` | INCLUDE/EXCLUDE rules |
 | `app/ai/chat_assistant.py` | Tool calling orchestration |
 | `app/ai/gemini_client.py` | Google Gemini API for vision and text generation |
+| `app/services/ai_recipe_catalog_service.py` | AI recipe catalog (dedup, dietary filter, search) |
 
 ## Meal Generation
 
@@ -482,6 +489,8 @@ AI-powered meal planning using Google Gemini, with YAML config for pairing guida
 | Room DB not found | Run `./gradlew clean` then rebuild - schema may have changed |
 | Test flakiness | Use `waitUntil {}` in E2E tests; check `RetryUtils.kt` for patterns |
 | Screenshot "Could not process image" | Use PNG format, avoid fullPage on long pages, limit to 1280x720, verify file saved before reading. See Screenshots rule above. |
+| 4 auth tests fail | Pre-existing: `conftest.py` globally overrides auth dependency, causing 4 failures in `test_auth.py`. Not a regression. |
+| OnboardingViewModelTest won't compile | Pre-existing: missing `generateMealPlanUseCase` constructor param. Not a regression. |
 
 ## Rules for Claude
 
