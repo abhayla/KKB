@@ -262,7 +262,9 @@ GRANT ALL PRIVILEGES ON DATABASE rasoiai TO rasoiai_user;
 
 ### CI/CD Pipeline
 
-GitHub Actions workflow (`.github/workflows/android-ci.yml`) runs on push/PR to main/develop:
+Three GitHub Actions workflows in `.github/workflows/`:
+
+**Android CI** (`android-ci.yml`) — runs on push/PR to main/develop:
 
 | Job | Triggers | Actions |
 |-----|----------|---------|
@@ -270,6 +272,22 @@ GitHub Actions workflow (`.github/workflows/android-ci.yml`) runs on push/PR to 
 | `instrumented-tests` | PRs only | Emulator tests (API 29) |
 
 **Artifacts uploaded:** lint-results, test-results, debug-apk
+
+**Claude Code** (`claude.yml`) — AI agent triggered by `@claude` mentions:
+
+| Trigger | Event |
+|---------|-------|
+| Issue comments | `@claude` in comment body |
+| PR comments | `@claude` in review comment body |
+| PR reviews | `@claude` in review body |
+| New issues | `@claude` in issue title or body |
+
+Permissions: read-only (contents, PRs, issues, actions). Uses `anthropics/claude-code-action@v1`.
+
+**Claude Code Review** (`claude-code-review.yml`) — automatic PR review:
+- Runs on all PR opens, updates, and reopens
+- Uses `code-review@claude-code-plugins` plugin
+- Provides automated code quality feedback on every PR
 
 ## Testing
 
@@ -754,6 +772,18 @@ AI-powered meal planning using Google Gemini, with YAML config for pairing guida
    | 6 | Screenshots | Before/after paths |
    | 7 | Verify & commit | Visual diff, commit hash |
 
+## Workflow Enforcement Hooks
+
+The 7-step workflow (Rule #7) is enforced by shell hooks in `.claude/hooks/`:
+
+| Hook | Purpose |
+|------|---------|
+| `validate-workflow-step.sh` | Pre-tool-use gate — blocks actions if prior workflow steps are incomplete |
+| `post-test-update.sh` | Post-test hook — updates workflow state after test runs |
+| `log-workflow.sh` | Session logging — appends to `.claude/logs/workflow-sessions.log` |
+
+Workflow state is tracked in `.claude/workflow-state.json`. The full hook system and enforcement logic is documented in `docs/rules/Claude Code Enforced Workflow Rules.md`.
+
 ## Key Documentation
 
 | Document | Location |
@@ -762,10 +792,13 @@ AI-powered meal planning using Google Gemini, with YAML config for pairing guida
 | Screen Requirements | `docs/requirements/screens/` (12 files) |
 | API Requirements | `docs/requirements/api/backend-api.md` |
 | Technical Design | `docs/design/RasoiAI Technical Design.md` |
+| Android Architecture Decisions | `docs/design/Android Architecture Decisions.md` |
+| Data Flow Diagram | `docs/design/Data-Flow-Diagram.md` |
 | Meal Generation Algorithm | `docs/design/Meal-Generation-Algorithm.md` |
 | Meal Generation Config | `docs/design/Meal-Generation-Config-Architecture.md` |
 | **Workflow Rules** | `docs/rules/Claude Code Enforced Workflow Rules.md` |
 | E2E Testing Guide | `docs/testing/E2E-Testing-Prompt.md` |
 | E2E Test Plan | `docs/testing/E2E-Test-Plan.md` |
 | Functional Requirements | `docs/testing/Functional-Requirements.md` |
+| Recipe Rule Test Plan | `docs/testing/Recipe-Rule-Test-Plan.md` |
 | Session Context | `docs/CONTINUE_PROMPT.md` |
