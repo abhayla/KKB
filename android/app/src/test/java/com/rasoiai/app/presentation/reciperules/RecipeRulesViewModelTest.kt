@@ -14,6 +14,7 @@ import com.rasoiai.domain.model.RuleEnforcement
 import com.rasoiai.domain.model.RuleFrequency
 import com.rasoiai.domain.model.RuleType
 import com.rasoiai.domain.repository.RecipeRulesRepository
+import com.rasoiai.domain.repository.SettingsRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -41,6 +42,7 @@ class RecipeRulesViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var mockRepository: RecipeRulesRepository
+    private lateinit var mockSettingsRepository: SettingsRepository
 
     private val testRecipeRules = listOf(
         RecipeRule(
@@ -143,6 +145,7 @@ class RecipeRulesViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         mockRepository = mockk(relaxed = true)
+        mockSettingsRepository = mockk(relaxed = true)
 
         every { mockRepository.getRulesByType(RuleType.RECIPE) } returns flowOf(testRecipeRules)
         every { mockRepository.getRulesByType(RuleType.INGREDIENT) } returns flowOf(testIngredientRules)
@@ -165,7 +168,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("Initial state should be loading")
         fun `initial state should be loading`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 val state = awaitItem()
@@ -177,7 +180,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("Default tab should be RECIPE")
         fun `default tab should be RECIPE`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 val state = awaitItem()
@@ -189,7 +192,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("After loading, rules should be populated")
         fun `after loading rules should be populated`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -208,7 +211,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("Nutrition goals should be loaded")
         fun `nutrition goals should be loaded`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -224,7 +227,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("Popular recipes and ingredients should be loaded")
         fun `popular recipes and ingredients should be loaded`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -246,7 +249,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("selectTab should update selected tab")
         fun `selectTab should update selected tab`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -262,7 +265,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("rulesForCurrentTab should return correct rules for each tab")
         fun `rulesForCurrentTab should return correct rules for each tab`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -295,7 +298,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("currentTabCount should return correct count")
         fun `currentTabCount should return correct count`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -317,7 +320,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("showAddRuleSheet should show sheet with default values")
         fun `showAddRuleSheet should show sheet with default values`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -338,7 +341,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("showAddRuleSheet on NUTRITION tab should show nutrition goal sheet")
         fun `showAddRuleSheet on NUTRITION tab should show nutrition goal sheet`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -358,7 +361,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("dismissAddRuleSheet should hide sheet")
         fun `dismissAddRuleSheet should hide sheet`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -377,7 +380,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("showEditRuleSheet should populate form with rule data")
         fun `showEditRuleSheet should populate form with rule data`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -398,7 +401,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("MEAL_SLOT tab should set default meal slot to BREAKFAST")
         fun `MEAL_SLOT tab should set default meal slot to BREAKFAST`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -422,7 +425,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("showAddNutritionGoalSheet should show sheet with defaults")
         fun `showAddNutritionGoalSheet should show sheet with defaults`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -442,7 +445,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("showEditNutritionGoalSheet should populate form with goal data")
         fun `showEditNutritionGoalSheet should populate form with goal data`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -461,7 +464,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("dismissAddNutritionGoalSheet should hide sheet")
         fun `dismissAddNutritionGoalSheet should hide sheet`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -485,7 +488,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("updateAction should update selected action")
         fun `updateAction should update selected action`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -504,7 +507,7 @@ class RecipeRulesViewModelTest {
             // Mock searchRecipes to avoid coroutine issues
             every { mockRepository.searchRecipes(any()) } returns flowOf(emptyList())
 
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
             testDispatcher.scheduler.advanceUntilIdle() // Let init complete
 
             viewModel.uiState.test {
@@ -522,7 +525,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("selectRecipe should set target")
         fun `selectRecipe should set target`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -540,7 +543,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("selectIngredient should set target")
         fun `selectIngredient should set target`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -558,7 +561,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("updateFrequencyType should update frequency type")
         fun `updateFrequencyType should update frequency type`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -574,7 +577,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("updateFrequencyCount should coerce to valid range")
         fun `updateFrequencyCount should coerce to valid range`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -590,7 +593,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("toggleDay should toggle day in selected days")
         fun `toggleDay should toggle day in selected days`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -609,7 +612,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("updateMealSlot should update meal slot")
         fun `updateMealSlot should update meal slot`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -625,7 +628,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("updateEnforcement should update enforcement")
         fun `updateEnforcement should update enforcement`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -641,7 +644,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("updateFoodCategory should update category")
         fun `updateFoodCategory should update category`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -657,7 +660,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("updateWeeklyTarget should coerce to valid range")
         fun `updateWeeklyTarget should coerce to valid range`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -680,7 +683,7 @@ class RecipeRulesViewModelTest {
         fun `saveRule should call repository and dismiss sheet on success`() = runTest {
             coEvery { mockRepository.createRule(any()) } returns Result.success(testRecipeRules[0])
 
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -707,7 +710,7 @@ class RecipeRulesViewModelTest {
         fun `saveRule with editing should call updateRule`() = runTest {
             coEvery { mockRepository.updateRule(any()) } returns Result.success(Unit)
 
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -730,7 +733,7 @@ class RecipeRulesViewModelTest {
         fun `saveNutritionGoal should call repository and dismiss sheet`() = runTest {
             coEvery { mockRepository.createNutritionGoal(any()) } returns Result.success(testNutritionGoals[0])
 
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -763,7 +766,7 @@ class RecipeRulesViewModelTest {
         fun `toggleRuleActive should call repository`() = runTest {
             coEvery { mockRepository.toggleRuleActive(any(), any()) } returns Result.success(Unit)
 
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.toggleRuleActive(testRecipeRules[0])
             testDispatcher.scheduler.advanceUntilIdle()
@@ -776,7 +779,7 @@ class RecipeRulesViewModelTest {
         fun `toggleNutritionGoalActive should call repository`() = runTest {
             coEvery { mockRepository.toggleNutritionGoalActive(any(), any()) } returns Result.success(Unit)
 
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.toggleNutritionGoalActive(testNutritionGoals[0])
             testDispatcher.scheduler.advanceUntilIdle()
@@ -789,7 +792,7 @@ class RecipeRulesViewModelTest {
         fun `toggleNutritionGoalEnforcement should toggle between REQUIRED and PREFERRED`() = runTest {
             coEvery { mockRepository.updateNutritionGoal(any()) } returns Result.success(Unit)
 
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             // Goal with default PREFERRED enforcement should toggle to REQUIRED
             viewModel.toggleNutritionGoalEnforcement(testNutritionGoals[0])
@@ -808,7 +811,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("showDeleteConfirmation for rule should show dialog")
         fun `showDeleteConfirmation for rule should show dialog`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -826,7 +829,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("showDeleteConfirmation for goal should show dialog")
         fun `showDeleteConfirmation for goal should show dialog`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -844,7 +847,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("dismissDeleteConfirmation should hide dialog")
         fun `dismissDeleteConfirmation should hide dialog`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -866,7 +869,7 @@ class RecipeRulesViewModelTest {
         fun `confirmDelete should delete rule and dismiss dialog`() = runTest {
             coEvery { mockRepository.deleteRule(any()) } returns Result.success(Unit)
 
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -890,7 +893,7 @@ class RecipeRulesViewModelTest {
         fun `confirmDelete should delete nutrition goal`() = runTest {
             coEvery { mockRepository.deleteNutritionGoal(any()) } returns Result.success(Unit)
 
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -916,7 +919,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("navigateBack should emit back event")
         fun `navigateBack should emit back event`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.navigationEvent.test {
                 viewModel.navigateBack()
@@ -934,7 +937,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("clearError should clear error message")
         fun `clearError should clear error message`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -952,7 +955,7 @@ class RecipeRulesViewModelTest {
         fun `save failure should set error message`() = runTest {
             coEvery { mockRepository.createRule(any()) } returns Result.failure(Exception("Save failed"))
 
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -979,7 +982,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("isEditing should be true when editing rule")
         fun `isEditing should be true when editing rule`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -995,7 +998,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("canSaveRule should be false when target is empty")
         fun `canSaveRule should be false when target is empty`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -1011,7 +1014,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("canSaveRule should be true when target is set")
         fun `canSaveRule should be true when target is set`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -1029,7 +1032,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("canSaveRule with SPECIFIC_DAYS should require days selected")
         fun `canSaveRule with SPECIFIC_DAYS should require days selected`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -1053,7 +1056,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("canSaveNutritionGoal should be false when category is null")
         fun `canSaveNutritionGoal should be false when category is null`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 val state = awaitItem() // Initial
@@ -1066,7 +1069,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("canSaveNutritionGoal should be true when category is set")
         fun `canSaveNutritionGoal should be true when category is set`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository)
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial

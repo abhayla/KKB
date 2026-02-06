@@ -7,8 +7,9 @@ import com.rasoiai.data.local.entity.MealPlanEntity
 import com.rasoiai.data.local.entity.MealPlanFestivalEntity
 import com.rasoiai.data.local.entity.MealPlanItemEntity
 import com.rasoiai.data.remote.api.RasoiApiService
-import com.rasoiai.data.remote.dto.MealPlanDto
+import com.rasoiai.data.remote.dto.MealPlanResponse
 import com.rasoiai.data.remote.dto.MealPlanDayDto
+import com.rasoiai.data.remote.dto.MealsByTypeDto
 import com.rasoiai.data.remote.dto.MealItemDto
 import com.rasoiai.domain.model.MealType
 import io.mockk.coEvery
@@ -49,51 +50,83 @@ class MealPlanRepositoryImplTest {
         id = "plan-1",
         weekStartDate = "2026-01-27",
         weekEndDate = "2026-02-02",
-        isGenerated = true,
-        isSynced = true,
         createdAt = System.currentTimeMillis(),
-        updatedAt = System.currentTimeMillis()
+        updatedAt = System.currentTimeMillis(),
+        isSynced = true
     )
 
     private val testMealItems = listOf(
         MealPlanItemEntity(
-            id = "item-1",
             mealPlanId = "plan-1",
             date = "2026-01-27",
+            dayName = "Monday",
             mealType = "BREAKFAST",
             recipeId = "recipe-1",
             recipeName = "Poha",
+            recipeImageUrl = null,
+            prepTimeMinutes = 20,
+            calories = 300,
+            dietaryTags = listOf("vegetarian"),
             isLocked = false,
-            servings = 2
+            order = 0
         ),
         MealPlanItemEntity(
-            id = "item-2",
             mealPlanId = "plan-1",
             date = "2026-01-27",
+            dayName = "Monday",
             mealType = "LUNCH",
             recipeId = "recipe-2",
             recipeName = "Dal Rice",
+            recipeImageUrl = null,
+            prepTimeMinutes = 45,
+            calories = 450,
+            dietaryTags = listOf("vegetarian"),
             isLocked = true,
-            servings = 2
+            order = 0
         )
     )
 
     private val testFestivals = emptyList<MealPlanFestivalEntity>()
 
-    private val testMealPlanDto = MealPlanDto(
+    private val testMealPlanResponse = MealPlanResponse(
         id = "plan-1",
         weekStartDate = "2026-01-27",
         weekEndDate = "2026-02-02",
         days = listOf(
             MealPlanDayDto(
                 date = "2026-01-27",
-                breakfast = listOf(MealItemDto("recipe-1", "Poha", false, 2)),
-                lunch = listOf(MealItemDto("recipe-2", "Dal Rice", true, 2)),
-                dinner = emptyList(),
-                snacks = emptyList(),
+                dayName = "Monday",
+                meals = MealsByTypeDto(
+                    breakfast = listOf(MealItemDto(
+                        id = "item-1",
+                        recipeId = "recipe-1",
+                        recipeName = "Poha",
+                        recipeImageUrl = null,
+                        prepTimeMinutes = 20,
+                        calories = 300,
+                        isLocked = false,
+                        order = 0,
+                        dietaryTags = listOf("vegetarian")
+                    )),
+                    lunch = listOf(MealItemDto(
+                        id = "item-2",
+                        recipeId = "recipe-2",
+                        recipeName = "Dal Rice",
+                        recipeImageUrl = null,
+                        prepTimeMinutes = 45,
+                        calories = 450,
+                        isLocked = true,
+                        order = 0,
+                        dietaryTags = listOf("vegetarian")
+                    )),
+                    dinner = emptyList(),
+                    snacks = emptyList()
+                ),
                 festival = null
             )
-        )
+        ),
+        createdAt = "2026-01-27T00:00:00Z",
+        updatedAt = "2026-01-27T00:00:00Z"
     )
 
     @BeforeEach
@@ -125,7 +158,7 @@ class MealPlanRepositoryImplTest {
             // Given
             every { mockMealPlanDao.getMealPlanForDate(testDateString) } returns flowOf(testMealPlanEntity)
             coEvery { mockMealPlanDao.getMealPlanItemsSync("plan-1") } returns testMealItems
-            every { mockMealPlanDao.getFestivalsForMealPlan("plan-1") } returns testFestivals
+            coEvery { mockMealPlanDao.getFestivalsForMealPlan("plan-1") } returns testFestivals
 
             // When & Then
             repository.getMealPlanForDate(testDate).test {
@@ -234,7 +267,7 @@ class MealPlanRepositoryImplTest {
         fun `should generate and cache meal plan when online`() = runTest {
             // Given
             every { mockNetworkMonitor.isOnline } returns flowOf(true)
-            coEvery { mockApiService.generateMealPlan(any()) } returns testMealPlanDto
+            coEvery { mockApiService.generateMealPlan(any()) } returns testMealPlanResponse
 
             // When
             val result = repository.generateMealPlan(testDate)
@@ -316,7 +349,7 @@ class MealPlanRepositoryImplTest {
         fun `should sync to server when online`() = runTest {
             // Given
             every { mockNetworkMonitor.isOnline } returns flowOf(true)
-            coEvery { mockApiService.lockMealItem(any(), any()) } returns Unit
+            coEvery { mockApiService.lockMealItem(any(), any()) } returns testMealPlanResponse
 
             // When
             repository.setMealLockState(
@@ -356,7 +389,7 @@ class MealPlanRepositoryImplTest {
             // Given
             every { mockNetworkMonitor.isOnline } returns flowOf(true)
             coEvery { mockMealPlanDao.getUnsyncedMealPlans() } returns listOf(testMealPlanEntity)
-            coEvery { mockApiService.getMealPlanById("plan-1") } returns testMealPlanDto
+            coEvery { mockApiService.getMealPlanById("plan-1") } returns testMealPlanResponse
 
             // When
             val result = repository.syncMealPlans()
@@ -375,7 +408,7 @@ class MealPlanRepositoryImplTest {
             every { mockNetworkMonitor.isOnline } returns flowOf(true)
             coEvery { mockMealPlanDao.getUnsyncedMealPlans() } returns listOf(testMealPlanEntity, secondPlan)
             coEvery { mockApiService.getMealPlanById("plan-1") } throws RuntimeException("API error")
-            coEvery { mockApiService.getMealPlanById("plan-2") } returns testMealPlanDto.copy(id = "plan-2")
+            coEvery { mockApiService.getMealPlanById("plan-2") } returns testMealPlanResponse.copy(id = "plan-2")
 
             // When
             val result = repository.syncMealPlans()

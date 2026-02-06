@@ -49,22 +49,25 @@ class GroceryRepositoryImplTest {
         id = "plan-1",
         weekStartDate = "2026-01-27",
         weekEndDate = "2026-02-02",
-        isGenerated = true,
-        isSynced = true,
         createdAt = System.currentTimeMillis(),
-        updatedAt = System.currentTimeMillis()
+        updatedAt = System.currentTimeMillis(),
+        isSynced = true
     )
 
     private val testMealPlanItems = listOf(
         MealPlanItemEntity(
-            id = "item-1",
             mealPlanId = "plan-1",
             date = "2026-01-27",
+            dayName = "Monday",
             mealType = "BREAKFAST",
             recipeId = "recipe-1",
             recipeName = "Poha",
+            recipeImageUrl = null,
+            prepTimeMinutes = 20,
+            calories = 300,
+            dietaryTags = listOf("vegetarian"),
             isLocked = false,
-            servings = 2
+            order = 0
         )
     )
 
@@ -289,7 +292,7 @@ class GroceryRepositoryImplTest {
                 category = IngredientCategory.OTHER,
                 isPurchased = false,
                 recipeIds = emptyList(),
-                notes = null
+                isCustom = true
             )
 
             // When
@@ -316,7 +319,7 @@ class GroceryRepositoryImplTest {
                 category = IngredientCategory.OTHER,
                 isPurchased = false,
                 recipeIds = emptyList(),
-                notes = null
+                isCustom = true
             )
 
             // When

@@ -6,12 +6,14 @@ import com.rasoiai.data.local.dao.RecipeRulesDao
 import com.rasoiai.data.local.entity.NutritionGoalEntity
 import com.rasoiai.data.local.entity.RecipeEntity
 import com.rasoiai.data.local.entity.RecipeRuleEntity
+import com.rasoiai.core.network.NetworkMonitor
+import com.rasoiai.data.remote.api.RasoiApiService
 import com.rasoiai.domain.model.FoodCategory
-import com.rasoiai.domain.model.FrequencyType
 import com.rasoiai.domain.model.NutritionGoal
 import com.rasoiai.domain.model.RecipeRule
 import com.rasoiai.domain.model.RuleAction
 import com.rasoiai.domain.model.RuleEnforcement
+import com.rasoiai.domain.model.RuleFrequency
 import com.rasoiai.domain.model.RuleType
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -40,6 +42,8 @@ class RecipeRulesRepositoryImplTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var mockRecipeRulesDao: RecipeRulesDao
     private lateinit var mockRecipeDao: RecipeDao
+    private lateinit var mockApiService: RasoiApiService
+    private lateinit var mockNetworkMonitor: NetworkMonitor
     private lateinit var repository: RecipeRulesRepositoryImpl
 
     private val testRuleEntity = RecipeRuleEntity(
@@ -48,7 +52,9 @@ class RecipeRulesRepositoryImplTest {
         action = "exclude",
         targetId = "onion",
         targetName = "Onion",
-        frequency = "never",
+        frequencyType = "never",
+        frequencyCount = null,
+        frequencyDays = null,
         enforcement = "required",
         mealSlot = null,
         isActive = true,
@@ -61,6 +67,7 @@ class RecipeRulesRepositoryImplTest {
         foodCategory = "green_leafy",
         weeklyTarget = 3,
         currentProgress = 1,
+        enforcement = "preferred",
         isActive = true,
         createdAt = "2026-01-27T10:00:00",
         updatedAt = "2026-01-27T10:00:00"
@@ -70,19 +77,18 @@ class RecipeRulesRepositoryImplTest {
         id = "recipe-1",
         name = "Palak Paneer",
         description = "Spinach curry with paneer",
-        cuisineType = "north",
-        mealTypes = listOf("LUNCH", "DINNER"),
-        dietaryTags = listOf("vegetarian"),
+        imageUrl = null,
         prepTimeMinutes = 15,
         cookTimeMinutes = 30,
         servings = 4,
         difficulty = "medium",
-        imageUrl = null,
-        videoUrl = null,
+        cuisineType = "north",
+        mealTypes = listOf("LUNCH", "DINNER"),
+        dietaryTags = listOf("vegetarian"),
         ingredients = "[]",
         instructions = "[]",
-        nutrition = "{}",
-        tips = "",
+        nutritionInfo = "{}",
+        calories = 350,
         isFavorite = false,
         cachedAt = System.currentTimeMillis()
     )
@@ -92,10 +98,17 @@ class RecipeRulesRepositoryImplTest {
         Dispatchers.setMain(testDispatcher)
         mockRecipeRulesDao = mockk(relaxed = true)
         mockRecipeDao = mockk(relaxed = true)
+        mockApiService = mockk(relaxed = true)
+        mockNetworkMonitor = mockk(relaxed = true)
+
+        // Default to offline to avoid network calls in tests
+        every { mockNetworkMonitor.isOnline } returns flowOf(false)
 
         repository = RecipeRulesRepositoryImpl(
             recipeRulesDao = mockRecipeRulesDao,
-            recipeDao = mockRecipeDao
+            recipeDao = mockRecipeDao,
+            apiService = mockApiService,
+            networkMonitor = mockNetworkMonitor
         )
     }
 
@@ -168,7 +181,7 @@ class RecipeRulesRepositoryImplTest {
                 action = RuleAction.EXCLUDE,
                 targetId = "garlic",
                 targetName = "Garlic",
-                frequency = FrequencyType.NEVER,
+                frequency = RuleFrequency.NEVER,
                 enforcement = RuleEnforcement.REQUIRED,
                 mealSlot = null,
                 isActive = true,
@@ -196,7 +209,7 @@ class RecipeRulesRepositoryImplTest {
                 action = RuleAction.EXCLUDE,
                 targetId = "onion",
                 targetName = "Onion",
-                frequency = FrequencyType.NEVER,
+                frequency = RuleFrequency.NEVER,
                 enforcement = RuleEnforcement.REQUIRED,
                 mealSlot = null,
                 isActive = true,

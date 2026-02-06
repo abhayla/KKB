@@ -1,8 +1,10 @@
 package com.rasoiai.data.repository
 
+import android.content.Context
 import app.cash.turbine.test
 import com.rasoiai.data.local.dao.ChatDao
 import com.rasoiai.data.local.entity.ChatMessageEntity
+import com.rasoiai.data.remote.api.RasoiApiService
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -29,6 +31,8 @@ class ChatRepositoryImplTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var mockChatDao: ChatDao
+    private lateinit var mockApiService: RasoiApiService
+    private lateinit var mockContext: Context
     private lateinit var repository: ChatRepositoryImpl
 
     private val testMessageEntity = ChatMessageEntity(
@@ -36,8 +40,8 @@ class ChatRepositoryImplTest {
         content = "Hello!",
         isFromUser = true,
         timestamp = System.currentTimeMillis(),
-        quickActions = null,
-        recipeSuggestions = null
+        quickActionsJson = null,
+        recipeSuggestionsJson = null
     )
 
     private val testAiMessageEntity = ChatMessageEntity(
@@ -45,17 +49,21 @@ class ChatRepositoryImplTest {
         content = "Hi! How can I help you today?",
         isFromUser = false,
         timestamp = System.currentTimeMillis(),
-        quickActions = "Quick breakfast,Healthy start",
-        recipeSuggestions = null
+        quickActionsJson = "[\"Quick breakfast\",\"Healthy start\"]",
+        recipeSuggestionsJson = null
     )
 
     @BeforeEach
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         mockChatDao = mockk(relaxed = true)
+        mockApiService = mockk(relaxed = true)
+        mockContext = mockk(relaxed = true)
 
         repository = ChatRepositoryImpl(
-            chatDao = mockChatDao
+            chatDao = mockChatDao,
+            apiService = mockApiService,
+            context = mockContext
         )
     }
 

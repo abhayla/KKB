@@ -41,7 +41,7 @@ class StatsRepositoryImplTest {
     private lateinit var repository: StatsRepositoryImpl
 
     private val testStreakEntity = CookingStreakEntity(
-        id = 1,
+        id = "user_streak",
         currentStreak = 5,
         bestStreak = 10,
         lastCookingDate = "2026-01-27"
@@ -51,7 +51,7 @@ class StatsRepositoryImplTest {
         id = "first_meal",
         name = "First Meal",
         description = "Cook your first meal",
-        icon = "👨‍🍳",
+        emoji = "👨‍🍳",
         isUnlocked = true,
         unlockedDate = "2026-01-20"
     )

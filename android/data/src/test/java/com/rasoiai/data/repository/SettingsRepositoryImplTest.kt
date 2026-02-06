@@ -11,8 +11,9 @@ import com.rasoiai.domain.model.AppSettings
 import com.rasoiai.domain.model.CuisineType
 import com.rasoiai.domain.model.DarkModePreference
 import com.rasoiai.domain.model.DayOfWeek
-import com.rasoiai.domain.model.DietaryTag
+import com.rasoiai.domain.model.DietaryRestriction
 import com.rasoiai.domain.model.FamilyMember
+import com.rasoiai.domain.model.MemberType
 import com.rasoiai.domain.model.PrimaryDiet
 import com.rasoiai.domain.model.SpiceLevel
 import com.rasoiai.domain.model.UserPreferences
@@ -49,23 +50,23 @@ class SettingsRepositoryImplTest {
 
     private val testPreferences = UserPreferences(
         householdSize = 4,
-        primaryDiet = PrimaryDiet.VEGETARIAN,
-        spiceLevel = SpiceLevel.MEDIUM,
-        dietaryRestrictions = listOf(DietaryTag.VEGETARIAN),
-        cuisinePreferences = listOf(CuisineType.NORTH, CuisineType.SOUTH),
-        dislikedIngredients = listOf("Bitter Gourd"),
-        weekdayCookingTimeMinutes = 30,
-        weekendCookingTimeMinutes = 60,
-        busyDays = listOf(DayOfWeek.MONDAY),
         familyMembers = listOf(
             FamilyMember(
                 id = "member-1",
                 name = "Test User",
-                dietaryReferences = emptyList(),
-                allergies = emptyList(),
-                isChild = false
+                type = MemberType.ADULT,
+                age = 30,
+                specialNeeds = emptyList()
             )
-        )
+        ),
+        primaryDiet = PrimaryDiet.VEGETARIAN,
+        dietaryRestrictions = listOf(DietaryRestriction.JAIN),
+        cuisinePreferences = listOf(CuisineType.NORTH, CuisineType.SOUTH),
+        spiceLevel = SpiceLevel.MEDIUM,
+        dislikedIngredients = listOf("Bitter Gourd"),
+        weekdayCookingTimeMinutes = 30,
+        weekendCookingTimeMinutes = 60,
+        busyDays = listOf(DayOfWeek.MONDAY)
     )
 
     @BeforeEach
@@ -199,7 +200,7 @@ class SettingsRepositoryImplTest {
         fun `should save preferences and sync when online`() = runTest {
             // Given
             every { mockNetworkMonitor.isOnline } returns flowOf(true)
-            coEvery { mockApiService.updateUserPreferences(any()) } returns Unit
+            coEvery { mockApiService.updateUserPreferences(any()) } returns mockk(relaxed = true)
 
             // When
             val result = repository.updateUserPreferences(testPreferences)
@@ -239,9 +240,9 @@ class SettingsRepositoryImplTest {
             val newMember = FamilyMember(
                 id = "",
                 name = "New Member",
-                dietaryReferences = emptyList(),
-                allergies = emptyList(),
-                isChild = false
+                type = MemberType.ADULT,
+                age = 25,
+                specialNeeds = emptyList()
             )
 
             // When
@@ -261,9 +262,9 @@ class SettingsRepositoryImplTest {
             val newMember = FamilyMember(
                 id = "",
                 name = "New Member",
-                dietaryReferences = emptyList(),
-                allergies = emptyList(),
-                isChild = false
+                type = MemberType.ADULT,
+                age = 25,
+                specialNeeds = emptyList()
             )
 
             // When

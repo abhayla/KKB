@@ -10,7 +10,7 @@ import com.rasoiai.data.remote.api.RasoiApiService
 import com.rasoiai.data.remote.dto.IngredientDto
 import com.rasoiai.data.remote.dto.InstructionDto
 import com.rasoiai.data.remote.dto.NutritionDto
-import com.rasoiai.data.remote.dto.RecipeDto
+import com.rasoiai.data.remote.dto.RecipeResponse
 import com.rasoiai.domain.model.CuisineType
 import com.rasoiai.domain.model.DietaryTag
 import com.rasoiai.domain.model.MealType
@@ -57,16 +57,15 @@ class RecipeRepositoryImplTest {
         servings = 4,
         difficulty = "medium",
         imageUrl = "https://example.com/image.jpg",
-        videoUrl = null,
         ingredients = """[{"id":"ing-1","name":"Paneer","quantity":"250","unit":"g","category":"dairy","isOptional":false}]""",
         instructions = """[{"stepNumber":1,"instruction":"Cut paneer","durationMinutes":5,"timerRequired":false,"tips":"Use fresh paneer"}]""",
-        nutrition = """{"calories":350,"proteinGrams":15,"carbohydratesGrams":20,"fatGrams":25,"fiberGrams":3}""",
-        tips = "Serve hot with naan",
+        nutritionInfo = """{"calories":350,"protein":15,"carbohydrates":20,"fat":25,"fiber":3,"sugar":5,"sodium":400}""",
+        calories = 350,
         isFavorite = false,
         cachedAt = System.currentTimeMillis()
     )
 
-    private val testRecipeDto = RecipeDto(
+    private val testRecipeResponse = RecipeResponse(
         id = "recipe-1",
         name = "Paneer Butter Masala",
         description = "Creamy tomato-based curry with paneer",
@@ -78,7 +77,6 @@ class RecipeRepositoryImplTest {
         servings = 4,
         difficulty = "medium",
         imageUrl = "https://example.com/image.jpg",
-        videoUrl = null,
         ingredients = listOf(
             IngredientDto(
                 id = "ing-1",
@@ -100,12 +98,13 @@ class RecipeRepositoryImplTest {
         ),
         nutrition = NutritionDto(
             calories = 350,
-            proteinGrams = 15.0,
-            carbohydratesGrams = 20.0,
-            fatGrams = 25.0,
-            fiberGrams = 3.0
-        ),
-        tips = "Serve hot with naan"
+            protein = 15,
+            carbohydrates = 20,
+            fat = 25,
+            fiber = 3,
+            sugar = 5,
+            sodium = 400
+        )
     )
 
     @BeforeEach
@@ -172,7 +171,7 @@ class RecipeRepositoryImplTest {
             // Given
             every { mockRecipeDao.getRecipeById("recipe-1") } returns flowOf(null)
             every { mockNetworkMonitor.isOnline } returns flowOf(true)
-            coEvery { mockApiService.getRecipeById("recipe-1") } returns testRecipeDto
+            coEvery { mockApiService.getRecipeById("recipe-1") } returns testRecipeResponse
             coEvery { mockFavoriteDao.isFavoriteSync("recipe-1") } returns false
 
             // When & Then
@@ -227,7 +226,7 @@ class RecipeRepositoryImplTest {
                     page = 1,
                     limit = 10
                 )
-            } returns listOf(testRecipeDto)
+            } returns listOf(testRecipeResponse)
             coEvery { mockFavoriteDao.isFavoriteSync(any()) } returns false
 
             // When
@@ -294,7 +293,7 @@ class RecipeRepositoryImplTest {
         fun `should scale via API when online`() = runTest {
             // Given
             every { mockNetworkMonitor.isOnline } returns flowOf(true)
-            val scaledDto = testRecipeDto.copy(servings = 8)
+            val scaledDto = testRecipeResponse.copy(servings = 8)
             coEvery { mockApiService.scaleRecipe("recipe-1", 8) } returns scaledDto
             coEvery { mockFavoriteDao.isFavoriteSync("recipe-1") } returns false
 

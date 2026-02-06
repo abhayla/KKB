@@ -64,19 +64,18 @@ class EntityMappersTest {
                 id = "recipe-1",
                 name = "Paneer Butter Masala",
                 description = "Creamy tomato-based curry",
-                cuisineType = "north",
-                mealTypes = listOf("LUNCH", "DINNER"),
-                dietaryTags = listOf("vegetarian"),
+                imageUrl = "https://example.com/image.jpg",
                 prepTimeMinutes = 15,
                 cookTimeMinutes = 30,
                 servings = 4,
                 difficulty = "medium",
-                imageUrl = "https://example.com/image.jpg",
-                videoUrl = null,
+                cuisineType = "north",
+                mealTypes = listOf("LUNCH", "DINNER"),
+                dietaryTags = listOf("vegetarian"),
                 ingredients = """[{"id":"ing-1","name":"Paneer","quantity":"250","unit":"g","category":"dairy","isOptional":false}]""",
                 instructions = """[{"stepNumber":1,"instruction":"Cut paneer","durationMinutes":5,"timerRequired":false,"tips":"Use fresh"}]""",
-                nutrition = """{"calories":350,"protein":15.0,"carbohydrates":20.0,"fat":25.0,"fiber":3.0}""",
-                tips = "Serve hot",
+                nutritionInfo = """{"calories":350,"protein":15.0,"carbohydrates":20.0,"fat":25.0,"fiber":3.0}""",
+                calories = 350,
                 isFavorite = true,
                 cachedAt = System.currentTimeMillis()
             )
@@ -106,19 +105,18 @@ class EntityMappersTest {
                 id = "recipe-1",
                 name = "Test Recipe",
                 description = "Test",
-                cuisineType = "north",
-                mealTypes = emptyList(),
-                dietaryTags = emptyList(),
+                imageUrl = null,
                 prepTimeMinutes = 10,
                 cookTimeMinutes = 20,
                 servings = 2,
                 difficulty = "easy",
-                imageUrl = null,
-                videoUrl = null,
+                cuisineType = "north",
+                mealTypes = emptyList(),
+                dietaryTags = emptyList(),
                 ingredients = "[]",
                 instructions = "[]",
-                nutrition = null,
-                tips = null,
+                nutritionInfo = null,
+                calories = null,
                 isFavorite = false,
                 cachedAt = System.currentTimeMillis()
             )
@@ -145,15 +143,13 @@ class EntityMappersTest {
                 id = "plan-1",
                 weekStartDate = "2026-01-27",
                 weekEndDate = "2026-02-02",
-                isGenerated = true,
-                isSynced = true,
                 createdAt = System.currentTimeMillis(),
-                updatedAt = System.currentTimeMillis()
+                updatedAt = System.currentTimeMillis(),
+                isSynced = true
             )
 
             val items = listOf(
                 MealPlanItemEntity(
-                    id = "item-1",
                     mealPlanId = "plan-1",
                     date = "2026-01-27",
                     dayName = "Monday",
@@ -187,7 +183,6 @@ class EntityMappersTest {
         fun `should map MealPlanItemEntity to MealItem domain`() {
             // Given
             val entity = MealPlanItemEntity(
-                id = "item-1",
                 mealPlanId = "plan-1",
                 date = "2026-01-27",
                 dayName = "Monday",
@@ -286,7 +281,7 @@ class EntityMappersTest {
                 category = IngredientCategory.VEGETABLES,
                 isPurchased = false,
                 recipeIds = listOf("recipe-1"),
-                notes = null
+                isCustom = false
             )
 
             // When
@@ -383,7 +378,7 @@ class EntityMappersTest {
             val domain = PantryItem(
                 id = "pantry-1",
                 name = "Milk",
-                category = PantryCategory.DAIRY,
+                category = PantryCategory.DAIRY_MILK,
                 quantity = 2,
                 unit = "L",
                 addedDate = LocalDate.of(2026, 1, 27),
@@ -397,7 +392,7 @@ class EntityMappersTest {
             // Then
             assertEquals("pantry-1", entity.id)
             assertEquals("Milk", entity.name)
-            assertEquals("DAIRY", entity.category)
+            assertEquals("DAIRY_MILK", entity.category)
             assertEquals("2026-01-27", entity.addedDate)
             assertEquals("2026-02-03", entity.expiryDate)
         }
@@ -412,7 +407,7 @@ class EntityMappersTest {
         fun `should map CookingStreakEntity to CookingStreak domain`() {
             // Given
             val entity = CookingStreakEntity(
-                id = 1,
+                id = "user_streak",
                 currentStreak = 5,
                 bestStreak = 10,
                 lastCookingDate = "2026-01-27"

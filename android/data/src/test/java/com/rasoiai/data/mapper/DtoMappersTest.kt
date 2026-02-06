@@ -6,7 +6,7 @@ import com.rasoiai.data.remote.dto.InstructionDto
 import com.rasoiai.data.remote.dto.MealItemDto
 import com.rasoiai.data.remote.dto.MealPlanDayDto
 import com.rasoiai.data.remote.dto.MealPlanResponse
-import com.rasoiai.data.remote.dto.MealsDto
+import com.rasoiai.data.remote.dto.MealsByTypeDto
 import com.rasoiai.data.remote.dto.NutritionDto
 import com.rasoiai.data.remote.dto.RecipeResponse
 import com.rasoiai.data.remote.dto.UserPreferencesDto
@@ -72,12 +72,12 @@ class DtoMappersTest {
                 ),
                 nutrition = NutritionDto(
                     calories = 350,
-                    protein = 15.0,
-                    carbohydrates = 20.0,
-                    fat = 25.0,
-                    fiber = 3.0,
-                    sugar = 5.0,
-                    sodium = 400.0
+                    protein = 15,
+                    carbohydrates = 20,
+                    fat = 25,
+                    fiber = 3,
+                    sugar = 5,
+                    sodium = 400
                 )
             )
 
@@ -156,12 +156,12 @@ class DtoMappersTest {
             // Given
             val dto = NutritionDto(
                 calories = 350,
-                protein = 15.0,
-                carbohydrates = 40.0,
-                fat = 10.0,
-                fiber = 5.0,
-                sugar = 8.0,
-                sodium = 500.0
+                protein = 15,
+                carbohydrates = 40,
+                fat = 10,
+                fiber = 5,
+                sugar = 8,
+                sodium = 500
             )
 
             // When
@@ -192,7 +192,7 @@ class DtoMappersTest {
                     MealPlanDayDto(
                         date = "2026-01-27",
                         dayName = "Monday",
-                        meals = MealsDto(
+                        meals = MealsByTypeDto(
                             breakfast = listOf(
                                 MealItemDto(
                                     id = "item-1",

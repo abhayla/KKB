@@ -59,11 +59,10 @@ class PantryRepositoryImplTest {
         servings = 4,
         difficulty = "easy",
         imageUrl = null,
-        videoUrl = null,
         ingredients = """[{"id":"ing-1","name":"Tomatoes","quantity":"500","unit":"g","category":"vegetables","isOptional":false}]""",
         instructions = "[]",
-        nutrition = "{}",
-        tips = "",
+        nutritionInfo = "{}",
+        calories = 200,
         isFavorite = false,
         cachedAt = System.currentTimeMillis()
     )
@@ -152,7 +151,7 @@ class PantryRepositoryImplTest {
             // When
             val result = repository.addItem(
                 name = "Milk",
-                category = PantryCategory.DAIRY,
+                category = PantryCategory.DAIRY_MILK,
                 quantity = 2,
                 unit = "liters"
             )
@@ -161,7 +160,7 @@ class PantryRepositoryImplTest {
             assertTrue(result.isSuccess)
             assertNotNull(result.getOrNull()?.id)
             assertEquals("Milk", result.getOrNull()?.name)
-            assertEquals(PantryCategory.DAIRY, result.getOrNull()?.category)
+            assertEquals(PantryCategory.DAIRY_MILK, result.getOrNull()?.category)
             assertEquals(2, result.getOrNull()?.quantity)
             assertNotNull(result.getOrNull()?.expiryDate) // Dairy has default shelf life
 
@@ -195,7 +194,7 @@ class PantryRepositoryImplTest {
             // Given
             val scannedItems = listOf(
                 "Tomatoes" to PantryCategory.VEGETABLES,
-                "Milk" to PantryCategory.DAIRY,
+                "Milk" to PantryCategory.DAIRY_MILK,
                 "Rice" to PantryCategory.GRAINS
             )
 

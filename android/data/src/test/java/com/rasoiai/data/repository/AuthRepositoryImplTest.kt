@@ -4,7 +4,7 @@ import app.cash.turbine.test
 import com.rasoiai.data.local.datastore.UserPreferencesDataStore
 import com.rasoiai.data.remote.api.RasoiApiService
 import com.rasoiai.data.remote.dto.AuthResponse
-import com.rasoiai.data.remote.dto.UserDto
+import com.rasoiai.data.remote.dto.UserResponse
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -34,19 +34,21 @@ class AuthRepositoryImplTest {
     private lateinit var mockUserPreferencesDataStore: UserPreferencesDataStore
     private lateinit var repository: AuthRepositoryImpl
 
-    private val testUserDto = UserDto(
+    private val testUserResponse = UserResponse(
         id = "user-1",
         email = "test@example.com",
         name = "Test User",
         profileImageUrl = null,
-        isOnboarded = true
+        isOnboarded = true,
+        preferences = null
     )
 
     private val testAuthResponse = AuthResponse(
         accessToken = "access-token-123",
         refreshToken = "refresh-token-456",
+        tokenType = "Bearer",
         expiresIn = 3600,
-        user = testUserDto
+        user = testUserResponse
     )
 
     @BeforeEach
@@ -247,7 +249,7 @@ class AuthRepositoryImplTest {
         fun `should load user from API when authenticated`() = runTest {
             // Given
             every { mockUserPreferencesDataStore.isAuthenticated } returns flowOf(true)
-            coEvery { mockApiService.getCurrentUser() } returns testUserDto
+            coEvery { mockApiService.getCurrentUser() } returns testUserResponse
 
             // When
             val result = repository.loadCurrentUser()
