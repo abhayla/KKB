@@ -27,16 +27,16 @@ async def test_firebase_auth_mock(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_current_user_unauthorized(client: AsyncClient):
+async def test_get_current_user_unauthorized(unauthenticated_client: AsyncClient):
     """Test get current user without auth token."""
-    response = await client.get("/api/v1/users/me")
+    response = await unauthenticated_client.get("/api/v1/users/me")
     assert response.status_code == 401
 
 
 @pytest.mark.asyncio
-async def test_get_current_user_invalid_token(client: AsyncClient):
+async def test_get_current_user_invalid_token(unauthenticated_client: AsyncClient):
     """Test get current user with invalid token."""
-    response = await client.get(
+    response = await unauthenticated_client.get(
         "/api/v1/users/me",
         headers={"Authorization": "Bearer invalid-token"},
     )

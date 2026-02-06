@@ -78,9 +78,9 @@ async def authenticated_client(
 
 
 @pytest.mark.asyncio
-async def test_get_recipe_rules_unauthorized(client: AsyncClient):
+async def test_get_recipe_rules_unauthorized(unauthenticated_client: AsyncClient):
     """Test getting recipe rules without auth."""
-    response = await client.get("/api/v1/recipe-rules")
+    response = await unauthenticated_client.get("/api/v1/recipe-rules")
     assert response.status_code == 401
 
 
@@ -322,9 +322,9 @@ async def test_delete_recipe_rule(authenticated_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_nutrition_goals_unauthorized(client: AsyncClient):
+async def test_get_nutrition_goals_unauthorized(unauthenticated_client: AsyncClient):
     """Test getting nutrition goals without auth."""
-    response = await client.get("/api/v1/nutrition-goals")
+    response = await unauthenticated_client.get("/api/v1/nutrition-goals")
     assert response.status_code == 401
 
 

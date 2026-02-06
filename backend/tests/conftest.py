@@ -137,6 +137,28 @@ async def client(db_session: AsyncSession, test_user: User) -> AsyncGenerator[As
 
 
 @pytest_asyncio.fixture(scope="function")
+async def unauthenticated_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+    """Create test HTTP client WITHOUT auth override — for testing 401 responses."""
+
+    async def override_get_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    def mock_session_maker():
+        return _test_session_maker()
+
+    with patch('app.repositories.user_repository.async_session_maker', mock_session_maker):
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as ac:
+            yield ac
+
+    app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture(scope="function")
 async def auth_token(test_user: User) -> str:
     """Create a valid auth token for the test user."""
     from app.core.security import create_access_token
