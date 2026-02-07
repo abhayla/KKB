@@ -16,7 +16,7 @@ data class RecipeRule(
     val targetName: String,
     val frequency: RuleFrequency,
     val enforcement: RuleEnforcement,
-    val mealSlot: MealType? = null,
+    val mealSlots: List<MealType> = emptyList(),
     val isActive: Boolean = true,
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val updatedAt: LocalDateTime = LocalDateTime.now()
@@ -35,18 +35,22 @@ data class RecipeRule(
         }
 
     /**
-     * Display text combining frequency and meal slot.
+     * Display text for meal slots.
+     */
+    val mealSlotsDisplayText: String
+        get() = when {
+            mealSlots.isEmpty() -> "Any slot"
+            mealSlots.size == MealType.entries.size -> "All meals"
+            else -> mealSlots.joinToString(", ") {
+                it.name.lowercase().replaceFirstChar { c -> c.uppercase() }
+            }
+        }
+
+    /**
+     * Display text combining frequency and meal slots.
      */
     val fullDescriptionText: String
-        get() = when {
-            type == RuleType.MEAL_SLOT && mealSlot != null -> {
-                "$frequencyDisplayText • ${mealSlot.name.lowercase().replaceFirstChar { it.uppercase() }}"
-            }
-            mealSlot != null -> {
-                "$frequencyDisplayText • ${mealSlot.name.lowercase().replaceFirstChar { it.uppercase() }}"
-            }
-            else -> frequencyDisplayText
-        }
+        get() = "$frequencyDisplayText · $mealSlotsDisplayText"
 
     /**
      * Icon to display based on rule type and action.
@@ -54,10 +58,10 @@ data class RecipeRule(
     val iconEmoji: String
         get() = when {
             type == RuleType.RECIPE && action == RuleAction.INCLUDE -> "📖"
-            type == RuleType.RECIPE && action == RuleAction.EXCLUDE -> "🚫"
+            type == RuleType.RECIPE && action == RuleAction.EXCLUDE -> "📖"
             type == RuleType.INGREDIENT && action == RuleAction.INCLUDE -> "🥕"
-            type == RuleType.INGREDIENT && action == RuleAction.EXCLUDE -> "🚫"
-            type == RuleType.MEAL_SLOT -> "🍽️"
+            type == RuleType.INGREDIENT && action == RuleAction.EXCLUDE -> "🥕"
+            type == RuleType.MEAL_SLOT -> "📖"
             type == RuleType.NUTRITION -> "🥗"
             else -> "📋"
         }

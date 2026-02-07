@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.data.local.dao.FavoriteDao
 import com.rasoiai.data.local.dao.RecipeDao
+import com.rasoiai.data.local.dao.RecipeRulesDao
 import com.rasoiai.data.local.entity.FavoriteEntity
 import com.rasoiai.data.local.entity.RecipeEntity
 import com.rasoiai.data.remote.api.RasoiApiService
@@ -42,6 +43,7 @@ class RecipeRepositoryImplTest {
     private lateinit var mockApiService: RasoiApiService
     private lateinit var mockRecipeDao: RecipeDao
     private lateinit var mockFavoriteDao: FavoriteDao
+    private lateinit var mockRecipeRulesDao: RecipeRulesDao
     private lateinit var mockNetworkMonitor: NetworkMonitor
     private lateinit var repository: RecipeRepositoryImpl
 
@@ -113,12 +115,14 @@ class RecipeRepositoryImplTest {
         mockApiService = mockk(relaxed = true)
         mockRecipeDao = mockk(relaxed = true)
         mockFavoriteDao = mockk(relaxed = true)
+        mockRecipeRulesDao = mockk(relaxed = true)
         mockNetworkMonitor = mockk(relaxed = true)
 
         repository = RecipeRepositoryImpl(
             apiService = mockApiService,
             recipeDao = mockRecipeDao,
             favoriteDao = mockFavoriteDao,
+            recipeRulesDao = mockRecipeRulesDao,
             networkMonitor = mockNetworkMonitor
         )
     }

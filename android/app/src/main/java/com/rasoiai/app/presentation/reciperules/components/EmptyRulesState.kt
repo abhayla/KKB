@@ -25,26 +25,14 @@ fun EmptyRulesState(
     modifier: Modifier = Modifier
 ) {
     val (emoji, title, description, buttonText) = when (tabType) {
-        RulesTab.RECIPE -> listOf(
-            "📖",
-            "No recipe rules yet",
-            "Add rules to ensure your favorite dishes appear in your meal plans",
-            "+ Add Recipe Rule"
-        )
-        RulesTab.INGREDIENT -> listOf(
-            "🥕",
-            "No ingredient rules yet",
-            "Add rules to include or exclude specific ingredients from your meal plans",
-            "+ Add Ingredient Rule"
-        )
-        RulesTab.MEAL_SLOT -> listOf(
-            "🍽️",
-            "No meal-slot rules yet",
-            "Lock specific recipes to certain meal times for consistent routines",
-            "+ Add Meal-Slot Rule"
+        RulesTab.RULES -> listOf(
+            "\uD83C\uDF7D\uFE0F",
+            "No rules yet",
+            "Add rules to customize your meal plans. Include or exclude recipes and ingredients.",
+            "+ Add Rule"
         )
         RulesTab.NUTRITION -> listOf(
-            "🥗",
+            "\uD83E\uDD57",
             "No nutrition goals yet",
             "Set weekly targets for food categories to ensure balanced nutrition",
             "+ Add Nutrition Goal"

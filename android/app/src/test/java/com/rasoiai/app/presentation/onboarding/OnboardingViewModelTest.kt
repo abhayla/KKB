@@ -10,6 +10,7 @@ import com.rasoiai.domain.model.MemberType
 import com.rasoiai.domain.model.PrimaryDiet
 import com.rasoiai.domain.model.SpiceLevel
 import com.rasoiai.domain.repository.SettingsRepository
+import com.rasoiai.domain.usecase.GenerateMealPlanUseCase
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -35,13 +36,16 @@ class OnboardingViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var mockUserPreferencesDataStore: UserPreferencesDataStore
     private lateinit var mockSettingsRepository: SettingsRepository
+    private lateinit var mockGenerateMealPlanUseCase: GenerateMealPlanUseCase
 
     @BeforeEach
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         mockUserPreferencesDataStore = mockk(relaxed = true)
         mockSettingsRepository = mockk(relaxed = true)
+        mockGenerateMealPlanUseCase = mockk(relaxed = true)
         coEvery { mockUserPreferencesDataStore.saveOnboardingComplete(any()) } returns Unit
+        coEvery { mockGenerateMealPlanUseCase.invoke(any()) } returns Result.success(mockk(relaxed = true))
     }
 
     @AfterEach
@@ -56,7 +60,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("Initial step should be HOUSEHOLD_SIZE")
         fun `initial step should be HOUSEHOLD_SIZE`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 val state = awaitItem()
@@ -68,7 +72,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("Default household size should be 2")
         fun `default household size should be 2`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 val state = awaitItem()
@@ -80,7 +84,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("Default primary diet should be VEGETARIAN")
         fun `default primary diet should be VEGETARIAN`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 val state = awaitItem()
@@ -92,7 +96,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("isFirstStep should be true initially")
         fun `isFirstStep should be true initially`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 val state = awaitItem()
@@ -110,7 +114,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("goToNextStep should advance to next step")
         fun `goToNextStep should advance to next step`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -126,7 +130,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("goToPreviousStep should go back to previous step")
         fun `goToPreviousStep should go back to previous step`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -145,7 +149,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("progress should update with step")
         fun `progress should update with step`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 val initialState = awaitItem()
@@ -167,7 +171,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("updateHouseholdSize should update size")
         fun `updateHouseholdSize should update size`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -183,7 +187,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("updateHouseholdSize should coerce to valid range")
         fun `updateHouseholdSize should coerce to valid range`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -199,7 +203,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("showAddMemberDialog should show dialog")
         fun `showAddMemberDialog should show dialog`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -216,7 +220,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("addOrUpdateFamilyMember should add new member")
         fun `addOrUpdateFamilyMember should add new member`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -239,7 +243,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("removeFamilyMember should remove member")
         fun `removeFamilyMember should remove member`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -264,7 +268,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("updatePrimaryDiet should update diet")
         fun `updatePrimaryDiet should update diet`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -280,7 +284,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("toggleDietaryRestriction should add restriction")
         fun `toggleDietaryRestriction should add restriction`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -296,7 +300,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("toggleDietaryRestriction should remove restriction")
         fun `toggleDietaryRestriction should remove restriction`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -320,7 +324,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("toggleCuisine should add cuisine")
         fun `toggleCuisine should add cuisine`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 awaitItem() // Initial (NORTH selected)
@@ -337,7 +341,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("toggleCuisine should not remove last cuisine")
         fun `toggleCuisine should not remove last cuisine`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 val initialState = awaitItem() // Initial (only NORTH selected)
@@ -357,7 +361,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("updateSpiceLevel should update level")
         fun `updateSpiceLevel should update level`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 awaitItem() // Initial (MEDIUM)
@@ -378,7 +382,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("toggleDislikedIngredient should add ingredient")
         fun `toggleDislikedIngredient should add ingredient`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -394,7 +398,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("addCustomDislikedIngredient should add custom ingredient")
         fun `addCustomDislikedIngredient should add custom ingredient`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -410,7 +414,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("updateIngredientSearchQuery should update query")
         fun `updateIngredientSearchQuery should update query`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -431,7 +435,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("updateWeekdayCookingTime should update time")
         fun `updateWeekdayCookingTime should update time`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 awaitItem() // Initial (30 min)
@@ -447,7 +451,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("updateWeekendCookingTime should update time")
         fun `updateWeekendCookingTime should update time`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 awaitItem() // Initial (45 min)
@@ -463,7 +467,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("toggleBusyDay should add busy day")
         fun `toggleBusyDay should add busy day`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -479,7 +483,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("toggleBusyDay should remove busy day")
         fun `toggleBusyDay should remove busy day`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -503,7 +507,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("goToNextStep on last step should start generation")
         fun `goToNextStep on last step should start generation`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 var currentState = awaitItem() // Initial (step 0)
@@ -529,7 +533,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("Completion should emit navigation event")
         fun `completion should emit navigation event`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.navigationEvent.test {
                 // Navigate to last step and complete
@@ -553,7 +557,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("canProceed should be true when household size > 0")
         fun `canProceed should be true when household size greater than 0`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 val state = awaitItem()
@@ -565,7 +569,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("canProceed should require at least one cuisine")
         fun `canProceed should require at least one cuisine`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -590,7 +594,7 @@ class OnboardingViewModelTest {
         @Test
         @DisplayName("clearError should clear error message")
         fun `clearError should clear error message`() = runTest {
-            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository)
+            val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 awaitItem() // Initial

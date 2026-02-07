@@ -149,6 +149,25 @@ object TestDataFactory {
             mealSlot = emptyList(),
             enforcement = RuleEnforcement.PREFERRED
         )
+
+        // FR-015 (Issue #53): Additional Sharma family rules for E2E verification
+        val includeEggs = RecipeRuleTestData(
+            type = RuleType.INGREDIENT,
+            targetName = "Eggs",
+            frequency = 4,
+            frequencyType = FrequencyType.TIMES_PER_WEEK,
+            mealSlot = emptyList(),
+            enforcement = RuleEnforcement.PREFERRED
+        )
+
+        val includeChicken = RecipeRuleTestData(
+            type = RuleType.INGREDIENT,
+            targetName = "Chicken",
+            frequency = 2,
+            frequencyType = FrequencyType.TIMES_PER_WEEK,
+            mealSlot = emptyList(),
+            enforcement = RuleEnforcement.PREFERRED
+        )
     }
 
     /**

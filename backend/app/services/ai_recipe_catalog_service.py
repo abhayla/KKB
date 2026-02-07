@@ -10,7 +10,7 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import func, select, update
+from sqlalchemy import cast, func, or_, select, String, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.ai_recipe_catalog import AiRecipeCatalog
@@ -183,7 +183,10 @@ async def search_catalog(
     if query.strip():
         normalized_query = normalize_recipe_name(query)
         stmt = stmt.where(
-            AiRecipeCatalog.normalized_name.contains(normalized_query)
+            or_(
+                AiRecipeCatalog.normalized_name.contains(normalized_query),
+                AiRecipeCatalog.ingredients.cast(String).ilike(f"%{normalized_query}%"),
+            )
         )
 
     # Order by usage_count descending, fetch more than limit for post-filtering

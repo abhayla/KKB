@@ -114,6 +114,9 @@ logcat*.txt
 .claude/.*_completed
 .claude/settings.local.json
 
+# Analysis artifacts
+CLAUDE_MD_GAPS_ANALYSIS.txt
+
 # Misc
 Notes
 nul

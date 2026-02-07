@@ -149,7 +149,9 @@ class FakeRecipeRulesRepository @Inject constructor() : RecipeRulesRepository {
     override fun searchRecipes(query: String): Flow<List<Recipe>> =
         MutableStateFlow(
             mockRecipes.filter {
-                it.name.contains(query, ignoreCase = true)
+                it.name.contains(query, ignoreCase = true) ||
+                it.description.contains(query, ignoreCase = true) ||
+                it.ingredients.any { ing -> ing.name.contains(query, ignoreCase = true) }
             }
         )
 
@@ -159,7 +161,7 @@ class FakeRecipeRulesRepository @Inject constructor() : RecipeRulesRepository {
     override fun searchIngredients(query: String): Flow<List<String>> =
         MutableStateFlow(
             mockIngredients.filter {
-                it.contains(query, ignoreCase = true)
+                it.contains(query, ignoreCase = true) || query.contains(it, ignoreCase = true)
             }
         )
 
@@ -171,6 +173,10 @@ class FakeRecipeRulesRepository @Inject constructor() : RecipeRulesRepository {
             val usedCategories = goals.map { it.foodCategory }.toSet()
             FoodCategory.entries.filter { it !in usedCategories }
         }
+
+    override suspend fun persistIngredientsFromRecipes(recipes: List<Recipe>) {
+        // No-op in fake implementation
+    }
 
     // endregion
 
@@ -206,7 +212,7 @@ class FakeRecipeRulesRepository @Inject constructor() : RecipeRulesRepository {
             targetName = "Chai",
             frequency = RuleFrequency.DAILY,
             enforcement = RuleEnforcement.REQUIRED,
-            mealSlot = MealType.BREAKFAST,
+            mealSlots = listOf(MealType.BREAKFAST),
             isActive = true
         ),
 
@@ -241,7 +247,7 @@ class FakeRecipeRulesRepository @Inject constructor() : RecipeRulesRepository {
             targetName = "Chai",
             frequency = RuleFrequency.DAILY,
             enforcement = RuleEnforcement.REQUIRED,
-            mealSlot = MealType.BREAKFAST,
+            mealSlots = listOf(MealType.BREAKFAST),
             isActive = true
         ),
         RecipeRule(
@@ -252,7 +258,7 @@ class FakeRecipeRulesRepository @Inject constructor() : RecipeRulesRepository {
             targetName = "Dosa",
             frequency = RuleFrequency.specificDays(listOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)),
             enforcement = RuleEnforcement.PREFERRED,
-            mealSlot = MealType.BREAKFAST,
+            mealSlots = listOf(MealType.BREAKFAST),
             isActive = true
         )
     )
@@ -298,25 +304,16 @@ class FakeRecipeRulesRepository @Inject constructor() : RecipeRulesRepository {
     )
 
     private val mockIngredients = listOf(
-        "Spinach",
-        "Moringa",
-        "Tomatoes",
-        "Onions",
-        "Garlic",
-        "Ginger",
-        "Paneer",
-        "Potatoes",
-        "Cauliflower",
-        "Bitter Gourd",
-        "Drumstick",
-        "Curry Leaves",
-        "Coriander",
-        "Mint",
-        "Turmeric",
-        "Cumin",
-        "Mustard Seeds",
-        "Ghee",
-        "Oil"
+        "Paneer", "Chicken", "Mutton", "Fish", "Prawns", "Egg", "Tofu",
+        "Dal", "Chana Dal", "Moong Dal", "Toor Dal", "Masoor Dal",
+        "Rajma", "Chole",
+        "Aloo", "Tamatar", "Pyaz", "Palak", "Gobi",
+        "Matar", "Bhindi", "Baingan", "Gajar", "Shimla Mirch",
+        "Mushroom", "Methi", "Karela", "Lauki", "Bandh Gobi",
+        "Dahi", "Ghee", "Malai",
+        "Chawal", "Atta", "Suji", "Besan",
+        "Chai", "Moringa",
+        "Cashew", "Badam", "Nariyal"
     )
 
     private fun createMockRecipe(id: String, name: String, description: String): Recipe = Recipe(

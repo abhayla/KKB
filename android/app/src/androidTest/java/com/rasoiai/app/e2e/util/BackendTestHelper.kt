@@ -324,7 +324,7 @@ object BackendTestHelper {
         baseUrl: String,
         authToken: String,
         weekStartDate: String? = null,
-        maxRetries: Int = 2
+        maxRetries: Int = 1
     ): Boolean {
         Log.i(TAG, "Generating meal plan (this may take 4-7 seconds)...")
 
@@ -342,10 +342,12 @@ object BackendTestHelper {
         authToken: String,
         weekStartDate: String?
     ): Boolean? {
-        // Use longer timeout for meal generation (can take 4-7 seconds)
+        // Gemini AI generation can take 45-90s on cold start.
+        // Must be longer than Gemini's processing time to avoid orphaned requests
+        // that block uvicorn's single-threaded event loop.
         val client = createClient(
             connectTimeoutSeconds = 10,
-            readTimeoutSeconds = 30,  // Long timeout for AI generation
+            readTimeoutSeconds = 90,
             writeTimeoutSeconds = 10
         )
 
@@ -389,6 +391,47 @@ object BackendTestHelper {
             today.with(TemporalAdjusters.next(DayOfWeek.MONDAY))
         }
         return nextMonday.toString()  // Returns "yyyy-MM-dd" format
+    }
+
+    /**
+     * Retrieves the current week's meal plan from the backend WITHOUT triggering Gemini.
+     * Uses the GET /api/v1/meal-plans/current endpoint.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param authToken JWT Bearer token for authentication
+     * @return JSONObject containing the meal plan, or null if none exists
+     */
+    fun getCurrentMealPlan(baseUrl: String, authToken: String): JSONObject? {
+        Log.d(TAG, "Fetching current meal plan from: $baseUrl/api/v1/meal-plans/current")
+
+        return try {
+            retryBackendCall(maxRetries = 2) {
+                val client = createClient(readTimeoutSeconds = 15)
+
+                val request = Request.Builder()
+                    .url("$baseUrl/api/v1/meal-plans/current")
+                    .addHeader("Authorization", "Bearer $authToken")
+                    .get()
+                    .build()
+
+                client.newCall(request).execute().use { response ->
+                    if (response.isSuccessful) {
+                        val responseBody = response.body?.string() ?: return@use null
+                        Log.d(TAG, "getCurrentMealPlan: got response (${responseBody.length} chars)")
+                        JSONObject(responseBody)
+                    } else if (response.code == 404) {
+                        Log.d(TAG, "getCurrentMealPlan: no meal plan found (404)")
+                        null
+                    } else {
+                        Log.w(TAG, "getCurrentMealPlan failed: ${response.code} ${response.message}")
+                        null
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "getCurrentMealPlan exception: ${e.message}")
+            null
+        }
     }
 
     /**

@@ -484,6 +484,16 @@ fun RecipeRuleEntity.toDomain(): RecipeRule {
             }
         }
 
+    val mealSlotsList = mealSlots?.split(",")
+        ?.mapNotNull { value ->
+            try {
+                val trimmed = value.trim()
+                if (trimmed.isNotEmpty()) com.rasoiai.domain.model.MealType.fromValue(trimmed) else null
+            } catch (e: Exception) {
+                null
+            }
+        } ?: emptyList()
+
     return RecipeRule(
         id = id,
         type = RuleType.fromValue(type),
@@ -496,7 +506,7 @@ fun RecipeRuleEntity.toDomain(): RecipeRule {
             specificDays = frequencyDaysList
         ),
         enforcement = RuleEnforcement.fromValue(enforcement),
-        mealSlot = mealSlot?.let { com.rasoiai.domain.model.MealType.fromValue(it) },
+        mealSlots = mealSlotsList,
         isActive = isActive,
         createdAt = LocalDateTime.parse(createdAt, dateTimeFormatter),
         updatedAt = LocalDateTime.parse(updatedAt, dateTimeFormatter)
@@ -513,7 +523,7 @@ fun RecipeRule.toEntity(syncStatus: String = "SYNCED"): RecipeRuleEntity = Recip
     frequencyCount = frequency.count,
     frequencyDays = frequency.specificDays?.joinToString(",") { it.name },
     enforcement = enforcement.value,
-    mealSlot = mealSlot?.value,
+    mealSlots = if (mealSlots.isNotEmpty()) mealSlots.joinToString(",") { it.value } else null,
     isActive = isActive,
     syncStatus = syncStatus,
     createdAt = createdAt.format(dateTimeFormatter),
@@ -733,7 +743,7 @@ fun RecipeRuleDto.toEntity(): RecipeRuleEntity = RecipeRuleEntity(
     frequencyCount = frequencyCount,
     frequencyDays = frequencyDays,
     enforcement = enforcement,
-    mealSlot = mealSlot,
+    mealSlots = mealSlot, // API sends single meal_slot, stored as comma-separated mealSlots
     isActive = isActive,
     syncStatus = syncStatus,
     createdAt = createdAt,
@@ -753,7 +763,7 @@ fun RecipeRuleEntity.toSyncItem(): RecipeRuleSyncItem = RecipeRuleSyncItem(
     frequencyCount = frequencyCount,
     frequencyDays = frequencyDays,
     enforcement = enforcement,
-    mealSlot = mealSlot,
+    mealSlot = mealSlots, // Entity stores as mealSlots, API expects meal_slot
     isActive = isActive,
     localUpdatedAt = updatedAt
 )

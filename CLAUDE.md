@@ -18,7 +18,7 @@ uvicorn app.main:app --reload      # Start server → http://localhost:8000/docs
 PYTHONPATH=. pytest                # Run all tests
 ```
 
-**Key numbers:** 3,580 recipes | 227 backend tests | 319 Android unit tests | 400+ UI tests | 65+ E2E tests | 15 screens
+**Key numbers:** 3,580 recipes | 247 backend tests | 319 Android unit tests | 400+ UI tests | 65+ E2E tests | 15 screens
 
 **Session context:** Check `docs/CONTINUE_PROMPT.md` for active work between sessions.
 
@@ -239,6 +239,7 @@ PYTHONPATH=. python scripts/seed_festivals.py
 PYTHONPATH=. python scripts/seed_achievements.py
 PYTHONPATH=. python scripts/import_recipes_postgres.py
 PYTHONPATH=. python scripts/sync_config_postgres.py
+PYTHONPATH=. python scripts/backfill_ai_recipe_catalog.py  # Backfill catalog from historical meal plans
 ```
 
 ### Environment Setup
@@ -295,12 +296,12 @@ Permissions: read-only (contents, PRs, issues, actions). Uses `anthropics/claude
 
 | Platform | Tests | Framework |
 |----------|-------|-----------|
-| Backend | 227 | pytest |
+| Backend | 247 | pytest |
 | Android Unit | 319 | JUnit + MockK |
 | Android UI | 400+ | Compose UI Testing |
 | Android E2E | 65+ | Compose UI Testing + Hilt + Real API |
 
-### Backend Tests (227 total)
+### Backend Tests (247 total)
 
 | Test File | Tests | Purpose |
 |-----------|-------|---------|
@@ -311,13 +312,15 @@ Permissions: read-only (contents, PRs, issues, actions). Uses `anthropics/claude
 | `test_ai_meal_service.py` | 22 | AI meal generation service |
 | `test_chat_api.py` | 12 | Chat API endpoints |
 | `test_recipe_cache.py` | 35 | Recipe cache operations |
-| `test_recipe_rules_api.py` | 20 | Recipe rules API endpoints |
+| `test_recipe_rules_api.py` | 21 | Recipe rules API endpoints |
 | `test_recipe_search.py` | 10 | Recipe search functionality |
 | `test_notification_service.py` | 19 | Notification service logic |
 | `test_notification_api.py` | 11 | Notification API endpoints |
 | `test_migrate_legacy_rules.py` | 11 | Legacy rule migration |
-| `test_ai_recipe_catalog.py` | 16 | AI recipe catalog (dedup, dietary filter, search) |
-| `test_sharma_recipe_rules.py` | 10 | Sharma family recipe rules E2E (FR-011) |
+| `test_ai_recipe_catalog.py` | 17 | AI recipe catalog (dedup, dietary filter, search) |
+| `test_sharma_recipe_rules.py` | 13 | Sharma family recipe rules E2E (FR-011, FR-014) |
+| `test_recipe_rules_dedup.py` | 6 | Recipe rules duplicate prevention (FR-012) |
+| `test_family_members_api.py` | 9 | Family members CRUD API (FR-013) |
 
 ### Android UI Tests
 
@@ -391,6 +394,19 @@ class FeatureViewModelTest {
 6. Home screen displays meal cards
 7. Room DB caches meal plan for offline access
 
+### Backend Test Fixtures
+
+Defined in `backend/tests/conftest.py`:
+
+| Fixture | Purpose |
+|---------|---------|
+| `db_session` | Async SQLAlchemy session (SQLite in-memory) |
+| `test_user` | Creates a test user in the DB |
+| `client` | Authenticated AsyncClient (auth dependency overridden) |
+| `unauthenticated_client` | AsyncClient with DB override only (for testing 401 responses) |
+
+**Important:** When adding new models, import them in `conftest.py` so SQLite creates the tables. Use `unauthenticated_client` for tests that verify auth is required.
+
 ## Domain Models
 
 Located in `domain/src/main/java/com/rasoiai/domain/model/`:
@@ -412,20 +428,59 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| **Auth** | | |
 | POST | `/api/v1/auth/firebase` | Exchange Firebase token for JWT |
+| POST | `/api/v1/auth/refresh` | Refresh access token |
+| **Users** | | |
 | GET | `/api/v1/users/me` | Get current user |
 | PUT | `/api/v1/users/preferences` | Update preferences |
+| **Meal Plans** | | |
 | POST | `/api/v1/meal-plans/generate` | Generate meal plan (AI) |
 | GET | `/api/v1/meal-plans/current` | Get current week's plan |
-| POST | `/api/v1/meal-plans/{planId}/items/{itemId}/swap` | Swap meal |
+| GET | `/api/v1/meal-plans/{plan_id}` | Get specific meal plan |
+| POST | `/api/v1/meal-plans/{plan_id}/items/{item_id}/swap` | Swap meal |
+| PUT | `/api/v1/meal-plans/{plan_id}/items/{item_id}/lock` | Lock meal item |
+| DELETE | `/api/v1/meal-plans/{plan_id}/items/{item_id}` | Delete meal item |
+| **Recipes** | | |
+| GET | `/api/v1/recipes/search` | Search recipes |
 | GET | `/api/v1/recipes/ai-catalog/search` | Search AI-cataloged recipes (for Recipe Rules) |
-| GET | `/api/v1/recipes/{id}` | Get recipe details |
+| GET | `/api/v1/recipes/{recipe_id}` | Get recipe details |
+| GET | `/api/v1/recipes/{recipe_id}/scale` | Scale recipe ingredients |
+| **Grocery** | | |
 | GET | `/api/v1/grocery` | Get grocery list |
+| GET | `/api/v1/grocery/whatsapp` | Grocery list in WhatsApp format |
+| **Chat** | | |
 | POST | `/api/v1/chat/message` | AI chat with tool calling |
 | POST | `/api/v1/chat/image` | Food photo analysis (Gemini Vision) |
+| GET | `/api/v1/chat/history` | Chat message history |
+| **Recipe Rules** | | |
 | GET | `/api/v1/recipe-rules` | List user's recipe rules |
 | POST | `/api/v1/recipe-rules` | Create recipe rule |
-| DELETE | `/api/v1/recipe-rules/{id}` | Delete recipe rule |
+| DELETE | `/api/v1/recipe-rules/{rule_id}` | Delete recipe rule |
+| POST | `/api/v1/recipe-rules/sync` | Batch sync rules and nutrition goals (Last-Write-Wins) |
+| **Family Members** | | |
+| GET | `/api/v1/family-members` | List family members |
+| POST | `/api/v1/family-members` | Create family member |
+| PUT | `/api/v1/family-members/{member_id}` | Update family member |
+| DELETE | `/api/v1/family-members/{member_id}` | Delete family member |
+| **Nutrition Goals** | | |
+| GET | `/api/v1/nutrition-goals` | List nutrition goals |
+| POST | `/api/v1/nutrition-goals` | Create nutrition goal (409 on duplicate category) |
+| GET | `/api/v1/nutrition-goals/{goal_id}` | Get specific nutrition goal |
+| PUT | `/api/v1/nutrition-goals/{goal_id}` | Update nutrition goal |
+| DELETE | `/api/v1/nutrition-goals/{goal_id}` | Delete nutrition goal |
+| **Festivals** | | |
+| GET | `/api/v1/festivals/upcoming` | Upcoming festivals with fasting days |
+| **Stats** | | |
+| GET | `/api/v1/stats/streak` | Cooking streak statistics |
+| GET | `/api/v1/stats/monthly` | Monthly cooking statistics |
+| **Notifications** | | |
+| GET | `/api/v1/notifications` | List notifications |
+| POST | `/api/v1/notifications/fcm-token` | Register FCM token |
+| DELETE | `/api/v1/notifications/fcm-token` | Remove FCM token |
+| PUT | `/api/v1/notifications/read-all` | Mark all notifications read |
+| PUT | `/api/v1/notifications/{notification_id}/read` | Mark single notification read |
+| DELETE | `/api/v1/notifications/{notification_id}` | Delete notification |
 
 API docs: `http://localhost:8000/docs`
 
@@ -434,10 +489,23 @@ API docs: `http://localhost:8000/docs`
 |------|---------|
 | `app/db/postgres.py` | PostgreSQL connection pool |
 | `app/services/ai_meal_service.py` | Gemini-powered AI meal generation |
+| `app/services/ai_recipe_catalog_service.py` | AI recipe catalog (dedup, dietary filter, search) |
+| `app/services/auth_service.py` | User authentication and JWT token management |
+| `app/services/chat_service.py` | Chat message persistence and retrieval |
+| `app/services/config_service.py` | YAML configuration loading |
+| `app/services/festival_service.py` | Festival/fasting day lookup |
+| `app/services/grocery_service.py` | Grocery list generation from meal plans |
+| `app/services/meal_plan_service.py` | Meal plan CRUD operations |
+| `app/services/meal_plan_chat_service.py` | Meal plan queries/mutations from chat interface |
+| `app/services/notification_service.py` | Notification management and FCM |
 | `app/services/preference_update_service.py` | INCLUDE/EXCLUDE rules |
+| `app/services/recipe_service.py` | Recipe search and retrieval |
+| `app/services/stats_service.py` | Cooking streak and monthly statistics |
+| `app/services/user_service.py` | User profile management |
 | `app/ai/chat_assistant.py` | Tool calling orchestration |
 | `app/ai/gemini_client.py` | Google Gemini API for vision and text generation |
-| `app/services/ai_recipe_catalog_service.py` | AI recipe catalog (dedup, dietary filter, search) |
+| `app/ai/claude_client.py` | Anthropic Claude API client with tool calling support |
+| `app/api/v1/endpoints/` | All API routers (auth, chat, festivals, grocery, meal_plans, notifications, recipe_rules, recipes, stats, users, family_members) |
 
 ## Meal Generation
 
@@ -489,7 +557,7 @@ AI-powered meal planning using Google Gemini, with YAML config for pairing guida
 
 | Pattern | Reference | Key Features |
 |---------|-----------|--------------|
-| Tabs + Bottom Sheets | `presentation/reciperules/` | 4-tab layout, modal sheets |
+| Tabs + Bottom Sheets | `presentation/reciperules/` | 2-tab layout (Rules, Nutrition), modal sheets |
 | Form-based Settings | `presentation/settings/` | Sections, toggles |
 | Bottom Navigation | `presentation/home/` | RasoiBottomNavigation |
 | List with Filtering | `presentation/favorites/` | Tab/list pattern |
@@ -510,6 +578,7 @@ AI-powered meal planning using Google Gemini, with YAML config for pairing guida
 | Screenshot "Could not process image" | Use PNG format, avoid fullPage on long pages, limit to 1280x720, verify file saved before reading. See Screenshots rule above. |
 | 4 auth tests fail | Pre-existing: `conftest.py` globally overrides auth dependency, causing 4 failures in `test_auth.py`. Not a regression. |
 | OnboardingViewModelTest won't compile | Pre-existing: missing `generateMealPlanUseCase` constructor param. Not a regression. |
+| Festivals/Stats no tests | Endpoints exist but have no dedicated test files. Not a regression. |
 
 ## Rules for Claude
 

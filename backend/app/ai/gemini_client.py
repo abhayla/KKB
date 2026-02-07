@@ -87,7 +87,7 @@ Format your response in a conversational, easy-to-read way."""
         }
 
         # Generate response
-        response = model.generate_content([
+        response = await model.generate_content_async([
             prompt or default_prompt,
             image_part
         ])
@@ -143,7 +143,7 @@ async def generate_text(
             response_mime_type="application/json",
         )
 
-        response = model.generate_content(
+        response = await model.generate_content_async(
             prompt,
             generation_config=generation_config,
         )

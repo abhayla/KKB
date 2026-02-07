@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.rasoiai.data.local.entity.KnownIngredientEntity
 import com.rasoiai.data.local.entity.NutritionGoalEntity
 import com.rasoiai.data.local.entity.RecipeRuleEntity
 import kotlinx.coroutines.flow.Flow
@@ -57,15 +58,13 @@ interface RecipeRulesDao {
         """SELECT * FROM recipe_rules
         WHERE UPPER(targetName) = UPPER(:targetName)
         AND UPPER(action) = UPPER(:action)
-        AND UPPER(type) = UPPER(:targetType)
-        AND (CASE WHEN :mealSlot IS NULL THEN mealSlot IS NULL ELSE UPPER(mealSlot) = UPPER(:mealSlot) END)
+        AND (CASE WHEN :mealSlots IS NULL THEN mealSlots IS NULL ELSE UPPER(mealSlots) = UPPER(:mealSlots) END)
         LIMIT 1"""
     )
     suspend fun findDuplicate(
         targetName: String,
         action: String,
-        targetType: String,
-        mealSlot: String?
+        mealSlots: String?
     ): RecipeRuleEntity?
 
     // Sync-related queries
@@ -137,4 +136,12 @@ interface RecipeRulesDao {
 
     @Query("UPDATE nutrition_goals SET syncStatus = :syncStatus WHERE id IN (:goalIds)")
     suspend fun updateNutritionGoalsSyncStatus(goalIds: List<String>, syncStatus: String)
+
+    // ==================== Known Ingredients ====================
+
+    @Query("SELECT name FROM known_ingredients WHERE name LIKE '%' || :query || '%' COLLATE NOCASE OR :query LIKE '%' || name || '%' LIMIT 10")
+    fun searchKnownIngredients(query: String): Flow<List<String>>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertKnownIngredients(ingredients: List<KnownIngredientEntity>)
 }

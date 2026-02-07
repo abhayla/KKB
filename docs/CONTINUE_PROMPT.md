@@ -9,11 +9,17 @@ Use this prompt to start a new conversation/context and continue the project fro
 ```
 I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 
-## Current State: Requirements Documentation Complete
+## Current State: Feature Implementation (FR-010 through FR-013 Complete)
 
 Backend running on PostgreSQL with SQLAlchemy async ORM. Android app with Compose UI, Hilt DI, Room DB. Full E2E tests passing with real API calls.
 
-**Latest Session (Session 40): Comprehensive Requirements Documentation**
+**Latest Sessions (Post-Session 40): Feature Implementation**
+- **FR-010 (Issue #47):** AI Recipe Catalog — shared recipe search for Recipe Rules (16 backend tests)
+- **FR-011 (Issue #48):** Sharma Family Recipe Rules Test Suite — 10 backend tests, Playwright verification
+- **FR-012 (Issue #49):** Recipe Rules Duplicate Prevention & Case Normalization — Pydantic UPPERCASE validators, 409 CONFLICT on duplicate, Alembic migration, Android DAO/ViewModel support
+- **FR-013 (Issue #50):** Sync Missing Preferences + Family Members CRUD — primary_diet→dietary_type, busy_days, weekday/weekend cooking time, /api/v1/family-members CRUD
+
+**Session 40: Comprehensive Requirements Documentation**
 - Created **single source of truth** requirements documentation at `docs/requirements/`
 - **12 screen requirement files** with BDD-style (Given/When/Then) format
 - **~525 requirements** documented across all screens
@@ -45,6 +51,7 @@ docs/requirements/
 ```
 
 **Previous Sessions:**
+- Session 40: Requirements Documentation (12 screen files, ~525 requirements)
 - Session 39: Issues #13 (Photo Attachment) and #16 (Items per Meal Dialog)
 - Session 38: Home Screen E2E Tests (24 tests)
 - Session 37: E2E Test Reliability Phase 2
@@ -52,7 +59,7 @@ docs/requirements/
 **Test Results Summary:**
 | Platform | Tests | Status |
 |----------|-------|--------|
-| Backend | 170 | PASS |
+| Backend | 240 | PASS |
 | Android Unit | 319 | PASS |
 | Android UI | 400+ | PASS |
 | Android E2E | 65+ | PASS |
@@ -103,7 +110,7 @@ Each requirement in the documentation follows this BDD-style format:
 - Then: [outcome]
 - And: [additional outcomes]
 
-### Backend API Endpoints (27 total)
+### Backend API Endpoints (32 total)
 
 | Router | Endpoints | Purpose |
 |--------|-----------|---------|
@@ -116,6 +123,8 @@ Each requirement in the documentation follows this BDD-style format:
 | chat | 2 | AI chat, image analysis |
 | stats | 3 | Cooking statistics |
 | notifications | 3 | Push notifications |
+| family_members | 4 | Family member CRUD |
+| nutrition_goals | 5 | Nutrition goals CRUD |
 ```
 
 ---
@@ -133,6 +142,10 @@ Each requirement in the documentation follows this BDD-style format:
 | UI Tests | DONE | ~400 tests |
 | Photo Attachment | DONE | Issue #13 - Gemini Vision |
 | Items per Meal Dialog | DONE | Issue #16 - Settings |
+| AI Recipe Catalog | DONE | Issue #47 (FR-010) - Shared recipe search |
+| Sharma Recipe Rules Tests | DONE | Issue #48 (FR-011) - 10 backend tests |
+| Recipe Rules Dedup | DONE | Issue #49 (FR-012) - Case normalization, 409 on dup |
+| Family Members CRUD | DONE | Issue #50 (FR-013) - Preferences sync + CRUD |
 
 ---
 
@@ -176,21 +189,26 @@ Each requirement in the documentation follows this BDD-style format:
 
 ## TEST SUMMARY
 
-### Backend Tests (170 total)
+### Backend Tests (240 total)
 
 | Test File | Tests | Purpose |
 |-----------|-------|---------|
 | `test_health.py` | 2 | Health check |
-| `test_auth.py` | 3 | Firebase auth |
+| `test_auth.py` | 6 | Firebase auth |
 | `test_preference_service.py` | 26 | PreferenceUpdateService |
 | `test_chat_integration.py` | 27 | Chat tool calling |
-| `test_meal_generation.py` | 22 | Data structures |
-| `test_meal_generation_integration.py` | 29 | Rule enforcement |
-| `test_meal_generation_e2e.py` | 14 | PostgreSQL E2E |
+| `test_ai_meal_service.py` | 22 | AI meal generation service |
 | `test_chat_api.py` | 12 | Chat API |
 | `test_recipe_cache.py` | 35 | Recipe cache |
+| `test_recipe_rules_api.py` | 21 | Recipe rules API |
+| `test_recipe_search.py` | 10 | Recipe search |
 | `test_notification_service.py` | 19 | Notification service |
-| `test_notification_api.py` | 10 | Notification API |
+| `test_notification_api.py` | 11 | Notification API |
+| `test_migrate_legacy_rules.py` | 11 | Legacy rule migration |
+| `test_ai_recipe_catalog.py` | 17 | AI recipe catalog (FR-010) |
+| `test_sharma_recipe_rules.py` | 10 | Sharma family rules (FR-011) |
+| `test_recipe_rules_dedup.py` | 6 | Recipe rules dedup (FR-012) |
+| `test_family_members_api.py` | 9 | Family members CRUD (FR-013) |
 
 ### Android Tests
 
@@ -222,10 +240,17 @@ DEBUG=true
 
 ## PREVIOUS SESSIONS SUMMARY
 
-### Session 40: Requirements Documentation (Current)
+### Post-Session 40: Feature Implementation (Current)
+- FR-010 (Issue #47): AI Recipe Catalog
+- FR-011 (Issue #48): Sharma Recipe Rules Test Suite
+- FR-012 (Issue #49): Recipe Rules Dedup & Case Normalization
+- FR-013 (Issue #50): Sync Missing Preferences + Family Members CRUD
+- Auth test fix (Issue #51): unauthenticated_client fixture
+
+### Session 40: Requirements Documentation
 - Created comprehensive requirements documentation system
 - 12 screen files with ~525 BDD-style requirements
-- API requirements file for 27 backend endpoints
+- API requirements file for 32 backend endpoints
 - Archived original PRD and wireframes
 - README.md index with navigation
 
@@ -269,6 +294,6 @@ DEBUG=true
 
 ---
 
-*Last Updated: February 4, 2026*
-*Session 40: Requirements Documentation (~525 requirements across 12 screen files)*
-*3,580 recipes. 170 backend tests. 319 Android unit tests. 65+ Android E2E tests. ~400 UI tests.*
+*Last Updated: February 6, 2026*
+*Post-Session 40: FR-010 through FR-013 implemented. 240 backend tests. 319 Android unit tests. 65+ E2E tests. ~400 UI tests.*
+*3,580 recipes. ~525 requirements across 12 screen files.*

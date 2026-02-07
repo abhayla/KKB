@@ -9,11 +9,6 @@ import com.rasoiai.app.e2e.robots.HomeRobot
 import com.rasoiai.app.e2e.robots.RecipeRulesRobot
 import com.rasoiai.app.e2e.robots.SettingsRobot
 import com.rasoiai.app.e2e.util.BackendTestHelper
-import com.rasoiai.domain.model.CuisineType
-import com.rasoiai.domain.model.DayOfWeek
-import com.rasoiai.domain.model.PrimaryDiet
-import com.rasoiai.domain.model.SpiceLevel
-import com.rasoiai.domain.model.UserPreferences
 import dagger.hilt.android.testing.HiltAndroidTest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -56,10 +51,8 @@ class SharmaRecipeRulesVerificationTest : BaseE2ETest() {
     @Before
     override fun setUp() {
         super.setUp()
-        // Custom auth setup: authenticate + onboard WITHOUT generating a meal plan.
-        // generateMealPlan() triggers Gemini AI which blocks uvicorn's single-threaded
-        // event loop for ~45s, causing SocketTimeoutException. Recipe Rules tests
-        // don't need meal plans — they just need an authenticated, onboarded user.
+        // Skip meal plan generation — Recipe Rules tests don't need meal plan data.
+        // This avoids Gemini-induced SocketTimeoutException in setUp().
         setUpAuthenticatedStateWithoutMealPlan()
         clearRecipeRulesAndGoals()  // Prevent duplicate detection from prior runs
 
@@ -68,54 +61,8 @@ class SharmaRecipeRulesVerificationTest : BaseE2ETest() {
         recipeRulesRobot = RecipeRulesRobot(composeTestRule)
     }
 
-    /**
-     * Authenticates and marks user as onboarded WITHOUT generating a meal plan.
-     * This avoids the Gemini-induced SocketTimeoutException in setUpAuthenticatedState().
-     */
-    private fun setUpAuthenticatedStateWithoutMealPlan() {
-        val authResult = BackendTestHelper.authenticateWithRetry(
-            baseUrl = BACKEND_BASE_URL,
-            firebaseToken = "fake-firebase-token",
-            maxRetries = 3
-        )
-
-        fakeGoogleAuthClient.simulateSignedIn()
-
-        if (authResult != null) {
-            runBlocking {
-                userPreferencesDataStore.saveAuthTokens(
-                    accessToken = authResult.accessToken,
-                    refreshToken = "",
-                    expiresInSeconds = 3600,
-                    userId = authResult.userId
-                )
-                // Use NON_VEGETARIAN diet to avoid diet conflict warnings
-                // when adding Eggs and Chicken as INCLUDE rules (Issue #42 conflict check)
-                userPreferencesDataStore.saveOnboardingComplete(
-                    UserPreferences(
-                        householdSize = 3,
-                        familyMembers = emptyList(),
-                        primaryDiet = PrimaryDiet.NON_VEGETARIAN,
-                        dietaryRestrictions = emptyList(),
-                        cuisinePreferences = listOf(CuisineType.NORTH, CuisineType.WEST),
-                        spiceLevel = SpiceLevel.MEDIUM,
-                        dislikedIngredients = listOf("Karela", "Baingan"),
-                        weekdayCookingTimeMinutes = 30,
-                        weekendCookingTimeMinutes = 60,
-                        busyDays = listOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY),
-                        itemsPerMeal = 2,
-                        strictAllergenMode = true,
-                        strictDietaryMode = true,
-                        allowRecipeRepeat = false
-                    )
-                )
-            }
-            Log.i(TAG, "Authenticated without meal plan: userId=${authResult.userId}")
-        } else {
-            Log.e(TAG, "Failed to authenticate with backend")
-            BackendTestHelper.diagnoseConnection(BACKEND_BASE_URL)
-        }
-    }
+    // Uses setUpAuthenticatedStateWithoutMealPlan() from BaseE2ETest.
+    // This avoids the Gemini-induced SocketTimeoutException.
 
     /**
      * Full E2E test: enter 5 recipe rules + 1 nutrition goal → verify UI + Room + Backend.

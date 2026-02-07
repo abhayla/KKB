@@ -30,29 +30,42 @@ import java.time.DayOfWeek
 import javax.inject.Inject
 
 /**
- * Tab types for the Recipe Rules screen.
+ * Tab types for the Recipe Rules screen (consolidated from 4 to 2 tabs).
  */
 enum class RulesTab(val title: String, val emoji: String) {
-    RECIPE("Recipe", "📖"),
-    INGREDIENT("Ingredient", "🥕"),
-    MEAL_SLOT("Meal-Slot", "🍽️"),
-    NUTRITION("Nutrition", "🥗");
+    RULES("Rules", "\uD83C\uDF7D\uFE0F"),
+    NUTRITION("Nutrition", "\uD83E\uDD57");
+}
 
-    companion object {
-        fun fromRuleType(ruleType: RuleType): RulesTab = when (ruleType) {
-            RuleType.RECIPE -> RECIPE
-            RuleType.INGREDIENT -> INGREDIENT
-            RuleType.MEAL_SLOT -> MEAL_SLOT
-            RuleType.NUTRITION -> NUTRITION
+/**
+ * Represents a search result item - either a recipe or an ingredient.
+ */
+sealed class SearchResultItem {
+    data class RecipeItem(val recipe: Recipe) : SearchResultItem()
+    data class IngredientItem(val name: String) : SearchResultItem()
+
+    val displayName: String
+        get() = when (this) {
+            is RecipeItem -> recipe.name
+            is IngredientItem -> name
         }
-    }
 
-    fun toRuleType(): RuleType = when (this) {
-        RECIPE -> RuleType.RECIPE
-        INGREDIENT -> RuleType.INGREDIENT
-        MEAL_SLOT -> RuleType.MEAL_SLOT
-        NUTRITION -> RuleType.NUTRITION
-    }
+    val isRecipe: Boolean
+        get() = this is RecipeItem
+
+    val emoji: String
+        get() = when (this) {
+            is RecipeItem -> "\uD83D\uDCD6"
+            is IngredientItem -> "\uD83E\uDD55"
+        }
+}
+
+/**
+ * Meal slot selection mode for the bottom sheet.
+ */
+enum class MealSlotMode {
+    ANY,
+    SPECIFIC
 }
 
 /**
@@ -61,10 +74,8 @@ enum class RulesTab(val title: String, val emoji: String) {
 data class RecipeRulesUiState(
     val isLoading: Boolean = true,
     val errorMessage: String? = null,
-    val selectedTab: RulesTab = RulesTab.RECIPE,
-    val recipeRules: List<RecipeRule> = emptyList(),
-    val ingredientRules: List<RecipeRule> = emptyList(),
-    val mealSlotRules: List<RecipeRule> = emptyList(),
+    val selectedTab: RulesTab = RulesTab.RULES,
+    val allRules: List<RecipeRule> = emptyList(),
     val nutritionGoals: List<NutritionGoal> = emptyList(),
 
     // Add/Edit Rule state
@@ -76,23 +87,21 @@ data class RecipeRulesUiState(
     // Form fields for adding/editing rules
     val selectedAction: RuleAction = RuleAction.INCLUDE,
     val searchQuery: String = "",
-    val selectedTargetId: String? = null,
-    val selectedTargetName: String = "",
+    val selectedTarget: SearchResultItem? = null,
     val selectedFrequencyType: FrequencyType = FrequencyType.TIMES_PER_WEEK,
     val selectedFrequencyCount: Int = 1,
     val selectedDays: Set<DayOfWeek> = emptySet(),
-    val selectedMealSlot: MealType? = null,
+    val mealSlotMode: MealSlotMode = MealSlotMode.ANY,
+    val selectedMealSlots: Set<MealType> = emptySet(),
     val selectedEnforcement: RuleEnforcement = RuleEnforcement.REQUIRED,
 
     // Form fields for nutrition goals
     val selectedFoodCategory: FoodCategory? = null,
     val weeklyTarget: Int = 3,
 
-    // Search results
-    val recipeSearchResults: List<Recipe> = emptyList(),
-    val ingredientSearchResults: List<String> = emptyList(),
-    val popularRecipes: List<Recipe> = emptyList(),
-    val popularIngredients: List<String> = emptyList(),
+    // Search results (mixed)
+    val searchResults: List<SearchResultItem> = emptyList(),
+    val popularItems: List<SearchResultItem> = emptyList(),
     val availableFoodCategories: List<FoodCategory> = emptyList(),
 
     // Delete confirmation
@@ -104,28 +113,27 @@ data class RecipeRulesUiState(
     val conflictWarning: String? = null,
     val hasConflict: Boolean = false
 ) {
-    val rulesForCurrentTab: List<RecipeRule>
-        get() = when (selectedTab) {
-            RulesTab.RECIPE -> recipeRules
-            RulesTab.INGREDIENT -> ingredientRules
-            RulesTab.MEAL_SLOT -> mealSlotRules
-            RulesTab.NUTRITION -> emptyList()
+    /**
+     * Rules sorted: active first (newest first), then paused (newest first).
+     */
+    val sortedRules: List<RecipeRule>
+        get() {
+            val active = allRules.filter { it.isActive }.sortedByDescending { it.createdAt }
+            val paused = allRules.filter { !it.isActive }.sortedByDescending { it.createdAt }
+            return active + paused
         }
 
-    val currentTabCount: Int
-        get() = when (selectedTab) {
-            RulesTab.RECIPE -> recipeRules.size
-            RulesTab.INGREDIENT -> ingredientRules.size
-            RulesTab.MEAL_SLOT -> mealSlotRules.size
-            RulesTab.NUTRITION -> nutritionGoals.size
-        }
+    val rulesCount: Int
+        get() = allRules.size
 
     val isEditing: Boolean
         get() = editingRule != null || editingNutritionGoal != null
 
     val canSaveRule: Boolean
-        get() = selectedTargetName.isNotBlank() && (
+        get() = selectedTarget != null && (
             selectedFrequencyType != FrequencyType.SPECIFIC_DAYS || selectedDays.isNotEmpty()
+        ) && (
+            mealSlotMode == MealSlotMode.ANY || selectedMealSlots.isNotEmpty()
         )
 
     val canSaveNutritionGoal: Boolean
@@ -184,13 +192,18 @@ class RecipeRulesViewModel @Inject constructor(
             // Load popular recipes and ingredients for suggestions
             launch {
                 repository.getPopularRecipes().collect { recipes ->
-                    _uiState.update { it.copy(popularRecipes = recipes) }
-                }
-            }
-
-            launch {
-                repository.getPopularIngredients().collect { ingredients ->
-                    _uiState.update { it.copy(popularIngredients = ingredients) }
+                    val recipeItems = recipes.map { SearchResultItem.RecipeItem(it) }
+                    repository.getPopularIngredients().first().let { ingredients ->
+                        val ingredientItems = ingredients.map { SearchResultItem.IngredientItem(it) }
+                        // Interleave recipe and ingredient suggestions
+                        val mixed = mutableListOf<SearchResultItem>()
+                        val maxSize = maxOf(recipeItems.size, ingredientItems.size)
+                        for (i in 0 until maxSize) {
+                            if (i < recipeItems.size) mixed.add(recipeItems[i])
+                            if (i < ingredientItems.size) mixed.add(ingredientItems[i])
+                        }
+                        _uiState.update { it.copy(popularItems = mixed.take(8)) }
+                    }
                 }
             }
 
@@ -200,22 +213,10 @@ class RecipeRulesViewModel @Inject constructor(
                 }
             }
 
-            // Load rules by type
+            // Load all rules (unified)
             launch {
-                repository.getRulesByType(RuleType.RECIPE).collect { rules ->
-                    _uiState.update { it.copy(recipeRules = rules) }
-                }
-            }
-
-            launch {
-                repository.getRulesByType(RuleType.INGREDIENT).collect { rules ->
-                    _uiState.update { it.copy(ingredientRules = rules) }
-                }
-            }
-
-            launch {
-                repository.getRulesByType(RuleType.MEAL_SLOT).collect { rules ->
-                    _uiState.update { it.copy(mealSlotRules = rules) }
+                repository.getAllRules().collect { rules ->
+                    _uiState.update { it.copy(allRules = rules) }
                 }
             }
 
@@ -248,27 +249,50 @@ class RecipeRulesViewModel @Inject constructor(
                     editingRule = null,
                     selectedAction = RuleAction.INCLUDE,
                     searchQuery = "",
-                    selectedTargetId = null,
-                    selectedTargetName = "",
+                    selectedTarget = null,
                     selectedFrequencyType = FrequencyType.TIMES_PER_WEEK,
                     selectedFrequencyCount = 1,
                     selectedDays = emptySet(),
-                    selectedMealSlot = if (currentTab == RulesTab.MEAL_SLOT) MealType.BREAKFAST else null,
+                    mealSlotMode = MealSlotMode.ANY,
+                    selectedMealSlots = emptySet(),
                     selectedEnforcement = RuleEnforcement.REQUIRED,
-                    recipeSearchResults = emptyList(),
-                    ingredientSearchResults = emptyList()
+                    searchResults = emptyList(),
+                    conflictWarning = null,
+                    hasConflict = false
                 )
             }
         }
     }
 
     fun showEditRuleSheet(rule: RecipeRule) {
-        val frequencyType = when {
-            rule.frequency.type == com.rasoiai.domain.model.FrequencyType.DAILY -> FrequencyType.DAILY
-            rule.frequency.type == com.rasoiai.domain.model.FrequencyType.TIMES_PER_WEEK -> FrequencyType.TIMES_PER_WEEK
-            rule.frequency.type == com.rasoiai.domain.model.FrequencyType.SPECIFIC_DAYS -> FrequencyType.SPECIFIC_DAYS
-            rule.frequency.type == com.rasoiai.domain.model.FrequencyType.NEVER -> FrequencyType.NEVER
-            else -> FrequencyType.TIMES_PER_WEEK
+        val frequencyType = when (rule.frequency.type) {
+            com.rasoiai.domain.model.FrequencyType.DAILY -> FrequencyType.DAILY
+            com.rasoiai.domain.model.FrequencyType.TIMES_PER_WEEK -> FrequencyType.TIMES_PER_WEEK
+            com.rasoiai.domain.model.FrequencyType.SPECIFIC_DAYS -> FrequencyType.SPECIFIC_DAYS
+            com.rasoiai.domain.model.FrequencyType.NEVER -> FrequencyType.NEVER
+        }
+
+        val target: SearchResultItem = if (rule.type == RuleType.RECIPE || rule.type == RuleType.MEAL_SLOT) {
+            SearchResultItem.RecipeItem(
+                Recipe(
+                    id = rule.targetId,
+                    name = rule.targetName,
+                    description = "",
+                    imageUrl = null,
+                    prepTimeMinutes = 0,
+                    cookTimeMinutes = 0,
+                    servings = 0,
+                    difficulty = com.rasoiai.domain.model.Difficulty.MEDIUM,
+                    cuisineType = com.rasoiai.domain.model.CuisineType.NORTH,
+                    mealTypes = emptyList(),
+                    dietaryTags = emptyList(),
+                    ingredients = emptyList(),
+                    instructions = emptyList(),
+                    nutrition = null
+                )
+            )
+        } else {
+            SearchResultItem.IngredientItem(rule.targetName)
         }
 
         _uiState.update {
@@ -277,12 +301,12 @@ class RecipeRulesViewModel @Inject constructor(
                 editingRule = rule,
                 selectedAction = rule.action,
                 searchQuery = "",
-                selectedTargetId = rule.targetId,
-                selectedTargetName = rule.targetName,
+                selectedTarget = target,
                 selectedFrequencyType = frequencyType,
                 selectedFrequencyCount = rule.frequency.count ?: 1,
                 selectedDays = rule.frequency.specificDays?.toSet() ?: emptySet(),
-                selectedMealSlot = rule.mealSlot,
+                mealSlotMode = if (rule.mealSlots.isEmpty()) MealSlotMode.ANY else MealSlotMode.SPECIFIC,
+                selectedMealSlots = rule.mealSlots.toSet(),
                 selectedEnforcement = rule.enforcement
             )
         }
@@ -339,9 +363,9 @@ class RecipeRulesViewModel @Inject constructor(
     // region Form Updates
 
     fun updateAction(action: RuleAction) {
-        // Clear conflict warning when switching to EXCLUDE (Issue #42)
-        val conflict = if (action == RuleAction.INCLUDE && _uiState.value.selectedTargetName.isNotBlank()) {
-            checkDietConflict(_uiState.value.selectedTargetName)
+        val target = _uiState.value.selectedTarget
+        val conflict = if (action == RuleAction.INCLUDE && target != null) {
+            checkDietConflict(target.displayName)
         } else {
             null
         }
@@ -360,49 +384,61 @@ class RecipeRulesViewModel @Inject constructor(
 
         if (query.isNotBlank()) {
             viewModelScope.launch {
-                val currentTab = _uiState.value.selectedTab
-                if (currentTab == RulesTab.RECIPE || currentTab == RulesTab.MEAL_SLOT) {
-                    val results = repository.searchRecipes(query).first()
-                    _uiState.update { it.copy(recipeSearchResults = results) }
-                } else if (currentTab == RulesTab.INGREDIENT) {
-                    val results = repository.searchIngredients(query).first()
-                    _uiState.update { it.copy(ingredientSearchResults = results) }
+                // Search both recipes and ingredients in parallel
+                val recipeResults = try {
+                    repository.searchRecipes(query).first()
+                } catch (e: Exception) {
+                    emptyList()
                 }
+                val ingredientResults = try {
+                    repository.searchIngredients(query).first()
+                } catch (e: Exception) {
+                    emptyList()
+                }
+
+                // Mix results: recipes first, then ingredients, max 8 total
+                val mixed = mutableListOf<SearchResultItem>()
+                val recipeItems = recipeResults.map { SearchResultItem.RecipeItem(it) }
+                val ingredientItems = ingredientResults.map { SearchResultItem.IngredientItem(it) }
+
+                // Interleave for variety
+                val maxSize = maxOf(recipeItems.size, ingredientItems.size)
+                for (i in 0 until maxSize) {
+                    if (i < recipeItems.size) mixed.add(recipeItems[i])
+                    if (i < ingredientItems.size) mixed.add(ingredientItems[i])
+                }
+
+                _uiState.update { it.copy(searchResults = mixed.take(8)) }
             }
         } else {
-            _uiState.update {
-                it.copy(recipeSearchResults = emptyList(), ingredientSearchResults = emptyList())
-            }
+            _uiState.update { it.copy(searchResults = emptyList()) }
         }
     }
 
-    fun selectRecipe(recipe: Recipe) {
-        _uiState.update {
-            it.copy(
-                selectedTargetId = recipe.id,
-                selectedTargetName = recipe.name,
-                searchQuery = recipe.name,
-                recipeSearchResults = emptyList()
-            )
-        }
-    }
-
-    fun selectIngredient(ingredient: String) {
-        // Check for diet conflicts when selecting INCLUDE action (Issue #42)
+    fun selectSearchResult(item: SearchResultItem) {
         val conflict = if (_uiState.value.selectedAction == RuleAction.INCLUDE) {
-            checkDietConflict(ingredient)
+            checkDietConflict(item.displayName)
         } else {
             null
         }
 
         _uiState.update {
             it.copy(
-                selectedTargetId = "ingredient-${ingredient.lowercase().replace(" ", "-")}",
-                selectedTargetName = ingredient,
-                searchQuery = ingredient,
-                ingredientSearchResults = emptyList(),
+                selectedTarget = item,
+                searchQuery = "",
+                searchResults = emptyList(),
                 conflictWarning = conflict,
                 hasConflict = conflict != null
+            )
+        }
+    }
+
+    fun clearSelectedTarget() {
+        _uiState.update {
+            it.copy(
+                selectedTarget = null,
+                conflictWarning = null,
+                hasConflict = false
             )
         }
     }
@@ -410,14 +446,6 @@ class RecipeRulesViewModel @Inject constructor(
     /**
      * Check if the selected ingredient conflicts with user's diet preferences.
      * Issue #42: Diet conflict detection for INCLUDE rules.
-     *
-     * High-priority conflicts detected:
-     * 1. Vegetarian diet + Non-veg ingredient (chicken, mutton, fish, etc.)
-     * 2. Vegetarian diet + Egg ingredient
-     * 3. Any allergy + Same ingredient as INCLUDE rule
-     *
-     * @param ingredient The ingredient name to check
-     * @return A warning message if conflict detected, null otherwise
      */
     private fun checkDietConflict(ingredient: String): String? {
         val prefs = userPreferences ?: return null
@@ -476,8 +504,24 @@ class RecipeRulesViewModel @Inject constructor(
         }
     }
 
-    fun updateMealSlot(mealType: MealType?) {
-        _uiState.update { it.copy(selectedMealSlot = mealType) }
+    fun updateMealSlotMode(mode: MealSlotMode) {
+        _uiState.update {
+            it.copy(
+                mealSlotMode = mode,
+                selectedMealSlots = if (mode == MealSlotMode.ANY) emptySet() else it.selectedMealSlots
+            )
+        }
+    }
+
+    fun toggleMealSlot(mealType: MealType) {
+        _uiState.update {
+            val newSlots = if (mealType in it.selectedMealSlots) {
+                it.selectedMealSlots - mealType
+            } else {
+                it.selectedMealSlots + mealType
+            }
+            it.copy(selectedMealSlots = newSlots)
+        }
     }
 
     fun updateEnforcement(enforcement: RuleEnforcement) {
@@ -496,9 +540,21 @@ class RecipeRulesViewModel @Inject constructor(
 
     // region Save Operations
 
+    /**
+     * Auto-infer the backend type based on the selected target and meal slots.
+     * See wireframe "Backend Type Auto-Inference" table.
+     */
+    private fun inferRuleType(target: SearchResultItem, mealSlots: List<MealType>): RuleType {
+        return when {
+            target is SearchResultItem.RecipeItem && mealSlots.isNotEmpty() -> RuleType.MEAL_SLOT
+            target is SearchResultItem.RecipeItem -> RuleType.RECIPE
+            else -> RuleType.INGREDIENT
+        }
+    }
+
     fun saveRule() {
         val state = _uiState.value
-        if (!state.canSaveRule) return
+        if (!state.canSaveRule || state.selectedTarget == null) return
 
         viewModelScope.launch {
             val frequency = when (state.selectedFrequencyType) {
@@ -508,15 +564,27 @@ class RecipeRulesViewModel @Inject constructor(
                 FrequencyType.NEVER -> RuleFrequency.NEVER
             }
 
+            val mealSlots = if (state.mealSlotMode == MealSlotMode.SPECIFIC) {
+                state.selectedMealSlots.sortedBy { it.ordinal }
+            } else {
+                emptyList()
+            }
+
+            val target = state.selectedTarget
+            val targetId = when (target) {
+                is SearchResultItem.RecipeItem -> target.recipe.id
+                is SearchResultItem.IngredientItem -> "ingredient-${target.name.lowercase().replace(" ", "-")}"
+            }
+
             val rule = RecipeRule(
                 id = state.editingRule?.id ?: "",
-                type = state.selectedTab.toRuleType(),
+                type = inferRuleType(target, mealSlots),
                 action = state.selectedAction,
-                targetId = state.selectedTargetId ?: "",
-                targetName = state.selectedTargetName,
+                targetId = targetId,
+                targetName = target.displayName,
                 frequency = frequency,
                 enforcement = state.selectedEnforcement,
-                mealSlot = state.selectedMealSlot,
+                mealSlots = mealSlots,
                 isActive = state.editingRule?.isActive ?: true
             )
 
@@ -532,7 +600,7 @@ class RecipeRulesViewModel @Inject constructor(
             }.onFailure { e ->
                 Timber.e(e, "Failed to save rule")
                 if (e is com.rasoiai.domain.model.DuplicateRuleException) {
-                    _uiState.update { it.copy(errorMessage = "This rule already exists") }
+                    _uiState.update { it.copy(errorMessage = "A rule for ${rule.targetName} at ${rule.mealSlotsDisplayText} already exists") }
                 } else {
                     _uiState.update { it.copy(errorMessage = "Failed to save rule") }
                 }

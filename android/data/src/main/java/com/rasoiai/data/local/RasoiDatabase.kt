@@ -37,6 +37,7 @@ import com.rasoiai.data.local.entity.ChatMessageEntity
 import com.rasoiai.data.local.entity.NotificationEntity
 import com.rasoiai.data.local.entity.OfflineQueueEntity
 import com.rasoiai.data.local.entity.CookedRecipeEntity
+import com.rasoiai.data.local.entity.KnownIngredientEntity
 
 @Database(
     entities = [
@@ -58,9 +59,10 @@ import com.rasoiai.data.local.entity.CookedRecipeEntity
         ChatMessageEntity::class,
         NotificationEntity::class,
         OfflineQueueEntity::class,
-        CookedRecipeEntity::class
+        CookedRecipeEntity::class,
+        KnownIngredientEntity::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -86,7 +88,42 @@ abstract class RasoiDatabase : RoomDatabase() {
          */
         val MIGRATION_8_9 = object : Migration(8, 9) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                // Create cooked_recipes table
+                // 1. Recreate recipe_rules: rename mealSlot→mealSlots, add syncStatus
+                //    Cannot use ALTER TABLE RENAME COLUMN (requires SQLite 3.25+, min SDK 24 has 3.9)
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS recipe_rules_new (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        type TEXT NOT NULL,
+                        action TEXT NOT NULL,
+                        targetId TEXT NOT NULL,
+                        targetName TEXT NOT NULL,
+                        frequencyType TEXT NOT NULL,
+                        frequencyCount INTEGER,
+                        frequencyDays TEXT,
+                        enforcement TEXT NOT NULL,
+                        mealSlots TEXT,
+                        isActive INTEGER NOT NULL DEFAULT 1,
+                        syncStatus TEXT NOT NULL DEFAULT 'SYNCED',
+                        createdAt TEXT NOT NULL,
+                        updatedAt TEXT NOT NULL
+                    )
+                """)
+                db.execSQL("""
+                    INSERT INTO recipe_rules_new (id, type, action, targetId, targetName,
+                        frequencyType, frequencyCount, frequencyDays, enforcement, mealSlots,
+                        isActive, syncStatus, createdAt, updatedAt)
+                    SELECT id, type, action, targetId, targetName,
+                        frequencyType, frequencyCount, frequencyDays, enforcement, mealSlot,
+                        isActive, 'SYNCED', createdAt, updatedAt
+                    FROM recipe_rules
+                """)
+                db.execSQL("DROP TABLE recipe_rules")
+                db.execSQL("ALTER TABLE recipe_rules_new RENAME TO recipe_rules")
+
+                // 2. Add syncStatus to nutrition_goals
+                db.execSQL("ALTER TABLE nutrition_goals ADD COLUMN syncStatus TEXT NOT NULL DEFAULT 'SYNCED'")
+
+                // 3. Create cooked_recipes table
                 db.execSQL("""
                     CREATE TABLE IF NOT EXISTS cooked_recipes (
                         id TEXT NOT NULL PRIMARY KEY,
@@ -99,6 +136,25 @@ abstract class RasoiDatabase : RoomDatabase() {
                 """)
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_cooked_recipes_cuisineType ON cooked_recipes (cuisineType)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_cooked_recipes_cookedDate ON cooked_recipes (cookedDate)")
+            }
+        }
+
+        /**
+         * Migration from version 9 to 10: Add known_ingredients table for Recipe Rules search.
+         * Seeds with popular Indian cooking ingredients so suggestions work immediately.
+         */
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS known_ingredients (
+                        name TEXT NOT NULL PRIMARY KEY,
+                        source TEXT NOT NULL,
+                        addedAt INTEGER NOT NULL
+                    )
+                """)
+
+                // Seed with popular ingredients
+                seedKnownIngredients(db)
             }
         }
 
@@ -145,13 +201,46 @@ abstract class RasoiDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Popular ingredients seeded into known_ingredients table on fresh install
+         * and during migration 9→10.
+         */
+        internal val SEED_INGREDIENTS = listOf(
+            "Paneer", "Chicken", "Mutton", "Fish", "Prawns", "Egg", "Tofu",
+            "Dal", "Chana Dal", "Moong Dal", "Toor Dal", "Masoor Dal",
+            "Rajma", "Chole",
+            "Aloo", "Tamatar", "Pyaz", "Palak", "Gobi",
+            "Matar", "Bhindi", "Baingan", "Gajar", "Shimla Mirch",
+            "Mushroom", "Methi", "Karela", "Lauki", "Bandh Gobi",
+            "Dahi", "Ghee", "Malai",
+            "Chawal", "Atta", "Suji", "Besan",
+            "Chai", "Moringa",
+            "Cashew", "Badam", "Nariyal"
+        )
+
+        private fun seedKnownIngredients(db: SupportSQLiteDatabase) {
+            val now = System.currentTimeMillis()
+            for (ingredient in SEED_INGREDIENTS) {
+                db.execSQL(
+                    "INSERT OR IGNORE INTO known_ingredients (name, source, addedAt) VALUES (?, 'popular', ?)",
+                    arrayOf(ingredient, now)
+                )
+            }
+        }
+
         fun create(context: Context): RasoiDatabase {
             return Room.databaseBuilder(
                 context.applicationContext,
                 RasoiDatabase::class.java,
                 DATABASE_NAME
             )
-                .addMigrations(MIGRATION_7_8, MIGRATION_8_9)
+                .addMigrations(MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+                .addCallback(object : Callback() {
+                    override fun onCreate(db: SupportSQLiteDatabase) {
+                        super.onCreate(db)
+                        seedKnownIngredients(db)
+                    }
+                })
                 .build()
         }
     }

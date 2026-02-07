@@ -315,7 +315,7 @@ class RecipeConstraintTest : BaseE2ETest() {
             targetName = "Chai",
             frequency = RuleFrequency.DAILY,
             enforcement = RuleEnforcement.REQUIRED,
-            mealSlot = MealType.BREAKFAST,
+            mealSlots = listOf(MealType.BREAKFAST),
             isActive = true
         )
 
@@ -323,7 +323,7 @@ class RecipeConstraintTest : BaseE2ETest() {
         val isValidChaiRule = chaiRule.type == RuleType.MEAL_SLOT &&
                 chaiRule.action == RuleAction.INCLUDE &&
                 chaiRule.frequency.type == FrequencyType.DAILY &&
-                chaiRule.mealSlot == MealType.BREAKFAST &&
+                chaiRule.mealSlots.contains(MealType.BREAKFAST) &&
                 chaiRule.isActive
 
         // Then: Rule should be correctly structured
@@ -352,7 +352,7 @@ class RecipeConstraintTest : BaseE2ETest() {
             targetName = "Masala Chai",
             frequency = RuleFrequency.DAILY,
             enforcement = RuleEnforcement.REQUIRED,
-            mealSlot = MealType.BREAKFAST,
+            mealSlots = listOf(MealType.BREAKFAST),
             isActive = true
         )
 
@@ -377,7 +377,6 @@ class RecipeConstraintTest : BaseE2ETest() {
             targetName = "Paneer",
             frequency = RuleFrequency.NEVER,
             enforcement = RuleEnforcement.REQUIRED,
-            mealSlot = null,
             isActive = true
         )
 
@@ -411,7 +410,6 @@ class RecipeConstraintTest : BaseE2ETest() {
             targetName = "Paneer",
             frequency = RuleFrequency.NEVER,
             enforcement = RuleEnforcement.REQUIRED,
-            mealSlot = null,
             isActive = true
         )
 
@@ -435,7 +433,6 @@ class RecipeConstraintTest : BaseE2ETest() {
             targetName = "Moringa",
             frequency = RuleFrequency.timesPerWeek(1),
             enforcement = RuleEnforcement.PREFERRED,
-            mealSlot = null,
             isActive = true
         )
 
@@ -470,7 +467,6 @@ class RecipeConstraintTest : BaseE2ETest() {
             targetName = "Moringa",
             frequency = RuleFrequency.timesPerWeek(1),
             enforcement = RuleEnforcement.PREFERRED,
-            mealSlot = null,
             isActive = true
         )
 

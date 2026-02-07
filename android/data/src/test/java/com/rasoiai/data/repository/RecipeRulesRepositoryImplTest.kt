@@ -58,7 +58,7 @@ class RecipeRulesRepositoryImplTest {
         frequencyCount = null,
         frequencyDays = null,
         enforcement = "required",
-        mealSlot = null,
+        mealSlots = null,
         isActive = true,
         createdAt = "2026-01-27T10:00:00",
         updatedAt = "2026-01-27T10:00:00"
@@ -187,7 +187,6 @@ class RecipeRulesRepositoryImplTest {
                 targetName = "Garlic",
                 frequency = RuleFrequency.NEVER,
                 enforcement = RuleEnforcement.REQUIRED,
-                mealSlot = null,
                 isActive = true,
                 createdAt = LocalDateTime.now(),
                 updatedAt = LocalDateTime.now()
@@ -215,7 +214,6 @@ class RecipeRulesRepositoryImplTest {
                 targetName = "Onion",
                 frequency = RuleFrequency.NEVER,
                 enforcement = RuleEnforcement.REQUIRED,
-                mealSlot = null,
                 isActive = true,
                 createdAt = LocalDateTime.now(),
                 updatedAt = LocalDateTime.now()
@@ -376,16 +374,16 @@ class RecipeRulesRepositoryImplTest {
 
                 assertTrue(ingredients.isNotEmpty())
                 assertTrue(ingredients.contains("Paneer"))
-                assertTrue(ingredients.contains("Onion"))
+                assertTrue(ingredients.contains("Chai"))
                 cancelAndIgnoreRemainingEvents()
             }
         }
 
         @Test
-        @DisplayName("Should search ingredients from popular list and recipes")
-        fun `should search ingredients from popular list and recipes`() = runTest {
-            // Given
-            every { mockRecipeDao.getAllRecipes() } returns flowOf(emptyList())
+        @DisplayName("Should search ingredients from popular list and known ingredients DB")
+        fun `should search ingredients from popular list and known ingredients DB`() = runTest {
+            // Given - mock the known_ingredients DB query
+            every { mockRecipeRulesDao.searchKnownIngredients("Pan") } returns flowOf(listOf("Paneer"))
 
             // When & Then
             repository.searchIngredients("Pan").test {

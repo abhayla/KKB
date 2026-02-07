@@ -132,5 +132,11 @@ interface RecipeRulesRepository {
      */
     fun getAvailableFoodCategories(): Flow<List<FoodCategory>>
 
+    /**
+     * Persist ingredient names extracted from recipes into the known_ingredients table.
+     * Called after caching recipes from a generated meal plan to grow the search pool.
+     */
+    suspend fun persistIngredientsFromRecipes(recipes: List<Recipe>)
+
     // endregion
 }

@@ -9,8 +9,14 @@ import com.rasoiai.app.e2e.di.FakeGoogleAuthClient
 import com.rasoiai.app.e2e.rules.RetryRule
 import com.rasoiai.app.e2e.util.BackendTestHelper
 import com.rasoiai.app.e2e.util.RetryUtils
+import com.rasoiai.data.local.dao.MealPlanDao
 import com.rasoiai.data.local.dao.RecipeRulesDao
 import com.rasoiai.data.local.datastore.UserPreferencesDataStoreInterface
+import com.rasoiai.data.local.entity.MealPlanEntity
+import com.rasoiai.data.local.entity.MealPlanFestivalEntity
+import com.rasoiai.data.local.entity.MealPlanItemEntity
+import org.json.JSONObject
+import java.util.UUID
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import com.rasoiai.domain.model.CuisineType
@@ -77,6 +83,9 @@ abstract class BaseE2ETest {
 
     @Inject
     lateinit var recipeRulesDao: RecipeRulesDao
+
+    @Inject
+    lateinit var mealPlanDao: MealPlanDao
 
     protected val context: Context
         get() = ApplicationProvider.getApplicationContext()
@@ -165,6 +174,34 @@ abstract class BaseE2ETest {
     }
 
     /**
+     * Authenticates and marks user as onboarded WITHOUT generating a meal plan.
+     * Use this for tests that don't need meal cards (e.g., Recipe Rules, Settings).
+     *
+     * generateMealPlan() triggers Gemini AI which blocks uvicorn's single-threaded
+     * event loop for ~45s, causing SocketTimeoutException on all subsequent HTTP requests.
+     */
+    protected fun setUpAuthenticatedStateWithoutMealPlan() {
+        val authResult = authenticateWithBackend()
+
+        fakeGoogleAuthClient.simulateSignedIn()
+
+        if (authResult != null) {
+            runBlocking {
+                userPreferencesDataStore.saveAuthTokens(
+                    accessToken = authResult.accessToken,
+                    refreshToken = "",
+                    expiresInSeconds = 3600,
+                    userId = authResult.userId
+                )
+                userPreferencesDataStore.saveOnboardingComplete(createTestPreferences())
+            }
+            Log.d(TAG, "Authenticated without meal plan: userId=${authResult.userId}")
+        } else {
+            Log.w(TAG, "Failed to authenticate with backend")
+        }
+    }
+
+    /**
      * Creates minimal test preferences for E2E tests.
      * This is used to mark the user as onboarded.
      */
@@ -222,6 +259,166 @@ abstract class BaseE2ETest {
             Log.d(TAG, "Cleared backend: $rulesDeleted rules, $goalsDeleted goals")
         } else {
             Log.w(TAG, "No auth token available — skipping backend cleanup")
+        }
+    }
+
+    /**
+     * Authenticates, generates a REAL meal plan via Gemini AI, seeds it into Room,
+     * then stores auth tokens so the app navigates to Home with data already in Room.
+     *
+     * ## Why this ordering matters
+     * `createAndroidComposeRule` launches the Activity BEFORE setUp() runs.
+     * The app sits on Splash while setUp() executes. When we store auth tokens in
+     * DataStore, SplashViewModel detects them and navigates to Home. If Room has no
+     * meal plan at that point, HomeViewModel calls generateNewMealPlan() → Gemini →
+     * blocks uvicorn ~45s → SocketTimeoutException on all subsequent HTTP requests.
+     *
+     * ## Timeline
+     * 1. Activity launches → Splash (no auth tokens yet)
+     * 2. setUp() gets JWT from backend
+     * 3. setUp() generates meal plan via Gemini (one-time, ~45s first run)
+     * 4. setUp() fetches meal plan JSON and seeds Room
+     * 5. setUp() stores JWT in DataStore → Splash navigates to Home
+     * 6. HomeViewModel finds meal plan in Room → NO Gemini call
+     */
+    protected fun setUpAuthenticatedStateWithMealPlanInRoom() {
+        // Step 0: Clear stale auth tokens from prior test runs so the app doesn't
+        // auto-navigate to Home and trigger its own Gemini call while we're generating.
+        runBlocking { userPreferencesDataStore.clearPreferences() }
+
+        // Step 1: Get JWT from backend (do NOT store in DataStore yet)
+        val authResult = authenticateWithBackend()
+        if (authResult == null) {
+            Log.w(TAG, "Failed to authenticate with backend")
+            return
+        }
+
+        // Step 2: Generate real meal plan via Gemini (once across all tests)
+        if (!backendMealPlanGenerated) {
+            Log.i(TAG, "Generating real meal plan via Gemini (one-time, may take ~45s)...")
+            val generated = BackendTestHelper.generateMealPlan(
+                baseUrl = BACKEND_BASE_URL,
+                authToken = authResult.accessToken
+            )
+            if (generated) {
+                backendMealPlanGenerated = true
+                Log.i(TAG, "Meal plan generated via Gemini successfully")
+            } else {
+                Log.w(TAG, "Failed to generate meal plan via Gemini")
+            }
+        }
+
+        // Step 3: Fetch meal plan from backend and seed into Room
+        seedMealPlanFromBackend(authResult.accessToken)
+
+        // Step 4: NOW store auth tokens → app navigates Splash → Home (Room has data)
+        fakeGoogleAuthClient.simulateSignedIn()
+        runBlocking {
+            userPreferencesDataStore.saveAuthTokens(
+                accessToken = authResult.accessToken,
+                refreshToken = "",
+                expiresInSeconds = 3600,
+                userId = authResult.userId
+            )
+            userPreferencesDataStore.saveOnboardingComplete(createTestPreferences())
+        }
+        Log.d(TAG, "Auth tokens stored — app will navigate to Home with meal plan in Room")
+    }
+
+    /**
+     * Fetches the current meal plan from the backend API and inserts it into Room DB.
+     */
+    private fun seedMealPlanFromBackend(authToken: String) {
+        val mealPlanJson = BackendTestHelper.getCurrentMealPlan(BACKEND_BASE_URL, authToken)
+        if (mealPlanJson == null) {
+            Log.w(TAG, "No meal plan on backend to seed into Room")
+            return
+        }
+
+        try {
+            val planId = mealPlanJson.getString("id")
+            val weekStartDate = mealPlanJson.getString("week_start_date")
+            val weekEndDate = mealPlanJson.getString("week_end_date")
+            val now = System.currentTimeMillis()
+
+            val mealPlanEntity = MealPlanEntity(
+                id = planId,
+                weekStartDate = weekStartDate,
+                weekEndDate = weekEndDate,
+                createdAt = now,
+                updatedAt = now,
+                isSynced = true
+            )
+
+            val items = mutableListOf<MealPlanItemEntity>()
+            val festivals = mutableListOf<MealPlanFestivalEntity>()
+            val daysArray = mealPlanJson.getJSONArray("days")
+
+            for (d in 0 until daysArray.length()) {
+                val day = daysArray.getJSONObject(d)
+                val date = day.getString("date")
+                val dayName = day.getString("day_name")
+                val meals = day.getJSONObject("meals")
+
+                for (mealType in listOf("breakfast", "lunch", "dinner", "snacks")) {
+                    if (!meals.has(mealType)) continue
+                    val mealItems = meals.getJSONArray(mealType)
+                    for (m in 0 until mealItems.length()) {
+                        val item = mealItems.getJSONObject(m)
+                        val tags = mutableListOf<String>()
+                        if (item.has("dietary_tags")) {
+                            val tagsArray = item.getJSONArray("dietary_tags")
+                            for (t in 0 until tagsArray.length()) {
+                                tags.add(tagsArray.getString(t))
+                            }
+                        }
+                        items.add(
+                            MealPlanItemEntity(
+                                mealPlanId = planId,
+                                date = date,
+                                dayName = dayName,
+                                mealType = mealType,
+                                recipeId = item.optString("recipe_id", UUID.randomUUID().toString()),
+                                recipeName = item.optString("recipe_name", "Unknown"),
+                                recipeImageUrl = if (item.has("recipe_image_url") && !item.isNull("recipe_image_url")) item.getString("recipe_image_url") else null,
+                                prepTimeMinutes = item.optInt("prep_time_minutes", 30),
+                                calories = item.optInt("calories", 0),
+                                dietaryTags = tags,
+                                isLocked = item.optBoolean("is_locked", false),
+                                order = item.optInt("order", m)
+                            )
+                        )
+                    }
+                }
+
+                if (day.has("festival") && !day.isNull("festival")) {
+                    val festival = day.getJSONObject("festival")
+                    val suggestedDishes = mutableListOf<String>()
+                    if (festival.has("suggested_dishes") && !festival.isNull("suggested_dishes")) {
+                        val dishesArray = festival.getJSONArray("suggested_dishes")
+                        for (i in 0 until dishesArray.length()) {
+                            suggestedDishes.add(dishesArray.getString(i))
+                        }
+                    }
+                    festivals.add(
+                        MealPlanFestivalEntity(
+                            id = festival.optString("id", UUID.randomUUID().toString()),
+                            mealPlanId = planId,
+                            date = date,
+                            name = festival.getString("name"),
+                            isFastingDay = festival.optBoolean("is_fasting_day", false),
+                            suggestedDishes = suggestedDishes
+                        )
+                    )
+                }
+            }
+
+            runBlocking {
+                mealPlanDao.replaceMealPlan(mealPlanEntity, items, festivals)
+            }
+            Log.i(TAG, "Seeded meal plan into Room: $planId (${items.size} items, ${festivals.size} festivals)")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to seed meal plan into Room: ${e.message}", e)
         }
     }
 
@@ -351,6 +548,9 @@ abstract class BaseE2ETest {
 
         // Backend URL - use 10.0.2.2 for Android emulator to access localhost
         const val BACKEND_BASE_URL = "http://10.0.2.2:8000"
+
+        // One-time flag: generate meal plan via Gemini only once across all tests
+        private var backendMealPlanGenerated = false
 
         // Common timeout values
         const val SHORT_TIMEOUT = 2000L

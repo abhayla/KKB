@@ -4,6 +4,7 @@ import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.data.local.dao.FavoriteDao
 import com.rasoiai.data.local.dao.RecipeDao
 import com.rasoiai.data.local.dao.RecipeRulesDao
+import com.rasoiai.data.local.entity.KnownIngredientEntity
 import com.rasoiai.data.local.entity.SyncStatus
 import com.rasoiai.data.local.mapper.toDomain
 import com.rasoiai.data.local.mapper.toEntity
@@ -52,10 +53,24 @@ class RecipeRulesRepositoryImpl @Inject constructor(
 ) : RecipeRulesRepository {
 
     companion object {
-        private val POPULAR_INGREDIENTS = listOf(
-            "Paneer", "Chicken", "Dal", "Rice", "Aloo (Potato)",
-            "Tomato", "Onion", "Palak (Spinach)", "Gobi (Cauliflower)",
-            "Mutter (Peas)", "Bhindi (Okra)", "Baigan (Eggplant)"
+        internal val POPULAR_INGREDIENTS = listOf(
+            // Proteins
+            "Paneer", "Chicken", "Mutton", "Fish", "Prawns", "Egg", "Tofu",
+            // Dals & Legumes
+            "Dal", "Chana Dal", "Moong Dal", "Toor Dal", "Masoor Dal",
+            "Rajma", "Chole",
+            // Vegetables
+            "Aloo", "Tamatar", "Pyaz", "Palak", "Gobi",
+            "Matar", "Bhindi", "Baingan", "Gajar", "Shimla Mirch",
+            "Mushroom", "Methi", "Karela", "Lauki", "Bandh Gobi",
+            // Dairy
+            "Dahi", "Ghee", "Malai",
+            // Grains
+            "Chawal", "Atta", "Suji", "Besan",
+            // Beverages & Staples
+            "Chai", "Moringa",
+            // Nuts
+            "Cashew", "Badam", "Nariyal"
         )
 
         private val dateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
@@ -90,11 +105,13 @@ class RecipeRulesRepositoryImpl @Inject constructor(
     override suspend fun createRule(rule: RecipeRule): Result<RecipeRule> {
         return try {
             // Check for duplicate rule locally before inserting
+            val sortedMealSlots = if (rule.mealSlots.isNotEmpty()) {
+                rule.mealSlots.sortedBy { it.ordinal }.joinToString(",") { it.value }
+            } else null
             val existingDup = recipeRulesDao.findDuplicate(
                 targetName = rule.targetName,
                 action = rule.action.value,
-                targetType = rule.type.value,
-                mealSlot = rule.mealSlot?.value
+                mealSlots = sortedMealSlots
             )
             if (existingDup != null) {
                 return Result.failure(
@@ -130,7 +147,7 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                         frequencyCount = newRule.frequency.count,
                         frequencyDays = newRule.frequency.specificDays?.joinToString(",") { it.name },
                         enforcement = newRule.enforcement.value,
-                        mealSlot = newRule.mealSlot?.value,
+                        mealSlot = if (newRule.mealSlots.isNotEmpty()) newRule.mealSlots.joinToString(",") { it.value } else null,
                         isActive = newRule.isActive
                     )
                     apiService.createRecipeRule(request)
@@ -173,7 +190,7 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                         frequencyCount = updatedRule.frequency.count,
                         frequencyDays = updatedRule.frequency.specificDays?.joinToString(",") { it.name },
                         enforcement = updatedRule.enforcement.value,
-                        mealSlot = updatedRule.mealSlot?.value,
+                        mealSlot = if (updatedRule.mealSlots.isNotEmpty()) updatedRule.mealSlots.joinToString(",") { it.value } else null,
                         isActive = updatedRule.isActive
                     )
                     apiService.updateRecipeRule(rule.id, request)
@@ -535,11 +552,14 @@ class RecipeRulesRepositoryImpl @Inject constructor(
         }
 
         return flow {
-            // First try local cache
+            // First try local cache (name + description + ingredient names)
             val localResults = recipeDao.getAllRecipes().first()
                 .filter { entity ->
                     entity.name.contains(query, ignoreCase = true) ||
-                    entity.description.contains(query, ignoreCase = true)
+                    entity.description.contains(query, ignoreCase = true) ||
+                    entity.toDomain().ingredients.any { ing ->
+                        ing.name.contains(query, ignoreCase = true)
+                    }
                 }
                 .take(10)
                 .map { it.toDomain() }
@@ -629,23 +649,14 @@ class RecipeRulesRepositoryImpl @Inject constructor(
             return flowOf(emptyList())
         }
 
-        // Search in popular ingredients list
-        val results = POPULAR_INGREDIENTS.filter {
-            it.contains(query, ignoreCase = true)
-        }
-
-        // Also search in cached recipe ingredients
-        return recipeDao.getAllRecipes().map { entities ->
-            val recipeIngredients = entities.flatMap { recipe ->
-                val recipeDomain = recipe.toDomain()
-                recipeDomain.ingredients.map { it.name }
-            }.distinct()
-
-            val combinedResults = (results + recipeIngredients.filter {
-                it.contains(query, ignoreCase = true)
-            }).distinct().take(10)
-
-            combinedResults
+        // Search persistent known_ingredients table (populated from popular + recipe cache)
+        return recipeRulesDao.searchKnownIngredients(query).map { dbResults ->
+            // Also include hardcoded list as fallback (always available, no DB seed needed)
+            // Bidirectional match: "Egg" matches query "Eggs" and vice versa
+            val hardcodedMatches = POPULAR_INGREDIENTS.filter {
+                it.contains(query, ignoreCase = true) || query.contains(it, ignoreCase = true)
+            }
+            (hardcodedMatches + dbResults).distinct().take(10)
         }
     }
 
@@ -657,6 +668,23 @@ class RecipeRulesRepositoryImpl @Inject constructor(
         return recipeRulesDao.getActiveNutritionGoals().map { activeGoals ->
             val usedCategories = activeGoals.map { FoodCategory.fromValue(it.foodCategory) }.toSet()
             FoodCategory.entries.filter { it !in usedCategories }
+        }
+    }
+
+    override suspend fun persistIngredientsFromRecipes(recipes: List<Recipe>) {
+        try {
+            val ingredientNames = recipes
+                .flatMap { it.ingredients.map { ing -> ing.name } }
+                .distinct()
+            if (ingredientNames.isEmpty()) return
+
+            val entities = ingredientNames.map {
+                KnownIngredientEntity(name = it, source = "recipe_cache")
+            }
+            recipeRulesDao.insertKnownIngredients(entities) // INSERT OR IGNORE — no duplicates
+            Timber.d("Persisted ${ingredientNames.size} ingredient names from ${recipes.size} recipes")
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to persist ingredients from recipes")
         }
     }
 

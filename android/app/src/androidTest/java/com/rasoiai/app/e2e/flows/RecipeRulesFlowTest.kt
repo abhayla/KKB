@@ -29,8 +29,10 @@ class RecipeRulesFlowTest : BaseE2ETest() {
     @Before
     override fun setUp() {
         super.setUp()
-        // Set up authenticated and onboarded user state
-        setUpAuthenticatedState()
+        // Skip meal plan generation — Recipe Rules tests don't need meal plan data.
+        // This avoids Gemini-induced SocketTimeoutException in setUp().
+        setUpAuthenticatedStateWithoutMealPlan()
+        clearRecipeRulesAndGoals()  // Prevent duplicate detection from prior runs
 
         homeRobot = HomeRobot(composeTestRule)
         settingsRobot = SettingsRobot(composeTestRule)
@@ -284,6 +286,9 @@ class RecipeRulesFlowTest : BaseE2ETest() {
 
         // Verify nutrition goal is displayed
         recipeRulesRobot.selectNutritionTab()
+        composeTestRule.waitForIdle()
+        Thread.sleep(2000) // Wait for tab content to render
+        composeTestRule.waitForIdle()
         recipeRulesRobot.assertRuleCardDisplayed("Green Leafy")
     }
 }

@@ -510,7 +510,7 @@ class EntityMappersTest {
                 frequencyCount = null,
                 frequencyDays = null,
                 enforcement = "required",
-                mealSlot = null,
+                mealSlots = null,
                 isActive = true,
                 createdAt = "2026-01-27T10:00:00",
                 updatedAt = "2026-01-27T10:00:00"

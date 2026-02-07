@@ -109,61 +109,74 @@ fun NotificationsScreen(
         }
     }
 
+    NotificationsScreenContent(
+        uiState = uiState,
+        snackbarHostState = snackbarHostState,
+        onNavigateBack = onNavigateBack,
+        onMarkAllRead = viewModel::markAllAsRead,
+        onFilterSelected = viewModel::setFilter,
+        onNotificationClick = viewModel::onNotificationClick,
+        onDeleteNotification = viewModel::deleteNotification
+    )
+}
+
+/**
+ * Stateless content composable for NotificationsScreen.
+ * Extracted for testability - tests can pass UiState directly without a ViewModel.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun NotificationsScreenContent(
+    uiState: NotificationsUiState,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    onNavigateBack: () -> Unit = {},
+    onMarkAllRead: () -> Unit = {},
+    onFilterSelected: (NotificationFilter) -> Unit = {},
+    onNotificationClick: (com.rasoiai.domain.model.Notification) -> Unit = {},
+    onDeleteNotification: (String) -> Unit = {}
+) {
     Scaffold(
         modifier = Modifier.testTag(TestTags.NOTIFICATIONS_SCREEN),
         topBar = {
             NotificationsTopBar(
                 hasUnread = uiState.hasUnread,
                 onNavigateBack = onNavigateBack,
-                onMarkAllRead = viewModel::markAllAsRead
+                onMarkAllRead = onMarkAllRead
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .nestedScroll(pullToRefreshState.nestedScrollConnection)
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                // Filter chips
-                FilterRow(
-                    selectedFilter = uiState.filter,
-                    unreadCount = uiState.unreadCount,
-                    onFilterSelected = viewModel::setFilter
-                )
+            // Filter chips
+            FilterRow(
+                selectedFilter = uiState.filter,
+                unreadCount = uiState.unreadCount,
+                onFilterSelected = onFilterSelected
+            )
 
-                // Content
-                when {
-                    uiState.isLoading -> {
-                        LoadingContent()
-                    }
+            // Content
+            when {
+                uiState.isLoading -> {
+                    LoadingContent()
+                }
 
-                    uiState.isEmpty -> {
-                        EmptyContent(filter = uiState.filter)
-                    }
+                uiState.isEmpty -> {
+                    EmptyContent(filter = uiState.filter)
+                }
 
-                    else -> {
-                        NotificationsList(
-                            groupedNotifications = uiState.groupedNotifications,
-                            onNotificationClick = viewModel::onNotificationClick,
-                            onDeleteNotification = viewModel::deleteNotification
-                        )
-                    }
+                else -> {
+                    NotificationsList(
+                        groupedNotifications = uiState.groupedNotifications,
+                        onNotificationClick = onNotificationClick,
+                        onDeleteNotification = onDeleteNotification
+                    )
                 }
             }
-
-            // Pull-to-refresh indicator
-            PullToRefreshContainer(
-                state = pullToRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            )
         }
     }
 }

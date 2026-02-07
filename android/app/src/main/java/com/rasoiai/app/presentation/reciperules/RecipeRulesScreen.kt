@@ -102,12 +102,13 @@ fun RecipeRulesScreen(
             onDismiss = viewModel::dismissAddRuleSheet,
             onActionChange = viewModel::updateAction,
             onSearchQueryChange = viewModel::updateSearchQuery,
-            onSelectRecipe = viewModel::selectRecipe,
-            onSelectIngredient = viewModel::selectIngredient,
+            onSelectSearchResult = viewModel::selectSearchResult,
+            onClearTarget = viewModel::clearSelectedTarget,
             onFrequencyTypeChange = viewModel::updateFrequencyType,
             onFrequencyCountChange = viewModel::updateFrequencyCount,
             onToggleDay = viewModel::toggleDay,
-            onMealSlotChange = viewModel::updateMealSlot,
+            onMealSlotModeChange = viewModel::updateMealSlotMode,
+            onToggleMealSlot = viewModel::toggleMealSlot,
             onEnforcementChange = viewModel::updateEnforcement,
             onSave = viewModel::saveRule
         )
@@ -212,8 +213,8 @@ internal fun RecipeRulesScreenContent(
                         )
                     } else {
                         RulesContent(
-                            rules = uiState.rulesForCurrentTab,
-                            tabType = uiState.selectedTab,
+                            rules = uiState.sortedRules,
+                            rulesCount = uiState.rulesCount,
                             onEditRule = onEditRule,
                             onToggleActive = onToggleRuleActive,
                             onDeleteRule = onDeleteRule,
@@ -230,7 +231,7 @@ internal fun RecipeRulesScreenContent(
 @Composable
 private fun RulesContent(
     rules: List<RecipeRule>,
-    tabType: RulesTab,
+    rulesCount: Int,
     onEditRule: (RecipeRule) -> Unit,
     onToggleActive: (RecipeRule) -> Unit,
     onDeleteRule: (RecipeRule) -> Unit,
@@ -239,7 +240,7 @@ private fun RulesContent(
 ) {
     if (rules.isEmpty()) {
         EmptyRulesState(
-            tabType = tabType,
+            tabType = RulesTab.RULES,
             onAddClick = onAddRule,
             modifier = modifier
         )
@@ -248,14 +249,7 @@ private fun RulesContent(
             modifier = modifier.padding(horizontal = spacing.md)
         ) {
             item {
-                SectionHeader(
-                    title = when (tabType) {
-                        RulesTab.RECIPE -> "MY RECIPE RULES (${rules.size})"
-                        RulesTab.INGREDIENT -> "MY INGREDIENT RULES (${rules.size})"
-                        RulesTab.MEAL_SLOT -> "MY MEAL-SLOT RULES (${rules.size})"
-                        else -> "RULES (${rules.size})"
-                    }
-                )
+                SectionHeader(title = "MY RULES ($rulesCount)")
                 Spacer(modifier = Modifier.height(spacing.sm))
             }
 
@@ -272,12 +266,7 @@ private fun RulesContent(
             item {
                 Spacer(modifier = Modifier.height(spacing.md))
                 AddRuleButton(
-                    text = when (tabType) {
-                        RulesTab.RECIPE -> "+ ADD RECIPE RULE"
-                        RulesTab.INGREDIENT -> "+ ADD INGREDIENT RULE"
-                        RulesTab.MEAL_SLOT -> "+ ADD MEAL-SLOT RULE"
-                        else -> "+ ADD RULE"
-                    },
+                    text = "+ ADD RULE",
                     onClick = onAddRule
                 )
                 Spacer(modifier = Modifier.height(spacing.xl))
@@ -307,7 +296,7 @@ private fun NutritionGoalsContent(
             modifier = modifier.padding(horizontal = spacing.md)
         ) {
             item {
-                SectionHeader(title = "WEEKLY NUTRITION GOALS")
+                SectionHeader(title = "MY NUTRITION GOALS (${goals.size})")
                 Spacer(modifier = Modifier.height(spacing.sm))
             }
 
@@ -347,28 +336,60 @@ private fun RecipeRulesScreenPreview() {
             RecipeRulesScreenContent(
                 uiState = RecipeRulesUiState(
                     isLoading = false,
-                    selectedTab = RulesTab.RECIPE,
-                    recipeRules = listOf(
+                    selectedTab = RulesTab.RULES,
+                    allRules = listOf(
                         RecipeRule(
                             id = "1",
                             type = RuleType.RECIPE,
                             action = RuleAction.INCLUDE,
                             targetId = "r1",
-                            targetName = "Rajma",
+                            targetName = "Paneer Tikka",
                             frequency = RuleFrequency.timesPerWeek(1),
                             enforcement = RuleEnforcement.REQUIRED,
+                            mealSlots = listOf(MealType.BREAKFAST),
                             isActive = true
                         ),
                         RecipeRule(
                             id = "2",
+                            type = RuleType.INGREDIENT,
+                            action = RuleAction.INCLUDE,
+                            targetId = "i1",
+                            targetName = "Green Tea",
+                            frequency = RuleFrequency.DAILY,
+                            enforcement = RuleEnforcement.PREFERRED,
+                            isActive = true
+                        ),
+                        RecipeRule(
+                            id = "3",
+                            type = RuleType.INGREDIENT,
+                            action = RuleAction.EXCLUDE,
+                            targetId = "i2",
+                            targetName = "Karela",
+                            frequency = RuleFrequency.DAILY,
+                            enforcement = RuleEnforcement.REQUIRED,
+                            isActive = true
+                        ),
+                        RecipeRule(
+                            id = "4",
                             type = RuleType.RECIPE,
                             action = RuleAction.INCLUDE,
                             targetId = "r2",
-                            targetName = "Chai",
-                            frequency = RuleFrequency.DAILY,
-                            enforcement = RuleEnforcement.REQUIRED,
-                            mealSlot = MealType.BREAKFAST,
+                            targetName = "Dal Tadka",
+                            frequency = RuleFrequency.timesPerWeek(3),
+                            enforcement = RuleEnforcement.PREFERRED,
+                            mealSlots = listOf(MealType.LUNCH, MealType.DINNER),
                             isActive = true
+                        ),
+                        RecipeRule(
+                            id = "5",
+                            type = RuleType.INGREDIENT,
+                            action = RuleAction.INCLUDE,
+                            targetId = "i3",
+                            targetName = "Eggs",
+                            frequency = RuleFrequency.DAILY,
+                            enforcement = RuleEnforcement.PREFERRED,
+                            mealSlots = listOf(MealType.BREAKFAST),
+                            isActive = false
                         )
                     ),
                     nutritionGoals = listOf(

@@ -187,13 +187,18 @@ async def search_recipes(
         selectinload(Recipe.nutrition),
     ).where(Recipe.is_active == True)
 
-    # Text search
+    # Text search (name, description, and ingredient names)
     if params.q:
         search_term = f"%{params.q}%"
         query = query.where(
             or_(
                 Recipe.name.ilike(search_term),
                 Recipe.description.ilike(search_term),
+                Recipe.id.in_(
+                    select(RecipeIngredient.recipe_id).where(
+                        RecipeIngredient.name.ilike(search_term)
+                    )
+                ),
             )
         )
 

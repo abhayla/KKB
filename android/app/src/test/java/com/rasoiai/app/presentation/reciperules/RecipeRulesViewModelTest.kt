@@ -44,7 +44,7 @@ class RecipeRulesViewModelTest {
     private lateinit var mockRepository: RecipeRulesRepository
     private lateinit var mockSettingsRepository: SettingsRepository
 
-    private val testRecipeRules = listOf(
+    private val testAllRules = listOf(
         RecipeRule(
             id = "rule-1",
             type = RuleType.RECIPE,
@@ -53,7 +53,6 @@ class RecipeRulesViewModelTest {
             targetName = "Poha",
             frequency = RuleFrequency.timesPerWeek(2),
             enforcement = RuleEnforcement.REQUIRED,
-            mealSlot = null,
             isActive = true
         ),
         RecipeRule(
@@ -64,12 +63,8 @@ class RecipeRulesViewModelTest {
             targetName = "Biryani",
             frequency = RuleFrequency.NEVER,
             enforcement = RuleEnforcement.REQUIRED,
-            mealSlot = null,
             isActive = true
-        )
-    )
-
-    private val testIngredientRules = listOf(
+        ),
         RecipeRule(
             id = "rule-3",
             type = RuleType.INGREDIENT,
@@ -78,12 +73,8 @@ class RecipeRulesViewModelTest {
             targetName = "Onion",
             frequency = RuleFrequency.NEVER,
             enforcement = RuleEnforcement.REQUIRED,
-            mealSlot = null,
             isActive = true
-        )
-    )
-
-    private val testMealSlotRules = listOf(
+        ),
         RecipeRule(
             id = "rule-4",
             type = RuleType.MEAL_SLOT,
@@ -92,8 +83,19 @@ class RecipeRulesViewModelTest {
             targetName = "Idli",
             frequency = RuleFrequency.DAILY,
             enforcement = RuleEnforcement.PREFERRED,
-            mealSlot = MealType.BREAKFAST,
+            mealSlots = listOf(MealType.BREAKFAST),
             isActive = true
+        ),
+        RecipeRule(
+            id = "rule-5",
+            type = RuleType.INGREDIENT,
+            action = RuleAction.INCLUDE,
+            targetId = "ingredient-eggs",
+            targetName = "Eggs",
+            frequency = RuleFrequency.DAILY,
+            enforcement = RuleEnforcement.PREFERRED,
+            mealSlots = listOf(MealType.BREAKFAST),
+            isActive = false
         )
     )
 
@@ -147,9 +149,7 @@ class RecipeRulesViewModelTest {
         mockRepository = mockk(relaxed = true)
         mockSettingsRepository = mockk(relaxed = true)
 
-        every { mockRepository.getRulesByType(RuleType.RECIPE) } returns flowOf(testRecipeRules)
-        every { mockRepository.getRulesByType(RuleType.INGREDIENT) } returns flowOf(testIngredientRules)
-        every { mockRepository.getRulesByType(RuleType.MEAL_SLOT) } returns flowOf(testMealSlotRules)
+        every { mockRepository.getAllRules() } returns flowOf(testAllRules)
         every { mockRepository.getAllNutritionGoals() } returns flowOf(testNutritionGoals)
         every { mockRepository.getPopularRecipes() } returns flowOf(testPopularRecipes)
         every { mockRepository.getPopularIngredients() } returns flowOf(testPopularIngredients)
@@ -178,20 +178,20 @@ class RecipeRulesViewModelTest {
         }
 
         @Test
-        @DisplayName("Default tab should be RECIPE")
-        fun `default tab should be RECIPE`() = runTest {
+        @DisplayName("Default tab should be RULES")
+        fun `default tab should be RULES`() = runTest {
             val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 val state = awaitItem()
-                assertEquals(RulesTab.RECIPE, state.selectedTab)
+                assertEquals(RulesTab.RULES, state.selectedTab)
                 cancelAndIgnoreRemainingEvents()
             }
         }
 
         @Test
-        @DisplayName("After loading, rules should be populated")
-        fun `after loading rules should be populated`() = runTest {
+        @DisplayName("After loading, all rules should be in single list")
+        fun `after loading all rules should be in single list`() = runTest {
             val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
@@ -201,9 +201,26 @@ class RecipeRulesViewModelTest {
 
                 val state = expectMostRecentItem()
                 assertFalse(state.isLoading)
-                assertEquals(2, state.recipeRules.size)
-                assertEquals(1, state.ingredientRules.size)
-                assertEquals(1, state.mealSlotRules.size)
+                assertEquals(5, state.allRules.size)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("Sorted rules should show active first then paused")
+        fun `sorted rules should show active first then paused`() = runTest {
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                val state = expectMostRecentItem()
+                val sorted = state.sortedRules
+                // Active rules (4) should come before paused rules (1)
+                val activeCount = sorted.takeWhile { it.isActive }.size
+                assertEquals(4, activeCount)
+                assertFalse(sorted.last().isActive)
                 cancelAndIgnoreRemainingEvents()
             }
         }
@@ -225,8 +242,8 @@ class RecipeRulesViewModelTest {
         }
 
         @Test
-        @DisplayName("Popular recipes and ingredients should be loaded")
-        fun `popular recipes and ingredients should be loaded`() = runTest {
+        @DisplayName("Popular items should be mixed recipes and ingredients")
+        fun `popular items should be mixed recipes and ingredients`() = runTest {
             val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
@@ -235,8 +252,10 @@ class RecipeRulesViewModelTest {
                 testDispatcher.scheduler.advanceUntilIdle()
 
                 val state = expectMostRecentItem()
-                assertEquals(1, state.popularRecipes.size)
-                assertEquals(4, state.popularIngredients.size)
+                assertTrue(state.popularItems.isNotEmpty())
+                // Should contain both types
+                assertTrue(state.popularItems.any { it is SearchResultItem.RecipeItem })
+                assertTrue(state.popularItems.any { it is SearchResultItem.IngredientItem })
                 cancelAndIgnoreRemainingEvents()
             }
         }
@@ -254,60 +273,10 @@ class RecipeRulesViewModelTest {
             viewModel.uiState.test {
                 awaitItem() // Initial
 
-                viewModel.selectTab(RulesTab.INGREDIENT)
+                viewModel.selectTab(RulesTab.NUTRITION)
 
                 val state = awaitItem()
-                assertEquals(RulesTab.INGREDIENT, state.selectedTab)
-                cancelAndIgnoreRemainingEvents()
-            }
-        }
-
-        @Test
-        @DisplayName("rulesForCurrentTab should return correct rules for each tab")
-        fun `rulesForCurrentTab should return correct rules for each tab`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
-
-            viewModel.uiState.test {
-                awaitItem() // Initial
-                testDispatcher.scheduler.advanceUntilIdle()
-                var state = expectMostRecentItem() // Wait for load
-
-                // Recipe tab is default, verify rules
-                assertEquals(RulesTab.RECIPE, state.selectedTab)
-                assertEquals(2, state.rulesForCurrentTab.size)
-
-                // Ingredient tab
-                viewModel.selectTab(RulesTab.INGREDIENT)
-                state = awaitItem()
-                assertEquals(1, state.rulesForCurrentTab.size)
-
-                // Meal-slot tab
-                viewModel.selectTab(RulesTab.MEAL_SLOT)
-                state = awaitItem()
-                assertEquals(1, state.rulesForCurrentTab.size)
-
-                // Nutrition tab (returns empty list for rules)
-                viewModel.selectTab(RulesTab.NUTRITION)
-                state = awaitItem()
-                assertEquals(0, state.rulesForCurrentTab.size)
-
-                cancelAndIgnoreRemainingEvents()
-            }
-        }
-
-        @Test
-        @DisplayName("currentTabCount should return correct count")
-        fun `currentTabCount should return correct count`() = runTest {
-            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
-
-            viewModel.uiState.test {
-                awaitItem() // Initial
-                testDispatcher.scheduler.advanceUntilIdle()
-                expectMostRecentItem() // Wait for load
-
-                viewModel.selectTab(RulesTab.NUTRITION)
-                val state = awaitItem()
-                assertEquals(2, state.currentTabCount) // 2 nutrition goals
+                assertEquals(RulesTab.NUTRITION, state.selectedTab)
                 cancelAndIgnoreRemainingEvents()
             }
         }
@@ -332,7 +301,10 @@ class RecipeRulesViewModelTest {
                 assertNull(state.editingRule)
                 assertEquals(RuleAction.INCLUDE, state.selectedAction)
                 assertEquals("", state.searchQuery)
+                assertNull(state.selectedTarget)
                 assertEquals(FrequencyType.TIMES_PER_WEEK, state.selectedFrequencyType)
+                assertEquals(MealSlotMode.ANY, state.mealSlotMode)
+                assertTrue(state.selectedMealSlots.isEmpty())
                 assertEquals(RuleEnforcement.REQUIRED, state.selectedEnforcement)
                 cancelAndIgnoreRemainingEvents()
             }
@@ -385,13 +357,14 @@ class RecipeRulesViewModelTest {
             viewModel.uiState.test {
                 awaitItem() // Initial
 
-                viewModel.showEditRuleSheet(testRecipeRules[0])
+                viewModel.showEditRuleSheet(testAllRules[0])
 
                 val state = awaitItem()
                 assertTrue(state.showAddRuleSheet)
-                assertEquals(testRecipeRules[0], state.editingRule)
+                assertEquals(testAllRules[0], state.editingRule)
                 assertEquals(RuleAction.INCLUDE, state.selectedAction)
-                assertEquals("Poha", state.selectedTargetName)
+                assertTrue(state.selectedTarget is SearchResultItem.RecipeItem)
+                assertEquals("Poha", state.selectedTarget?.displayName)
                 assertEquals(FrequencyType.TIMES_PER_WEEK, state.selectedFrequencyType)
                 assertEquals(2, state.selectedFrequencyCount)
                 cancelAndIgnoreRemainingEvents()
@@ -399,20 +372,18 @@ class RecipeRulesViewModelTest {
         }
 
         @Test
-        @DisplayName("MEAL_SLOT tab should set default meal slot to BREAKFAST")
-        fun `MEAL_SLOT tab should set default meal slot to BREAKFAST`() = runTest {
+        @DisplayName("showEditRuleSheet should set meal slot mode to SPECIFIC for rules with slots")
+        fun `showEditRuleSheet should set meal slot mode to SPECIFIC for rules with slots`() = runTest {
             val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
 
-                viewModel.selectTab(RulesTab.MEAL_SLOT)
-                awaitItem()
-
-                viewModel.showAddRuleSheet()
+                viewModel.showEditRuleSheet(testAllRules[3]) // Idli with BREAKFAST slot
 
                 val state = awaitItem()
-                assertEquals(MealType.BREAKFAST, state.selectedMealSlot)
+                assertEquals(MealSlotMode.SPECIFIC, state.mealSlotMode)
+                assertTrue(MealType.BREAKFAST in state.selectedMealSlots)
                 cancelAndIgnoreRemainingEvents()
             }
         }
@@ -504,11 +475,11 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("updateSearchQuery should update search query")
         fun `updateSearchQuery should update search query`() = runTest {
-            // Mock searchRecipes to avoid coroutine issues
             every { mockRepository.searchRecipes(any()) } returns flowOf(emptyList())
+            every { mockRepository.searchIngredients(any()) } returns flowOf(emptyList())
 
             val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
-            testDispatcher.scheduler.advanceUntilIdle() // Let init complete
+            testDispatcher.scheduler.advanceUntilIdle()
 
             viewModel.uiState.test {
                 val initial = awaitItem()
@@ -523,37 +494,59 @@ class RecipeRulesViewModelTest {
         }
 
         @Test
-        @DisplayName("selectRecipe should set target")
-        fun `selectRecipe should set target`() = runTest {
+        @DisplayName("selectSearchResult with recipe should set target")
+        fun `selectSearchResult with recipe should set target`() = runTest {
             val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
 
-                viewModel.selectRecipe(testPopularRecipes[0])
+                val item = SearchResultItem.RecipeItem(testPopularRecipes[0])
+                viewModel.selectSearchResult(item)
 
                 val state = awaitItem()
-                assertEquals("recipe-1", state.selectedTargetId)
-                assertEquals("Poha", state.selectedTargetName)
-                assertEquals("Poha", state.searchQuery)
+                assertEquals(item, state.selectedTarget)
+                assertEquals("Poha", state.selectedTarget?.displayName)
+                assertTrue(state.selectedTarget?.isRecipe == true)
                 cancelAndIgnoreRemainingEvents()
             }
         }
 
         @Test
-        @DisplayName("selectIngredient should set target")
-        fun `selectIngredient should set target`() = runTest {
+        @DisplayName("selectSearchResult with ingredient should set target")
+        fun `selectSearchResult with ingredient should set target`() = runTest {
             val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
 
-                viewModel.selectIngredient("Tomato")
+                val item = SearchResultItem.IngredientItem("Tomato")
+                viewModel.selectSearchResult(item)
 
                 val state = awaitItem()
-                assertEquals("ingredient-tomato", state.selectedTargetId)
-                assertEquals("Tomato", state.selectedTargetName)
-                assertEquals("Tomato", state.searchQuery)
+                assertEquals(item, state.selectedTarget)
+                assertEquals("Tomato", state.selectedTarget?.displayName)
+                assertFalse(state.selectedTarget?.isRecipe == true)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("clearSelectedTarget should clear target")
+        fun `clearSelectedTarget should clear target`() = runTest {
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial
+
+                val item = SearchResultItem.IngredientItem("Tomato")
+                viewModel.selectSearchResult(item)
+                awaitItem()
+
+                viewModel.clearSelectedTarget()
+
+                val state = awaitItem()
+                assertNull(state.selectedTarget)
                 cancelAndIgnoreRemainingEvents()
             }
         }
@@ -610,17 +603,62 @@ class RecipeRulesViewModelTest {
         }
 
         @Test
-        @DisplayName("updateMealSlot should update meal slot")
-        fun `updateMealSlot should update meal slot`() = runTest {
+        @DisplayName("updateMealSlotMode should update mode")
+        fun `updateMealSlotMode should update mode`() = runTest {
             val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
 
-                viewModel.updateMealSlot(MealType.LUNCH)
+                viewModel.updateMealSlotMode(MealSlotMode.SPECIFIC)
 
                 val state = awaitItem()
-                assertEquals(MealType.LUNCH, state.selectedMealSlot)
+                assertEquals(MealSlotMode.SPECIFIC, state.mealSlotMode)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("updateMealSlotMode to ANY should clear selected slots")
+        fun `updateMealSlotMode to ANY should clear selected slots`() = runTest {
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial
+
+                viewModel.updateMealSlotMode(MealSlotMode.SPECIFIC)
+                awaitItem()
+                viewModel.toggleMealSlot(MealType.BREAKFAST)
+                awaitItem()
+
+                viewModel.updateMealSlotMode(MealSlotMode.ANY)
+                val state = awaitItem()
+                assertTrue(state.selectedMealSlots.isEmpty())
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("toggleMealSlot should toggle meal slot in selection")
+        fun `toggleMealSlot should toggle meal slot in selection`() = runTest {
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial
+
+                viewModel.toggleMealSlot(MealType.BREAKFAST)
+                var state = awaitItem()
+                assertTrue(MealType.BREAKFAST in state.selectedMealSlots)
+
+                viewModel.toggleMealSlot(MealType.LUNCH)
+                state = awaitItem()
+                assertTrue(MealType.BREAKFAST in state.selectedMealSlots)
+                assertTrue(MealType.LUNCH in state.selectedMealSlots)
+
+                viewModel.toggleMealSlot(MealType.BREAKFAST)
+                state = awaitItem()
+                assertFalse(MealType.BREAKFAST in state.selectedMealSlots)
+                assertTrue(MealType.LUNCH in state.selectedMealSlots)
                 cancelAndIgnoreRemainingEvents()
             }
         }
@@ -681,7 +719,7 @@ class RecipeRulesViewModelTest {
         @Test
         @DisplayName("saveRule should call repository and dismiss sheet on success")
         fun `saveRule should call repository and dismiss sheet on success`() = runTest {
-            coEvery { mockRepository.createRule(any()) } returns Result.success(testRecipeRules[0])
+            coEvery { mockRepository.createRule(any()) } returns Result.success(testAllRules[0])
 
             val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
@@ -691,7 +729,7 @@ class RecipeRulesViewModelTest {
                 // Set up form
                 viewModel.showAddRuleSheet()
                 awaitItem()
-                viewModel.selectRecipe(testPopularRecipes[0])
+                viewModel.selectSearchResult(SearchResultItem.RecipeItem(testPopularRecipes[0]))
                 awaitItem()
 
                 viewModel.saveRule()
@@ -715,7 +753,7 @@ class RecipeRulesViewModelTest {
             viewModel.uiState.test {
                 awaitItem() // Initial
 
-                viewModel.showEditRuleSheet(testRecipeRules[0])
+                viewModel.showEditRuleSheet(testAllRules[0])
                 awaitItem()
 
                 viewModel.saveRule()
@@ -726,6 +764,68 @@ class RecipeRulesViewModelTest {
             }
 
             coVerify { mockRepository.updateRule(any()) }
+        }
+
+        @Test
+        @DisplayName("saveRule should auto-infer MEAL_SLOT type when recipe has specific slots")
+        fun `saveRule should auto-infer MEAL_SLOT type when recipe has specific slots`() = runTest {
+            coEvery { mockRepository.createRule(any()) } returns Result.success(testAllRules[3])
+
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial
+
+                viewModel.showAddRuleSheet()
+                awaitItem()
+                viewModel.selectSearchResult(SearchResultItem.RecipeItem(testPopularRecipes[0]))
+                awaitItem()
+                viewModel.updateMealSlotMode(MealSlotMode.SPECIFIC)
+                awaitItem()
+                viewModel.toggleMealSlot(MealType.BREAKFAST)
+                awaitItem()
+
+                viewModel.saveRule()
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                expectMostRecentItem()
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            coVerify {
+                mockRepository.createRule(match { it.type == RuleType.MEAL_SLOT })
+            }
+        }
+
+        @Test
+        @DisplayName("saveRule should auto-infer INGREDIENT type for ingredients regardless of slots")
+        fun `saveRule should auto-infer INGREDIENT type for ingredients regardless of slots`() = runTest {
+            coEvery { mockRepository.createRule(any()) } returns Result.success(testAllRules[2])
+
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial
+
+                viewModel.showAddRuleSheet()
+                awaitItem()
+                viewModel.selectSearchResult(SearchResultItem.IngredientItem("Onion"))
+                awaitItem()
+                viewModel.updateMealSlotMode(MealSlotMode.SPECIFIC)
+                awaitItem()
+                viewModel.toggleMealSlot(MealType.DINNER)
+                awaitItem()
+
+                viewModel.saveRule()
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                expectMostRecentItem()
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            coVerify {
+                mockRepository.createRule(match { it.type == RuleType.INGREDIENT })
+            }
         }
 
         @Test
@@ -768,7 +868,7 @@ class RecipeRulesViewModelTest {
 
             val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
-            viewModel.toggleRuleActive(testRecipeRules[0])
+            viewModel.toggleRuleActive(testAllRules[0])
             testDispatcher.scheduler.advanceUntilIdle()
 
             coVerify { mockRepository.toggleRuleActive("rule-1", false) }
@@ -794,7 +894,6 @@ class RecipeRulesViewModelTest {
 
             val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
-            // Goal with default PREFERRED enforcement should toggle to REQUIRED
             viewModel.toggleNutritionGoalEnforcement(testNutritionGoals[0])
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -816,11 +915,11 @@ class RecipeRulesViewModelTest {
             viewModel.uiState.test {
                 awaitItem() // Initial
 
-                viewModel.showDeleteConfirmation(testRecipeRules[0])
+                viewModel.showDeleteConfirmation(testAllRules[0])
 
                 val state = awaitItem()
                 assertTrue(state.showDeleteConfirmation)
-                assertEquals(testRecipeRules[0], state.ruleToDelete)
+                assertEquals(testAllRules[0], state.ruleToDelete)
                 assertNull(state.goalToDelete)
                 cancelAndIgnoreRemainingEvents()
             }
@@ -852,7 +951,7 @@ class RecipeRulesViewModelTest {
             viewModel.uiState.test {
                 awaitItem() // Initial
 
-                viewModel.showDeleteConfirmation(testRecipeRules[0])
+                viewModel.showDeleteConfirmation(testAllRules[0])
                 awaitItem()
 
                 viewModel.dismissDeleteConfirmation()
@@ -874,7 +973,7 @@ class RecipeRulesViewModelTest {
             viewModel.uiState.test {
                 awaitItem() // Initial
 
-                viewModel.showDeleteConfirmation(testRecipeRules[0])
+                viewModel.showDeleteConfirmation(testAllRules[0])
                 awaitItem()
 
                 viewModel.confirmDelete()
@@ -962,7 +1061,7 @@ class RecipeRulesViewModelTest {
 
                 viewModel.showAddRuleSheet()
                 awaitItem()
-                viewModel.selectRecipe(testPopularRecipes[0])
+                viewModel.selectSearchResult(SearchResultItem.RecipeItem(testPopularRecipes[0]))
                 awaitItem()
 
                 viewModel.saveRule()
@@ -987,7 +1086,7 @@ class RecipeRulesViewModelTest {
             viewModel.uiState.test {
                 awaitItem() // Initial
 
-                viewModel.showEditRuleSheet(testRecipeRules[0])
+                viewModel.showEditRuleSheet(testAllRules[0])
 
                 val state = awaitItem()
                 assertTrue(state.isEditing)
@@ -996,8 +1095,8 @@ class RecipeRulesViewModelTest {
         }
 
         @Test
-        @DisplayName("canSaveRule should be false when target is empty")
-        fun `canSaveRule should be false when target is empty`() = runTest {
+        @DisplayName("canSaveRule should be false when target is null")
+        fun `canSaveRule should be false when target is null`() = runTest {
             val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
@@ -1021,7 +1120,7 @@ class RecipeRulesViewModelTest {
 
                 viewModel.showAddRuleSheet()
                 awaitItem()
-                viewModel.selectRecipe(testPopularRecipes[0])
+                viewModel.selectSearchResult(SearchResultItem.RecipeItem(testPopularRecipes[0]))
 
                 val state = awaitItem()
                 assertTrue(state.canSaveRule)
@@ -1039,7 +1138,7 @@ class RecipeRulesViewModelTest {
 
                 viewModel.showAddRuleSheet()
                 awaitItem()
-                viewModel.selectRecipe(testPopularRecipes[0])
+                viewModel.selectSearchResult(SearchResultItem.RecipeItem(testPopularRecipes[0]))
                 awaitItem()
                 viewModel.updateFrequencyType(FrequencyType.SPECIFIC_DAYS)
 
@@ -1054,13 +1153,36 @@ class RecipeRulesViewModelTest {
         }
 
         @Test
+        @DisplayName("canSaveRule with SPECIFIC meal slots should require slots selected")
+        fun `canSaveRule with SPECIFIC meal slots should require slots selected`() = runTest {
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial
+
+                viewModel.showAddRuleSheet()
+                awaitItem()
+                viewModel.selectSearchResult(SearchResultItem.RecipeItem(testPopularRecipes[0]))
+                awaitItem()
+                viewModel.updateMealSlotMode(MealSlotMode.SPECIFIC)
+
+                var state = awaitItem()
+                assertFalse(state.canSaveRule) // No slots selected
+
+                viewModel.toggleMealSlot(MealType.BREAKFAST)
+                state = awaitItem()
+                assertTrue(state.canSaveRule) // Slot selected
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
         @DisplayName("canSaveNutritionGoal should be false when category is null")
         fun `canSaveNutritionGoal should be false when category is null`() = runTest {
             val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
 
             viewModel.uiState.test {
                 val state = awaitItem() // Initial
-                // Category is null by default
                 assertFalse(state.canSaveNutritionGoal)
                 cancelAndIgnoreRemainingEvents()
             }
@@ -1080,29 +1202,6 @@ class RecipeRulesViewModelTest {
                 assertTrue(state.canSaveNutritionGoal)
                 cancelAndIgnoreRemainingEvents()
             }
-        }
-    }
-
-    @Nested
-    @DisplayName("RulesTab Enum")
-    inner class RulesTabEnum {
-
-        @Test
-        @DisplayName("fromRuleType should map correctly")
-        fun `fromRuleType should map correctly`() {
-            assertEquals(RulesTab.RECIPE, RulesTab.fromRuleType(RuleType.RECIPE))
-            assertEquals(RulesTab.INGREDIENT, RulesTab.fromRuleType(RuleType.INGREDIENT))
-            assertEquals(RulesTab.MEAL_SLOT, RulesTab.fromRuleType(RuleType.MEAL_SLOT))
-            assertEquals(RulesTab.NUTRITION, RulesTab.fromRuleType(RuleType.NUTRITION))
-        }
-
-        @Test
-        @DisplayName("toRuleType should map correctly")
-        fun `toRuleType should map correctly`() {
-            assertEquals(RuleType.RECIPE, RulesTab.RECIPE.toRuleType())
-            assertEquals(RuleType.INGREDIENT, RulesTab.INGREDIENT.toRuleType())
-            assertEquals(RuleType.MEAL_SLOT, RulesTab.MEAL_SLOT.toRuleType())
-            assertEquals(RuleType.NUTRITION, RulesTab.NUTRITION.toRuleType())
         }
     }
 }

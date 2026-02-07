@@ -25,7 +25,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * UI Tests for RecipeRulesScreen
+ * UI Tests for RecipeRulesScreen (consolidated 2-tab version)
  * Tests Phase 11 of E2E Testing Guide: Recipe Rules Screen Testing
  */
 @RunWith(AndroidJUnit4::class)
@@ -44,7 +44,7 @@ class RecipeRulesScreenTest {
         targetName: String = "Rajma",
         frequency: RuleFrequency = RuleFrequency.timesPerWeek(1),
         enforcement: RuleEnforcement = RuleEnforcement.REQUIRED,
-        mealSlot: MealType? = null,
+        mealSlots: List<MealType> = emptyList(),
         isActive: Boolean = true
     ) = RecipeRule(
         id = id,
@@ -54,7 +54,7 @@ class RecipeRulesScreenTest {
         targetName = targetName,
         frequency = frequency,
         enforcement = enforcement,
-        mealSlot = mealSlot,
+        mealSlots = mealSlots,
         isActive = isActive
     )
 
@@ -75,16 +75,12 @@ class RecipeRulesScreenTest {
     private fun createTestUiState(
         isLoading: Boolean = false,
         errorMessage: String? = null,
-        selectedTab: RulesTab = RulesTab.RECIPE,
-        recipeRules: List<RecipeRule> = listOf(
+        selectedTab: RulesTab = RulesTab.RULES,
+        allRules: List<RecipeRule> = listOf(
             createTestRecipeRule("1", RuleType.RECIPE, RuleAction.INCLUDE, "r1", "Rajma"),
-            createTestRecipeRule("2", RuleType.RECIPE, RuleAction.INCLUDE, "r2", "Chai", RuleFrequency.DAILY)
-        ),
-        ingredientRules: List<RecipeRule> = listOf(
-            createTestRecipeRule("3", RuleType.INGREDIENT, RuleAction.EXCLUDE, "i1", "Onion")
-        ),
-        mealSlotRules: List<RecipeRule> = listOf(
-            createTestRecipeRule("4", RuleType.MEAL_SLOT, RuleAction.INCLUDE, "r3", "Paratha", mealSlot = MealType.BREAKFAST)
+            createTestRecipeRule("2", RuleType.RECIPE, RuleAction.INCLUDE, "r2", "Chai", RuleFrequency.DAILY),
+            createTestRecipeRule("3", RuleType.INGREDIENT, RuleAction.EXCLUDE, "i1", "Onion"),
+            createTestRecipeRule("4", RuleType.MEAL_SLOT, RuleAction.INCLUDE, "r3", "Paratha", mealSlots = listOf(MealType.BREAKFAST))
         ),
         nutritionGoals: List<NutritionGoal> = listOf(
             createTestNutritionGoal("g1", FoodCategory.GREEN_LEAFY, 7, 4),
@@ -97,9 +93,7 @@ class RecipeRulesScreenTest {
         isLoading = isLoading,
         errorMessage = errorMessage,
         selectedTab = selectedTab,
-        recipeRules = recipeRules,
-        ingredientRules = ingredientRules,
-        mealSlotRules = mealSlotRules,
+        allRules = allRules,
         nutritionGoals = nutritionGoals,
         showAddRuleSheet = showAddRuleSheet,
         showAddNutritionGoalSheet = showAddNutritionGoalSheet,
@@ -154,8 +148,8 @@ class RecipeRulesScreenTest {
     // region Phase 11.2: Tab Navigation Tests
 
     @Test
-    fun recipeRulesScreen_displaysRecipeTab() {
-        val uiState = createTestUiState(selectedTab = RulesTab.RECIPE)
+    fun recipeRulesScreen_displaysRulesTab() {
+        val uiState = createTestUiState(selectedTab = RulesTab.RULES)
 
         composeTestRule.setContent {
             RasoiAITheme {
@@ -163,34 +157,7 @@ class RecipeRulesScreenTest {
             }
         }
 
-        // Tab bar should be visible with Recipe tab
-        composeTestRule.onNodeWithText("Recipe", substring = true).assertIsDisplayed()
-    }
-
-    @Test
-    fun recipeRulesScreen_displaysIngredientTab() {
-        val uiState = createTestUiState(selectedTab = RulesTab.INGREDIENT)
-
-        composeTestRule.setContent {
-            RasoiAITheme {
-                RecipeRulesTestContent(uiState = uiState)
-            }
-        }
-
-        composeTestRule.onNodeWithText("Ingredient", substring = true).assertIsDisplayed()
-    }
-
-    @Test
-    fun recipeRulesScreen_displaysMealSlotTab() {
-        val uiState = createTestUiState(selectedTab = RulesTab.MEAL_SLOT)
-
-        composeTestRule.setContent {
-            RasoiAITheme {
-                RecipeRulesTestContent(uiState = uiState)
-            }
-        }
-
-        composeTestRule.onNodeWithText("Meal", substring = true).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Rules", substring = true).assertIsDisplayed()
     }
 
     @Test
@@ -209,7 +176,7 @@ class RecipeRulesScreenTest {
     @Test
     fun tabClick_triggersTabSelectionCallback() {
         var selectedTab: RulesTab? = null
-        val uiState = createTestUiState(selectedTab = RulesTab.RECIPE)
+        val uiState = createTestUiState(selectedTab = RulesTab.RULES)
 
         composeTestRule.setContent {
             RasoiAITheme {
@@ -220,18 +187,18 @@ class RecipeRulesScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Ingredient", substring = true).performClick()
+        composeTestRule.onNodeWithText("Nutrition", substring = true).performClick()
 
-        assert(selectedTab == RulesTab.INGREDIENT) { "Tab selection callback was not triggered" }
+        assert(selectedTab == RulesTab.NUTRITION) { "Tab selection callback was not triggered" }
     }
 
     // endregion
 
-    // region Phase 11.3: Recipe Rules Display Tests
+    // region Phase 11.3: Rules Display Tests
 
     @Test
-    fun recipeRulesScreen_displaysRecipeRules() {
-        val uiState = createTestUiState(selectedTab = RulesTab.RECIPE)
+    fun recipeRulesScreen_displaysAllRulesInSingleList() {
+        val uiState = createTestUiState(selectedTab = RulesTab.RULES)
 
         composeTestRule.setContent {
             RasoiAITheme {
@@ -239,35 +206,9 @@ class RecipeRulesScreenTest {
             }
         }
 
-        // Verify recipe rules are displayed
+        // Verify all rule types are displayed in single list
         composeTestRule.onNodeWithText("Rajma", substring = true).assertIsDisplayed()
-    }
-
-    @Test
-    fun recipeRulesScreen_displaysIngredientRules() {
-        val uiState = createTestUiState(selectedTab = RulesTab.INGREDIENT)
-
-        composeTestRule.setContent {
-            RasoiAITheme {
-                RecipeRulesTestContent(uiState = uiState)
-            }
-        }
-
-        // Verify ingredient rules are displayed
         composeTestRule.onNodeWithText("Onion", substring = true).assertIsDisplayed()
-    }
-
-    @Test
-    fun recipeRulesScreen_displaysMealSlotRules() {
-        val uiState = createTestUiState(selectedTab = RulesTab.MEAL_SLOT)
-
-        composeTestRule.setContent {
-            RasoiAITheme {
-                RecipeRulesTestContent(uiState = uiState)
-            }
-        }
-
-        // Verify meal slot rules are displayed
         composeTestRule.onNodeWithText("Paratha", substring = true).assertIsDisplayed()
     }
 
@@ -281,8 +222,7 @@ class RecipeRulesScreenTest {
             }
         }
 
-        // Verify nutrition goals header is displayed
-        composeTestRule.onNodeWithText("WEEKLY NUTRITION GOALS", substring = true).assertIsDisplayed()
+        composeTestRule.onNodeWithText("MY NUTRITION GOALS", substring = true).assertIsDisplayed()
     }
 
     // endregion
@@ -290,8 +230,8 @@ class RecipeRulesScreenTest {
     // region Phase 11.4: Empty State Tests
 
     @Test
-    fun recipeRulesScreen_emptyRecipeRules_displaysEmptyState() {
-        val uiState = createTestUiState(selectedTab = RulesTab.RECIPE, recipeRules = emptyList())
+    fun recipeRulesScreen_emptyRules_displaysEmptyState() {
+        val uiState = createTestUiState(selectedTab = RulesTab.RULES, allRules = emptyList())
 
         composeTestRule.setContent {
             RasoiAITheme {
@@ -299,7 +239,6 @@ class RecipeRulesScreenTest {
             }
         }
 
-        // Empty state should show add button or message
         composeTestRule.onNodeWithTag(TestTags.RECIPE_RULES_SCREEN).assertIsDisplayed()
     }
 
@@ -363,7 +302,7 @@ class RecipeRulesScreenTest {
     @Test
     fun addRuleButton_click_triggersCallback() {
         var addRuleClicked = false
-        val uiState = createTestUiState(selectedTab = RulesTab.RECIPE)
+        val uiState = createTestUiState(selectedTab = RulesTab.RULES)
 
         composeTestRule.setContent {
             RasoiAITheme {
@@ -374,7 +313,7 @@ class RecipeRulesScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("ADD RECIPE RULE", substring = true).performClick()
+        composeTestRule.onNodeWithText("ADD RULE", substring = true).performClick()
 
         assert(addRuleClicked) { "Add rule callback was not triggered" }
     }
@@ -387,25 +326,21 @@ class RecipeRulesScreenTest {
     fun recipeRulesScreen_hasRulesData() {
         val uiState = createTestUiState()
 
-        assert(uiState.recipeRules.isNotEmpty()) { "Recipe rules should exist" }
-        assert(uiState.ingredientRules.isNotEmpty()) { "Ingredient rules should exist" }
-        assert(uiState.mealSlotRules.isNotEmpty()) { "Meal slot rules should exist" }
+        assert(uiState.allRules.isNotEmpty()) { "Rules should exist" }
         assert(uiState.nutritionGoals.isNotEmpty()) { "Nutrition goals should exist" }
     }
 
     @Test
-    fun recipeRulesScreen_rulesForCurrentTab_returnsCorrectRules() {
-        val uiState = createTestUiState(selectedTab = RulesTab.RECIPE)
+    fun recipeRulesScreen_sortedRules_activeFirst() {
+        val rules = listOf(
+            createTestRecipeRule("1", isActive = false, targetName = "Paused Rule"),
+            createTestRecipeRule("2", isActive = true, targetName = "Active Rule")
+        )
+        val uiState = createTestUiState(selectedTab = RulesTab.RULES, allRules = rules)
 
-        assert(uiState.rulesForCurrentTab.size == 2) { "Should have 2 recipe rules" }
-        assert(uiState.rulesForCurrentTab.all { it.type == RuleType.RECIPE }) { "All rules should be recipe type" }
-    }
-
-    @Test
-    fun recipeRulesScreen_nutritionTab_returnsEmptyRules() {
-        val uiState = createTestUiState(selectedTab = RulesTab.NUTRITION)
-
-        assert(uiState.rulesForCurrentTab.isEmpty()) { "Nutrition tab should have empty rules (uses goals instead)" }
+        val sorted = uiState.sortedRules
+        assert(sorted.first().isActive) { "Active rules should come first" }
+        assert(!sorted.last().isActive) { "Paused rules should come last" }
     }
 
     // endregion

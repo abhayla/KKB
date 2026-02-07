@@ -3,6 +3,8 @@ package com.rasoiai.data.repository
 import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.data.local.dao.FavoriteDao
 import com.rasoiai.data.local.dao.RecipeDao
+import com.rasoiai.data.local.dao.RecipeRulesDao
+import com.rasoiai.data.local.entity.KnownIngredientEntity
 import com.rasoiai.data.local.entity.FavoriteEntity
 import com.rasoiai.data.local.mapper.toDomain
 import com.rasoiai.data.local.mapper.toEntity
@@ -33,6 +35,7 @@ class RecipeRepositoryImpl @Inject constructor(
     private val apiService: RasoiApiService,
     private val recipeDao: RecipeDao,
     private val favoriteDao: FavoriteDao,
+    private val recipeRulesDao: RecipeRulesDao,
     private val networkMonitor: NetworkMonitor
 ) : RecipeRepository {
 
@@ -107,8 +110,10 @@ class RecipeRepositoryImpl @Inject constructor(
 
             Timber.i("Cached ${entities.size} recipes from search")
 
-            // Return domain models
+            // Persist ingredient names for Recipe Rules search
             val recipes = response.map { it.toDomain() }
+            persistIngredientNames(recipes)
+
             Result.success(recipes)
         } catch (e: Exception) {
             Timber.e(e, "Failed to search recipes")
@@ -200,7 +205,9 @@ class RecipeRepositoryImpl @Inject constructor(
             val isFavorite = favoriteDao.isFavoriteSync(recipeId)
             recipeDao.insertRecipe(response.toEntity(isFavorite))
             Timber.d("Cached recipe: $recipeId")
-            response.toDomain().copy(isFavorite = isFavorite)
+            val recipe = response.toDomain().copy(isFavorite = isFavorite)
+            persistIngredientNames(listOf(recipe))
+            recipe
         } catch (e: Exception) {
             Timber.e(e, "Failed to fetch recipe from API: $recipeId")
             null
@@ -246,6 +253,26 @@ class RecipeRepositoryImpl @Inject constructor(
             servings = targetServings,
             ingredients = scaledIngredients
         )
+    }
+
+    /**
+     * Persist ingredient names from recipes into known_ingredients table
+     * for Recipe Rules search auto-population.
+     */
+    private suspend fun persistIngredientNames(recipes: List<Recipe>) {
+        try {
+            val ingredientNames = recipes
+                .flatMap { it.ingredients.map { ing -> ing.name } }
+                .distinct()
+            if (ingredientNames.isEmpty()) return
+
+            val entities = ingredientNames.map {
+                KnownIngredientEntity(name = it, source = "recipe_cache")
+            }
+            recipeRulesDao.insertKnownIngredients(entities)
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to persist ingredient names")
+        }
     }
 
     /**

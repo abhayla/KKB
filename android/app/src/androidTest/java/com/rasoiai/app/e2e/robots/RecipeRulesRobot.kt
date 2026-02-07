@@ -173,19 +173,21 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
 
     /**
      * Select Include action in the bottom sheet via radio button.
+     * Uses testTag to avoid matching "Include" in the empty state description text.
      */
     fun selectIncludeAction() = apply {
         Log.d(TAG, "Selecting Include action")
-        composeTestRule.onNodeWithText("Include", substring = true, ignoreCase = true).performClick()
+        composeTestRule.onNodeWithTag(TestTags.RULE_ACTION_INCLUDE).performClick()
         composeTestRule.waitForIdle()
     }
 
     /**
      * Select Exclude action in the bottom sheet via radio button.
+     * Uses testTag to avoid matching "Exclude" in the empty state description text.
      */
     fun selectExcludeAction() = apply {
         Log.d(TAG, "Selecting Exclude action")
-        composeTestRule.onNodeWithText("Exclude", substring = true, ignoreCase = true).performClick()
+        composeTestRule.onNodeWithTag(TestTags.RULE_ACTION_EXCLUDE).performClick()
         composeTestRule.waitForIdle()
     }
 
@@ -693,41 +695,52 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
      * Assert rule card is displayed.
      * Handles multiple matches by checking at least one node with the target name is displayed.
      */
-    fun assertRuleCardDisplayed(targetName: String) = apply {
+    fun assertRuleCardDisplayed(targetName: String, timeoutMillis: Long = 10000) = apply {
         Log.d(TAG, "Asserting rule card displayed: $targetName")
-        // Wait for any sheet animations to complete
-        Thread.sleep(800)
+        // Wait for any sheet animations / tab transitions to complete
         composeTestRule.waitForIdle()
 
-        // Use UiAutomator to check element exists
+        // Use UiAutomator with waitForExists to handle tab transitions and lazy rendering
         val targetElement = uiDevice.findObject(UiSelector().textContains(targetName))
-        if (targetElement.exists()) {
-            Log.d(TAG, "Found element with text '$targetName' via UiAutomator")
+        if (targetElement.waitForExists(timeoutMillis)) {
+            Log.d(TAG, "Found element with text '$targetName' via UiAutomator (initial wait)")
+            return@apply
         }
 
-        // Use Compose test to verify at least one node exists and is displayed
+        // Element not found after waiting — try Compose API (checks semantic tree, not just on-screen)
+        Log.d(TAG, "'$targetName' not found after ${timeoutMillis}ms, checking Compose semantic tree")
         val nodes = composeTestRule.onAllNodesWithText(targetName, substring = true, ignoreCase = true)
             .fetchSemanticsNodes()
-
-        if (nodes.isEmpty()) {
-            throw AssertionError("No nodes found with text '$targetName'")
+        if (nodes.isNotEmpty()) {
+            Log.d(TAG, "Found ${nodes.size} node(s) with text '$targetName' via Compose semantic tree")
+            // Try to scroll to it
+            try {
+                composeTestRule.onAllNodesWithText(targetName, substring = true, ignoreCase = true)[0]
+                    .performScrollTo()
+                Log.d(TAG, "Scrolled to '$targetName' via Compose")
+                return@apply
+            } catch (e: Exception) {
+                Log.d(TAG, "Could not scroll to '$targetName': ${e.message}")
+            }
+            return@apply
         }
 
-        Log.d(TAG, "Found ${nodes.size} node(s) with text '$targetName'")
-
-        // Assert at least one is displayed - use filterToOne if possible, otherwise just check existence
-        try {
-            // Try to find a unique match with more specific criteria
-            composeTestRule.onAllNodesWithText(targetName, substring = true, ignoreCase = true)
-                .assertCountEquals(nodes.size) // Just verify count matches what we found
-        } catch (e: Exception) {
-            Log.d(TAG, "Count assertion issue, but nodes exist: ${e.message}")
+        // Last resort: small scroll down + up to trigger lazy list rendering
+        Log.d(TAG, "'$targetName' not in semantic tree, trying small scroll")
+        uiDevice.swipe(540, 1200, 540, 900, 10)
+        Thread.sleep(500)
+        if (targetElement.waitForExists(2000)) {
+            Log.d(TAG, "Found '$targetName' after scrolling down")
+            return@apply
+        }
+        uiDevice.swipe(540, 900, 540, 1200, 10)
+        Thread.sleep(500)
+        if (targetElement.waitForExists(2000)) {
+            Log.d(TAG, "Found '$targetName' after scrolling up")
+            return@apply
         }
 
-        // Verify at least one node is displayed using UiAutomator
-        if (!targetElement.exists()) {
-            throw AssertionError("Element '$targetName' not found on screen")
-        }
+        throw AssertionError("Element '$targetName' not found on screen after scrolling and waiting ${timeoutMillis}ms")
     }
 
     /**
@@ -809,7 +822,7 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
             Log.e(TAG, "Could not find menu button. Printing semantics tree...")
             try {
                 composeTestRule.onRoot().printToLog(TAG)
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 Log.e(TAG, "Could not print semantics tree (multiple roots): ${e.message}")
             }
             throw AssertionError("Could not find 'More options' menu button after 5 attempts")
@@ -894,7 +907,7 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
             Log.e(TAG, "Could not find menu button. Printing semantics tree...")
             try {
                 composeTestRule.onRoot().printToLog(TAG)
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 Log.e(TAG, "Could not print semantics tree (multiple roots): ${e.message}")
             }
             throw AssertionError("Could not find 'More options' menu button after 5 attempts")

@@ -27,7 +27,7 @@ data class RecipeRuleEntity(
     val frequencyCount: Int? = null,
     val frequencyDays: String? = null, // Comma-separated day values
     val enforcement: String, // RuleEnforcement value
-    val mealSlot: String? = null, // MealType value
+    val mealSlots: String? = null, // Comma-separated MealType values
     val isActive: Boolean = true,
     val syncStatus: String = SyncStatus.SYNCED, // SYNCED, PENDING, CONFLICT
     val createdAt: String, // ISO datetime
