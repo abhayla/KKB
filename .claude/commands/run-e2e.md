@@ -8,6 +8,19 @@ If `$ARGUMENTS` is empty, run ALL groups sequentially. If a group name is provid
 
 ---
 
+## AUTO-PROCEED RULES (MANDATORY)
+
+- Do NOT ask for any confirmations before, during, or after test execution
+- Do NOT ask "Should I proceed?", "Ready to continue?", or similar
+- Automatically handle all prerequisites (emulator, build, backend check)
+- If build fails, auto-fix compilation errors and rebuild — do not ask
+- If emulator is not running, auto-start it and wait for boot — do not ask
+- If backend is not running, STOP with a clear message (cannot auto-start safely) but do NOT phrase it as a question
+- Proceed through all groups/tests without pausing for user input
+- Only stop for: backend not running, or a test failing 5 times
+
+---
+
 ## PREREQUISITES — Run These First (Every Time)
 
 ### 1. Check Emulator
@@ -168,57 +181,60 @@ com.rasoiai.app.e2e.performance.PerformanceTest
 
 ---
 
-## EXECUTION PROTOCOL — For Each Group
+## EXECUTION PROTOCOL — Per-Test Individual Execution
 
-### Step 1: Run the Group
+For each group, run test classes **one at a time**. On failure, fix and restart the group from the beginning.
 
-Construct the Gradle command by joining all class names for the group with commas (no spaces, no newlines):
+### Step 1: Initialize Group
+
+```
+test_classes = [list of classes in group, in order]
+test_index = 0
+fail_counts = {}   // map of class_name → failure count
+group_restarts = 0
+```
+
+### Step 2: Run Current Test
+
+Run ONLY `test_classes[test_index]` as a single Gradle invocation:
 
 ```bash
 cd android && ./gradlew :app:connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=CLASS1,CLASS2,CLASS3
+  -Pandroid.testInstrumentationRunnerArguments.class=<single_class>
 ```
 
 Use a 10-minute timeout for groups with AI calls (meal-generation, home, chat, recipe-rules, cross-cutting). Use 5-minute timeout for others.
 
-### Step 2: Parse Results
+### Step 3: If PASSED
 
-After the Gradle command completes:
-1. Check the exit code (0 = all passed)
-2. Read the test result XML files if needed:
-   ```bash
-   find android/app/build/outputs/androidTest-results -name "*.xml" -newer /tmp/e2e-marker 2>/dev/null | head -5
-   ```
-3. Count: total tests, passed, failed, skipped
+- Log: `✅ test_classes[test_index] passed`
+- Increment `test_index`
+- If `test_index == len(test_classes)`: **GROUP COMPLETE** → move to next group
+- Else: go to **Step 2**
 
-### Step 3: If ALL Passed
+### Step 4: If FAILED — Fix and Restart Group
 
-Log the result and move to the next group:
-```
-✅ Group N: [group-name] → X/X passed
-```
+- Increment `fail_counts[current_class]`
+- Increment `group_restarts`
+- If `fail_counts[current_class] >= 5`:
+    **STOP:** "Test [class_name] has failed 5 times. Manual investigation needed."
+    Report all 5 attempted fixes. Do not continue this group.
+- Else:
+    1. **Read the failure output** — identify exception/assertion message
+    2. **Read the failing test code** — understand what the test expects
+    3. **Read the production code** — understand what the code actually does
+    4. **Identify the ROOT CAUSE** — not symptoms. Common root causes:
+       - Missing Hilt bindings or module registrations
+       - Null safety issues (uninitialized lateinit, null returns)
+       - Race conditions (UI not settled before assertion)
+       - Missing test tags in Composables
+       - API contract changes (backend response format changed)
+       - Room schema mismatches
+    5. **Fix the production code** (or the test if the test itself is wrong)
+    6. **Reset `test_index = 0`** (restart group from first test)
+    7. Go to **Step 2**
 
-### Step 4: If ANY Failed — Enter Fix Loop
-
-**Max 5 fix iterations per group.** If still failing after 5 attempts, ask the user what to do.
-
-#### Fix Loop Protocol:
-
-1. **Read the failure output** — identify which test methods failed and the exception/assertion message
-2. **Read the failing test code** — understand what the test expects
-3. **Read the production code** — understand what the code actually does
-4. **Identify the ROOT CAUSE** — not symptoms. Common root causes:
-   - Missing Hilt bindings or module registrations
-   - Null safety issues (uninitialized lateinit, null returns)
-   - Race conditions (UI not settled before assertion)
-   - Missing test tags in Composables
-   - API contract changes (backend response format changed)
-   - Room schema mismatches
-5. **Fix the production code** (or the test if the test itself is wrong)
-6. **Rerun ONLY the current group** — same Gradle command as Step 1
-7. **If still failing** → repeat from sub-step 1
-
-#### NEVER Do These During Fix Loop:
+### NEVER Do These During Fix Loop:
 
 - `@Ignore` a failing test
 - Delete or comment out a failing test
@@ -242,22 +258,22 @@ After all groups complete (or after the single requested group), produce this re
   E2E TEST REPORT
 ══════════════════════════════════════════════════════
 
-Group  1: ui-screens              → XXX/XXX passed (0 fixes)
-Group  2: database                →  XX/XX  passed (0 fixes)
-Group  3: validation              →  XX/XX  passed (0 fixes)
-Group  4: auth                    →   X/X   passed (0 fixes)
-Group  5: onboarding              →  XX/XX  passed (1 fix)
-Group  6: meal-generation         →   X/X   passed (0 fixes)
-Group  7: home                    →  XX/XX  passed (2 fixes)
-Group  8: grocery                 →  XX/XX  passed (0 fixes)
-Group  9: chat                    →   X/X   passed (0 fixes)
-Group 10: favorites               →  XX/XX  passed (0 fixes)
-Group 11: recipe-rules            →  XX/XX  passed (0 fixes)
-Group 12: cooking-stats-settings  →  XX/XX  passed (0 fixes)
-Group 13: cross-cutting           →  XX/XX  passed (1 fix)
+Group  1: ui-screens              → 17/17 passed (0 fixes)
+Group  2: database                →  1/1  passed (0 fixes)
+Group  3: validation              →  1/1  passed (0 fixes)
+Group  4: auth                    →  1/1  passed (0 fixes)
+Group  5: onboarding              →  3/3  passed (1 fix: OnboardingFlowTest fixed 1x — group restarted 1 time)
+Group  6: meal-generation         →  1/1  passed (0 fixes)
+Group  7: home                    →  6/6  passed (2 fixes: HomeScreenTest fixed 2x, HomeScreenActionsTest fixed 1x — group restarted 3 times)
+Group  8: grocery                 →  1/1  passed (0 fixes)
+Group  9: chat                    →  1/1  passed (0 fixes)
+Group 10: favorites               →  2/2  passed (0 fixes)
+Group 11: recipe-rules            →  3/3  passed (0 fixes)
+Group 12: cooking-stats-settings  →  5/5  passed (0 fixes)
+Group 13: cross-cutting           →  6/6  passed (1 fix: OfflineFlowTest fixed 1x — group restarted 1 time)
 
 ──────────────────────────────────────────────────────
-TOTAL: XXX/XXX passed | X root causes fixed | 0 remaining failures
+TOTAL: XXX/XXX passed | X root causes fixed | X group restarts | 0 remaining failures
 ══════════════════════════════════════════════════════
 
 Fixes Applied:
