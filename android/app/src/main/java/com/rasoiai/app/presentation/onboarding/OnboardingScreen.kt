@@ -370,7 +370,7 @@ private fun HouseholdSizeStep(
             modifier = Modifier.fillMaxWidth()
         ) {
             OutlinedTextField(
-                value = "$householdSize ${if (householdSize == 1) "person" else "people"}",
+                value = if (householdSize == 0) "Select family size" else "$householdSize ${if (householdSize == 1) "person" else "people"}",
                 onValueChange = { },
                 readOnly = true,
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
@@ -822,7 +822,8 @@ private fun DietOptionCard(
                 selected = isSelected,
                 onClick = onClick,
                 role = Role.RadioButton
-            ),
+            )
+            .testTag("${TestTags.PRIMARY_DIET_PREFIX}${diet.name.lowercase()}"),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
                 MaterialTheme.colorScheme.primaryContainer

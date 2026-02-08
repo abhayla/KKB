@@ -84,15 +84,14 @@ class OnboardingNavigationTest : BaseE2ETest() {
     @Test
     fun returningUser_afterAuth_skipsOnboardingToHome() {
         // Arrange: Set up as authenticated and onboarded user
-        // This also generates a meal plan which can take 4-7 seconds
-        setUpAuthenticatedState()
+        // No meal plan needed — just verifying navigation to Home
+        setUpAuthenticatedStateWithoutMealPlan()
         Log.d(TAG, "Set up authenticated state (isOnboarded=true)")
 
         // Wait for splash to complete
         waitFor(SPLASH_DURATION)
 
         // Assert: Should navigate directly to Home (skipping onboarding)
-        // Use longer timeout because meal plan generation takes time
         homeRobot.waitForHomeScreen(timeoutMillis = 30000)
         homeRobot.assertHomeScreenDisplayed()
         Log.d(TAG, "Successfully navigated to Home screen (onboarding skipped)")
@@ -112,15 +111,13 @@ class OnboardingNavigationTest : BaseE2ETest() {
     @Test
     fun appRestart_onboardedUser_goesDirectlyToHome() {
         // Arrange: Set up as authenticated and onboarded user
-        // This simulates app restart - DataStore already has isOnboarded=true
-        // Also generates a meal plan which can take 4-7 seconds
-        setUpAuthenticatedState()
+        // No meal plan needed — just verifying navigation to Home
+        setUpAuthenticatedStateWithoutMealPlan()
         Log.d(TAG, "Set up authenticated state (simulating app restart for onboarded user)")
 
         // Act & Assert: Wait for splash delay + navigation
         // The SplashViewModel should navigate directly to Home
         waitFor(SPLASH_DURATION)
-        // Use longer timeout because meal plan generation takes time
         homeRobot.waitForHomeScreen(timeoutMillis = 30000)
         homeRobot.assertHomeScreenDisplayed()
         Log.d(TAG, "App restart navigated directly to Home (as expected for onboarded user)")

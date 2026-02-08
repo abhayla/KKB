@@ -121,64 +121,80 @@ abstract class BaseE2ETest {
      * Sets up a fully authenticated and onboarded user state.
      * Call this in tests that need to start at the Home screen.
      *
-     * Note: The activity is already launched by createAndroidComposeRule.
-     * This method sets up the auth state which will be used by subsequent API calls.
-     * The SplashViewModel will navigate based on this state.
+     * ## Timing constraint
+     * `createAndroidComposeRule` launches the Activity BEFORE setUp() runs.
+     * SplashViewModel checks `googleAuthClient.isSignedIn` ONCE after a 2-second
+     * delay (one-shot, not reactive). `simulateSignedIn()` + token storage MUST
+     * complete before that 2s check fires, or the app navigates to Auth (stuck).
      *
-     * This method:
-     * 1. Calls the backend API with fake-firebase-token to get a real JWT
-     * 2. Stores the JWT in REAL UserPreferencesDataStore (persists to disk)
-     * 3. Sets isSignedIn via FakeGoogleAuthClient
-     * 4. Generates a meal plan for the test user (ensures meal cards are available)
+     * ## Why we do NOT call generateMealPlan() here
+     * `BackendTestHelper.generateMealPlan()` calls Gemini AI (4-45s). If we block
+     * on it before storing tokens, the 2s window expires and the app gets stuck.
+     * If we call it AFTER storing tokens, HomeViewModel also calls Gemini (Room is
+     * empty) → two concurrent Gemini calls → SocketTimeoutException.
      *
-     * This allows the app to make real API calls.
+     * Instead, we store tokens FIRST (so the app reaches Home), then do a fast GET
+     * to check if the backend already has a meal plan and seed Room. If Room gets
+     * seeded before HomeVM loads, HomeVM skips generation. If not (first-ever run),
+     * HomeVM handles generation itself (single Gemini call — no race condition).
+     *
+     * ## Timeline (backend has meal plan — common case after first run)
+     * T=0.0s  Activity launches → SplashVM starts 2s timer
+     * T=0.2s  setUp() → setUpAuthenticatedState()
+     * T=0.7s  authenticateWithBackend() completes (~0.5s)
+     * T=0.8s  simulateSignedIn + saveAuthTokens (instant) ← BEFORE 2s deadline
+     * T=2.0s  SplashVM: isSignedIn=true → NavigateToHome
+     * T=1-4s  getCurrentMealPlan() → found, seedMealPlanFromBackend() → Room populated
+     * T=2.0s  HomeVM: Room has data → NO Gemini call ✓
+     *
+     * ## Timeline (first-ever run — no meal plan on backend)
+     * T=0.8s  tokens stored
+     * T=2.0s  SplashVM → Home, HomeVM: Room empty → generateNewMealPlan() (single call)
+     * T=6-47s Gemini completes → meal plan in Room → UI updates
      */
     protected fun setUpAuthenticatedState() {
-        // Step 1: Get a real JWT token from the backend
-        val authResult = authenticateWithBackend()
-
-        // Step 2: Set up fake auth client state
-        fakeGoogleAuthClient.simulateSignedIn()
-
-        // Step 3: Store the JWT in REAL DataStore (persists to disk)
-        if (authResult != null) {
-            runBlocking {
-                userPreferencesDataStore.saveAuthTokens(
-                    accessToken = authResult.accessToken,
-                    refreshToken = "",
-                    expiresInSeconds = 3600,
-                    userId = authResult.userId
-                )
-
-                // Step 4: Save test preferences to mark as onboarded
-                // This is required for SplashViewModel to navigate to Home instead of Onboarding
-                userPreferencesDataStore.saveOnboardingComplete(createTestPreferences())
-            }
-            Log.d(TAG, "Authenticated with backend: userId=${authResult.userId}")
-
-            // Step 5: Generate meal plan for test user (ensures meal cards are available)
-            // This is an async operation that can take 4-7 seconds
-            val mealPlanGenerated = BackendTestHelper.generateMealPlan(
-                baseUrl = BACKEND_BASE_URL,
-                authToken = authResult.accessToken
-            )
-
-            if (mealPlanGenerated) {
-                Log.i(TAG, "Meal plan generated for test user")
-            } else {
-                Log.w(TAG, "Failed to generate meal plan - some tests requiring meal cards may fail")
-            }
-        } else {
+        // Step 1: Get JWT from backend (~0.5s)
+        val authResult = authenticateWithBackend() ?: run {
             Log.w(TAG, "Failed to authenticate with backend")
+            return
         }
+
+        // Step 2: Store auth tokens + simulate signed in IMMEDIATELY
+        // CRITICAL: Must complete before SplashViewModel's 2-second check.
+        // At ~T=0.8s this is well within the window.
+        fakeGoogleAuthClient.simulateSignedIn()
+        runBlocking {
+            userPreferencesDataStore.saveAuthTokens(
+                accessToken = authResult.accessToken,
+                refreshToken = "",
+                expiresInSeconds = 3600,
+                userId = authResult.userId
+            )
+            userPreferencesDataStore.saveOnboardingComplete(createTestPreferences())
+        }
+        Log.d(TAG, "Auth tokens stored at ~T=${System.currentTimeMillis()}ms — SplashVM will navigate to Home")
+
+        // Step 3: Best-effort Room seeding — check if backend has a meal plan
+        // If seeded before HomeVM loads (T=2s), HomeVM finds data and skips Gemini.
+        // If not seeded in time (first-ever run with no plan), HomeVM generates
+        // via a single Gemini call — no race condition, no SocketTimeout.
+        if (!backendMealPlanGenerated) {
+            val existingPlan = BackendTestHelper.getCurrentMealPlan(
+                BACKEND_BASE_URL, authResult.accessToken
+            )
+            if (existingPlan != null) {
+                backendMealPlanGenerated = true
+                Log.i(TAG, "Backend has existing meal plan — seeding Room")
+            } else {
+                Log.i(TAG, "No meal plan on backend — HomeVM will generate on first load")
+            }
+        }
+        seedMealPlanFromBackend(authResult.accessToken)
     }
 
     /**
      * Authenticates and marks user as onboarded WITHOUT generating a meal plan.
      * Use this for tests that don't need meal cards (e.g., Recipe Rules, Settings).
-     *
-     * generateMealPlan() triggers Gemini AI which blocks uvicorn's single-threaded
-     * event loop for ~45s, causing SocketTimeoutException on all subsequent HTTP requests.
      */
     protected fun setUpAuthenticatedStateWithoutMealPlan() {
         val authResult = authenticateWithBackend()
@@ -260,69 +276,6 @@ abstract class BaseE2ETest {
         } else {
             Log.w(TAG, "No auth token available — skipping backend cleanup")
         }
-    }
-
-    /**
-     * Authenticates, generates a REAL meal plan via Gemini AI, seeds it into Room,
-     * then stores auth tokens so the app navigates to Home with data already in Room.
-     *
-     * ## Why this ordering matters
-     * `createAndroidComposeRule` launches the Activity BEFORE setUp() runs.
-     * The app sits on Splash while setUp() executes. When we store auth tokens in
-     * DataStore, SplashViewModel detects them and navigates to Home. If Room has no
-     * meal plan at that point, HomeViewModel calls generateNewMealPlan() → Gemini →
-     * blocks uvicorn ~45s → SocketTimeoutException on all subsequent HTTP requests.
-     *
-     * ## Timeline
-     * 1. Activity launches → Splash (no auth tokens yet)
-     * 2. setUp() gets JWT from backend
-     * 3. setUp() generates meal plan via Gemini (one-time, ~45s first run)
-     * 4. setUp() fetches meal plan JSON and seeds Room
-     * 5. setUp() stores JWT in DataStore → Splash navigates to Home
-     * 6. HomeViewModel finds meal plan in Room → NO Gemini call
-     */
-    protected fun setUpAuthenticatedStateWithMealPlanInRoom() {
-        // Step 0: Clear stale auth tokens from prior test runs so the app doesn't
-        // auto-navigate to Home and trigger its own Gemini call while we're generating.
-        runBlocking { userPreferencesDataStore.clearPreferences() }
-
-        // Step 1: Get JWT from backend (do NOT store in DataStore yet)
-        val authResult = authenticateWithBackend()
-        if (authResult == null) {
-            Log.w(TAG, "Failed to authenticate with backend")
-            return
-        }
-
-        // Step 2: Generate real meal plan via Gemini (once across all tests)
-        if (!backendMealPlanGenerated) {
-            Log.i(TAG, "Generating real meal plan via Gemini (one-time, may take ~45s)...")
-            val generated = BackendTestHelper.generateMealPlan(
-                baseUrl = BACKEND_BASE_URL,
-                authToken = authResult.accessToken
-            )
-            if (generated) {
-                backendMealPlanGenerated = true
-                Log.i(TAG, "Meal plan generated via Gemini successfully")
-            } else {
-                Log.w(TAG, "Failed to generate meal plan via Gemini")
-            }
-        }
-
-        // Step 3: Fetch meal plan from backend and seed into Room
-        seedMealPlanFromBackend(authResult.accessToken)
-
-        // Step 4: NOW store auth tokens → app navigates Splash → Home (Room has data)
-        fakeGoogleAuthClient.simulateSignedIn()
-        runBlocking {
-            userPreferencesDataStore.saveAuthTokens(
-                accessToken = authResult.accessToken,
-                refreshToken = "",
-                expiresInSeconds = 3600,
-                userId = authResult.userId
-            )
-            userPreferencesDataStore.saveOnboardingComplete(createTestPreferences())
-        }
-        Log.d(TAG, "Auth tokens stored — app will navigate to Home with meal plan in Room")
     }
 
     /**

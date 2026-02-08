@@ -49,7 +49,7 @@ data class OnboardingUiState(
     val errorMessage: String? = null,
 
     // Step 1: Household Size
-    val householdSize: Int = 2,
+    val householdSize: Int = 0,
     val familyMembers: List<FamilyMember> = emptyList(),
     val showAddMemberDialog: Boolean = false,
     val editingMember: FamilyMember? = null,

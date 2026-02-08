@@ -223,7 +223,7 @@ async def get_current(
     current_user: CurrentUser,
 ) -> MealPlanResponse:
     """Get the current week's meal plan from Firestore."""
-    user_id = current_user.get("id")
+    user_id = current_user.id
 
     meal_plan_repo = MealPlanRepository()
     plan = await meal_plan_repo.get_current_for_user(user_id)
@@ -240,7 +240,7 @@ async def get_by_id(
     current_user: CurrentUser,
 ) -> MealPlanResponse:
     """Get a specific meal plan by ID from Firestore."""
-    user_id = current_user.get("id")
+    user_id = current_user.id
 
     meal_plan_repo = MealPlanRepository()
     plan = await meal_plan_repo.get_by_id(plan_id)
@@ -265,7 +265,7 @@ async def swap_item(
 
     Can optionally specify a specific recipe or let the system choose randomly.
     """
-    user_id = current_user.get("id")
+    user_id = current_user.id
 
     meal_plan_repo = MealPlanRepository()
     plan = await meal_plan_repo.get_by_id(plan_id)
@@ -334,7 +334,7 @@ async def toggle_lock(
 
     Locked meals won't be changed when regenerating the plan.
     """
-    user_id = current_user.get("id")
+    user_id = current_user.id
 
     meal_plan_repo = MealPlanRepository()
     plan = await meal_plan_repo.get_by_id(plan_id)
@@ -376,7 +376,7 @@ async def remove_item(
 
     Locked meals cannot be removed.
     """
-    user_id = current_user.get("id")
+    user_id = current_user.id
 
     meal_plan_repo = MealPlanRepository()
     plan = await meal_plan_repo.get_by_id(plan_id)

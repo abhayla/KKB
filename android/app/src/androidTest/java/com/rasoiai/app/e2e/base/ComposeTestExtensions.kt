@@ -239,13 +239,14 @@ fun ComposeContentTestRule.waitUntilWithBackoff(
     timeoutMillis: Long = 5000,
     initialPollMs: Long = 50,
     maxPollMs: Long = 500,
-    backoffMultiplier: Double = 1.5
+    backoffMultiplier: Double = 1.5,
+    useUnmergedTree: Boolean = true
 ) {
     val startTime = System.currentTimeMillis()
     var currentPoll = initialPollMs
 
     while ((System.currentTimeMillis() - startTime) < timeoutMillis) {
-        if (onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()) {
+        if (onAllNodesWithTag(tag, useUnmergedTree = useUnmergedTree).fetchSemanticsNodes().isNotEmpty()) {
             return
         }
 
@@ -254,7 +255,7 @@ fun ComposeContentTestRule.waitUntilWithBackoff(
     }
 
     // Final check - throw error with descriptive message
-    if (onAllNodesWithTag(tag).fetchSemanticsNodes().isEmpty()) {
+    if (onAllNodesWithTag(tag, useUnmergedTree = useUnmergedTree).fetchSemanticsNodes().isEmpty()) {
         throw AssertionError(
             "Timeout waiting for node with tag '$tag' after ${timeoutMillis}ms"
         )
@@ -268,13 +269,14 @@ fun ComposeContentTestRule.waitUntilTextWithBackoff(
     text: String,
     timeoutMillis: Long = 5000,
     initialPollMs: Long = 50,
-    maxPollMs: Long = 500
+    maxPollMs: Long = 500,
+    substring: Boolean = false
 ) {
     val startTime = System.currentTimeMillis()
     var currentPoll = initialPollMs
 
     while ((System.currentTimeMillis() - startTime) < timeoutMillis) {
-        if (onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()) {
+        if (onAllNodesWithText(text, substring = substring).fetchSemanticsNodes().isNotEmpty()) {
             return
         }
 
@@ -283,7 +285,7 @@ fun ComposeContentTestRule.waitUntilTextWithBackoff(
     }
 
     // Final check - throw error with descriptive message
-    if (onAllNodesWithText(text).fetchSemanticsNodes().isEmpty()) {
+    if (onAllNodesWithText(text, substring = substring).fetchSemanticsNodes().isEmpty()) {
         throw AssertionError(
             "Timeout waiting for text '$text' after ${timeoutMillis}ms"
         )

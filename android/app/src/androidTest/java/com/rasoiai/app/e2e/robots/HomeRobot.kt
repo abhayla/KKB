@@ -1037,13 +1037,14 @@ class HomeRobot(private val composeTestRule: ComposeContentTestRule) {
         }
 
         if (!found) {
-            // Fallback: wait for the title "Swap" in text
+            // Fallback: wait for the title "Swap" in text (substring match for "Swap Poha" etc.)
             try {
                 composeTestRule.waitUntilTextWithBackoff(
                     text = "Swap",
                     timeoutMillis = 10000,
                     initialPollMs = 300,
-                    maxPollMs = 600
+                    maxPollMs = 600,
+                    substring = true
                 )
                 found = true
             } catch (e: Throwable) {
@@ -1052,13 +1053,14 @@ class HomeRobot(private val composeTestRule: ComposeContentTestRule) {
         }
 
         if (!found) {
-            // Last fallback: check for "Select a similar recipe" text
+            // Last fallback: check for "Select a similar recipe" text (substring match)
             try {
                 composeTestRule.waitUntilTextWithBackoff(
                     text = "Select a similar recipe",
                     timeoutMillis = 5000,
                     initialPollMs = 200,
-                    maxPollMs = 400
+                    maxPollMs = 400,
+                    substring = true
                 )
                 found = true
             } catch (e: Throwable) {

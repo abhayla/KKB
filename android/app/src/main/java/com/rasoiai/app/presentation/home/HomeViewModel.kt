@@ -330,8 +330,18 @@ class HomeViewModel @Inject constructor(
     }
 
     fun showSwapOptions() {
-        dismissRecipeActionSheet()
-        _uiState.update { it.copy(showSwapSheet = true) }
+        // Capture selected item/type BEFORE dismissing, since dismissRecipeActionSheet nulls them
+        val mealItem = _uiState.value.selectedMealItem
+        val mealType = _uiState.value.selectedMealType
+        _uiState.update {
+            it.copy(
+                showRecipeActionSheet = false,
+                showSwapSheet = true,
+                // Preserve selection for fetchSwapSuggestions
+                selectedMealItem = mealItem,
+                selectedMealType = mealType
+            )
+        }
         fetchSwapSuggestions()
     }
 
@@ -385,7 +395,9 @@ class HomeViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 showSwapSheet = false,
-                swapSuggestions = emptyList()
+                swapSuggestions = emptyList(),
+                selectedMealItem = null,
+                selectedMealType = null
             )
         }
     }

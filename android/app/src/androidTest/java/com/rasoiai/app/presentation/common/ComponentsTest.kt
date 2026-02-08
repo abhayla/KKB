@@ -154,8 +154,8 @@ class ComponentsTest {
 
         composeTestRule.onNodeWithText("Home").assertIsDisplayed()
         composeTestRule.onNodeWithText("Favorites").assertIsDisplayed()
-        composeTestRule.onNodeWithContentDescription("Home").assertIsDisplayed()
-        composeTestRule.onNodeWithContentDescription("Favorites").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Home", useUnmergedTree = true).assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Favorites", useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test

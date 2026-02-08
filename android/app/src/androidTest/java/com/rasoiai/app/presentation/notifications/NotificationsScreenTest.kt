@@ -520,7 +520,8 @@ class NotificationsScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithTag(TestTags.NOTIFICATION_BADGE).assertIsDisplayed()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag(TestTags.NOTIFICATION_BADGE, useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test

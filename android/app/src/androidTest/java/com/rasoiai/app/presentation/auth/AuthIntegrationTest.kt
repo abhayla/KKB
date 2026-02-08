@@ -107,7 +107,7 @@ class AuthIntegrationTest : BaseE2ETest() {
         // Verify we navigated to onboarding (check for onboarding-specific element)
         // The onboarding screen shows "How many people are you cooking for?"
         waitUntil(
-            timeoutMillis = MEDIUM_TIMEOUT,
+            timeoutMillis = LONG_TIMEOUT + MEDIUM_TIMEOUT,
             conditionDescription = "onboarding screen to appear"
         ) {
             try {

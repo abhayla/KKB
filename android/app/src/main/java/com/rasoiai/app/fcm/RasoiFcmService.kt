@@ -47,15 +47,21 @@ class RasoiFcmService : FirebaseMessagingService() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private val entryPoint: FcmServiceEntryPoint by lazy {
-        EntryPointAccessors.fromApplication(
-            applicationContext,
-            FcmServiceEntryPoint::class.java
-        )
+    private val entryPoint: FcmServiceEntryPoint? by lazy {
+        try {
+            EntryPointAccessors.fromApplication(
+                applicationContext,
+                FcmServiceEntryPoint::class.java
+            )
+        } catch (e: IllegalStateException) {
+            // Hilt component not yet created (happens during instrumented tests)
+            Timber.w("Hilt component not available for FcmService: ${e.message}")
+            null
+        }
     }
 
-    private val notificationDao: NotificationDao by lazy { entryPoint.notificationDao() }
-    private val notificationRepository: NotificationRepository by lazy { entryPoint.notificationRepository() }
+    private val notificationDao: NotificationDao? by lazy { entryPoint?.notificationDao() }
+    private val notificationRepository: NotificationRepository? by lazy { entryPoint?.notificationRepository() }
 
     /**
      * Called when a new FCM token is generated.
@@ -71,7 +77,8 @@ class RasoiFcmService : FirebaseMessagingService() {
 
         // Register token with backend
         serviceScope.launch {
-            notificationRepository.registerFcmToken(token)
+            notificationRepository?.registerFcmToken(token)
+                ?: Timber.w("Cannot register FCM token: Hilt component not available")
         }
     }
 
@@ -114,20 +121,25 @@ class RasoiFcmService : FirebaseMessagingService() {
 
         // Store notification locally
         serviceScope.launch {
-            val entity = NotificationEntity(
-                id = notificationId,
-                type = notificationType,
-                title = title,
-                body = body,
-                imageUrl = imageUrl,
-                actionType = actionType,
-                actionData = actionData,
-                isRead = false,
-                createdAt = System.currentTimeMillis(),
-                expiresAt = expiresAt
-            )
-            notificationDao.insertNotification(entity)
-            Timber.d("Notification stored locally: $notificationId")
+            val dao = notificationDao
+            if (dao != null) {
+                val entity = NotificationEntity(
+                    id = notificationId,
+                    type = notificationType,
+                    title = title,
+                    body = body,
+                    imageUrl = imageUrl,
+                    actionType = actionType,
+                    actionData = actionData,
+                    isRead = false,
+                    createdAt = System.currentTimeMillis(),
+                    expiresAt = expiresAt
+                )
+                dao.insertNotification(entity)
+                Timber.d("Notification stored locally: $notificationId")
+            } else {
+                Timber.w("Cannot store notification: Hilt component not available")
+            }
         }
 
         // Show system notification
@@ -153,19 +165,24 @@ class RasoiFcmService : FirebaseMessagingService() {
 
         // Store notification locally
         serviceScope.launch {
-            val entity = NotificationEntity(
-                id = notificationId,
-                type = notificationType,
-                title = notification.title ?: "RasoiAI",
-                body = notification.body ?: "",
-                imageUrl = notification.imageUrl?.toString(),
-                actionType = data["action_type"],
-                actionData = data["action_data"],
-                isRead = false,
-                createdAt = System.currentTimeMillis(),
-                expiresAt = data["expires_at"]?.toLongOrNull()
-            )
-            notificationDao.insertNotification(entity)
+            val dao = notificationDao
+            if (dao != null) {
+                val entity = NotificationEntity(
+                    id = notificationId,
+                    type = notificationType,
+                    title = notification.title ?: "RasoiAI",
+                    body = notification.body ?: "",
+                    imageUrl = notification.imageUrl?.toString(),
+                    actionType = data["action_type"],
+                    actionData = data["action_data"],
+                    isRead = false,
+                    createdAt = System.currentTimeMillis(),
+                    expiresAt = data["expires_at"]?.toLongOrNull()
+                )
+                dao.insertNotification(entity)
+            } else {
+                Timber.w("Cannot store notification: Hilt component not available")
+            }
         }
 
         // Show system notification (for foreground)

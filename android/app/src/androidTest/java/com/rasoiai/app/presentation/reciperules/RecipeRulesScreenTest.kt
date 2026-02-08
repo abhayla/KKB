@@ -157,7 +157,7 @@ class RecipeRulesScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Rules", substring = true).assertIsDisplayed()
+        composeTestRule.onNodeWithText("\uD83C\uDF7D\uFE0F Rules").assertIsDisplayed()
     }
 
     @Test

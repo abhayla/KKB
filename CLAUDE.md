@@ -18,7 +18,7 @@ uvicorn app.main:app --reload      # Start server → http://localhost:8000/docs
 PYTHONPATH=. pytest                # Run all tests
 ```
 
-**Key numbers:** 3,580 recipes | 247 backend tests | 319 Android unit tests | 400+ UI tests | 65+ E2E tests | 15 screens
+**Key numbers:** 3,580 recipes | 247 backend tests | 330 Android unit tests | 750+ UI tests | 65+ E2E tests | 15 screens
 
 **Session context:** Check `docs/CONTINUE_PROMPT.md` for active work between sessions.
 
@@ -297,8 +297,8 @@ Permissions: read-only (contents, PRs, issues, actions). Uses `anthropics/claude
 | Platform | Tests | Framework |
 |----------|-------|-----------|
 | Backend | 247 | pytest |
-| Android Unit | 319 | JUnit + MockK |
-| Android UI | 400+ | Compose UI Testing |
+| Android Unit | 330 | JUnit + MockK |
+| Android UI | 750+ | Compose UI Testing |
 | Android E2E | 65+ | Compose UI Testing + Hilt + Real API |
 
 ### Backend Tests (247 total)
@@ -417,6 +417,8 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 | `MealPlan` | id, weekStartDate, weekEndDate, days |
 | `MealPlanDay` | date, breakfast, lunch, dinner, snacks, festival |
 | `RecipeRule` | id, type, action, targetId, frequency, enforcement, mealSlot |
+| `NutritionGoal` | id, category (FoodCategory enum), targetServings, timeframe, isActive |
+| `FamilyMember` | id, name, type (MemberType enum), dietaryPreferences |
 
 **Key Enums:**
 - `DietaryTag`: VEGETARIAN, NON_VEGETARIAN, VEGAN, JAIN, SATTVIC, HALAL, EGGETARIAN

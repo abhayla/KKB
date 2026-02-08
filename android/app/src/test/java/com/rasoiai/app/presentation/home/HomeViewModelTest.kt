@@ -640,6 +640,7 @@ class HomeViewModelTest {
         @DisplayName("showSwapOptions should show swap sheet and dismiss action sheet")
         fun `showSwapOptions should show swap sheet and dismiss action sheet`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
+            coEvery { mockRecipeRepository.searchRecipes(any(), any(), any(), any(), any(), any()) } returns Result.success(emptyList())
 
             val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
 
@@ -668,6 +669,7 @@ class HomeViewModelTest {
         @DisplayName("dismissSwapSheet should hide swap sheet")
         fun `dismissSwapSheet should hide swap sheet`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
+            coEvery { mockRecipeRepository.searchRecipes(any(), any(), any(), any(), any(), any()) } returns Result.success(emptyList())
 
             val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
 
