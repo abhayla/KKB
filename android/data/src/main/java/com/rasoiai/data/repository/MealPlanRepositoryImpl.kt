@@ -6,6 +6,7 @@ import com.rasoiai.data.local.mapper.toDomain
 import com.rasoiai.data.local.mapper.toEntity
 import com.rasoiai.data.local.mapper.toFestivalEntities
 import com.rasoiai.data.local.mapper.toItemEntities
+import com.rasoiai.data.di.LongTimeout
 import com.rasoiai.data.remote.api.RasoiApiService
 import com.rasoiai.data.local.entity.MealPlanItemEntity
 import com.rasoiai.data.remote.dto.GenerateMealPlanRequest
@@ -34,6 +35,7 @@ import javax.inject.Singleton
 @Singleton
 class MealPlanRepositoryImpl @Inject constructor(
     private val apiService: RasoiApiService,
+    @LongTimeout private val longTimeoutApiService: RasoiApiService,
     private val mealPlanDao: MealPlanDao,
     private val networkMonitor: NetworkMonitor
 ) : MealPlanRepository {
@@ -73,7 +75,7 @@ class MealPlanRepositoryImpl @Inject constructor(
 
             Timber.d("Generating meal plan for week starting: $dateStr")
 
-            val response = apiService.generateMealPlan(
+            val response = longTimeoutApiService.generateMealPlan(
                 GenerateMealPlanRequest(weekStartDate = dateStr)
             )
 

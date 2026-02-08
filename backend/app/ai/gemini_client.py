@@ -9,30 +9,31 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Lazy import and model initialization
-_model = None
+# Lazy client initialization
+_client = None
+
+MODEL_NAME = "gemini-2.5-flash"
 
 
-def get_gemini_model():
-    """Get or create Gemini model instance."""
-    global _model
+def get_gemini_client():
+    """Get or create Gemini client instance."""
+    global _client
 
-    if _model is not None:
-        return _model
+    if _client is not None:
+        return _client
 
     if not settings.google_ai_api_key:
         logger.warning("GOOGLE_AI_API_KEY not configured")
         return None
 
     try:
-        import google.generativeai as genai
+        from google import genai
 
-        genai.configure(api_key=settings.google_ai_api_key)
-        _model = genai.GenerativeModel("gemini-2.0-flash")
-        logger.info("Gemini model initialized successfully")
-        return _model
+        _client = genai.Client(api_key=settings.google_ai_api_key)
+        logger.info("Gemini client initialized successfully")
+        return _client
     except Exception as e:
-        logger.error(f"Failed to initialize Gemini model: {e}")
+        logger.error(f"Failed to initialize Gemini client: {e}")
         return None
 
 
@@ -51,9 +52,9 @@ async def analyze_food_image(
     Returns:
         Dict with 'message' and optional 'recipe_suggestions'
     """
-    model = get_gemini_model()
+    client = get_gemini_client()
 
-    if not model:
+    if not client:
         return {
             "message": "AI vision service is not configured. Please try again later.",
             "recipe_suggestions": []
@@ -77,20 +78,19 @@ If you cannot identify the food or it's not food-related, politely mention that 
 Format your response in a conversational, easy-to-read way."""
 
     try:
+        from google.genai import types
+
         # Decode base64 image
         image_data = base64.b64decode(image_base64)
 
         # Create image part for Gemini
-        image_part = {
-            "mime_type": media_type,
-            "data": image_data
-        }
+        image_part = types.Part.from_bytes(data=image_data, mime_type=media_type)
 
-        # Generate response
-        response = await model.generate_content_async([
-            prompt or default_prompt,
-            image_part
-        ])
+        # Generate response using async client
+        response = await client.aio.models.generate_content(
+            model=MODEL_NAME,
+            contents=[prompt or default_prompt, image_part],
+        )
 
         response_text = response.text if response.text else "I couldn't analyze that image. Please try with a clearer food photo."
 
@@ -110,9 +110,9 @@ Format your response in a conversational, easy-to-read way."""
 async def generate_text(
     prompt: str,
     temperature: float = 0.8,
-    max_output_tokens: int = 8192,
+    max_output_tokens: int = 65536,
 ) -> str:
-    """Generate text using Gemini 1.5 Flash.
+    """Generate text using Gemini 2.5 Flash.
 
     Args:
         prompt: The prompt to send to Gemini
@@ -128,24 +128,25 @@ async def generate_text(
     """
     from app.core.exceptions import ServiceUnavailableError
 
-    model = get_gemini_model()
+    client = get_gemini_client()
 
-    if not model:
+    if not client:
         raise ServiceUnavailableError("Gemini AI service not configured. Set GOOGLE_AI_API_KEY.")
 
     try:
-        import google.generativeai as genai
+        from google.genai import types
 
         # Configure generation for JSON output
-        generation_config = genai.GenerationConfig(
+        config = types.GenerateContentConfig(
             temperature=temperature,
             max_output_tokens=max_output_tokens,
             response_mime_type="application/json",
         )
 
-        response = await model.generate_content_async(
-            prompt,
-            generation_config=generation_config,
+        response = await client.aio.models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt,
+            config=config,
         )
 
         if not response.text:

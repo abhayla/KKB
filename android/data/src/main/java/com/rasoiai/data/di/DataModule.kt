@@ -26,7 +26,16 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+import javax.inject.Qualifier
 import javax.inject.Singleton
+
+/**
+ * Qualifier for API service with extended read timeout for AI-powered endpoints
+ * (meal generation, chat) where backend calls Gemini and can take 45-90s.
+ */
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class LongTimeout
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -37,6 +46,7 @@ object DataModule {
     // - Debug: http://10.0.2.2:8000/ (emulator accessing host machine)
     // - Release: https://api.rasoiai.com/
     private const val TIMEOUT_SECONDS = 30L
+    private const val LONG_READ_TIMEOUT_SECONDS = 120L
 
     @Provides
     @Singleton
@@ -74,6 +84,22 @@ object DataModule {
     @Singleton
     fun provideRasoiApiService(retrofit: Retrofit): RasoiApiService {
         return retrofit.create(RasoiApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    @LongTimeout
+    fun provideLongTimeoutApiService(okHttpClient: OkHttpClient): RasoiApiService {
+        val longTimeoutClient = okHttpClient.newBuilder()
+            .readTimeout(LONG_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .build()
+
+        return Retrofit.Builder()
+            .baseUrl(BuildConfig.BASE_URL)
+            .client(longTimeoutClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(RasoiApiService::class.java)
     }
 
     @Provides

@@ -495,8 +495,8 @@ class MealPlanGenerationFlowTest : BaseE2ETest() {
     companion object {
         private const val TAG = "MealPlanGenFlowTest"
 
-        // AI generation can take 4-7 seconds, with buffer
-        private const val AI_GENERATION_TIMEOUT = 60000L
+        // AI generation can take 4-45+ seconds depending on Gemini load
+        private const val AI_GENERATION_TIMEOUT = 120000L
 
         // Meal list loading timeout
         private const val MEAL_LIST_LOAD_TIMEOUT = 60000L
