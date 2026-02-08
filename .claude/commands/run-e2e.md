@@ -15,9 +15,9 @@ If `$ARGUMENTS` is empty, run ALL groups sequentially. If a group name is provid
 - Automatically handle all prerequisites (emulator, build, backend check)
 - If build fails, auto-fix compilation errors and rebuild — do not ask
 - If emulator is not running, auto-start it and wait for boot — do not ask
-- If backend is not running, STOP with a clear message (cannot auto-start safely) but do NOT phrase it as a question
+- If backend is not running, auto-start it in the background and wait for health check — do not ask
 - Proceed through all groups/tests without pausing for user input
-- Only stop for: backend not running, or a test failing 5 times
+- Never stop for user input. If a test fails 10 times, skip it and continue with remaining groups.
 
 ---
 
@@ -49,8 +49,17 @@ curl -s http://localhost:8000/health
 ```
 
 - If healthy response → continue.
-- If connection refused or error → **STOP and tell the user**: "Backend is not running. Start it with: `cd backend && source venv/bin/activate && uvicorn app.main:app --reload`"
-- Do NOT attempt to start the backend automatically.
+- If connection refused or error → **auto-start the backend**:
+  1. Start in background:
+     ```bash
+     cd D:/Abhay/VibeCoding/KKB/backend && source venv/bin/activate && uvicorn app.main:app --reload &
+     ```
+  2. Poll health check every 3 seconds, up to 30 seconds:
+     ```bash
+     for i in {1..10}; do curl -sf http://localhost:8000/health && break || sleep 3; done
+     ```
+  3. If healthy after polling → log `✅ Backend auto-started` and continue.
+  4. If still unhealthy after 30 seconds → log `⚠️ Backend failed to start after 30s. Continuing without backend — groups requiring backend will likely fail.` Continue execution (do not stop).
 
 ### 3. Quick Build Check
 
@@ -192,6 +201,7 @@ test_classes = [list of classes in group, in order]
 test_index = 0
 fail_counts = {}   // map of class_name → failure count
 group_restarts = 0
+skipped_tests = [] // tests that hit 10-failure limit and were skipped
 ```
 
 ### Step 2: Run Current Test
@@ -216,10 +226,15 @@ Use a 10-minute timeout for groups with AI calls (meal-generation, home, chat, r
 
 - Increment `fail_counts[current_class]`
 - Increment `group_restarts`
-- If `fail_counts[current_class] >= 5`:
-    **STOP:** "Test [class_name] has failed 5 times. Manual investigation needed."
-    Report all 5 attempted fixes. Do not continue this group.
+- If `fail_counts[current_class] >= 10`:
+    Log: `❌ Test [class_name] has failed 10 times — skipping remaining tests in this group.`
+    Record all 10 attempted fixes in `skipped_tests[]`.
+    **Skip the rest of this group** and move to the next group. Do NOT stop execution.
 - Else:
+
+  #### 4a. Diagnose the failure
+
+  **If `fail_counts[current_class] == 1` (first failure)** — lightweight manual analysis:
     1. **Read the failure output** — identify exception/assertion message
     2. **Read the failing test code** — understand what the test expects
     3. **Read the production code** — understand what the code actually does
@@ -230,9 +245,46 @@ Use a 10-minute timeout for groups with AI calls (meal-generation, home, chat, r
        - Missing test tags in Composables
        - API contract changes (backend response format changed)
        - Room schema mismatches
+
+  **If `fail_counts[current_class] >= 2 and < 4` (2nd-3rd failure)** — escalate to `debugger` agent:
+    - Launch the `debugger` agent (via Task tool, subagent_type `general-purpose` using the debugger agent prompt) with:
+      - The test class name and full failure output
+      - Description of the previous fix attempt(s) and why they didn't work
+      - Instruction: "Perform deep root cause analysis. Correlate the error with test code, production code, Hilt modules, Room schemas, and any system-level behavior. Return a diagnosis and a specific recommended fix with file paths and code changes."
+    - Use the debugger's diagnosis to guide the fix
+    - Track: `debugger_invocations += 1`, append test class name to `debugger_tests[]`
+
+  **If `fail_counts[current_class] >= 4 and < 6` (4th-5th failure)** — `thinkhard` escalation:
+    - Launch the `debugger` agent with all previous context PLUS:
+      - All previous fix attempts and their failure reasons
+      - Instruction: "Use extended thinking (thinkhard). Systematically enumerate ALL possible root causes before proposing a fix. Consider: thread timing, async race conditions, state leaks between tests, emulator-specific quirks, Hilt graph issues, and implicit dependencies. Return a ranked list of hypotheses with the most likely fix."
+    - Track: `debugger_invocations += 1`
+
+  **If `fail_counts[current_class] >= 6` (6th+ failure)** — `thinkUltrahard` escalation:
+    - Launch the `debugger` agent with all previous context PLUS:
+      - Complete history of all fix attempts and failure reasons
+      - Instruction: "Use maximum thinking depth (thinkUltrahard). Re-examine every assumption from scratch. Consider architectural issues, cross-module interactions, non-obvious failure modes, and whether the test itself has a fundamental design flaw. Explore unconventional fixes. Return a comprehensive analysis with the recommended fix."
+    - Track: `debugger_invocations += 1`
+
+  #### 4b. Apply the fix
+
     5. **Fix the production code** (or the test if the test itself is wrong)
-    6. **Reset `test_index = 0`** (restart group from first test)
-    7. Go to **Step 2**
+
+  #### 4c. Code review gate (after every fix)
+
+    6. **Launch the `code-reviewer` agent** (via Task tool) with:
+       - The diff of changes made (output of `git diff`)
+       - The test that failed and the failure reason
+       - Instruction: "Review this fix for: weakened assertions, `@Ignore` additions, regressions to other tests, security issues (OWASP Top 10), and `Thread.sleep()` usage. Categorize any issues as Critical / High / Medium / Low. Return a verdict: APPROVED or FLAGGED with details."
+    - **If code-reviewer returns Critical issue**: revert the fix (`git checkout -- <files>`), log the issue, and re-attempt the fix from Step 4a
+    - **If code-reviewer returns High/Medium/Low issues**: log them in `review_issues[]` but proceed
+    - **If code-reviewer approves**: proceed
+    - Track: `code_reviews += 1`, `code_reviews_approved += 1` or `code_reviews_flagged += 1`
+
+  #### 4d. Restart group
+
+    7. **Reset `test_index = 0`** (restart group from first test)
+    8. Go to **Step 2**
 
 ### NEVER Do These During Fix Loop:
 
@@ -246,6 +298,75 @@ Use a 10-minute timeout for groups with AI calls (meal-generation, home, chat, r
 #### When a Fix Touches Shared Code:
 
 If your fix modifies code that earlier groups also test (e.g., fixing a ViewModel used by both `ui-screens` and `home`), note it but do NOT re-run earlier groups mid-run. The final summary will flag this for the user.
+
+---
+
+## AGENT INTEGRATION
+
+This workflow uses 4 custom agents from `.claude/agents/` at specific trigger points:
+
+| Agent | Trigger | Purpose |
+|-------|---------|---------|
+| `debugger` | Step 4a, on 2nd+ failure of the same test (thinkhard at 4th, thinkUltrahard at 6th) | Deep root cause analysis with log correlation and system behavior tracing |
+| `code-reviewer` | Step 4c, after every fix is applied | Inline quality gate — catches weakened assertions, regressions, security issues |
+| `docs-manager` | Post-run, if any fixes were applied | Updates test docs (Functional-Requirement-Rule.md, CONTINUE_PROMPT.md, test counts) |
+| `git-manager` | Post-run, after docs-manager completes | Commits all changes (fixes + doc updates) with conventional commit format |
+
+### How agents are launched
+
+All agents are launched via the **Task tool** with `subagent_type: "general-purpose"`. Include in the prompt:
+- The agent's name and role context (e.g., "You are acting as the `debugger` agent")
+- All relevant inputs (error output, diff, file paths)
+- A clear instruction of what to return (diagnosis, verdict, file list, etc.)
+
+### Tracking variables
+
+Initialize these alongside the Step 1 group variables:
+
+```
+// Agent tracking (persists across all groups)
+debugger_invocations = 0
+debugger_tests = []         // test class names that triggered debugger
+code_reviews = 0
+code_reviews_approved = 0
+code_reviews_flagged = 0
+review_issues = []          // logged High/Medium/Low issues from code-reviewer
+all_fixes = []              // { file, line, description } for each fix applied
+skipped_tests = []          // { class_name, fail_count, fix_attempts[] } for 10x failures
+```
+
+---
+
+## POST-RUN AGENT PIPELINE
+
+After all groups complete (or the single requested group), check if any fixes were applied during the run.
+
+**If `len(all_fixes) == 0`**: skip this section entirely — no agents needed.
+
+**If `len(all_fixes) > 0`**: run the following agents sequentially:
+
+### Step A: docs-manager agent
+
+Launch the `docs-manager` agent (via Task tool) with:
+- The list of all fixes applied: `all_fixes[]` (file, line, description for each)
+- The list of test files that were modified (if any)
+- Instructions:
+  - Update `docs/testing/Functional-Requirement-Rule.md` if any test files were added or modified
+  - Update `docs/CONTINUE_PROMPT.md` with a session summary of what was fixed
+  - Update test counts in `CLAUDE.md` (non-protected sections only) if test counts changed
+  - Do NOT modify the "Rules for Claude" protected section in CLAUDE.md
+  - Return the list of documentation files that were updated
+
+### Step B: git-manager agent (runs after Step A completes)
+
+Launch the `git-manager` agent (via Task tool) with:
+- Instructions:
+  - Stage only the relevant files: the fix files + any doc files updated by docs-manager
+  - Do NOT stage `.env`, build artifacts, or files in `.gitignore`
+  - Create a conventional commit: `fix(e2e): [concise summary of fixes applied]`
+  - Include the list of fixes in the commit body
+  - Do NOT push unless the user explicitly requested it
+  - Return the commit hash and message
 
 ---
 
@@ -273,12 +394,26 @@ Group 12: cooking-stats-settings  →  5/5  passed (0 fixes)
 Group 13: cross-cutting           →  6/6  passed (1 fix: OfflineFlowTest fixed 1x — group restarted 1 time)
 
 ──────────────────────────────────────────────────────
-TOTAL: XXX/XXX passed | X root causes fixed | X group restarts | 0 remaining failures
+TOTAL: XXX/XXX passed | X root causes fixed | X group restarts | X skipped (10x limit)
 ══════════════════════════════════════════════════════
+
+Skipped Tests (10x failure limit):
+  - [class_name] — 10 attempts exhausted. Fix attempts: [brief list]
+  - Recommend manual investigation for these tests.
+  (If none skipped, omit this section.)
 
 Fixes Applied:
   1. [File:line] — [Brief description of root cause and fix]
   2. [File:line] — [Brief description of root cause and fix]
+
+Agent Activity:
+  - Debugger invocations: X (for tests: [list of class names])
+  - Code reviews: X (Y approved, Z flagged issues)
+  - Docs updated: [list of files, or "none — no fixes applied"]
+  - Commit: [hash] — [message] (or "none — no fixes applied")
+
+Review Issues (if any):
+  - [severity] [file:line] — [description from code-reviewer]
 
 Shared Code Warning:
   - [If any fix touched code tested by earlier groups, list here]

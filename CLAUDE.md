@@ -2,27 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Quick Reference
-
-```bash
-# Android (from android/)
-./gradlew build                    # Build with tests
-./gradlew assembleDebug            # Quick build (no tests)
-./gradlew test                     # Unit tests
-./gradlew :app:connectedDebugAndroidTest  # UI tests (requires emulator API 34)
-
-# Backend (from backend/)
-source venv/bin/activate           # Linux/Mac/Git Bash
-# .\venv\Scripts\activate          # Windows PowerShell
-uvicorn app.main:app --reload      # Start server → http://localhost:8000/docs
-PYTHONPATH=. pytest                # Run all tests
-```
-
-**Key numbers:** 3,580 recipes | 250 backend tests | 330 Android unit tests | 750+ UI tests | 65+ E2E tests | 15 screens
-
 **Session context:** Check `docs/CONTINUE_PROMPT.md` for active work between sessions.
-
-**Continuing a session?** Read `docs/CONTINUE_PROMPT.md` first - it has the latest implementation status, test results, and remaining work.
 
 ## Project Overview
 
@@ -30,9 +10,10 @@ PYTHONPATH=. pytest                # Run all tests
 
 | Attribute | Details |
 |-----------|---------|
-| **Platform** | Android Native (Kotlin 1.9.22 + Jetpack Compose BOM 2024.02) |
-| **Backend** | Python (FastAPI + PostgreSQL) |
+| **Platform** | Android Native (Kotlin 1.9.22 + Jetpack Compose BOM 2024.02.00) |
+| **Backend** | Python (FastAPI + PostgreSQL + SQLAlchemy async) |
 | **Target SDK** | 34 (Min SDK 24 / Android 7.0) |
+| **Build Tools** | AGP 8.13.2, KSP 1.9.22-1.0.17, Compose Compiler 1.5.10 |
 | **Target Market** | Pan-India (Tier 1, 2, 3 cities) |
 
 ## Architecture
@@ -161,15 +142,25 @@ class FeatureRepositoryImpl @Inject constructor(
 Routes with arguments use `createRoute()` helper pattern:
 
 ```kotlin
-data object RecipeDetail : Screen("recipe/{recipeId}?isLocked={isLocked}") {
-    fun createRoute(recipeId: String, isLocked: Boolean = false) =
-        "recipe/$recipeId?isLocked=$isLocked"
+data object RecipeDetail : Screen("recipe/{recipeId}?isLocked={isLocked}&fromMealPlan={fromMealPlan}") {
+    fun createRoute(recipeId: String, isLocked: Boolean = false, fromMealPlan: Boolean = false) =
+        "recipe/$recipeId?isLocked=$isLocked&fromMealPlan=$fromMealPlan"
     const val ARG_RECIPE_ID = "recipeId"
 }
 
 // Usage
-navController.navigate(Screen.RecipeDetail.createRoute(recipeId, isLocked = true))
+navController.navigate(Screen.RecipeDetail.createRoute(recipeId, isLocked = true, fromMealPlan = true))
 ```
+
+**All screens** (in `presentation/navigation/Screen.kt`):
+
+| Group | Screens |
+|-------|---------|
+| Auth flow | Splash, Auth, Onboarding |
+| Main (bottom nav) | Home, Grocery, Chat, Favorites, Stats |
+| Main (other) | Settings, Notifications |
+| Detail | RecipeDetail (`{recipeId}`), CookingMode (`{recipeId}`) |
+| Feature | Pantry, RecipeRules |
 
 ### Bottom Navigation
 
@@ -251,6 +242,8 @@ PYTHONPATH=. python scripts/backfill_ai_recipe_catalog.py  # Backfill catalog fr
 | PostgreSQL | 12+ |
 | Android SDK | API 34 (Min 24) |
 
+**Dependency versions:** See `backend/requirements.txt` and `android/gradle/libs.versions.toml`.
+
 ### Environment Setup
 
 **Backend `.env` file:**
@@ -263,6 +256,13 @@ JWT_SECRET_KEY=your-secret-key
 DEBUG=true
 ```
 
+**Android `local.properties`** (required — see `local.properties.example`):
+```properties
+sdk.dir=/path/to/Android/sdk
+WEB_CLIENT_ID=your-web-client-id.apps.googleusercontent.com
+```
+The build will fail with `GradleException` if `WEB_CLIENT_ID` is missing. Also requires `google-services.json` in `android/app/` (from Firebase Console).
+
 **PostgreSQL:**
 ```sql
 CREATE DATABASE rasoiai;
@@ -273,31 +273,9 @@ GRANT ALL PRIVILEGES ON DATABASE rasoiai TO rasoiai_user;
 ### CI/CD Pipeline
 
 Three GitHub Actions workflows in `.github/workflows/`:
-
-**Android CI** (`android-ci.yml`) — runs on push/PR to main/develop:
-
-| Job | Triggers | Actions |
-|-----|----------|---------|
-| `build` | All pushes | Lint, unit tests, build APK |
-| `instrumented-tests` | PRs only | Emulator tests (API 29) |
-
-**Artifacts uploaded:** lint-results, test-results, debug-apk
-
-**Claude Code** (`claude.yml`) — AI agent triggered by `@claude` mentions:
-
-| Trigger | Event |
-|---------|-------|
-| Issue comments | `@claude` in comment body |
-| PR comments | `@claude` in review comment body |
-| PR reviews | `@claude` in review body |
-| New issues | `@claude` in issue title or body |
-
-Permissions: read-only (contents, PRs, issues, actions). Uses `anthropics/claude-code-action@v1`.
-
-**Claude Code Review** (`claude-code-review.yml`) — automatic PR review:
-- Runs on all PR opens, updates, and reopens
-- Uses `code-review@claude-code-plugins` plugin
-- Provides automated code quality feedback on every PR
+- **`android-ci.yml`** — Lint, unit tests, build APK on push; emulator tests (API 29) on PRs
+- **`claude.yml`** — Claude Code agent triggered by `@claude` mentions in issues/PRs (read-only permissions)
+- **`claude-code-review.yml`** — Automatic code review on all PR opens/updates
 
 ## Testing
 
@@ -310,27 +288,9 @@ Permissions: read-only (contents, PRs, issues, actions). Uses `anthropics/claude
 | Android UI | 750+ | Compose UI Testing |
 | Android E2E | 65+ | Compose UI Testing + Hilt + Real API |
 
-### Backend Tests (250 total)
+### Backend Tests (~250 total)
 
-| Test File | Tests | Purpose |
-|-----------|-------|---------|
-| `test_health.py` | 2 | Health check endpoints |
-| `test_auth.py` | 6 | Firebase authentication |
-| `test_preference_service.py` | 26 | PreferenceUpdateService |
-| `test_chat_integration.py` | 27 | Chat tool calling flow |
-| `test_ai_meal_service.py` | 22 | AI meal generation service |
-| `test_chat_api.py` | 12 | Chat API endpoints |
-| `test_recipe_cache.py` | 35 | Recipe cache operations |
-| `test_recipe_rules_api.py` | 21 | Recipe rules API endpoints |
-| `test_recipe_search.py` | 10 | Recipe search functionality |
-| `test_notification_service.py` | 19 | Notification service logic |
-| `test_notification_api.py` | 11 | Notification API endpoints |
-| `test_migrate_legacy_rules.py` | 11 | Legacy rule migration |
-| `test_ai_recipe_catalog.py` | 17 | AI recipe catalog (dedup, dietary filter, search) |
-| `test_sharma_recipe_rules.py` | 13 | Sharma family recipe rules E2E (FR-011, FR-014) |
-| `test_recipe_rules_dedup.py` | 6 | Recipe rules duplicate prevention (FR-012) |
-| `test_family_members_api.py` | 9 | Family members CRUD API (FR-013) |
-| `test_email_uniqueness.py` | 7 | Email uniqueness enforcement (409 on duplicate) |
+All in `backend/tests/`, named `test_{feature}.py`. Run `PYTHONPATH=. pytest --collect-only` to list all. Tests use SQLite in-memory via conftest fixtures (see Backend Test Fixtures below).
 
 ### Android UI Tests
 
@@ -410,12 +370,16 @@ Defined in `backend/tests/conftest.py`:
 
 | Fixture | Purpose |
 |---------|---------|
+| `cleanup_production_engine` | Auto-use: disposes asyncpg production engine after each test |
+| `db_engine` | Creates SQLite test engine, creates/drops all tables |
 | `db_session` | Async SQLAlchemy session (SQLite in-memory) |
 | `test_user` | Creates a test user in the DB |
 | `client` | Authenticated AsyncClient (auth dependency overridden) |
 | `unauthenticated_client` | AsyncClient with DB override only (for testing 401 responses) |
+| `auth_token` | Valid JWT for test_user |
+| `authenticated_client` | AsyncClient with `Authorization: Bearer` header pre-set |
 
-**Important:** When adding new models, import them in `conftest.py` so SQLite creates the tables. Use `unauthenticated_client` for tests that verify auth is required.
+**Important:** When adding new models, import them in `conftest.py` (lines 22-34) so SQLite creates the tables. The conftest imports all 12 models including `notification` and `recipe_rule`. Use `unauthenticated_client` for tests that verify auth is required.
 
 ## Domain Models
 
@@ -436,88 +400,40 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 - `MealType`: BREAKFAST, LUNCH, SNACKS, DINNER
 - `RuleAction`: INCLUDE, EXCLUDE
 
+**Room-only entities** (no domain model counterpart):
+`KnownIngredientEntity`, `OfflineQueueEntity`, `CookedRecipeEntity`, `RecentlyViewedEntity`
+
 ## Backend API
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| **Auth** | | |
-| POST | `/api/v1/auth/firebase` | Exchange Firebase token for JWT |
-| POST | `/api/v1/auth/refresh` | Refresh access token |
-| **Users** | | |
-| GET | `/api/v1/users/me` | Get current user |
-| PUT | `/api/v1/users/preferences` | Update preferences |
-| **Meal Plans** | | |
-| POST | `/api/v1/meal-plans/generate` | Generate meal plan (AI) |
-| GET | `/api/v1/meal-plans/current` | Get current week's plan |
-| GET | `/api/v1/meal-plans/{plan_id}` | Get specific meal plan |
-| POST | `/api/v1/meal-plans/{plan_id}/items/{item_id}/swap` | Swap meal |
-| PUT | `/api/v1/meal-plans/{plan_id}/items/{item_id}/lock` | Lock meal item |
-| DELETE | `/api/v1/meal-plans/{plan_id}/items/{item_id}` | Delete meal item |
-| **Recipes** | | |
-| GET | `/api/v1/recipes/search` | Search recipes |
-| GET | `/api/v1/recipes/ai-catalog/search` | Search AI-cataloged recipes (for Recipe Rules) |
-| GET | `/api/v1/recipes/{recipe_id}` | Get recipe details |
-| GET | `/api/v1/recipes/{recipe_id}/scale` | Scale recipe ingredients |
-| **Grocery** | | |
-| GET | `/api/v1/grocery` | Get grocery list |
-| GET | `/api/v1/grocery/whatsapp` | Grocery list in WhatsApp format |
-| **Chat** | | |
-| POST | `/api/v1/chat/message` | AI chat with tool calling |
-| POST | `/api/v1/chat/image` | Food photo analysis (Gemini Vision) |
-| GET | `/api/v1/chat/history` | Chat message history |
-| **Recipe Rules** | | |
-| GET | `/api/v1/recipe-rules` | List user's recipe rules |
-| POST | `/api/v1/recipe-rules` | Create recipe rule |
-| DELETE | `/api/v1/recipe-rules/{rule_id}` | Delete recipe rule |
-| POST | `/api/v1/recipe-rules/sync` | Batch sync rules and nutrition goals (Last-Write-Wins) |
-| **Family Members** | | |
-| GET | `/api/v1/family-members` | List family members |
-| POST | `/api/v1/family-members` | Create family member |
-| PUT | `/api/v1/family-members/{member_id}` | Update family member |
-| DELETE | `/api/v1/family-members/{member_id}` | Delete family member |
-| **Nutrition Goals** | | |
-| GET | `/api/v1/nutrition-goals` | List nutrition goals |
-| POST | `/api/v1/nutrition-goals` | Create nutrition goal (409 on duplicate category) |
-| GET | `/api/v1/nutrition-goals/{goal_id}` | Get specific nutrition goal |
-| PUT | `/api/v1/nutrition-goals/{goal_id}` | Update nutrition goal |
-| DELETE | `/api/v1/nutrition-goals/{goal_id}` | Delete nutrition goal |
-| **Festivals** | | |
-| GET | `/api/v1/festivals/upcoming` | Upcoming festivals with fasting days |
-| **Stats** | | |
-| GET | `/api/v1/stats/streak` | Cooking streak statistics |
-| GET | `/api/v1/stats/monthly` | Monthly cooking statistics |
-| **Notifications** | | |
-| GET | `/api/v1/notifications` | List notifications |
-| POST | `/api/v1/notifications/fcm-token` | Register FCM token |
-| DELETE | `/api/v1/notifications/fcm-token` | Remove FCM token |
-| PUT | `/api/v1/notifications/read-all` | Mark all notifications read |
-| PUT | `/api/v1/notifications/{notification_id}/read` | Mark single notification read |
-| DELETE | `/api/v1/notifications/{notification_id}` | Delete notification |
+~43 endpoints across 12 groups: Auth, Users, Meal Plans, Recipes, Grocery, Chat, Recipe Rules, Family Members, Nutrition Goals, Festivals, Stats, Notifications.
 
-API docs: `http://localhost:8000/docs`
+**Full interactive docs:** `http://localhost:8000/docs` (Swagger UI)
 
-**Backend Key Files:**
-| File | Purpose |
-|------|---------|
-| `app/db/postgres.py` | PostgreSQL connection pool |
-| `app/services/ai_meal_service.py` | Gemini-powered AI meal generation |
-| `app/services/ai_recipe_catalog_service.py` | AI recipe catalog (dedup, dietary filter, search) |
-| `app/services/auth_service.py` | User authentication and JWT token management |
-| `app/services/chat_service.py` | Chat message persistence and retrieval |
-| `app/services/config_service.py` | YAML configuration loading |
-| `app/services/festival_service.py` | Festival/fasting day lookup |
-| `app/services/grocery_service.py` | Grocery list generation from meal plans |
-| `app/services/meal_plan_service.py` | Meal plan CRUD operations |
-| `app/services/meal_plan_chat_service.py` | Meal plan queries/mutations from chat interface |
-| `app/services/notification_service.py` | Notification management and FCM |
-| `app/services/preference_update_service.py` | INCLUDE/EXCLUDE rules |
-| `app/services/recipe_service.py` | Recipe search and retrieval |
-| `app/services/stats_service.py` | Cooking streak and monthly statistics |
-| `app/services/user_service.py` | User profile management |
-| `app/ai/chat_assistant.py` | Tool calling orchestration |
-| `app/ai/gemini_client.py` | Google Gemini API for vision and text generation |
-| `app/ai/claude_client.py` | Anthropic Claude API client with tool calling support |
-| `app/api/v1/endpoints/` | All API routers (auth, chat, festivals, grocery, meal_plans, notifications, recipe_rules, recipes, stats, users, family_members) |
+**Routers:** `app/api/v1/endpoints/` — one file per group (auth, chat, festivals, grocery, meal_plans, notifications, recipe_rules, recipes, stats, users, family_members, nutrition_goals)
+
+**Key backend files with gotchas:**
+
+| File | Why it matters |
+|------|----------------|
+| `app/db/postgres.py` | Has 3 model import blocks (init_db, create_tables, drop_tables) — must update all 3 when adding models |
+| `app/db/database.py` | `get_db()` dependency — imports from postgres.py |
+| `app/config.py` | Pydantic Settings — env vars, CORS (`["*"]`), JWT config |
+| `app/ai/chat_assistant.py` | Tool calling orchestration — ties Claude API to preference/rule services |
+| `app/services/` | One service per domain area; all follow same async pattern with `db: AsyncSession` param |
+
+## Database Schema
+
+### Room (Android) — Version 10
+
+20 entities in `RasoiDatabase.kt`. Migrations: `MIGRATION_7_8` (notifications + offline queue), `MIGRATION_8_9` (recipe rules refactor + cooked recipes), `MIGRATION_9_10` (known ingredients). Fresh installs seed `known_ingredients` with 40+ popular Indian cooking ingredients.
+
+11 DAOs: MealPlan, Recipe, Grocery, Favorite, Collection, Pantry, Stats, RecipeRules, Chat, Notification, OfflineQueue.
+
+### PostgreSQL (Backend) — Alembic Migrations
+
+Migrations in `backend/alembic/versions/`. Run `alembic upgrade head` to apply.
+
+12 models in `backend/app/models/`. **Important:** `postgres.py` has 3 import blocks (init_db, create_tables, drop_tables) that import 10 models but are **missing** `notification` and `recipe_rule`. The `conftest.py` imports all 12. When adding new models, update all 4 locations.
 
 ## Meal Generation
 
@@ -527,6 +443,7 @@ AI-powered meal planning using Google Gemini, with YAML config for pairing guida
 - `meal_generation.yaml` - Pairing rules, meal structure
 - `reference_data/ingredients.yaml` - Ingredient aliases
 - `reference_data/dishes.yaml` - Common dishes with pairings
+- `reference_data/cuisines.yaml` - Regional cuisine definitions
 
 **Key concepts:**
 | Concept | Description |
@@ -579,7 +496,7 @@ AI-powered meal planning using Google Gemini, with YAML config for pairing guida
 | Issue | Solution |
 |-------|----------|
 | Gradle sync fails | Ensure JDK 17+, `JAVA_HOME` set. Check `gradle/libs.versions.toml` for versions. |
-| API 36 emulator issues | Use API 34 - API 36 has Espresso compatibility issues |
+| API 36 emulator issues | Use API 34 locally - API 36 has Espresso compatibility issues. CI uses API 29. |
 | Gradle daemon hangs (Windows) | Run `./gradlew --stop` |
 | KSP/Hilt errors | Run `./gradlew clean :app:kspDebugKotlin` |
 | Backend import errors | Run from backend dir: `cd backend && PYTHONPATH=. pytest` |
@@ -864,6 +781,35 @@ The 7-step workflow (Rule #7) is enforced by shell hooks in `.claude/hooks/`:
 | `log-workflow.sh` | Session logging — appends to `.claude/logs/workflow-sessions.log` |
 
 Workflow state is tracked in `.claude/workflow-state.json`. The full hook system and enforcement logic is documented in `docs/rules/Claude Code Enforced Workflow Rules.md`.
+
+## Claude Code Configuration
+
+The `.claude/` directory contains Claude Code customization:
+
+```
+.claude/
+├── agents/           # 7 agent definitions
+│   ├── code-reviewer.md
+│   ├── database-admin.md
+│   ├── debugger.md
+│   ├── docs-manager.md
+│   ├── git-manager.md
+│   ├── planner-researcher.md
+│   └── tester.md
+├── commands/         # Slash commands (user-invocable skills)
+│   ├── fix-issue.md      # /fix-issue <number> — implement fix for GitHub Issue
+│   ├── implement.md      # /implement — implement feature with workflow
+│   └── run-e2e.md        # /run-e2e — run Android E2E tests by feature group
+├── hooks/            # Workflow enforcement hooks
+│   ├── validate-workflow-step.sh
+│   ├── post-test-update.sh
+│   └── log-workflow.sh
+├── logs/             # Workflow session logs
+├── settings.json
+└── settings.local.json
+```
+
+Workflow state is tracked in `.claude/workflow-state.json`.
 
 ## Key Documentation
 

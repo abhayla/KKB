@@ -1,3 +1,6 @@
+# MCP (contains credentials)
+.mcp.json
+
 # Android
 *.iml
 .gradle/
