@@ -44,7 +44,7 @@ app ─────┬──────> core
 | Navigation | Navigation Compose |
 | Database | Room (Android cache), PostgreSQL (backend source of truth) |
 | Auth | Firebase Auth (Google OAuth only) |
-| LLM | Claude API (chat tool calling), Gemini (meal generation + food photo analysis) |
+| LLM | Claude API (chat tool calling), Gemini `gemini-2.5-flash` via `google-genai` SDK (meal generation + food photo analysis) |
 | Offline Support | Room as source of truth with sync to backend |
 
 ### Data Flow
@@ -231,6 +231,8 @@ PYTHONPATH=. python scripts/seed_achievements.py
 PYTHONPATH=. python scripts/import_recipes_postgres.py
 PYTHONPATH=. python scripts/sync_config_postgres.py
 PYTHONPATH=. python scripts/backfill_ai_recipe_catalog.py  # Backfill catalog from historical meal plans
+PYTHONPATH=. python scripts/cleanup_user.py               # Remove test user data (E2E test isolation)
+PYTHONPATH=. python scripts/migrate_legacy_rules.py       # Migrate old preferences to recipe rules
 ```
 
 ### Prerequisites
@@ -405,11 +407,11 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
 ## Backend API
 
-~43 endpoints across 12 groups: Auth, Users, Meal Plans, Recipes, Grocery, Chat, Recipe Rules, Family Members, Nutrition Goals, Festivals, Stats, Notifications.
+38 endpoints across 11 routers: Auth, Users, Meal Plans, Recipes, Grocery, Chat, Recipe Rules (includes Nutrition Goals), Family Members, Festivals, Stats, Notifications.
 
 **Full interactive docs:** `http://localhost:8000/docs` (Swagger UI)
 
-**Routers:** `app/api/v1/endpoints/` — one file per group (auth, chat, festivals, grocery, meal_plans, notifications, recipe_rules, recipes, stats, users, family_members, nutrition_goals)
+**Routers:** `app/api/v1/endpoints/` — one file per group (auth, chat, festivals, grocery, meal_plans, notifications, recipe_rules, recipes, stats, users, family_members). Note: nutrition_goals endpoints are in `recipe_rules.py`.
 
 **Key backend files with gotchas:**
 
@@ -433,11 +435,11 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
 Migrations in `backend/alembic/versions/`. Run `alembic upgrade head` to apply.
 
-12 models in `backend/app/models/`. **Important:** `postgres.py` has 3 import blocks (init_db, create_tables, drop_tables) that import 10 models but are **missing** `notification` and `recipe_rule`. The `conftest.py` imports all 12. When adding new models, update all 4 locations.
+12 models in `backend/app/models/`. **Important:** `postgres.py` has 3 import blocks (init_db, create_tables, drop_tables) that import 9 models but are **missing** `notification`, `recipe_rule`, and `family_member`. The `conftest.py` imports all 12. When adding new models, update all 4 locations.
 
 ## Meal Generation
 
-AI-powered meal planning using Google Gemini, with YAML config for pairing guidance.
+AI-powered meal planning using Google Gemini (`gemini-2.5-flash` via `google-genai` SDK, native async with `client.aio.models.generate_content()`), with YAML config for pairing guidance.
 
 **Config files** in `backend/config/`:
 - `meal_generation.yaml` - Pairing rules, meal structure
@@ -501,7 +503,7 @@ AI-powered meal planning using Google Gemini, with YAML config for pairing guida
 | KSP/Hilt errors | Run `./gradlew clean :app:kspDebugKotlin` |
 | Backend import errors | Run from backend dir: `cd backend && PYTHONPATH=. pytest` |
 | MissingGreenlet errors | SQLAlchemy async requires `selectinload()` for eager loading |
-| Meal generation timeout | AI takes 4-7 seconds; E2E tests use 30-second timeout |
+| Meal generation timeout | Migrated to `google-genai` SDK with native async (`client.aio`). AI takes 4-7 seconds; E2E tests use 30-second timeout. Old `google-generativeai` SDK blocked uvicorn event loop. |
 | Room DB not found | Run `./gradlew clean` then rebuild - schema may have changed |
 | Test flakiness | Use `waitUntil {}` in E2E tests; check `RetryUtils.kt` for patterns |
 | Screenshot "Could not process image" | Use PNG format, avoid fullPage on long pages, limit to 1280x720, verify file saved before reading. See Screenshots rule above. |

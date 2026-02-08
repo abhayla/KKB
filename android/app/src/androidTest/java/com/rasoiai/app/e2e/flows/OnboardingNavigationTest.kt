@@ -65,7 +65,8 @@ class OnboardingNavigationTest : BaseE2ETest() {
         Log.d(TAG, "Tapped Google Sign-In")
 
         // Assert: Should navigate to onboarding
-        authRobot.assertNavigatedToOnboarding(timeoutMillis = 5000)
+        // 10s timeout: backend auth can take 1-5s, then navigation animation
+        authRobot.assertNavigatedToOnboarding(timeoutMillis = 10000)
         onboardingRobot.assertStepIndicator(1, 5)
         Log.d(TAG, "Successfully navigated to Onboarding Step 1")
     }
@@ -166,7 +167,8 @@ class OnboardingNavigationTest : BaseE2ETest() {
 
         // Assert: Should navigate to Onboarding (not Home)
         // This proves that the navigation logic correctly routes non-onboarded users
-        authRobot.assertNavigatedToOnboarding(timeoutMillis = 5000)
+        // 10s timeout: backend auth can take 1-5s, then navigation animation
+        authRobot.assertNavigatedToOnboarding(timeoutMillis = 10000)
         onboardingRobot.assertStepIndicator(1, 5)
         Log.d(TAG, "Non-onboarded user correctly routed to Onboarding (Step 1)")
     }

@@ -5,6 +5,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
 import org.json.JSONObject
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -679,6 +680,230 @@ object BackendTestHelper {
 
         Log.i(TAG, "Cleared $rulesDeleted recipe rules and $goalsDeleted nutrition goals from backend")
         return Pair(rulesDeleted, goalsDeleted)
+    }
+
+    /**
+     * Generates a meal plan and returns the full JSON response.
+     * Unlike [generateMealPlan] which returns Boolean, this captures the entire
+     * MealPlanResponse for AI verification testing.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param authToken JWT Bearer token for authentication
+     * @param weekStartDate Optional week start date (defaults to next Monday)
+     * @return JSONObject containing the full MealPlanResponse, or null if failed
+     */
+    fun generateMealPlanWithResponse(
+        baseUrl: String,
+        authToken: String,
+        weekStartDate: String? = null
+    ): JSONObject? {
+        Log.i(TAG, "Generating meal plan with full response capture...")
+
+        val client = createClient(
+            connectTimeoutSeconds = 10,
+            readTimeoutSeconds = 90,
+            writeTimeoutSeconds = 10
+        )
+
+        val startDate = weekStartDate ?: getNextMonday()
+        val requestBody = JSONObject()
+            .put("week_start_date", startDate)
+            .toString()
+            .toRequestBody("application/json".toMediaType())
+
+        val request = Request.Builder()
+            .url("$baseUrl/api/v1/meal-plans/generate")
+            .addHeader("Authorization", "Bearer $authToken")
+            .post(requestBody)
+            .build()
+
+        Log.d(TAG, "Meal plan request: POST $baseUrl/api/v1/meal-plans/generate (week_start_date=$startDate)")
+
+        val startTime = System.currentTimeMillis()
+        return try {
+            client.newCall(request).execute().use { response ->
+                val elapsed = System.currentTimeMillis() - startTime
+                if (response.isSuccessful) {
+                    val body = response.body?.string() ?: return@use null
+                    Log.i(TAG, "Meal plan generated in ${elapsed}ms (${body.length} chars)")
+                    JSONObject(body)
+                } else {
+                    val errorBody = response.body?.string() ?: "no body"
+                    Log.w(TAG, "Meal plan generation failed in ${elapsed}ms: ${response.code} - $errorBody")
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            val elapsed = System.currentTimeMillis() - startTime
+            Log.e(TAG, "Meal plan generation exception after ${elapsed}ms: ${e.message}")
+            null
+        }
+    }
+
+    /**
+     * Retrieves the current user's family members from the backend.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param authToken JWT Bearer token for authentication
+     * @return JSONObject containing { members: [...], total_count: int }, or null if failed
+     */
+    fun getFamilyMembers(baseUrl: String, authToken: String): JSONObject? {
+        Log.d(TAG, "Fetching family members from: $baseUrl/api/v1/family-members")
+
+        return retryBackendCall(maxRetries = 3) {
+            val client = createClient()
+
+            val request = Request.Builder()
+                .url("$baseUrl/api/v1/family-members")
+                .addHeader("Authorization", "Bearer $authToken")
+                .get()
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    val responseBody = response.body?.string() ?: return@use null
+                    Log.d(TAG, "getFamilyMembers response: $responseBody")
+                    JSONObject(responseBody)
+                } else {
+                    Log.w(TAG, "getFamilyMembers failed: ${response.code} ${response.message}")
+                    null
+                }
+            }
+        }
+    }
+
+    /**
+     * Creates a recipe rule on the backend.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param authToken JWT Bearer token for authentication
+     * @param rule JSONObject matching RecipeRuleCreate schema
+     * @return JSONObject containing the created rule, or null if failed
+     */
+    fun createRecipeRule(baseUrl: String, authToken: String, rule: JSONObject): JSONObject? {
+        Log.d(TAG, "Creating recipe rule: ${rule.optString("target_name")} (${rule.optString("action")})")
+
+        return retryBackendCall(maxRetries = 2) {
+            val client = createClient()
+
+            val requestBody = rule.toString()
+                .toRequestBody("application/json".toMediaType())
+
+            val request = Request.Builder()
+                .url("$baseUrl/api/v1/recipe-rules")
+                .addHeader("Authorization", "Bearer $authToken")
+                .post(requestBody)
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    val responseBody = response.body?.string() ?: return@use null
+                    Log.d(TAG, "createRecipeRule success: $responseBody")
+                    JSONObject(responseBody)
+                } else {
+                    val errorBody = response.body?.string() ?: "no body"
+                    Log.w(TAG, "createRecipeRule failed: ${response.code} - $errorBody")
+                    null
+                }
+            }
+        }
+    }
+
+    /**
+     * Creates a family member on the backend.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param authToken JWT Bearer token for authentication
+     * @param member JSONObject matching FamilyMemberCreate schema
+     * @return JSONObject containing the created member, or null if failed
+     */
+    fun createFamilyMember(baseUrl: String, authToken: String, member: JSONObject): JSONObject? {
+        Log.d(TAG, "Creating family member: ${member.optString("name")}")
+
+        return retryBackendCall(maxRetries = 2) {
+            val client = createClient()
+
+            val requestBody = member.toString()
+                .toRequestBody("application/json".toMediaType())
+
+            val request = Request.Builder()
+                .url("$baseUrl/api/v1/family-members")
+                .addHeader("Authorization", "Bearer $authToken")
+                .post(requestBody)
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    val responseBody = response.body?.string() ?: return@use null
+                    Log.d(TAG, "createFamilyMember success: $responseBody")
+                    JSONObject(responseBody)
+                } else {
+                    val errorBody = response.body?.string() ?: "no body"
+                    Log.w(TAG, "createFamilyMember failed: ${response.code} - $errorBody")
+                    null
+                }
+            }
+        }
+    }
+
+    /**
+     * Deletes a single family member from the backend.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param authToken JWT Bearer token for authentication
+     * @param memberId The ID of the family member to delete
+     * @return true if deletion was successful (204), false otherwise
+     */
+    fun deleteFamilyMember(baseUrl: String, authToken: String, memberId: String): Boolean {
+        return retryBackendCall(maxRetries = 2) {
+            val client = createClient()
+            val request = Request.Builder()
+                .url("$baseUrl/api/v1/family-members/$memberId")
+                .addHeader("Authorization", "Bearer $authToken")
+                .delete()
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (response.code == 204 || response.isSuccessful) {
+                    Log.d(TAG, "Deleted family member: $memberId")
+                    true
+                } else {
+                    Log.w(TAG, "Delete family member $memberId failed: ${response.code}")
+                    null
+                }
+            }
+        } ?: false
+    }
+
+    /**
+     * Clears all family members from the backend.
+     * Fetches all members via GET, then deletes each one individually.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param authToken JWT Bearer token for authentication
+     * @return Number of members deleted
+     */
+    fun clearAllFamilyMembers(baseUrl: String, authToken: String): Int {
+        var membersDeleted = 0
+
+        try {
+            val membersResponse = getFamilyMembers(baseUrl, authToken)
+            if (membersResponse != null) {
+                val membersArray = membersResponse.getJSONArray("members")
+                for (i in 0 until membersArray.length()) {
+                    val member = membersArray.getJSONObject(i)
+                    val memberId = member.getString("id")
+                    if (deleteFamilyMember(baseUrl, authToken, memberId)) {
+                        membersDeleted++
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Error clearing family members: ${e.message}")
+        }
+
+        Log.i(TAG, "Cleared $membersDeleted family members from backend")
+        return membersDeleted
     }
 
     /**

@@ -280,7 +280,10 @@ fun AddRuleBottomSheet(
                     // Hide "NEVER" for include rules
                     !(uiState.selectedAction == RuleAction.INCLUDE && it == FrequencyType.NEVER)
                 }.forEach { type ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.testTag("${TestTags.FREQUENCY_TYPE_PREFIX}${type.name}")
+                    ) {
                         RadioButton(
                             selected = uiState.selectedFrequencyType == type,
                             onClick = { onFrequencyTypeChange(type) }
@@ -362,7 +365,10 @@ fun AddRuleBottomSheet(
                 fontWeight = FontWeight.Medium
             )
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.testTag(TestTags.MEAL_SLOT_MODE_ANY)
+            ) {
                 RadioButton(
                     selected = uiState.mealSlotMode == MealSlotMode.ANY,
                     onClick = { onMealSlotModeChange(MealSlotMode.ANY) }
@@ -373,7 +379,10 @@ fun AddRuleBottomSheet(
                 )
             }
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.testTag(TestTags.MEAL_SLOT_MODE_SPECIFIC)
+            ) {
                 RadioButton(
                     selected = uiState.mealSlotMode == MealSlotMode.SPECIFIC,
                     onClick = { onMealSlotModeChange(MealSlotMode.SPECIFIC) }
@@ -397,6 +406,7 @@ fun AddRuleBottomSheet(
                         FilterChip(
                             selected = mealType in uiState.selectedMealSlots,
                             onClick = { onToggleMealSlot(mealType) },
+                            modifier = Modifier.testTag("${TestTags.MEAL_SLOT_CHIP_PREFIX}${mealType.name}"),
                             label = {
                                 Text(
                                     mealType.name.lowercase().replaceFirstChar { it.uppercase() }

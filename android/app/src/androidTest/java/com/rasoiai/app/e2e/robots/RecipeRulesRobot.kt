@@ -271,14 +271,9 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
      * - NEVER -> "Never"
      */
     fun selectFrequencyType(type: FrequencyType) = apply {
-        val typeText = when (type) {
-            FrequencyType.DAILY -> "Every day"
-            FrequencyType.TIMES_PER_WEEK -> "times per week"
-            FrequencyType.SPECIFIC_DAYS -> "Specific days"
-            FrequencyType.NEVER -> "Never"
-        }
-        Log.d(TAG, "Selecting frequency type: $typeText")
-        composeTestRule.onNodeWithText(typeText, substring = true, ignoreCase = true)
+        val tag = "${TestTags.FREQUENCY_TYPE_PREFIX}${type.name}"
+        Log.d(TAG, "Selecting frequency type: ${type.name} via tag $tag")
+        composeTestRule.onNodeWithTag(tag)
             .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
@@ -527,7 +522,7 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
      * Add a complete rule using RecipeRuleTestData.
      */
     fun addRule(rule: RecipeRuleTestData, isInclude: Boolean) = apply {
-        Log.d(TAG, "Adding rule: ${rule.targetName}, isInclude=$isInclude")
+        Log.d(TAG, "Adding rule: ${rule.targetName}, isInclude=$isInclude, mealSlots=${rule.mealSlot}")
 
         when (rule.type) {
             RuleType.NUTRITION -> selectNutritionTab()
@@ -551,6 +546,14 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
             selectFrequencyCount(rule.frequency)
         }
 
+        // Select meal slots if specified
+        if (rule.mealSlot.isNotEmpty()) {
+            selectMealSlotMode(specific = true)
+            for (slot in rule.mealSlot) {
+                toggleMealSlotChip(slot)
+            }
+        }
+
         selectEnforcement(rule.enforcement)
         tapSaveRule()
 
@@ -558,6 +561,31 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
         Thread.sleep(1000)
         composeTestRule.waitForIdle()
         Log.d(TAG, "Rule added: ${rule.targetName}")
+    }
+
+    /**
+     * Select meal slot mode: ANY or SPECIFIC.
+     */
+    fun selectMealSlotMode(specific: Boolean) = apply {
+        val tag = if (specific) TestTags.MEAL_SLOT_MODE_SPECIFIC else TestTags.MEAL_SLOT_MODE_ANY
+        Log.d(TAG, "Selecting meal slot mode: ${if (specific) "SPECIFIC" else "ANY"}")
+        composeTestRule.onNodeWithTag(tag)
+            .performScrollTo()
+            .performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    /**
+     * Toggle a specific meal slot chip (BREAKFAST, LUNCH, DINNER, SNACKS).
+     */
+    fun toggleMealSlotChip(slot: MealSlot) = apply {
+        val mealTypeName = slot.name // MealSlot enum names match MealType names
+        val tag = "${TestTags.MEAL_SLOT_CHIP_PREFIX}$mealTypeName"
+        Log.d(TAG, "Toggling meal slot chip: $mealTypeName via tag $tag")
+        composeTestRule.onNodeWithTag(tag)
+            .performScrollTo()
+            .performClick()
+        composeTestRule.waitForIdle()
     }
 
     // ===================== Legacy Methods (For Backwards Compatibility) =====================

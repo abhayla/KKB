@@ -73,7 +73,7 @@ If build fails, fix compilation errors before proceeding.
 
 ## FEATURE GROUPS
 
-There are **13 feature groups**. When `$ARGUMENTS` is empty, run them in this order (1→13). When a group name is given, run only that group.
+There are **14 feature groups**. When `$ARGUMENTS` is empty, run them in this order (1→14). When a group name is given, run only that group.
 
 ### Group 1: `ui-screens` — Presentation UI Tests (no backend needed)
 
@@ -126,7 +126,8 @@ com.rasoiai.app.e2e.flows.SharmaOnboardingVerificationTest
 ### Group 6: `meal-generation` — Meal Plan Generation
 
 ```
-com.rasoiai.app.e2e.flows.MealPlanGenerationFlowTest
+com.rasoiai.app.e2e.flows.MealPlanGenerationFlowTest,
+com.rasoiai.app.e2e.flows.MealPlanAIVerificationTest
 ```
 
 ### Group 7: `home` — Home Screen E2E
@@ -188,6 +189,12 @@ com.rasoiai.app.e2e.flows.MealTypeFilterTest,
 com.rasoiai.app.e2e.performance.PerformanceTest
 ```
 
+### Group 14: `full-journey` — Full User Journey (Auth → Rules → Regeneration)
+
+```
+com.rasoiai.app.e2e.flows.FullJourneyFlowTest
+```
+
 ---
 
 ## EXECUTION PROTOCOL — Per-Test Individual Execution
@@ -213,7 +220,7 @@ cd android && ./gradlew :app:connectedDebugAndroidTest \
   -Pandroid.testInstrumentationRunnerArguments.class=<single_class>
 ```
 
-Use a 10-minute timeout for groups with AI calls (meal-generation, home, chat, recipe-rules, cross-cutting). Use 5-minute timeout for others.
+Use a 10-minute timeout for groups with AI calls (meal-generation, home, chat, recipe-rules, cross-cutting, full-journey). Use 5-minute timeout for others.
 
 ### Step 3: If PASSED
 
@@ -441,3 +448,4 @@ If only a single group was requested, show just that group's line in the report.
 | `recipe-rules` | 11 | 3 recipe rules tests | Yes |
 | `cooking-stats-settings` | 12 | 5 flow tests | Yes |
 | `cross-cutting` | 13 | 6 cross-feature tests | Yes |
+| `full-journey` | 14 | FullJourneyFlowTest | Yes (AI x2) |

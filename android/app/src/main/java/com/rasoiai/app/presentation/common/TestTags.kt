@@ -214,4 +214,8 @@ object TestTags {
     const val RULE_CARD_MENU_BUTTON = "rule_card_menu_button"
     const val RULE_ACTION_INCLUDE = "rule_action_include"
     const val RULE_ACTION_EXCLUDE = "rule_action_exclude"
+    const val FREQUENCY_TYPE_PREFIX = "frequency_type_"
+    const val MEAL_SLOT_MODE_ANY = "meal_slot_mode_any"
+    const val MEAL_SLOT_MODE_SPECIFIC = "meal_slot_mode_specific"
+    const val MEAL_SLOT_CHIP_PREFIX = "meal_slot_chip_"
 }

@@ -279,9 +279,25 @@ abstract class BaseE2ETest {
     }
 
     /**
+     * Clears all family members from the backend.
+     * Call this in test @Before methods to ensure clean family member state.
+     */
+    protected fun clearFamilyMembers() {
+        val authToken = runBlocking { userPreferencesDataStore.accessToken.first() }
+        if (authToken != null) {
+            val membersDeleted = BackendTestHelper.clearAllFamilyMembers(
+                BACKEND_BASE_URL, authToken
+            )
+            Log.d(TAG, "Cleared backend: $membersDeleted family members")
+        } else {
+            Log.w(TAG, "No auth token available — skipping family members cleanup")
+        }
+    }
+
+    /**
      * Fetches the current meal plan from the backend API and inserts it into Room DB.
      */
-    private fun seedMealPlanFromBackend(authToken: String) {
+    protected fun seedMealPlanFromBackend(authToken: String) {
         val mealPlanJson = BackendTestHelper.getCurrentMealPlan(BACKEND_BASE_URL, authToken)
         if (mealPlanJson == null) {
             Log.w(TAG, "No meal plan on backend to seed into Room")
