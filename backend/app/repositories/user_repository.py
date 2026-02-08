@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from sqlalchemy import select, delete
+from sqlalchemy import func, select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.postgres import async_session_maker
@@ -50,6 +50,17 @@ class UserRepository:
                 return self._user_to_dict(user)
             return None
 
+    async def get_by_email(self, email: str) -> Optional[dict[str, Any]]:
+        """Get user by email (case-insensitive)."""
+        async with async_session_maker() as session:
+            result = await session.execute(
+                select(User).where(func.lower(User.email) == email.strip().lower())
+            )
+            user = result.scalar_one_or_none()
+            if user:
+                return self._user_to_dict(user)
+            return None
+
     async def create(
         self,
         firebase_uid: str,
@@ -62,7 +73,7 @@ class UserRepository:
             user = User(
                 id=str(uuid.uuid4()),
                 firebase_uid=firebase_uid,
-                email=email,
+                email=email.strip().lower() if email else None,
                 name=name,
                 profile_picture_url=profile_picture_url,
                 is_onboarded=False,
@@ -84,6 +95,10 @@ class UserRepository:
             user = result.scalar_one_or_none()
             if not user:
                 return None
+
+            # Normalize email before saving
+            if 'email' in data and data['email']:
+                data['email'] = data['email'].strip().lower()
 
             # Update allowed fields
             allowed_fields = ['name', 'email', 'profile_picture_url', 'is_onboarded', 'is_active']

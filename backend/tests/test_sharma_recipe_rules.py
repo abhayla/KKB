@@ -34,7 +34,7 @@ async def sharma_user(db_session: AsyncSession) -> User:
     user = User(
         id=user_id,
         firebase_uid=f"firebase-sharma-{user_id}",
-        email="abhayinfosys@gmail.com",
+        email=f"sharma-{user_id}@example.com",
         name="Sharma Family",
         is_onboarded=True,
         is_active=True,

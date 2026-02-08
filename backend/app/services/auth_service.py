@@ -3,7 +3,9 @@
 from datetime import timedelta
 
 from app.config import settings
-from app.core.exceptions import AuthenticationError
+from sqlalchemy.exc import IntegrityError
+
+from app.core.exceptions import AuthenticationError, ConflictError
 from app.core.firebase import verify_firebase_token
 from app.core.security import create_access_token, decode_access_token
 from app.repositories.user_repository import UserRepository
@@ -29,13 +31,27 @@ async def authenticate_with_firebase(firebase_token: str) -> AuthResponse:
     user = await user_repo.get_by_firebase_uid(firebase_uid)
 
     if not user:
+        # Check for duplicate email before creating
+        email = firebase_user.get("email")
+        if email:
+            existing = await user_repo.get_by_email(email)
+            if existing:
+                raise ConflictError(
+                    f"An account with email '{email.strip().lower()}' already exists"
+                )
+
         # Create new user
-        user = await user_repo.create(
-            firebase_uid=firebase_uid,
-            email=firebase_user.get("email"),
-            name=firebase_user.get("name"),
-            profile_picture_url=firebase_user.get("picture"),
-        )
+        try:
+            user = await user_repo.create(
+                firebase_uid=firebase_uid,
+                email=email,
+                name=firebase_user.get("name"),
+                profile_picture_url=firebase_user.get("picture"),
+            )
+        except IntegrityError:
+            raise ConflictError(
+                f"An account with email '{email.strip().lower() if email else ''}' already exists"
+            )
 
     # Create JWT tokens
     access_token = create_access_token(

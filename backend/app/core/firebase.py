@@ -59,8 +59,8 @@ def verify_firebase_token(id_token: str) -> dict:
         logger.info("E2E Test: Using fake Firebase token for testing")
         return {
             "uid": "fake-user-id",
-            "email": "abhayinfosys@gmail.com",
-            "name": "Abhay Sharma",
+            "email": "e2e-test@rasoiai.test",
+            "name": "E2E Test User",
             "picture": None,
         }
 

@@ -18,7 +18,7 @@ uvicorn app.main:app --reload      # Start server → http://localhost:8000/docs
 PYTHONPATH=. pytest                # Run all tests
 ```
 
-**Key numbers:** 3,580 recipes | 247 backend tests | 330 Android unit tests | 750+ UI tests | 65+ E2E tests | 15 screens
+**Key numbers:** 3,580 recipes | 250 backend tests | 330 Android unit tests | 750+ UI tests | 65+ E2E tests | 15 screens
 
 **Session context:** Check `docs/CONTINUE_PROMPT.md` for active work between sessions.
 
@@ -242,6 +242,15 @@ PYTHONPATH=. python scripts/sync_config_postgres.py
 PYTHONPATH=. python scripts/backfill_ai_recipe_catalog.py  # Backfill catalog from historical meal plans
 ```
 
+### Prerequisites
+
+| Tool | Version |
+|------|---------|
+| JDK | 17+ (`JAVA_HOME` must be set) |
+| Python | 3.11+ |
+| PostgreSQL | 12+ |
+| Android SDK | API 34 (Min 24) |
+
 ### Environment Setup
 
 **Backend `.env` file:**
@@ -296,12 +305,12 @@ Permissions: read-only (contents, PRs, issues, actions). Uses `anthropics/claude
 
 | Platform | Tests | Framework |
 |----------|-------|-----------|
-| Backend | 247 | pytest |
+| Backend | 250 | pytest |
 | Android Unit | 330 | JUnit + MockK |
 | Android UI | 750+ | Compose UI Testing |
 | Android E2E | 65+ | Compose UI Testing + Hilt + Real API |
 
-### Backend Tests (247 total)
+### Backend Tests (250 total)
 
 | Test File | Tests | Purpose |
 |-----------|-------|---------|
@@ -321,6 +330,7 @@ Permissions: read-only (contents, PRs, issues, actions). Uses `anthropics/claude
 | `test_sharma_recipe_rules.py` | 13 | Sharma family recipe rules E2E (FR-011, FR-014) |
 | `test_recipe_rules_dedup.py` | 6 | Recipe rules duplicate prevention (FR-012) |
 | `test_family_members_api.py` | 9 | Family members CRUD API (FR-013) |
+| `test_email_uniqueness.py` | 7 | Email uniqueness enforcement (409 on duplicate) |
 
 ### Android UI Tests
 

@@ -5,7 +5,7 @@ so deleting the user row cleanly removes everything.
 
 Usage:
     cd backend
-    python scripts/cleanup_user.py abhayinfosys@gmail.com
+    python scripts/cleanup_user.py e2e-test@rasoiai.test
 """
 
 import asyncio
@@ -146,7 +146,7 @@ async def cleanup_user(email: str):
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python scripts/cleanup_user.py <email>")
-        print("Example: python scripts/cleanup_user.py abhayinfosys@gmail.com")
+        print("Example: python scripts/cleanup_user.py e2e-test@rasoiai.test")
         sys.exit(1)
 
     email = sys.argv[1]
