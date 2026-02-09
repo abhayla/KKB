@@ -47,7 +47,7 @@ interface RasoiApiService {
     suspend fun getCurrentUser(): UserResponse
 
     @PUT("api/v1/users/preferences")
-    suspend fun updateUserPreferences(@Body preferences: Map<String, Any>): UserResponse
+    suspend fun updateUserPreferences(@Body preferences: Map<String, @JvmSuppressWildcards Any>): UserResponse
 
     // Meal Plans
     @POST("api/v1/meal-plans/generate")

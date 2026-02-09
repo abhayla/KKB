@@ -110,11 +110,18 @@ class AuthViewModel @Inject constructor(
                 navigateAfterSignIn()
             }
             .onFailure { error ->
-                Timber.w(error, "Backend auth failed, proceeding in offline mode")
-                // Still allow the user to proceed - they're authenticated with Firebase
-                // Backend sync will happen when network is available
-                _uiState.update { it.copy(isLoading = false, isSignedIn = true) }
-                navigateAfterSignIn()
+                Timber.e(error, "Backend auth failed")
+                val message = when {
+                    error.message?.contains("409") == true ->
+                        "Account conflict. Please try again."
+                    error.message?.contains("timeout", ignoreCase = true) == true ->
+                        "Server timeout. Please check your connection and try again."
+                    else ->
+                        "Sign in failed. Please check your connection and try again."
+                }
+                _uiState.update {
+                    it.copy(isLoading = false, errorMessage = message)
+                }
             }
     }
 

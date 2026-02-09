@@ -86,6 +86,19 @@ class UserRepository:
             logger.info(f"Created user: {user.id}")
             return self._user_to_dict(user)
 
+    async def update_firebase_uid(self, user_id: str, firebase_uid: str) -> None:
+        """Update a user's Firebase UID (for account merging)."""
+        async with async_session_maker() as session:
+            result = await session.execute(
+                select(User).where(User.id == user_id)
+            )
+            user = result.scalar_one_or_none()
+            if user:
+                user.firebase_uid = firebase_uid
+                user.updated_at = datetime.now(timezone.utc)
+                await session.commit()
+                logger.info(f"Updated firebase_uid for user {user_id}")
+
     async def update(self, user_id: str, data: dict[str, Any]) -> Optional[dict[str, Any]]:
         """Update user data."""
         async with async_session_maker() as session:

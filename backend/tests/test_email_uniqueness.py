@@ -2,12 +2,12 @@
 
 Verifies:
 - Email normalization (lowercase, trimmed) on user creation
-- 409 CONFLICT when a new Firebase UID tries to register with an existing email
-- Case-insensitive duplicate detection
+- Same email + different Firebase UID merges accounts (returns 200)
+- Case-insensitive merge detection
 - NULL emails are allowed for multiple users
 - Re-auth with same UID does not trigger conflict
 - fake-firebase-token returns e2e-test@rasoiai.test
-- 409 response body contains descriptive detail
+- Merge preserves original user ID
 """
 
 import pytest
@@ -79,13 +79,14 @@ async def test_new_user_email_stored_lowercase(email_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_duplicate_email_different_firebase_uid_returns_409(
+async def test_duplicate_email_different_firebase_uid_merges(
     db_session: AsyncSession, email_client: AsyncClient
 ):
-    """Same email + different UID should return 409 CONFLICT."""
+    """Same email + different UID should merge accounts (return 200)."""
     # Pre-create a user with this email
+    original_id = str(uuid4())
     user = User(
-        id=str(uuid4()),
+        id=original_id,
         firebase_uid="original-uid-123",
         email="duplicate@test.com",
         name="Original User",
@@ -95,7 +96,7 @@ async def test_duplicate_email_different_firebase_uid_returns_409(
     db_session.add(user)
     await db_session.commit()
 
-    # Try to register with different UID but same email
+    # Sign in with different UID but same email → should merge
     mock_firebase = {
         "uid": "different-uid-456",
         "email": "duplicate@test.com",
@@ -109,17 +110,21 @@ async def test_duplicate_email_different_firebase_uid_returns_409(
             json={"firebase_token": "any-token"},
         )
 
-    assert response.status_code == 409
+    assert response.status_code == 200
+    data = response.json()
+    # Merged into original user
+    assert data["user"]["id"] == original_id
 
 
 @pytest.mark.asyncio
-async def test_duplicate_email_case_insensitive_returns_409(
+async def test_duplicate_email_case_insensitive_merges(
     db_session: AsyncSession, email_client: AsyncClient
 ):
-    """'USER@TEST.COM' vs 'user@test.com' should be treated as duplicate."""
+    """'USER@TEST.COM' vs 'user@test.com' should merge (case-insensitive)."""
     # Pre-create a user with lowercase email
+    original_id = str(uuid4())
     user = User(
-        id=str(uuid4()),
+        id=original_id,
         firebase_uid="case-uid-111",
         email="user@test.com",
         name="Case User",
@@ -129,7 +134,7 @@ async def test_duplicate_email_case_insensitive_returns_409(
     db_session.add(user)
     await db_session.commit()
 
-    # Try to register with uppercase variant
+    # Sign in with uppercase variant → should merge
     mock_firebase = {
         "uid": "case-uid-222",
         "email": "USER@TEST.COM",
@@ -143,7 +148,9 @@ async def test_duplicate_email_case_insensitive_returns_409(
             json={"firebase_token": "any-token"},
         )
 
-    assert response.status_code == 409
+    assert response.status_code == 200
+    data = response.json()
+    assert data["user"]["id"] == original_id
 
 
 @pytest.mark.asyncio
@@ -226,17 +233,17 @@ async def test_fake_firebase_token_uses_test_email(email_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_409_response_has_descriptive_detail(
+async def test_merge_preserves_original_user_id(
     db_session: AsyncSession, email_client: AsyncClient
 ):
-    """409 response body should contain 'already exists'."""
-    # Pre-create user
+    """After merge, the original user ID is preserved in the response."""
+    original_id = str(uuid4())
     user = User(
-        id=str(uuid4()),
+        id=original_id,
         firebase_uid="detail-uid-aaa",
         email="detail@test.com",
         name="Detail User",
-        is_onboarded=False,
+        is_onboarded=True,
         is_active=True,
     )
     db_session.add(user)
@@ -255,5 +262,7 @@ async def test_409_response_has_descriptive_detail(
             json={"firebase_token": "any-token"},
         )
 
-    assert response.status_code == 409
-    assert "already exists" in response.json()["detail"]
+    assert response.status_code == 200
+    data = response.json()
+    assert data["user"]["id"] == original_id
+    assert data["user"]["is_onboarded"] is True

@@ -341,11 +341,16 @@ class OnboardingViewModel @Inject constructor(
 
             } catch (e: Exception) {
                 Timber.e(e, "Error completing onboarding")
+                val message = when {
+                    e.message?.contains("401") == true ->
+                        "Not authenticated. Please go back and sign in again."
+                    e.message?.contains("timeout", ignoreCase = true) == true ->
+                        "Server timeout. Please try again."
+                    else ->
+                        "Failed to generate meal plan. Please try again."
+                }
                 _uiState.update {
-                    it.copy(
-                        isGenerating = false,
-                        errorMessage = "Failed to save preferences. Please try again."
-                    )
+                    it.copy(isGenerating = false, errorMessage = message)
                 }
             }
         }

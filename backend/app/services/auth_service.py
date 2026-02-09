@@ -1,5 +1,6 @@
 """Authentication service using Firestore."""
 
+import logging
 from datetime import timedelta
 
 from app.config import settings
@@ -11,6 +12,8 @@ from app.core.security import create_access_token, decode_access_token
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth import AuthResponse, RefreshTokenResponse, UserResponseForAuth
 from app.schemas.user import UserPreferencesDto
+
+logger = logging.getLogger(__name__)
 
 
 async def authenticate_with_firebase(firebase_token: str) -> AuthResponse:
@@ -31,27 +34,29 @@ async def authenticate_with_firebase(firebase_token: str) -> AuthResponse:
     user = await user_repo.get_by_firebase_uid(firebase_uid)
 
     if not user:
-        # Check for duplicate email before creating
         email = firebase_user.get("email")
         if email:
             existing = await user_repo.get_by_email(email)
             if existing:
-                raise ConflictError(
-                    f"An account with email '{email.strip().lower()}' already exists"
-                )
+                # Same person, different Firebase UID → merge account
+                await user_repo.update_firebase_uid(existing["id"], firebase_uid)
+                user = existing
+                user["firebase_uid"] = firebase_uid
+                logger.info(f"Merged Firebase UID for user {user['id']}")
 
-        # Create new user
-        try:
-            user = await user_repo.create(
-                firebase_uid=firebase_uid,
-                email=email,
-                name=firebase_user.get("name"),
-                profile_picture_url=firebase_user.get("picture"),
-            )
-        except IntegrityError:
-            raise ConflictError(
-                f"An account with email '{email.strip().lower() if email else ''}' already exists"
-            )
+        if not user:
+            # Create new user
+            try:
+                user = await user_repo.create(
+                    firebase_uid=firebase_uid,
+                    email=email,
+                    name=firebase_user.get("name"),
+                    profile_picture_url=firebase_user.get("picture"),
+                )
+            except IntegrityError:
+                raise ConflictError(
+                    f"An account with email '{email.strip().lower() if email else ''}' already exists"
+                )
 
     # Create JWT tokens
     access_token = create_access_token(
