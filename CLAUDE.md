@@ -509,6 +509,7 @@ AI-powered meal planning using Google Gemini (`gemini-2.5-flash` via `google-gen
 | Room DB not found | Run `./gradlew clean` then rebuild - schema may have changed |
 | Test flakiness | Use `waitUntil {}` in E2E tests; check `RetryUtils.kt` for patterns |
 | Screenshot "Could not process image" | Use PNG format, avoid fullPage on long pages, limit to 1280x720, verify file saved before reading. See Screenshots rule above. |
+| Screenshot "image dimensions exceed max" (API 400) | Auto-resized by PostToolUse hook (`.claude/hooks/post-screenshot-resize.sh`). Max 1800px per dimension. To batch-resize existing files: `python .claude/hooks/resize_screenshot.py --all`. Manual fallback: `browser_resize(1280, 720)` before Playwright screenshots. |
 | 4 auth tests fail | Pre-existing: `conftest.py` globally overrides auth dependency, causing 4 failures in `test_auth.py`. Not a regression. |
 | OnboardingViewModelTest won't compile | Pre-existing: missing `generateMealPlanUseCase` constructor param. Not a regression. |
 | Festivals/Stats no tests | Endpoints exist but have no dedicated test files. Not a regression. |

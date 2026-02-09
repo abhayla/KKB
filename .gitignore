@@ -91,6 +91,8 @@ backend/scripts/update_pg_hba.py
 # Testing/Debug
 .playwright-mcp/
 docs/testing/screenshots/
+window_dump.xml
+backend/test-results.xml
 # All screenshots should go to docs/testing/screenshots/ - these patterns catch stray files
 screenshot*.png
 screen*.png
