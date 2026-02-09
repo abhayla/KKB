@@ -283,12 +283,14 @@ Three GitHub Actions workflows in `.github/workflows/`:
 
 ### Test Distribution
 
-| Platform | Tests | Framework |
-|----------|-------|-----------|
-| Backend | 250 | pytest |
-| Android Unit | 330 | JUnit + MockK |
-| Android UI | 750+ | Compose UI Testing |
-| Android E2E | 65+ | Compose UI Testing + Hilt + Real API |
+| Platform | Tests (approx.) | Framework |
+|----------|-----------------|-----------|
+| Backend | ~250 | pytest |
+| Android Unit | ~330 | JUnit + MockK |
+| Android UI | ~750+ | Compose UI Testing |
+| Android E2E | ~67+ | Compose UI Testing + Hilt + Real API |
+
+*Counts as of Feb 2026. Run `PYTHONPATH=. pytest --collect-only -q` (backend) or `./gradlew test` (Android) for current totals.*
 
 ### Backend Tests (~250 total)
 
@@ -407,7 +409,7 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
 ## Backend API
 
-38 endpoints across 11 routers: Auth, Users, Meal Plans, Recipes, Grocery, Chat, Recipe Rules (includes Nutrition Goals), Family Members, Festivals, Stats, Notifications.
+38 endpoints across 11 routers: Auth, Users, Meal Plans, Recipes, Grocery, Chat, Recipe Rules (includes Nutrition Goals), Family Members, Festivals, Stats, Notifications. Run `PYTHONPATH=. pytest --collect-only -q` or visit `http://localhost:8000/docs` for current counts.
 
 **Full interactive docs:** `http://localhost:8000/docs` (Swagger UI)
 
@@ -435,7 +437,7 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
 Migrations in `backend/alembic/versions/`. Run `alembic upgrade head` to apply.
 
-12 models in `backend/app/models/`. **Important:** `postgres.py` has 3 import blocks (init_db, create_tables, drop_tables) that import 9 models but are **missing** `notification`, `recipe_rule`, and `family_member`. The `conftest.py` imports all 12. When adding new models, update all 4 locations.
+11 model files in `backend/app/models/` (note: `FamilyMember` is defined in `user.py`, not a separate file). **Important:** `postgres.py` has 3 import blocks (init_db, create_tables, drop_tables) that import 9 models but are **missing** `notification` and `recipe_rule`. The `conftest.py` imports all 11. When adding new models, update all 4 locations.
 
 ## Meal Generation
 
@@ -810,8 +812,6 @@ The `.claude/` directory contains Claude Code customization:
 ├── settings.json
 └── settings.local.json
 ```
-
-Workflow state is tracked in `.claude/workflow-state.json`.
 
 ## Key Documentation
 
