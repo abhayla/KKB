@@ -133,7 +133,10 @@ internal fun RecipeDetailContent(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onFavoriteClick) {
+                    IconButton(
+                        onClick = onFavoriteClick,
+                        modifier = Modifier.testTag(TestTags.RECIPE_FAVORITE_BUTTON)
+                    ) {
                         Icon(
                             imageVector = if (uiState.recipe?.isFavorite == true) {
                                 Icons.Default.Favorite

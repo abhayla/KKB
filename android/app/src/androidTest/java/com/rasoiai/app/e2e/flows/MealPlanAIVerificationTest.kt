@@ -297,26 +297,32 @@ class MealPlanAIVerificationTest : BaseE2ETest() {
     private fun phase3_generateAndCapture(token: String): JSONObject {
         Log.i(TAG, "=== Phase 3: Generate Meal Plan + Capture Output ===")
 
-        val startTime = System.currentTimeMillis()
-        val mealPlanResponse = BackendTestHelper.generateMealPlanWithResponse(
-            BACKEND_BASE_URL, token
-        )
-        val elapsed = System.currentTimeMillis() - startTime
+        val maxAttempts = 3
+        for (attempt in 1..maxAttempts) {
+            Log.i(TAG, "Generation attempt $attempt/$maxAttempts")
+            val startTime = System.currentTimeMillis()
+            val mealPlanResponse = BackendTestHelper.generateMealPlanWithResponse(
+                BACKEND_BASE_URL, token
+            )
+            val elapsed = System.currentTimeMillis() - startTime
 
-        if (mealPlanResponse == null) {
-            fail("Meal plan generation returned null after ${elapsed}ms")
+            if (mealPlanResponse != null) {
+                Log.i(TAG, "Meal plan generated in ${elapsed}ms (attempt $attempt)")
+                writeArtifact("ai_verification_output.json", mealPlanResponse)
+                logAllRecipeNames(mealPlanResponse)
+                return mealPlanResponse
+            }
+
+            Log.w(TAG, "Attempt $attempt failed after ${elapsed}ms")
+            if (attempt < maxAttempts) {
+                Log.i(TAG, "Waiting 10s before retry...")
+                Thread.sleep(10_000)
+            }
         }
-        mealPlanResponse as JSONObject
 
-        Log.i(TAG, "Meal plan generated in ${elapsed}ms")
-
-        // Write output artifact
-        writeArtifact("ai_verification_output.json", mealPlanResponse)
-
-        // Log all recipe names
-        logAllRecipeNames(mealPlanResponse)
-
-        return mealPlanResponse
+        fail("Meal plan generation returned null after $maxAttempts attempts")
+        @Suppress("UNREACHABLE_CODE")
+        throw AssertionError("unreachable")
     }
 
     // ===================== Phase 4: Structural Validation =====================

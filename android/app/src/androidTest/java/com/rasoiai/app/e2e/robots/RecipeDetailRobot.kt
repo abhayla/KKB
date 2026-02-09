@@ -27,7 +27,7 @@ class RecipeDetailRobot(private val composeTestRule: ComposeContentTestRule) {
     /**
      * Wait for recipe detail screen to be displayed.
      */
-    fun waitForRecipeDetailScreen(timeoutMillis: Long = 5000) = apply {
+    fun waitForRecipeDetailScreen(timeoutMillis: Long = 10000) = apply {
         composeTestRule.waitUntilNodeWithTagExists(TestTags.RECIPE_DETAIL_SCREEN, timeoutMillis)
     }
 

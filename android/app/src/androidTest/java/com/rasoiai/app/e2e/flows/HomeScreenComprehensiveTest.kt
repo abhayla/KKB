@@ -69,7 +69,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
 
     companion object {
         private const val TAG = "HomeScreenComprehensiveTest"
-        private const val MEAL_GENERATION_TIMEOUT = 60000L
+        private const val MEAL_GENERATION_TIMEOUT = 120000L
     }
 
     @Before

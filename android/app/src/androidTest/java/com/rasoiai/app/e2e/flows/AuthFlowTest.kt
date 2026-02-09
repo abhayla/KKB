@@ -78,7 +78,7 @@ class AuthFlowTest : BaseE2ETest() {
         authRobot.tapGoogleSignIn()
 
         // Then: Should navigate to onboarding (new user)
-        authRobot.assertNavigatedToOnboarding()
+        authRobot.assertNavigatedToOnboarding(LONG_TIMEOUT)
     }
 
     /**

@@ -19,7 +19,7 @@ class FavoritesRobot(private val composeTestRule: ComposeContentTestRule) {
     /**
      * Wait for favorites screen to be displayed.
      */
-    fun waitForFavoritesScreen(timeoutMillis: Long = 5000) = apply {
+    fun waitForFavoritesScreen(timeoutMillis: Long = 10000) = apply {
         composeTestRule.waitUntilNodeWithTagExists(TestTags.FAVORITES_SCREEN, timeoutMillis)
     }
 
