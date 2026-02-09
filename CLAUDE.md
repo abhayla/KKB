@@ -285,14 +285,14 @@ Three GitHub Actions workflows in `.github/workflows/`:
 
 | Platform | Tests (approx.) | Framework |
 |----------|-----------------|-----------|
-| Backend | ~250 | pytest |
+| Backend | 255 | pytest |
 | Android Unit | ~330 | JUnit + MockK |
 | Android UI | ~750+ | Compose UI Testing |
 | Android E2E | ~67+ | Compose UI Testing + Hilt + Real API |
 
 *Counts as of Feb 2026. Run `PYTHONPATH=. pytest --collect-only -q` (backend) or `./gradlew test` (Android) for current totals.*
 
-### Backend Tests (~250 total)
+### Backend Tests (255 total)
 
 All in `backend/tests/`, named `test_{feature}.py`. Run `PYTHONPATH=. pytest --collect-only` to list all. Tests use SQLite in-memory via conftest fixtures (see Backend Test Fixtures below).
 
@@ -802,13 +802,16 @@ The `.claude/` directory contains Claude Code customization:
 │   ├── planner-researcher.md
 │   └── tester.md
 ├── commands/         # Slash commands (user-invocable skills)
+│   ├── adb-test.md       # /adb-test [screen] — manual E2E via ADB (uiautomator, screencap)
 │   ├── fix-issue.md      # /fix-issue <number> — implement fix for GitHub Issue
 │   ├── implement.md      # /implement — implement feature with workflow
 │   └── run-e2e.md        # /run-e2e — run Android E2E tests by feature group
 ├── hooks/            # Workflow enforcement hooks
 │   ├── validate-workflow-step.sh
 │   ├── post-test-update.sh
-│   └── log-workflow.sh
+│   ├── log-workflow.sh
+│   ├── post-screenshot-resize.sh   # Auto-resize screenshots >1800px after capture
+│   └── resize_screenshot.py        # Screenshot resize utility (batch mode: --all)
 ├── logs/             # Workflow session logs
 ├── settings.json
 └── settings.local.json
@@ -831,4 +834,5 @@ The `.claude/` directory contains Claude Code customization:
 | E2E Test Plan | `docs/testing/E2E-Test-Plan.md` |
 | Functional Requirements | `docs/testing/Functional-Requirements.md` |
 | Recipe Rule Test Plan | `docs/testing/Recipe-Rule-Test-Plan.md` |
+| ADB Test Definitions | `docs/testing/adb-test-definitions.md` |
 | Session Context | `docs/CONTINUE_PROMPT.md` |
