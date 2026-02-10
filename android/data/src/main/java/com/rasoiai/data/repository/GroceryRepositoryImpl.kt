@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
+import java.io.IOException
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -152,6 +153,9 @@ class GroceryRepositoryImpl @Inject constructor(
                     groceryDao.deleteGroceryItemsForMealPlan(mealPlanId)
                     groceryDao.insertGroceryItems(groceryItems)
                     Timber.i("Generated grocery list from API: ${groceryItems.size} items")
+                } catch (e: IOException) {
+                    Timber.w(e, "Network error fetching grocery list from API, generating locally")
+                    generateGroceryListLocally(mealPlanId)
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to fetch grocery list from API, generating locally")
                     generateGroceryListLocally(mealPlanId)

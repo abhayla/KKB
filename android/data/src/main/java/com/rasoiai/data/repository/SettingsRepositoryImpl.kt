@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -73,6 +74,9 @@ class SettingsRepositoryImpl @Inject constructor(
             userPreferencesDataStore.saveAppSettings(current.copy(darkMode = preference))
             Timber.d("Updated dark mode: ${preference.displayName}")
             Result.success(Unit)
+        } catch (e: IOException) {
+            Timber.w(e, "IO error updating dark mode")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to update dark mode")
             Result.failure(e)
@@ -85,6 +89,9 @@ class SettingsRepositoryImpl @Inject constructor(
             userPreferencesDataStore.saveAppSettings(current.copy(notificationsEnabled = enabled))
             Timber.d("Updated notifications: $enabled")
             Result.success(Unit)
+        } catch (e: IOException) {
+            Timber.w(e, "IO error updating notifications")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to update notifications")
             Result.failure(e)
@@ -121,6 +128,8 @@ class SettingsRepositoryImpl @Inject constructor(
                         apiService.updateUserPreferences(prefsMap)
                         Timber.i("Synced preferences to server")
                     }
+                } catch (e: IOException) {
+                    Timber.w(e, "Network error syncing preferences to server, saved locally")
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to sync preferences to server, saved locally")
                 }
@@ -128,6 +137,9 @@ class SettingsRepositoryImpl @Inject constructor(
 
             Timber.i("Updated user preferences")
             Result.success(Unit)
+        } catch (e: IOException) {
+            Timber.w(e, "IO error updating user preferences")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to update user preferences")
             Result.failure(e)
@@ -151,6 +163,9 @@ class SettingsRepositoryImpl @Inject constructor(
             userPreferencesDataStore.saveOnboardingComplete(updatedPrefs)
             Timber.i("Added family member: ${member.name}")
             Result.success(Unit)
+        } catch (e: IOException) {
+            Timber.w(e, "IO error adding family member")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to add family member")
             Result.failure(e)
@@ -171,6 +186,9 @@ class SettingsRepositoryImpl @Inject constructor(
 
             Timber.i("Updated family member: ${member.name}")
             Result.success(Unit)
+        } catch (e: IOException) {
+            Timber.w(e, "IO error updating family member")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to update family member")
             Result.failure(e)
@@ -192,6 +210,9 @@ class SettingsRepositoryImpl @Inject constructor(
             userPreferencesDataStore.saveOnboardingComplete(updatedPrefs)
             Timber.i("Removed family member: $memberId")
             Result.success(Unit)
+        } catch (e: IOException) {
+            Timber.w(e, "IO error removing family member")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to remove family member")
             Result.failure(e)
@@ -203,6 +224,9 @@ class SettingsRepositoryImpl @Inject constructor(
             userPreferencesDataStore.saveAppSettings(settings)
             Timber.d("Updated app settings")
             Result.success(Unit)
+        } catch (e: IOException) {
+            Timber.w(e, "IO error updating app settings")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to update app settings")
             Result.failure(e)
@@ -218,6 +242,9 @@ class SettingsRepositoryImpl @Inject constructor(
 
             Timber.i("User signed out")
             Result.success(Unit)
+        } catch (e: IOException) {
+            Timber.w(e, "IO error on sign out")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to sign out")
             Result.failure(e)
@@ -252,6 +279,9 @@ class SettingsRepositoryImpl @Inject constructor(
 
             // Save locally and sync to server
             updateUserPreferences(updatedPrefs)
+        } catch (e: IOException) {
+            Timber.w(e, "IO error updating meal generation settings")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to update meal generation settings")
             Result.failure(e)

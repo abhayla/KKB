@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import timber.log.Timber
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -68,6 +69,12 @@ class AuthRepositoryImpl @Inject constructor(
 
             Timber.i("Successfully authenticated user: ${user.email}")
             Result.success(user)
+        } catch (e: retrofit2.HttpException) {
+            Timber.w(e, "HTTP ${e.code()} on Firebase token exchange")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on Firebase token exchange")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to exchange Firebase token for backend JWT")
             Result.failure(e)
@@ -82,6 +89,9 @@ class AuthRepositoryImpl @Inject constructor(
 
             Timber.i("User signed out successfully")
             Result.success(Unit)
+        } catch (e: IOException) {
+            Timber.w(e, "IO error on sign out")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to sign out")
             Result.failure(e)
@@ -115,6 +125,12 @@ class AuthRepositoryImpl @Inject constructor(
 
             Timber.i("Successfully refreshed access token")
             Result.success(response.accessToken)
+        } catch (e: retrofit2.HttpException) {
+            Timber.w(e, "HTTP ${e.code()} on token refresh")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on token refresh")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to refresh token")
             Result.failure(e)
@@ -136,6 +152,12 @@ class AuthRepositoryImpl @Inject constructor(
             val user = userResponse.toDomain()
             _currentUser.value = user
             Result.success(user)
+        } catch (e: retrofit2.HttpException) {
+            Timber.w(e, "HTTP ${e.code()} on load current user")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on load current user")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to load current user")
             Result.failure(e)

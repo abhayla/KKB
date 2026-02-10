@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.ByteArrayOutputStream
+import java.io.IOException
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
@@ -128,6 +129,12 @@ class ChatRepositoryImpl @Inject constructor(
             Timber.d("AI image analysis response saved: ${aiMessage.id}")
 
             Result.success(aiMessage)
+        } catch (e: retrofit2.HttpException) {
+            Timber.w(e, "HTTP ${e.code()} on send image message")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on send image message")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to send image message")
             Result.failure(e)

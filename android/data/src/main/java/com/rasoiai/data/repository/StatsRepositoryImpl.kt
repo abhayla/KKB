@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import timber.log.Timber
+import java.io.IOException
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -85,6 +86,8 @@ class StatsRepositoryImpl @Inject constructor(
                     val avgRating = (response["average_rating"] as? Number)?.toFloat() ?: 0f
 
                     return Result.success(MonthlyStats(mealsCooked, newRecipes, avgRating))
+                } catch (e: IOException) {
+                    Timber.w(e, "Network error fetching monthly stats from API, using local")
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to fetch monthly stats from API, using local")
                 }

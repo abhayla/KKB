@@ -59,14 +59,10 @@ class SettingsFlowTest : BaseE2ETest() {
      */
     @Test
     fun test_9_1_profileSection() {
-        try {
-            settingsRobot.waitForSettingsScreen()
-            settingsRobot.assertSettingsScreenDisplayed()
-            settingsRobot.assertProfileSectionDisplayed()
-            settingsRobot.assertEmailDisplayed(TestDataFactory.sharmaFamily.email)
-        } catch (e: Throwable) {
-            android.util.Log.w("SettingsFlowTest", "test_9_1_profileSection: ${e.message}")
-        }
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.assertSettingsScreenDisplayed()
+        settingsRobot.assertProfileSectionDisplayed()
+        settingsRobot.assertEmailDisplayed(TestDataFactory.sharmaFamily.email)
     }
 
     /**
@@ -74,12 +70,8 @@ class SettingsFlowTest : BaseE2ETest() {
      */
     @Test
     fun test_9_1b_profileEmail_isVisible() {
-        try {
-            settingsRobot.waitForSettingsScreen()
-            settingsRobot.assertEmailDisplayed(TestDataFactory.sharmaFamily.email)
-        } catch (e: Throwable) {
-            android.util.Log.w("SettingsFlowTest", "test_9_1b_profileEmail_isVisible: ${e.message}")
-        }
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.assertEmailDisplayed(TestDataFactory.sharmaFamily.email)
     }
 
     // ===================== 9.2 Preference Updates =====================
@@ -89,15 +81,11 @@ class SettingsFlowTest : BaseE2ETest() {
      */
     @Test
     fun test_9_2_preferenceUpdates() {
-        try {
-            settingsRobot.waitForSettingsScreen()
-            settingsRobot.navigateToDietaryPreferences()
-            settingsRobot.changePrimaryDiet("Eggetarian")
-            settingsRobot.savePreferences()
-            settingsRobot.assertSaveConfirmation()
-        } catch (e: Throwable) {
-            android.util.Log.w("SettingsFlowTest", "test_9_2_preferenceUpdates: ${e.message}")
-        }
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.navigateToDietaryPreferences()
+        settingsRobot.changePrimaryDiet("Eggetarian")
+        settingsRobot.savePreferences()
+        settingsRobot.assertSaveConfirmation()
     }
 
     // ===================== 9.3 Notifications Toggle =====================
@@ -107,15 +95,11 @@ class SettingsFlowTest : BaseE2ETest() {
      */
     @Test
     fun test_9_3_notificationsToggle() {
-        try {
-            settingsRobot.waitForSettingsScreen()
-            settingsRobot.navigateToNotifications()
-            settingsRobot.toggleMealReminders()
-            settingsRobot.assertMealRemindersOn()
-            settingsRobot.toggleShoppingReminder()
-        } catch (e: Throwable) {
-            android.util.Log.w("SettingsFlowTest", "test_9_3_notificationsToggle: ${e.message}")
-        }
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.navigateToNotifications()
+        settingsRobot.toggleMealReminders()
+        settingsRobot.assertMealRemindersOn()
+        settingsRobot.toggleShoppingReminder()
     }
 
     // ===================== 9.4 Theme Selection =====================
@@ -125,15 +109,11 @@ class SettingsFlowTest : BaseE2ETest() {
      */
     @Test
     fun test_9_4_themeSelection_works() {
-        try {
-            settingsRobot.waitForSettingsScreen()
-            settingsRobot.navigateToTheme()
-            settingsRobot.selectLightTheme()
-            settingsRobot.selectDarkTheme()
-            settingsRobot.selectSystemTheme()
-        } catch (e: Throwable) {
-            android.util.Log.w("SettingsFlowTest", "test_9_4_themeSelection_works: ${e.message}")
-        }
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.navigateToTheme()
+        settingsRobot.selectLightTheme()
+        settingsRobot.selectDarkTheme()
+        settingsRobot.selectSystemTheme()
     }
 
     // ===================== 9.5 Meal Generation Settings =====================
@@ -200,13 +180,9 @@ class SettingsFlowTest : BaseE2ETest() {
      */
     @Test
     fun test_9_6_aboutSection_displaysVersion() {
-        try {
-            settingsRobot.waitForSettingsScreen()
-            settingsRobot.navigateToAbout()
-            settingsRobot.assertAppVersionDisplayed()
-        } catch (e: Throwable) {
-            android.util.Log.w("SettingsFlowTest", "test_9_6_aboutSection_displaysVersion: ${e.message}")
-        }
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.navigateToAbout()
+        settingsRobot.assertAppVersionDisplayed()
     }
 
     // ===================== 9.7 Sign Out Flow =====================

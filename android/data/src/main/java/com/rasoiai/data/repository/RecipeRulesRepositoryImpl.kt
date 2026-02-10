@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
+import java.io.IOException
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -152,6 +153,10 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                     )
                     apiService.createRecipeRule(request)
                     Timber.i("Synced rule to backend: ${newRule.id}")
+                } catch (e: IOException) {
+                    val nowStr = now.format(dateTimeFormatter)
+                    recipeRulesDao.updateRuleSyncStatus(newRule.id, SyncStatus.PENDING, nowStr)
+                    Timber.w(e, "Network error syncing rule to backend, marked as PENDING")
                 } catch (e: Exception) {
                     // Mark as pending for later sync
                     val nowStr = now.format(dateTimeFormatter)
@@ -195,6 +200,10 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                     )
                     apiService.updateRecipeRule(rule.id, request)
                     Timber.i("Synced rule update to backend: ${rule.id}")
+                } catch (e: IOException) {
+                    val nowStr = now.format(dateTimeFormatter)
+                    recipeRulesDao.updateRuleSyncStatus(rule.id, SyncStatus.PENDING, nowStr)
+                    Timber.w(e, "Network error syncing rule update to backend")
                 } catch (e: Exception) {
                     val nowStr = now.format(dateTimeFormatter)
                     recipeRulesDao.updateRuleSyncStatus(rule.id, SyncStatus.PENDING, nowStr)
@@ -220,6 +229,8 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                 try {
                     apiService.deleteRecipeRule(ruleId)
                     Timber.i("Synced rule deletion to backend: $ruleId")
+                } catch (e: IOException) {
+                    Timber.w(e, "Network error syncing rule deletion to backend")
                 } catch (e: Exception) {
                     // Rule is already deleted locally, log warning
                     Timber.w(e, "Failed to sync rule deletion to backend")
@@ -247,6 +258,8 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                     apiService.updateRecipeRule(ruleId, request)
                     recipeRulesDao.updateRuleSyncStatus(ruleId, SyncStatus.SYNCED, now)
                     Timber.i("Synced toggle to backend: $ruleId")
+                } catch (e: IOException) {
+                    Timber.w(e, "Network error syncing rule toggle to backend")
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to sync toggle to backend")
                 }
@@ -307,6 +320,10 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                     )
                     apiService.createNutritionGoal(request)
                     Timber.i("Synced nutrition goal to backend: ${newGoal.id}")
+                } catch (e: IOException) {
+                    val nowStr = now.format(dateTimeFormatter)
+                    recipeRulesDao.updateNutritionGoalSyncStatus(newGoal.id, SyncStatus.PENDING, nowStr)
+                    Timber.w(e, "Network error syncing nutrition goal to backend")
                 } catch (e: Exception) {
                     val nowStr = now.format(dateTimeFormatter)
                     recipeRulesDao.updateNutritionGoalSyncStatus(newGoal.id, SyncStatus.PENDING, nowStr)
@@ -343,6 +360,10 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                     )
                     apiService.updateNutritionGoal(goal.id, request)
                     Timber.i("Synced nutrition goal update to backend: ${goal.id}")
+                } catch (e: IOException) {
+                    val nowStr = now.format(dateTimeFormatter)
+                    recipeRulesDao.updateNutritionGoalSyncStatus(goal.id, SyncStatus.PENDING, nowStr)
+                    Timber.w(e, "Network error syncing nutrition goal update to backend")
                 } catch (e: Exception) {
                     val nowStr = now.format(dateTimeFormatter)
                     recipeRulesDao.updateNutritionGoalSyncStatus(goal.id, SyncStatus.PENDING, nowStr)
@@ -367,6 +388,8 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                 try {
                     apiService.deleteNutritionGoal(goalId)
                     Timber.i("Synced nutrition goal deletion to backend: $goalId")
+                } catch (e: IOException) {
+                    Timber.w(e, "Network error syncing nutrition goal deletion to backend")
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to sync nutrition goal deletion to backend")
                 }
@@ -393,6 +416,8 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                     apiService.updateNutritionGoal(goalId, request)
                     recipeRulesDao.updateNutritionGoalSyncStatus(goalId, SyncStatus.SYNCED, now)
                     Timber.i("Synced toggle to backend: $goalId")
+                } catch (e: IOException) {
+                    Timber.w(e, "Network error syncing nutrition goal toggle to backend")
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to sync toggle to backend")
                 }
@@ -418,6 +443,8 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                     val request = com.rasoiai.data.remote.dto.NutritionGoalUpdateRequest(currentProgress = progress)
                     apiService.updateNutritionGoal(goalId, request)
                     recipeRulesDao.updateNutritionGoalSyncStatus(goalId, SyncStatus.SYNCED, now)
+                } catch (e: IOException) {
+                    Timber.w(e, "Network error syncing progress to backend")
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to sync progress to backend")
                 }
@@ -510,6 +537,12 @@ class RecipeRulesRepositoryImpl @Inject constructor(
 
             Timber.i("Sync completed successfully")
             Result.success(Unit)
+        } catch (e: retrofit2.HttpException) {
+            Timber.w(e, "HTTP ${e.code()} on sync with backend")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on sync with backend")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to sync with backend")
             Result.failure(e)
@@ -536,6 +569,12 @@ class RecipeRulesRepositoryImpl @Inject constructor(
 
             Timber.i("Fetched ${rulesResponse.totalCount} rules and ${goalsResponse.totalCount} goals from backend")
             Result.success(Unit)
+        } catch (e: retrofit2.HttpException) {
+            Timber.w(e, "HTTP ${e.code()} fetching from backend")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error fetching from backend")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to fetch from backend")
             Result.failure(e)
@@ -579,6 +618,9 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                         limit = 10
                     )
                     emit(catalogResults.map { it.toDomain() })
+                } catch (e: IOException) {
+                    Timber.w(e, "Network error searching AI recipe catalog")
+                    emit(emptyList())
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to search AI recipe catalog")
                     emit(emptyList())
@@ -611,6 +653,9 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                         limit = 10
                     )
                     emit(catalogResults.map { it.toDomain() })
+                } catch (e: IOException) {
+                    Timber.w(e, "Network error getting popular recipes from AI catalog")
+                    emit(emptyList())
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to get popular recipes from AI catalog")
                     emit(emptyList())

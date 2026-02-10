@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
+import java.io.IOException
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -101,6 +102,12 @@ class MealPlanRepositoryImpl @Inject constructor(
             // Return domain model
             val mealPlan = entity.toDomain(items, festivals)
             Result.success(mealPlan)
+        } catch (e: retrofit2.HttpException) {
+            Timber.w(e, "HTTP ${e.code()} on generate meal plan")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on generate meal plan")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to generate meal plan")
             Result.failure(e)
@@ -150,6 +157,12 @@ class MealPlanRepositoryImpl @Inject constructor(
 
             val mealPlan = entity.toDomain(newItems, festivals)
             Result.success(mealPlan)
+        } catch (e: retrofit2.HttpException) {
+            Timber.w(e, "HTTP ${e.code()} on swap meal")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on swap meal")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to swap meal")
             Result.failure(e)
@@ -185,6 +198,9 @@ class MealPlanRepositoryImpl @Inject constructor(
                         itemId = "${mealPlanId}-${dateStr}-${mealType.value}-${recipeId}"
                     )
                     Timber.d("Lock state synced to server")
+                } catch (e: IOException) {
+                    mealPlanDao.updateSyncStatus(mealPlanId, false)
+                    Timber.w(e, "Network error syncing lock state, queued for later")
                 } catch (e: Exception) {
                     // Mark as unsynced for later
                     mealPlanDao.updateSyncStatus(mealPlanId, false)
@@ -231,6 +247,9 @@ class MealPlanRepositoryImpl @Inject constructor(
                         itemId = itemId
                     )
                     Timber.d("Recipe removal synced to server")
+                } catch (e: IOException) {
+                    mealPlanDao.updateSyncStatus(mealPlanId, false)
+                    Timber.w(e, "Network error syncing recipe removal, queued for later")
                 } catch (e: Exception) {
                     // Mark as unsynced for later
                     mealPlanDao.updateSyncStatus(mealPlanId, false)
@@ -327,12 +346,20 @@ class MealPlanRepositoryImpl @Inject constructor(
 
                     mealPlanDao.replaceMealPlan(entity, items, festivals)
                     Timber.d("Synced meal plan: ${plan.id}")
+                } catch (e: IOException) {
+                    Timber.w(e, "Network error syncing meal plan: ${plan.id}")
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to sync meal plan: ${plan.id}")
                 }
             }
 
             Result.success(Unit)
+        } catch (e: retrofit2.HttpException) {
+            Timber.w(e, "HTTP ${e.code()} on sync meal plans")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on sync meal plans")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to sync meal plans")
             Result.failure(e)
@@ -358,6 +385,12 @@ class MealPlanRepositoryImpl @Inject constructor(
             mealPlanDao.replaceMealPlan(entity, items, festivals)
 
             entity.toDomain(items, festivals)
+        } catch (e: retrofit2.HttpException) {
+            Timber.w(e, "HTTP ${e.code()} fetching meal plan from API")
+            null
+        } catch (e: IOException) {
+            Timber.w(e, "Network error fetching meal plan from API")
+            null
         } catch (e: Exception) {
             Timber.e(e, "Failed to fetch meal plan from API")
             null
