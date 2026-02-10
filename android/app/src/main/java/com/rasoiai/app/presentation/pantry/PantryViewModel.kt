@@ -1,5 +1,6 @@
 package com.rasoiai.app.presentation.pantry
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rasoiai.domain.model.PantryCategory
@@ -184,13 +185,31 @@ class PantryViewModel @Inject constructor(
     // region Scan Actions
 
     fun onCaptureClick() {
-        // Placeholder for camera capture
+        // Triggers camera permission + launcher from the Screen
         _uiState.update { it.copy(errorMessage = "Camera capture coming soon!") }
     }
 
     fun onGalleryClick() {
-        // Placeholder for gallery selection
+        // Triggers gallery permission + launcher from the Screen
         _uiState.update { it.copy(errorMessage = "Gallery selection coming soon!") }
+    }
+
+    /**
+     * Called after camera captures an image. Triggers scan analysis.
+     * Currently uses simulated scan — will be replaced with AI image analysis.
+     */
+    fun onImageCaptured(uri: Uri) {
+        Timber.i("Image captured: $uri")
+        simulateScan()
+    }
+
+    /**
+     * Called after gallery image is selected. Triggers scan analysis.
+     * Currently uses simulated scan — will be replaced with AI image analysis.
+     */
+    fun onImageSelected(uri: Uri) {
+        Timber.i("Image selected from gallery: $uri")
+        simulateScan()
     }
 
     fun simulateScan() {

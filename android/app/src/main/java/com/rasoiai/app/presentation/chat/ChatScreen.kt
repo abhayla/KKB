@@ -1,9 +1,12 @@
 package com.rasoiai.app.presentation.chat
 
 import android.Manifest
+import android.app.Activity
+import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
+import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
@@ -116,6 +119,18 @@ fun ChatScreen(
         }
     }
 
+    // Speech recognizer launcher
+    val speechLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val matches = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            matches?.firstOrNull()?.let { recognizedText ->
+                viewModel.updateInputText(recognizedText)
+            }
+        }
+    }
+
     // Handle navigation events
     LaunchedEffect(Unit) {
         viewModel.navigationEvent.collect { event ->
@@ -155,7 +170,17 @@ fun ChatScreen(
         onRecipeClick = viewModel::navigateToRecipeDetail,
         onAddToMealPlan = viewModel::addRecipeToMealPlan,
         onAttachmentClick = viewModel::onAttachmentButtonClick,
-        onVoiceClick = viewModel::onVoiceButtonClick,
+        onVoiceClick = {
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_PROMPT, "Say something to RasoiAI...")
+            }
+            try {
+                speechLauncher.launch(intent)
+            } catch (e: Exception) {
+                viewModel.onVoiceButtonClick() // Fallback to placeholder message
+            }
+        },
         onBottomNavItemClick = { screen ->
             when (screen) {
                 Screen.Home -> viewModel.navigateToHome()

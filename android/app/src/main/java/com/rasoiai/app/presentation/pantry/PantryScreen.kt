@@ -1,6 +1,11 @@
 package com.rasoiai.app.presentation.pantry
 
+import android.Manifest
 import android.content.res.Configuration
+import android.net.Uri
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,9 +49,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import com.rasoiai.app.presentation.common.TestTags
 import androidx.compose.ui.text.font.FontWeight
+import androidx.core.content.FileProvider
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -62,6 +71,10 @@ import com.rasoiai.app.presentation.pantry.components.ScannedItem
 import com.rasoiai.app.presentation.pantry.components.ScanResultsSheet
 import com.rasoiai.app.presentation.theme.RasoiAITheme
 import com.rasoiai.app.presentation.theme.spacing
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun PantryScreen(
@@ -75,6 +88,45 @@ fun PantryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+
+    // State for temporary camera photo URI
+    var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
+
+    // Camera launcher
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && tempPhotoUri != null) {
+            viewModel.onImageCaptured(tempPhotoUri!!)
+        }
+    }
+
+    // Gallery launcher
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let { viewModel.onImageSelected(it) }
+    }
+
+    // Camera permission launcher
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            tempPhotoUri = createPantryTempImageUri(context)
+            tempPhotoUri?.let { cameraLauncher.launch(it) }
+        }
+    }
+
+    // Gallery permission launcher
+    val galleryPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            galleryLauncher.launch("image/*")
+        }
+    }
 
     // Handle navigation events
     LaunchedEffect(Unit) {
@@ -106,8 +158,17 @@ fun PantryScreen(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
         onBackClick = viewModel::navigateBack,
-        onCaptureClick = viewModel::simulateScan, // Using simulate for demo
-        onGalleryClick = viewModel::onGalleryClick,
+        onCaptureClick = {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        },
+        onGalleryClick = {
+            val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                Manifest.permission.READ_MEDIA_IMAGES
+            } else {
+                Manifest.permission.READ_EXTERNAL_STORAGE
+            }
+            galleryPermissionLauncher.launch(permission)
+        },
         onViewAllClick = viewModel::showAllItemsSheet,
         onItemClick = { /* Could show item details */ },
         onAddItemClick = viewModel::showAddItemDialog,
@@ -406,6 +467,23 @@ private fun AllItemsBottomSheet(
                 }
             }
         }
+    }
+}
+
+/**
+ * Creates a temporary file URI for pantry camera capture.
+ */
+private fun createPantryTempImageUri(context: android.content.Context): Uri? {
+    return try {
+        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val imageFile = File(context.cacheDir, "PANTRY_${timeStamp}.jpg")
+        FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.provider",
+            imageFile
+        )
+    } catch (e: Exception) {
+        null
     }
 }
 
