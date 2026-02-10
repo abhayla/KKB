@@ -8,11 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import NotFoundError
-from app.models.recipe import Recipe, RecipeIngredient, RecipeInstruction, RecipeNutrition
+from app.models.recipe import Recipe, RecipeIngredient, RecipeInstruction, RecipeNutrition, RecipeRating
 from app.schemas.recipe import (
     IngredientDto,
     InstructionDto,
     NutritionDto,
+    RecipeRatingResponse,
     RecipeResponse,
     RecipeSearchParams,
 )
@@ -261,3 +262,80 @@ async def get_recipes_by_ids(
         .where(Recipe.id.in_(uuids), Recipe.is_active == True)
     )
     return list(result.scalars().all())
+
+
+async def rate_recipe(
+    db: AsyncSession,
+    recipe_id: str,
+    user_id: str,
+    rating: float,
+    feedback: Optional[str] = None,
+) -> RecipeRatingResponse:
+    """Rate a recipe (upsert: create or update existing rating).
+
+    Args:
+        db: Database session
+        recipe_id: Recipe UUID
+        user_id: User UUID
+        rating: Rating value (1.0-5.0)
+        feedback: Optional feedback text
+
+    Returns:
+        RecipeRatingResponse
+
+    Raises:
+        NotFoundError: If recipe not found
+    """
+    # Validate UUID format
+    try:
+        uuid.UUID(recipe_id)
+    except ValueError:
+        raise NotFoundError("Recipe not found")
+
+    # Verify recipe exists (compare as string for SQLite compatibility)
+    result = await db.execute(
+        select(Recipe).where(Recipe.id == recipe_id, Recipe.is_active == True)
+    )
+    if not result.scalar_one_or_none():
+        raise NotFoundError("Recipe not found")
+
+    # Check for existing rating by this user on this recipe
+    result = await db.execute(
+        select(RecipeRating).where(
+            RecipeRating.recipe_id == recipe_id,
+            RecipeRating.user_id == user_id,
+        )
+    )
+    existing = result.scalar_one_or_none()
+
+    if existing:
+        existing.rating = rating
+        existing.feedback = feedback
+        await db.commit()
+        await db.refresh(existing)
+        return RecipeRatingResponse(
+            id=existing.id,
+            recipe_id=existing.recipe_id,
+            rating=existing.rating,
+            feedback=existing.feedback,
+            created_at=existing.created_at,
+            updated_at=existing.updated_at,
+        )
+    else:
+        new_rating = RecipeRating(
+            recipe_id=recipe_id,
+            user_id=user_id,
+            rating=rating,
+            feedback=feedback,
+        )
+        db.add(new_rating)
+        await db.commit()
+        await db.refresh(new_rating)
+        return RecipeRatingResponse(
+            id=new_rating.id,
+            recipe_id=new_rating.recipe_id,
+            rating=new_rating.rating,
+            feedback=new_rating.feedback,
+            created_at=new_rating.created_at,
+            updated_at=new_rating.updated_at,
+        )

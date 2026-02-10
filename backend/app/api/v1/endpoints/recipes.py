@@ -5,9 +5,15 @@ from sqlalchemy import select
 
 from app.api.deps import CurrentUser, DbSession
 from app.models.user import UserPreferences
-from app.schemas.recipe import AiRecipeCatalogResponse, RecipeResponse, RecipeSearchParams
+from app.schemas.recipe import (
+    AiRecipeCatalogResponse,
+    RecipeRatingRequest,
+    RecipeRatingResponse,
+    RecipeResponse,
+    RecipeSearchParams,
+)
 from app.services.ai_recipe_catalog_service import search_catalog
-from app.services.recipe_service import get_recipe_by_id, scale_recipe, search_recipes
+from app.services.recipe_service import get_recipe_by_id, rate_recipe, scale_recipe, search_recipes
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
 
@@ -103,3 +109,24 @@ async def scale(
     Adjusts all ingredient quantities and nutrition values proportionally.
     """
     return await scale_recipe(db, recipe_id, servings)
+
+
+@router.post("/{recipe_id}/rate", response_model=RecipeRatingResponse)
+async def rate(
+    recipe_id: str,
+    body: RecipeRatingRequest,
+    db: DbSession,
+    current_user: CurrentUser,
+) -> RecipeRatingResponse:
+    """Rate a recipe. Creates or updates the user's rating for this recipe.
+
+    - **rating**: Score from 1.0 to 5.0
+    - **feedback**: Optional text feedback
+    """
+    return await rate_recipe(
+        db=db,
+        recipe_id=recipe_id,
+        user_id=current_user.id,
+        rating=body.rating,
+        feedback=body.feedback,
+    )

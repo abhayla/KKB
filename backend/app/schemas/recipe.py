@@ -1,5 +1,6 @@
 """Recipe schemas matching Android DTOs."""
 
+from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, Field
@@ -96,6 +97,27 @@ class AiRecipeCatalogResponse(BaseModel):
     ingredients: Optional[list[dict]] = None
     nutrition: Optional[dict] = None
     usage_count: int = 1
+
+    class Config:
+        from_attributes = True
+
+
+class RecipeRatingRequest(BaseModel):
+    """Request to rate a recipe."""
+
+    rating: float = Field(..., ge=1.0, le=5.0, description="Rating from 1.0 to 5.0")
+    feedback: Optional[str] = Field(None, max_length=1000, description="Optional feedback text")
+
+
+class RecipeRatingResponse(BaseModel):
+    """Response for a recipe rating."""
+
+    id: str
+    recipe_id: str
+    rating: float
+    feedback: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
 
     class Config:
         from_attributes = True
