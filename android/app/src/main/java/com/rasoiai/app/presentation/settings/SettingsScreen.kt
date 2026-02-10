@@ -1,6 +1,8 @@
 package com.rasoiai.app.presentation.settings
 
+import android.content.Intent
 import android.content.res.Configuration
+import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -30,6 +32,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import com.rasoiai.app.presentation.common.TestTags
@@ -61,6 +64,7 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     // Handle navigation events
     LaunchedEffect(Unit) {
@@ -69,7 +73,48 @@ fun SettingsScreen(
                 SettingsNavigationEvent.NavigateBack -> onNavigateBack()
                 SettingsNavigationEvent.NavigateToAuth -> onNavigateToAuth()
                 SettingsNavigationEvent.NavigateToRecipeRules -> onNavigateToRecipeRules()
-                // Handle other navigation events - for now show snackbar as placeholder
+
+                // External links — launch intents
+                SettingsNavigationEvent.NavigateToPrivacyPolicy -> {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://rasoiai.com/privacy"))
+                    context.startActivity(intent)
+                }
+                SettingsNavigationEvent.NavigateToTermsOfService -> {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://rasoiai.com/terms"))
+                    context.startActivity(intent)
+                }
+                SettingsNavigationEvent.NavigateToHelpFaq -> {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://rasoiai.com/help"))
+                    context.startActivity(intent)
+                }
+                SettingsNavigationEvent.NavigateToContactUs -> {
+                    val intent = Intent(Intent.ACTION_SENDTO).apply {
+                        data = Uri.parse("mailto:support@rasoiai.com")
+                        putExtra(Intent.EXTRA_SUBJECT, "RasoiAI Support")
+                    }
+                    context.startActivity(intent)
+                }
+                SettingsNavigationEvent.NavigateToRateApp -> {
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${context.packageName}"))
+                        context.startActivity(intent)
+                    } catch (_: Exception) {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}"))
+                        context.startActivity(intent)
+                    }
+                }
+                SettingsNavigationEvent.NavigateToShareApp -> {
+                    val shareIntent = Intent.createChooser(
+                        Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, "Check out RasoiAI - AI Meal Planner for Indian Families!\nhttps://play.google.com/store/apps/details?id=${context.packageName}")
+                        },
+                        "Share RasoiAI"
+                    )
+                    context.startActivity(shareIntent)
+                }
+
+                // Sub-screens not yet implemented
                 is SettingsNavigationEvent.NavigateToEditProfile,
                 is SettingsNavigationEvent.NavigateToEditFamilyMember,
                 SettingsNavigationEvent.NavigateToAddFamilyMember,
@@ -81,13 +126,7 @@ fun SettingsScreen(
                 SettingsNavigationEvent.NavigateToNotifications,
                 SettingsNavigationEvent.NavigateToUnits,
                 SettingsNavigationEvent.NavigateToFriendsLeaderboard,
-                SettingsNavigationEvent.NavigateToConnectedAccounts,
-                SettingsNavigationEvent.NavigateToShareApp,
-                SettingsNavigationEvent.NavigateToHelpFaq,
-                SettingsNavigationEvent.NavigateToContactUs,
-                SettingsNavigationEvent.NavigateToRateApp,
-                SettingsNavigationEvent.NavigateToPrivacyPolicy,
-                SettingsNavigationEvent.NavigateToTermsOfService -> {
+                SettingsNavigationEvent.NavigateToConnectedAccounts -> {
                     snackbarHostState.showSnackbar("Coming soon!")
                 }
             }
