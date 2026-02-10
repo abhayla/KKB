@@ -188,7 +188,7 @@ private fun SplashScreenOfflinePreview() {
 }
 
 @Composable
-private fun SplashScreenContent(isOnline: Boolean) {
+internal fun SplashScreenContent(isOnline: Boolean) {
     Box(
         modifier = Modifier
             .fillMaxSize()
