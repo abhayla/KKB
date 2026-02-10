@@ -248,12 +248,8 @@ class SettingsFlowTest : BaseE2ETest() {
      */
     @Test
     fun test_9_8_familyMembers_canBeUpdated() {
-        try {
-            settingsRobot.waitForSettingsScreen()
-            settingsRobot.navigateToFamilyMembers()
-        } catch (e: Throwable) {
-            android.util.Log.w("SettingsFlowTest", "test_9_8_familyMembers_canBeUpdated: ${e.message}")
-        }
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.navigateToFamilyMembers()
     }
 
     // ===================== 9.9 Cooking Time =====================
@@ -263,12 +259,8 @@ class SettingsFlowTest : BaseE2ETest() {
      */
     @Test
     fun test_9_9_cookingTime_canBeUpdated() {
-        try {
-            settingsRobot.waitForSettingsScreen()
-            settingsRobot.navigateToCookingTime()
-        } catch (e: Throwable) {
-            android.util.Log.w("SettingsFlowTest", "test_9_9_cookingTime_canBeUpdated: ${e.message}")
-        }
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.navigateToCookingTime()
     }
 
     // ===================== 9.10 Cuisine Preferences =====================
@@ -278,12 +270,8 @@ class SettingsFlowTest : BaseE2ETest() {
      */
     @Test
     fun test_9_10_cuisinePreferences_canBeAccessed() {
-        try {
-            settingsRobot.waitForSettingsScreen()
-            settingsRobot.navigateToCuisinePreferences()
-        } catch (e: Throwable) {
-            android.util.Log.w("SettingsFlowTest", "test_9_10_cuisinePreferences_canBeAccessed: ${e.message}")
-        }
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.navigateToCuisinePreferences()
     }
 
     // ===================== 9.11 Spice Level =====================
@@ -293,12 +281,8 @@ class SettingsFlowTest : BaseE2ETest() {
      */
     @Test
     fun test_9_11_spiceLevel_canBeAccessed() {
-        try {
-            settingsRobot.waitForSettingsScreen()
-            settingsRobot.navigateToSpiceLevel()
-        } catch (e: Throwable) {
-            android.util.Log.w("SettingsFlowTest", "test_9_11_spiceLevel_canBeAccessed: ${e.message}")
-        }
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.navigateToSpiceLevel()
     }
 
     // ===================== 9.12 Recipe Rules =====================
@@ -384,12 +368,8 @@ class SettingsFlowTest : BaseE2ETest() {
      */
     @Test
     fun test_9_16_dislikedIngredients_canBeAccessed() {
-        try {
-            settingsRobot.waitForSettingsScreen()
-            settingsRobot.navigateToDislikedIngredients()
-        } catch (e: Throwable) {
-            android.util.Log.w("SettingsFlowTest", "test_9_16_dislikedIngredients_canBeAccessed: ${e.message}")
-        }
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.navigateToDislikedIngredients()
     }
 
     // ===================== 9.17 Settings Item Navigation =====================
@@ -399,11 +379,7 @@ class SettingsFlowTest : BaseE2ETest() {
      */
     @Test
     fun test_9_17_unitsAndMeasurements_canBeAccessed() {
-        try {
-            settingsRobot.waitForSettingsScreen()
-            settingsRobot.navigateToUnitsAndMeasurements()
-        } catch (e: Throwable) {
-            android.util.Log.w("SettingsFlowTest", "test_9_17_unitsAndMeasurements_canBeAccessed: ${e.message}")
-        }
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.navigateToUnitsAndMeasurements()
     }
 }

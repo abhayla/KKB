@@ -60,6 +60,14 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onNavigateToAuth: () -> Unit,
     onNavigateToRecipeRules: () -> Unit,
+    onNavigateToDietaryRestrictions: () -> Unit = {},
+    onNavigateToDislikedIngredients: () -> Unit = {},
+    onNavigateToCuisinePreferences: () -> Unit = {},
+    onNavigateToSpiceLevel: () -> Unit = {},
+    onNavigateToCookingTime: () -> Unit = {},
+    onNavigateToFamilyMembers: () -> Unit = {},
+    onNavigateToNotificationSettings: () -> Unit = {},
+    onNavigateToUnits: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -114,17 +122,23 @@ fun SettingsScreen(
                     context.startActivity(shareIntent)
                 }
 
+                // Preference sub-screens
+                SettingsNavigationEvent.NavigateToDietaryRestrictions -> onNavigateToDietaryRestrictions()
+                SettingsNavigationEvent.NavigateToDislikedIngredients -> onNavigateToDislikedIngredients()
+                SettingsNavigationEvent.NavigateToCuisinePreferences -> onNavigateToCuisinePreferences()
+                SettingsNavigationEvent.NavigateToSpiceLevel -> onNavigateToSpiceLevel()
+                SettingsNavigationEvent.NavigateToCookingTime -> onNavigateToCookingTime()
+
+                // Family member screens -> go to family members screen
+                is SettingsNavigationEvent.NavigateToEditFamilyMember,
+                SettingsNavigationEvent.NavigateToAddFamilyMember -> onNavigateToFamilyMembers()
+
+                // Notification and Units screens
+                SettingsNavigationEvent.NavigateToNotifications -> onNavigateToNotificationSettings()
+                SettingsNavigationEvent.NavigateToUnits -> onNavigateToUnits()
+
                 // Sub-screens not yet implemented
                 is SettingsNavigationEvent.NavigateToEditProfile,
-                is SettingsNavigationEvent.NavigateToEditFamilyMember,
-                SettingsNavigationEvent.NavigateToAddFamilyMember,
-                SettingsNavigationEvent.NavigateToDietaryRestrictions,
-                SettingsNavigationEvent.NavigateToDislikedIngredients,
-                SettingsNavigationEvent.NavigateToCuisinePreferences,
-                SettingsNavigationEvent.NavigateToCookingTime,
-                SettingsNavigationEvent.NavigateToSpiceLevel,
-                SettingsNavigationEvent.NavigateToNotifications,
-                SettingsNavigationEvent.NavigateToUnits,
                 SettingsNavigationEvent.NavigateToFriendsLeaderboard,
                 SettingsNavigationEvent.NavigateToConnectedAccounts -> {
                     snackbarHostState.showSnackbar("Coming soon!")

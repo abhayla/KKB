@@ -39,6 +39,16 @@ sealed class Screen(val route: String) {
     data object Stats : Screen("stats")
     data object RecipeRules : Screen("recipe-rules")
 
+    // Settings sub-screens
+    data object DietaryRestrictions : Screen("settings/dietary-restrictions")
+    data object DislikedIngredients : Screen("settings/disliked-ingredients")
+    data object CuisinePreferences : Screen("settings/cuisine-preferences")
+    data object SpiceLevelSettings : Screen("settings/spice-level")
+    data object CookingTimeSettings : Screen("settings/cooking-time")
+    data object FamilyMembersSettings : Screen("settings/family-members")
+    data object NotificationSettings : Screen("settings/notifications")
+    data object UnitsSettings : Screen("settings/units")
+
     companion object {
         val bottomNavScreens = listOf(Home, Grocery, Chat, Favorites, Stats)
     }

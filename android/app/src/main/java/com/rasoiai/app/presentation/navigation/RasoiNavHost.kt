@@ -19,6 +19,14 @@ import com.rasoiai.app.presentation.pantry.PantryScreen
 import com.rasoiai.app.presentation.recipedetail.RecipeDetailScreen
 import com.rasoiai.app.presentation.reciperules.RecipeRulesScreen
 import com.rasoiai.app.presentation.settings.SettingsScreen
+import com.rasoiai.app.presentation.settings.screens.CookingTimeScreen
+import com.rasoiai.app.presentation.settings.screens.CuisinePreferencesScreen
+import com.rasoiai.app.presentation.settings.screens.DietaryRestrictionsScreen
+import com.rasoiai.app.presentation.settings.screens.DislikedIngredientsScreen
+import com.rasoiai.app.presentation.settings.screens.FamilyMembersScreen
+import com.rasoiai.app.presentation.settings.screens.NotificationSettingsScreen
+import com.rasoiai.app.presentation.settings.screens.SpiceLevelScreen
+import com.rasoiai.app.presentation.settings.screens.UnitsScreen
 import com.rasoiai.app.presentation.splash.SplashScreen
 import com.rasoiai.app.presentation.stats.StatsScreen
 
@@ -289,6 +297,30 @@ fun RasoiNavHost(
                 },
                 onNavigateToRecipeRules = {
                     navController.navigate(Screen.RecipeRules.route)
+                },
+                onNavigateToDietaryRestrictions = {
+                    navController.navigate(Screen.DietaryRestrictions.route)
+                },
+                onNavigateToDislikedIngredients = {
+                    navController.navigate(Screen.DislikedIngredients.route)
+                },
+                onNavigateToCuisinePreferences = {
+                    navController.navigate(Screen.CuisinePreferences.route)
+                },
+                onNavigateToSpiceLevel = {
+                    navController.navigate(Screen.SpiceLevelSettings.route)
+                },
+                onNavigateToCookingTime = {
+                    navController.navigate(Screen.CookingTimeSettings.route)
+                },
+                onNavigateToFamilyMembers = {
+                    navController.navigate(Screen.FamilyMembersSettings.route)
+                },
+                onNavigateToNotificationSettings = {
+                    navController.navigate(Screen.NotificationSettings.route)
+                },
+                onNavigateToUnits = {
+                    navController.navigate(Screen.UnitsSettings.route)
                 }
             )
         }
@@ -296,6 +328,55 @@ fun RasoiNavHost(
         // Recipe Rules
         composable(route = Screen.RecipeRules.route) {
             RecipeRulesScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Settings Sub-Screens
+        composable(route = Screen.DietaryRestrictions.route) {
+            DietaryRestrictionsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = Screen.DislikedIngredients.route) {
+            DislikedIngredientsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = Screen.CuisinePreferences.route) {
+            CuisinePreferencesScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = Screen.SpiceLevelSettings.route) {
+            SpiceLevelScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = Screen.CookingTimeSettings.route) {
+            CookingTimeScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = Screen.FamilyMembersSettings.route) {
+            FamilyMembersScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = Screen.NotificationSettings.route) {
+            NotificationSettingsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = Screen.UnitsSettings.route) {
+            UnitsScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
