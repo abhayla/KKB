@@ -1,12 +1,13 @@
 """Meal plan endpoints using Firestore repositories."""
 
+import asyncio
 import logging
 import random
 import uuid
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from app.api.deps import CurrentUser
 from app.core.exceptions import NotFoundError
@@ -130,12 +131,22 @@ async def generate(
             week_start = date.today()
             week_start = week_start - timedelta(days=week_start.weekday())
 
-        # Generate meal plan using the AI service
+        # Generate meal plan using the AI service (with 60s timeout)
         ai_service = AIMealService()
-        generated_plan = await ai_service.generate_meal_plan(
-            user_id=user_id,
-            week_start_date=week_start,
-        )
+        try:
+            generated_plan = await asyncio.wait_for(
+                ai_service.generate_meal_plan(
+                    user_id=user_id,
+                    week_start_date=week_start,
+                ),
+                timeout=60,
+            )
+        except asyncio.TimeoutError:
+            logger.error(f"Meal generation timed out after 60s for user {user_id}")
+            raise HTTPException(
+                status_code=504,
+                detail="Meal generation timed out. Please try again.",
+            )
 
         # Convert to repository format
         # Repository expects lists of items per meal type

@@ -215,6 +215,9 @@ async def search_recipes(
     # (e.g., biryani for breakfast, chai for dinner)
     # The meal_types field is kept for informational/suggestion purposes only
 
+    # Deterministic ordering for stable pagination results
+    query = query.order_by(Recipe.name)
+
     # Pagination
     offset = (params.page - 1) * params.limit
     query = query.offset(offset).limit(params.limit)
