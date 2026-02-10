@@ -68,6 +68,7 @@ fun ChatScreen(
     onNavigateToGrocery: () -> Unit,
     onNavigateToFavorites: () -> Unit,
     onNavigateToStats: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     onNavigateToRecipeDetail: (String) -> Unit,
     viewModel: ChatViewModel = hiltViewModel()
 ) {
@@ -124,6 +125,7 @@ fun ChatScreen(
                 ChatNavigationEvent.NavigateToGrocery -> onNavigateToGrocery()
                 ChatNavigationEvent.NavigateToFavorites -> onNavigateToFavorites()
                 ChatNavigationEvent.NavigateToStats -> onNavigateToStats()
+                ChatNavigationEvent.NavigateToSettings -> onNavigateToSettings()
                 is ChatNavigationEvent.NavigateToRecipeDetail -> {
                     onNavigateToRecipeDetail(event.recipeId)
                 }
@@ -146,6 +148,7 @@ fun ChatScreen(
         onMenuClick = viewModel::toggleMenu,
         onDismissMenu = viewModel::dismissMenu,
         onClearChatClick = viewModel::showClearChatDialog,
+        onSettingsClick = viewModel::navigateToSettings,
         onInputChange = viewModel::updateInputText,
         onSendClick = viewModel::sendMessage,
         onQuickActionClick = viewModel::onQuickActionClick,
@@ -221,6 +224,7 @@ internal fun ChatScreenContent(
     onMenuClick: () -> Unit,
     onDismissMenu: () -> Unit,
     onClearChatClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     onInputChange: (String) -> Unit,
     onSendClick: () -> Unit,
     onQuickActionClick: (String) -> Unit,
@@ -279,10 +283,7 @@ internal fun ChatScreenContent(
                             )
                             DropdownMenuItem(
                                 text = { Text("Chat Settings") },
-                                onClick = {
-                                    onDismissMenu()
-                                    // TODO: Navigate to settings
-                                },
+                                onClick = onSettingsClick,
                                 leadingIcon = {
                                     Text("⚙️")
                                 }

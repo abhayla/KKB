@@ -15,8 +15,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.NotificationsNone
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -114,6 +116,9 @@ fun NotificationsScreen(
         snackbarHostState = snackbarHostState,
         onNavigateBack = onNavigateBack,
         onMarkAllRead = viewModel::markAllAsRead,
+        onClearAll = viewModel::showClearAllConfirmation,
+        onConfirmClearAll = viewModel::clearAllNotifications,
+        onDismissClearAll = viewModel::dismissClearAllConfirmation,
         onFilterSelected = viewModel::setFilter,
         onNotificationClick = viewModel::onNotificationClick,
         onDeleteNotification = viewModel::deleteNotification
@@ -131,17 +136,30 @@ internal fun NotificationsScreenContent(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onNavigateBack: () -> Unit = {},
     onMarkAllRead: () -> Unit = {},
+    onClearAll: () -> Unit = {},
+    onConfirmClearAll: () -> Unit = {},
+    onDismissClearAll: () -> Unit = {},
     onFilterSelected: (NotificationFilter) -> Unit = {},
     onNotificationClick: (com.rasoiai.domain.model.Notification) -> Unit = {},
     onDeleteNotification: (String) -> Unit = {}
 ) {
+    // Clear All confirmation dialog
+    if (uiState.showClearAllDialog) {
+        ClearAllConfirmationDialog(
+            onConfirm = onConfirmClearAll,
+            onDismiss = onDismissClearAll
+        )
+    }
+
     Scaffold(
         modifier = Modifier.testTag(TestTags.NOTIFICATIONS_SCREEN),
         topBar = {
             NotificationsTopBar(
                 hasUnread = uiState.hasUnread,
+                hasNotifications = uiState.hasNotifications,
                 onNavigateBack = onNavigateBack,
-                onMarkAllRead = onMarkAllRead
+                onMarkAllRead = onMarkAllRead,
+                onClearAll = onClearAll
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -185,8 +203,10 @@ internal fun NotificationsScreenContent(
 @Composable
 private fun NotificationsTopBar(
     hasUnread: Boolean,
+    hasNotifications: Boolean,
     onNavigateBack: () -> Unit,
-    onMarkAllRead: () -> Unit
+    onMarkAllRead: () -> Unit,
+    onClearAll: () -> Unit
 ) {
     TopAppBar(
         title = {
@@ -219,6 +239,17 @@ private fun NotificationsTopBar(
                         text = "Mark all read",
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.padding(start = 4.dp)
+                    )
+                }
+            }
+            if (hasNotifications) {
+                IconButton(
+                    onClick = onClearAll,
+                    modifier = Modifier.testTag(TestTags.NOTIFICATIONS_CLEAR_ALL)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DeleteSweep,
+                        contentDescription = "Clear all notifications"
                     )
                 }
             }
@@ -368,4 +399,54 @@ private fun NotificationsList(
             }
         }
     }
+}
+
+@Composable
+private fun ClearAllConfirmationDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        modifier = Modifier.testTag(TestTags.NOTIFICATIONS_CLEAR_ALL_DIALOG),
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                imageVector = Icons.Default.DeleteSweep,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error
+            )
+        },
+        title = {
+            Text(
+                text = "Clear all notifications?",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Text(
+                text = "This will permanently delete all your notifications. This action cannot be undone.",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                modifier = Modifier.testTag(TestTags.NOTIFICATIONS_CLEAR_ALL_CONFIRM)
+            ) {
+                Text(
+                    text = "Clear all",
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.testTag(TestTags.NOTIFICATIONS_CLEAR_ALL_CANCEL)
+            ) {
+                Text("Cancel")
+            }
+        }
+    )
 }

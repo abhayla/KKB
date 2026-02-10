@@ -35,8 +35,13 @@ data class NotificationsUiState(
     val errorMessage: String? = null,
     val notifications: List<Notification> = emptyList(),
     val unreadCount: Int = 0,
-    val filter: NotificationFilter = NotificationFilter.ALL
+    val filter: NotificationFilter = NotificationFilter.ALL,
+    val showClearAllDialog: Boolean = false
 ) {
+    /** Check if there are any notifications at all */
+    val hasNotifications: Boolean
+        get() = notifications.isNotEmpty()
+
     /** Filtered notifications based on current filter */
     val filteredNotifications: List<Notification>
         get() = when (filter) {
@@ -221,6 +226,28 @@ class NotificationsViewModel @Inject constructor(
                 .onFailure { e ->
                     Timber.e(e, "Failed to delete notification")
                     _uiState.update { it.copy(errorMessage = "Failed to delete notification") }
+                }
+        }
+    }
+
+    fun showClearAllConfirmation() {
+        _uiState.update { it.copy(showClearAllDialog = true) }
+    }
+
+    fun dismissClearAllConfirmation() {
+        _uiState.update { it.copy(showClearAllDialog = false) }
+    }
+
+    fun clearAllNotifications() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(showClearAllDialog = false) }
+            notificationRepository.deleteAllNotifications()
+                .onSuccess {
+                    Timber.d("All notifications cleared")
+                }
+                .onFailure { e ->
+                    Timber.e(e, "Failed to clear all notifications")
+                    _uiState.update { it.copy(errorMessage = "Failed to clear all notifications") }
                 }
         }
     }

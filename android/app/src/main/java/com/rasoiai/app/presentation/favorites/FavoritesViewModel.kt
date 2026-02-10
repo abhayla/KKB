@@ -87,6 +87,13 @@ sealed class FavoritesNavigationEvent {
     data class NavigateToRecipeDetail(val recipeId: String) : FavoritesNavigationEvent()
 }
 
+/**
+ * One-time snackbar events for the Favorites screen
+ */
+sealed class FavoritesSnackbarEvent {
+    data class ShowUndo(val recipe: Recipe) : FavoritesSnackbarEvent()
+}
+
 @HiltViewModel
 class FavoritesViewModel @Inject constructor(
     private val favoritesRepository: FavoritesRepository,
@@ -98,6 +105,9 @@ class FavoritesViewModel @Inject constructor(
 
     private val _navigationEvent = Channel<FavoritesNavigationEvent>()
     val navigationEvent: Flow<FavoritesNavigationEvent> = _navigationEvent.receiveAsFlow()
+
+    private val _snackbarEvent = Channel<FavoritesSnackbarEvent>()
+    val snackbarEvent: Flow<FavoritesSnackbarEvent> = _snackbarEvent.receiveAsFlow()
 
     init {
         loadData()
@@ -207,13 +217,32 @@ class FavoritesViewModel @Inject constructor(
 
     fun removeFromFavorites(recipeId: String) {
         viewModelScope.launch {
+            // Capture recipe before removal for undo support
+            val removedRecipe = _uiState.value.recipes.find { it.id == recipeId }
+
             recipeRepository.toggleFavorite(recipeId)
                 .onSuccess {
                     Timber.i("Recipe removed from favorites")
+                    removedRecipe?.let { recipe ->
+                        _snackbarEvent.send(FavoritesSnackbarEvent.ShowUndo(recipe))
+                    }
                 }
                 .onFailure { e ->
                     Timber.e(e, "Failed to remove from favorites")
                     _uiState.update { it.copy(errorMessage = "Failed to remove recipe") }
+                }
+        }
+    }
+
+    fun undoRemoveFromFavorites(recipe: Recipe) {
+        viewModelScope.launch {
+            recipeRepository.toggleFavorite(recipe.id)
+                .onSuccess {
+                    Timber.i("Undo: Recipe '${recipe.name}' restored to favorites")
+                }
+                .onFailure { e ->
+                    Timber.e(e, "Failed to restore recipe to favorites")
+                    _uiState.update { it.copy(errorMessage = "Failed to restore recipe") }
                 }
         }
     }

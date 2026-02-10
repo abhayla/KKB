@@ -61,6 +61,7 @@ data class HomeUiState(
     val showFestivalRecipesSheet: Boolean = false,
     val festivalRecipes: List<Recipe> = emptyList(),
     val isLoadingFestivalRecipes: Boolean = false,
+    val selectedFestivalMealType: MealType = MealType.LUNCH,
     // Favorite added feedback message (for Snackbar)
     val favoriteAddedMessage: String? = null
 ) {
@@ -800,6 +801,47 @@ class HomeViewModel @Inject constructor(
     fun onFestivalRecipeClick(recipe: Recipe) {
         dismissFestivalRecipesSheet()
         _navigationEvent.trySend(HomeNavigationEvent.NavigateToRecipeDetail(recipe.id, isLocked = false))
+    }
+
+    /**
+     * Select a meal type for adding festival recipes to the meal plan
+     */
+    fun selectFestivalMealType(mealType: MealType) {
+        _uiState.update { it.copy(selectedFestivalMealType = mealType) }
+    }
+
+    /**
+     * Add a festival recipe to the current day's selected meal slot
+     */
+    fun addFestivalRecipeToMeal(recipe: Recipe) {
+        val state = _uiState.value
+        val mealPlan = state.mealPlan ?: return
+        val mealType = state.selectedFestivalMealType
+        val date = state.selectedDate
+
+        viewModelScope.launch {
+            mealPlanRepository.addRecipeToMeal(
+                mealPlanId = mealPlan.id,
+                date = date,
+                mealType = mealType,
+                recipeId = recipe.id,
+                recipeName = recipe.name,
+                recipeImageUrl = recipe.imageUrl,
+                prepTimeMinutes = recipe.prepTimeMinutes,
+                calories = recipe.nutrition?.calories ?: 0
+            ).onSuccess { updatedPlan ->
+                Timber.i("Festival recipe added to meal: ${recipe.name} -> $mealType")
+                updateStateWithMealPlan(updatedPlan)
+                _uiState.update {
+                    it.copy(favoriteAddedMessage = "${recipe.name} added to ${mealType.name.lowercase()}")
+                }
+            }.onFailure { e ->
+                Timber.e(e, "Failed to add festival recipe to meal")
+                _uiState.update { it.copy(errorMessage = "Failed to add recipe to meal") }
+            }
+        }
+
+        dismissFestivalRecipesSheet()
     }
 
     /**

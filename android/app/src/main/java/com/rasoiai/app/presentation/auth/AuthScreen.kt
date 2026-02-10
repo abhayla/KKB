@@ -1,6 +1,8 @@
 package com.rasoiai.app.presentation.auth
 
 import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -143,8 +145,14 @@ fun AuthScreen(
 
             // Terms and Privacy
             TermsAndPrivacyText(
-                onTermsClick = { /* TODO: Open Terms URL */ },
-                onPrivacyClick = { /* TODO: Open Privacy URL */ },
+                onTermsClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://rasoiai.com/terms"))
+                    context.startActivity(intent)
+                },
+                onPrivacyClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://rasoiai.com/privacy"))
+                    context.startActivity(intent)
+                },
                 modifier = Modifier.padding(bottom = spacing.xl)
             )
         }

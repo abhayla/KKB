@@ -126,16 +126,23 @@ object TestTags {
     const val NOTIFICATIONS_EMPTY = "notifications_empty"
     const val NOTIFICATIONS_ERROR = "notifications_error"
     const val NOTIFICATIONS_MARK_ALL_READ = "notifications_mark_all_read"
+    const val NOTIFICATIONS_CLEAR_ALL = "notifications_clear_all"
+    const val NOTIFICATIONS_CLEAR_ALL_DIALOG = "notifications_clear_all_dialog"
+    const val NOTIFICATIONS_CLEAR_ALL_CONFIRM = "notifications_clear_all_confirm"
+    const val NOTIFICATIONS_CLEAR_ALL_CANCEL = "notifications_clear_all_cancel"
     const val NOTIFICATION_FILTER_ALL = "notification_filter_all"
     const val NOTIFICATION_FILTER_UNREAD = "notification_filter_unread"
     const val NOTIFICATION_BADGE = "notification_badge"
     const val NOTIFICATION_SWIPE_DELETE = "notification_swipe_delete"
 
-    // Home Screen - Festival Banner
+    // Home Screen - Festival Banner & Recipes
     const val HOME_FESTIVAL_BANNER = "home_festival_banner"
     const val FESTIVAL_RECIPES_SHEET = "festival_recipes_sheet"
     const val FESTIVAL_RECIPE_GRID = "festival_recipe_grid"
     const val FESTIVAL_RECIPE_ITEM_PREFIX = "festival_recipe_item_"
+    const val FESTIVAL_MEAL_TYPE_SELECTOR = "festival_meal_type_selector"
+    const val FESTIVAL_MEAL_TYPE_CHIP_PREFIX = "festival_meal_type_chip_"
+    const val FESTIVAL_ADD_TO_MEAL_PREFIX = "festival_add_to_meal_"
 
     // Home Screen - Meal Item Content
     const val MEAL_ITEM_PREFIX = "meal_item_"

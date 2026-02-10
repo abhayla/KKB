@@ -52,6 +52,11 @@ interface NotificationRepository {
     suspend fun deleteNotification(notificationId: String): Result<Unit>
 
     /**
+     * Delete all notifications locally.
+     */
+    suspend fun deleteAllNotifications(): Result<Unit>
+
+    /**
      * Refresh notifications from server.
      */
     suspend fun refreshNotifications(): Result<Unit>

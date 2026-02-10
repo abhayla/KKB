@@ -239,6 +239,9 @@ fun RasoiNavHost(
                 onNavigateToStats = {
                     navController.navigate(Screen.Stats.route)
                 },
+                onNavigateToSettings = {
+                    navController.navigate(Screen.Settings.route)
+                },
                 onNavigateToRecipeDetail = { recipeId ->
                     navController.navigate(Screen.RecipeDetail.createRoute(recipeId))
                 }

@@ -183,6 +183,8 @@ fun HomeScreen(
         onFestivalBannerClick = viewModel::onFestivalBannerClick,
         onDismissFestivalRecipesSheet = viewModel::dismissFestivalRecipesSheet,
         onFestivalRecipeClick = viewModel::onFestivalRecipeClick,
+        onSelectFestivalMealType = viewModel::selectFestivalMealType,
+        onAddFestivalRecipeToMeal = viewModel::addFestivalRecipeToMeal,
         onBottomNavItemClick = { screen ->
             when (screen) {
                 Screen.Home -> { /* Already on Home */ }
@@ -228,6 +230,8 @@ private fun HomeScreenContent(
     onFestivalBannerClick: () -> Unit,
     onDismissFestivalRecipesSheet: () -> Unit,
     onFestivalRecipeClick: (Recipe) -> Unit,
+    onSelectFestivalMealType: (MealType) -> Unit,
+    onAddFestivalRecipeToMeal: (Recipe) -> Unit,
     onBottomNavItemClick: (Screen) -> Unit
 ) {
     Scaffold(
@@ -482,8 +486,11 @@ private fun HomeScreenContent(
             festival = uiState.upcomingFestival,
             recipes = uiState.festivalRecipes,
             isLoading = uiState.isLoadingFestivalRecipes,
+            selectedMealType = uiState.selectedFestivalMealType,
             onDismiss = onDismissFestivalRecipesSheet,
-            onRecipeClick = onFestivalRecipeClick
+            onRecipeClick = onFestivalRecipeClick,
+            onMealTypeSelect = onSelectFestivalMealType,
+            onAddToMeal = onAddFestivalRecipeToMeal
         )
     }
 }
@@ -1465,6 +1472,7 @@ private fun SwapRecipeGridItem(
 
 /**
  * Festival Recipes Bottom Sheet - displays festive recipe suggestions
+ * with the ability to view recipes or add them directly to the meal plan.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1472,8 +1480,11 @@ private fun FestivalRecipesSheet(
     festival: FestivalInfo,
     recipes: List<Recipe>,
     isLoading: Boolean,
+    selectedMealType: MealType,
     onDismiss: () -> Unit,
-    onRecipeClick: (Recipe) -> Unit
+    onRecipeClick: (Recipe) -> Unit,
+    onMealTypeSelect: (MealType) -> Unit,
+    onAddToMeal: (Recipe) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -1511,7 +1522,44 @@ private fun FestivalRecipesSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(spacing.md))
+            Spacer(modifier = Modifier.height(spacing.sm))
+
+            // Meal type selector - allows choosing which meal slot to add recipes to
+            Text(
+                text = "Add to meal slot:",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = spacing.xs)
+            )
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = spacing.md)
+                    .testTag(TestTags.FESTIVAL_MEAL_TYPE_SELECTOR)
+            ) {
+                items(
+                    items = MealType.entries.toList(),
+                    key = { it.name }
+                ) { mealType ->
+                    val isSelected = mealType == selectedMealType
+                    Surface(
+                        onClick = { onMealTypeSelect(mealType) },
+                        shape = RoundedCornerShape(spacing.sm),
+                        color = if (isSelected) MaterialTheme.colorScheme.primary
+                               else MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier.testTag("${TestTags.FESTIVAL_MEAL_TYPE_CHIP_PREFIX}${mealType.name.lowercase()}")
+                    ) {
+                        Text(
+                            text = mealType.name.lowercase().replaceFirstChar { it.uppercase() },
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                                   else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = spacing.md, vertical = spacing.sm)
+                        )
+                    }
+                }
+            }
 
             // Section title
             Text(
@@ -1563,6 +1611,7 @@ private fun FestivalRecipesSheet(
                         FestivalRecipeGridItem(
                             recipe = recipe,
                             onClick = { onRecipeClick(recipe) },
+                            onAddToMeal = { onAddToMeal(recipe) },
                             modifier = Modifier.testTag("${TestTags.FESTIVAL_RECIPE_ITEM_PREFIX}${recipe.id}")
                         )
                     }
@@ -1571,7 +1620,7 @@ private fun FestivalRecipesSheet(
 
             Spacer(modifier = Modifier.height(spacing.md))
 
-            // Cancel Button
+            // Close Button
             OutlinedButton(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth(),
@@ -1586,12 +1635,14 @@ private fun FestivalRecipesSheet(
 }
 
 /**
- * Grid item for festival recipe selection
+ * Grid item for festival recipe selection.
+ * Tap the card to view recipe detail, tap the "+" button to add to meal plan.
  */
 @Composable
 private fun FestivalRecipeGridItem(
     recipe: Recipe,
     onClick: () -> Unit,
+    onAddToMeal: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isVegetarian = recipe.dietaryTags.contains(DietaryTag.VEGETARIAN) ||
@@ -1622,6 +1673,30 @@ private fun FestivalRecipeGridItem(
                     style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
+                // Add to Meal button overlay (top-right corner)
+                IconButton(
+                    onClick = onAddToMeal,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .size(32.dp)
+                        .padding(spacing.xxs)
+                        .testTag("${TestTags.FESTIVAL_ADD_TO_MEAL_PREFIX}${recipe.id}")
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add to meal plan",
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier
+                                .padding(4.dp)
+                                .size(20.dp)
+                        )
+                    }
+                }
             }
 
             // Content

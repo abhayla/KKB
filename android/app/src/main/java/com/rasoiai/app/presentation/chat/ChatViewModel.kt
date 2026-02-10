@@ -48,6 +48,7 @@ sealed class ChatNavigationEvent {
     data object NavigateToGrocery : ChatNavigationEvent()
     data object NavigateToFavorites : ChatNavigationEvent()
     data object NavigateToStats : ChatNavigationEvent()
+    data object NavigateToSettings : ChatNavigationEvent()
     data class NavigateToRecipeDetail(val recipeId: String) : ChatNavigationEvent()
 }
 
@@ -194,6 +195,11 @@ class ChatViewModel @Inject constructor(
 
     fun navigateToStats() {
         _navigationEvent.trySend(ChatNavigationEvent.NavigateToStats)
+    }
+
+    fun navigateToSettings() {
+        dismissMenu()
+        _navigationEvent.trySend(ChatNavigationEvent.NavigateToSettings)
     }
 
     fun navigateToRecipeDetail(recipeId: String) {

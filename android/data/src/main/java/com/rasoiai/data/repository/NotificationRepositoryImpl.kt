@@ -139,6 +139,17 @@ class NotificationRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun deleteAllNotifications(): Result<Unit> {
+        return try {
+            notificationDao.deleteAllNotifications()
+            Timber.d("All notifications deleted locally")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to delete all notifications")
+            Result.failure(e)
+        }
+    }
+
     override suspend fun refreshNotifications(): Result<Unit> {
         return try {
             if (!networkMonitor.isOnline.first()) {
