@@ -285,16 +285,16 @@ Three GitHub Actions workflows in `.github/workflows/`:
 
 | Platform | Tests (approx.) | Framework |
 |----------|-----------------|-----------|
-| Backend | 255 | pytest |
+| Backend | 342 | pytest |
 | Android Unit | ~330 | JUnit + MockK |
 | Android UI | ~750+ | Compose UI Testing |
 | Android E2E | ~67+ | Compose UI Testing + Hilt + Real API |
 
 *Counts as of Feb 2026. Run `PYTHONPATH=. pytest --collect-only -q` (backend) or `./gradlew test` (Android) for current totals.*
 
-### Backend Tests (255 total)
+### Backend Tests (342 total)
 
-All in `backend/tests/`, named `test_{feature}.py`. Run `PYTHONPATH=. pytest --collect-only` to list all. Tests use SQLite in-memory via conftest fixtures (see Backend Test Fixtures below).
+All in `backend/tests/`, named `test_{feature}.py` (25 test files). Run `PYTHONPATH=. pytest --collect-only` to list all. Tests use SQLite in-memory via conftest fixtures (see Backend Test Fixtures below).
 
 ### Android UI Tests
 
@@ -383,7 +383,7 @@ Defined in `backend/tests/conftest.py`:
 | `auth_token` | Valid JWT for test_user |
 | `authenticated_client` | AsyncClient with `Authorization: Bearer` header pre-set |
 
-**Important:** When adding new models, import them in `conftest.py` (lines 22-34) so SQLite creates the tables. The conftest imports all 12 models including `notification` and `recipe_rule`. Use `unauthenticated_client` for tests that verify auth is required.
+**Important:** When adding new models, import them in `conftest.py` so SQLite creates the tables. Use `unauthenticated_client` for tests that verify auth is required.
 
 ## Domain Models
 
@@ -437,7 +437,7 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
 Migrations in `backend/alembic/versions/`. Run `alembic upgrade head` to apply.
 
-11 model files in `backend/app/models/` (note: `FamilyMember` is defined in `user.py`, not a separate file). **Important:** `postgres.py` has 3 import blocks (init_db, create_tables, drop_tables) that import 9 models but are **missing** `notification` and `recipe_rule`. The `conftest.py` imports all 11. When adding new models, update all 4 locations.
+11 model files in `backend/app/models/` (note: `FamilyMember` is defined in `user.py`, not a separate file). All 3 `postgres.py` import blocks and `conftest.py` now import all 11 models. When adding new models, update all 4 locations.
 
 ## Meal Generation
 
