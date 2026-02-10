@@ -57,6 +57,11 @@ class AuthRepositoryImpl @Inject constructor(
                 userId = authResponse.user.id
             )
 
+            // Save email for Settings profile display
+            if (authResponse.user.email.isNotBlank()) {
+                userPreferencesDataStore.saveEmail(authResponse.user.email)
+            }
+
             // Map to domain user and cache
             val user = authResponse.toUser()
             _currentUser.value = user

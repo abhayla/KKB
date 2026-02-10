@@ -10,15 +10,20 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.rasoiai.domain.model.AppSettings
 import com.rasoiai.domain.model.CuisineType
+import com.rasoiai.domain.model.DarkModePreference
 import com.rasoiai.domain.model.DayOfWeek
 import com.rasoiai.domain.model.DietaryRestriction
 import com.rasoiai.domain.model.FamilyMember
 import com.rasoiai.domain.model.MemberType
 import com.rasoiai.domain.model.PrimaryDiet
+import com.rasoiai.domain.model.SmallMeasurementUnit
 import com.rasoiai.domain.model.SpecialDietaryNeed
 import com.rasoiai.domain.model.SpiceLevel
 import com.rasoiai.domain.model.UserPreferences
+import com.rasoiai.domain.model.VolumeUnit
+import com.rasoiai.domain.model.WeightUnit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -59,6 +64,17 @@ class UserPreferencesDataStore @Inject constructor(
         val STRICT_ALLERGEN_MODE = booleanPreferencesKey("strict_allergen_mode")
         val STRICT_DIETARY_MODE = booleanPreferencesKey("strict_dietary_mode")
         val ALLOW_RECIPE_REPEAT = booleanPreferencesKey("allow_recipe_repeat")
+
+        // User email (saved from auth response)
+        val EMAIL = stringPreferencesKey("user_email")
+
+        // App settings (persisted across restarts)
+        val DARK_MODE = stringPreferencesKey("dark_mode")
+        val NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
+        val MEAL_REMINDER_TIME = stringPreferencesKey("meal_reminder_time")
+        val VOLUME_UNIT = stringPreferencesKey("volume_unit")
+        val WEIGHT_UNIT = stringPreferencesKey("weight_unit")
+        val SMALL_MEASUREMENT_UNIT = stringPreferencesKey("small_measurement_unit")
     }
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -76,6 +92,29 @@ class UserPreferencesDataStore @Inject constructor(
 
     override val userId: Flow<String?> = context.dataStore.data.map { preferences ->
         preferences[PreferencesKeys.USER_ID]
+    }
+
+    override val userEmail: Flow<String?> = context.dataStore.data.map { preferences ->
+        preferences[PreferencesKeys.EMAIL]
+    }
+
+    override val appSettings: Flow<AppSettings> = context.dataStore.data.map { preferences ->
+        AppSettings(
+            darkMode = preferences[PreferencesKeys.DARK_MODE]?.let { name ->
+                try { DarkModePreference.valueOf(name) } catch (_: Exception) { null }
+            } ?: DarkModePreference.SYSTEM,
+            notificationsEnabled = preferences[PreferencesKeys.NOTIFICATIONS_ENABLED] ?: true,
+            mealReminderTime = preferences[PreferencesKeys.MEAL_REMINDER_TIME] ?: "07:00",
+            volumeUnit = preferences[PreferencesKeys.VOLUME_UNIT]?.let { name ->
+                try { VolumeUnit.valueOf(name) } catch (_: Exception) { null }
+            } ?: VolumeUnit.INDIAN,
+            weightUnit = preferences[PreferencesKeys.WEIGHT_UNIT]?.let { name ->
+                try { WeightUnit.valueOf(name) } catch (_: Exception) { null }
+            } ?: WeightUnit.METRIC,
+            smallMeasurementUnit = preferences[PreferencesKeys.SMALL_MEASUREMENT_UNIT]?.let { name ->
+                try { SmallMeasurementUnit.valueOf(name) } catch (_: Exception) { null }
+            } ?: SmallMeasurementUnit.INDIAN
+        )
     }
 
     override suspend fun saveAuthTokens(
@@ -122,6 +161,24 @@ class UserPreferencesDataStore @Inject constructor(
             prefs.remove(PreferencesKeys.REFRESH_TOKEN)
             prefs.remove(PreferencesKeys.TOKEN_EXPIRY)
             prefs.remove(PreferencesKeys.USER_ID)
+            prefs.remove(PreferencesKeys.EMAIL)
+        }
+    }
+
+    override suspend fun saveEmail(email: String) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.EMAIL] = email
+        }
+    }
+
+    override suspend fun saveAppSettings(settings: AppSettings) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.DARK_MODE] = settings.darkMode.name
+            prefs[PreferencesKeys.NOTIFICATIONS_ENABLED] = settings.notificationsEnabled
+            prefs[PreferencesKeys.MEAL_REMINDER_TIME] = settings.mealReminderTime
+            prefs[PreferencesKeys.VOLUME_UNIT] = settings.volumeUnit.name
+            prefs[PreferencesKeys.WEIGHT_UNIT] = settings.weightUnit.name
+            prefs[PreferencesKeys.SMALL_MEASUREMENT_UNIT] = settings.smallMeasurementUnit.name
         }
     }
 

@@ -143,13 +143,9 @@ class SettingsFlowTest : BaseE2ETest() {
      */
     @Test
     fun test_9_5_1_mealGenerationSection_isDisplayed() {
-        try {
-            settingsRobot.waitForSettingsScreen()
-            settingsRobot.assertMealGenerationSectionDisplayed()
-            settingsRobot.assertItemsPerMealValue("2 items")
-        } catch (e: Throwable) {
-            android.util.Log.w("SettingsFlowTest", "test_9_5_1_mealGenerationSection_isDisplayed: ${e.message}")
-        }
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.assertMealGenerationSectionDisplayed()
+        settingsRobot.assertItemsPerMealValue("2 items")
     }
 
     /**
@@ -157,18 +153,14 @@ class SettingsFlowTest : BaseE2ETest() {
      */
     @Test
     fun test_9_5_2_strictAllergenMode_toggle() {
-        try {
-            settingsRobot.waitForSettingsScreen()
-            settingsRobot.scrollToMealGenerationSection()
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.scrollToMealGenerationSection()
 
-            settingsRobot.assertStrictAllergenModeOn()
-            settingsRobot.toggleStrictAllergenMode()
-            settingsRobot.assertStrictAllergenModeOff()
-            settingsRobot.toggleStrictAllergenMode()
-            settingsRobot.assertStrictAllergenModeOn()
-        } catch (e: Throwable) {
-            android.util.Log.w("SettingsFlowTest", "test_9_5_2_strictAllergenMode_toggle: ${e.message}")
-        }
+        settingsRobot.assertStrictAllergenModeOn()
+        settingsRobot.toggleStrictAllergenMode()
+        settingsRobot.assertStrictAllergenModeOff()
+        settingsRobot.toggleStrictAllergenMode()
+        settingsRobot.assertStrictAllergenModeOn()
     }
 
     /**
@@ -176,18 +168,14 @@ class SettingsFlowTest : BaseE2ETest() {
      */
     @Test
     fun test_9_5_3_strictDietaryMode_toggle() {
-        try {
-            settingsRobot.waitForSettingsScreen()
-            settingsRobot.scrollToMealGenerationSection()
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.scrollToMealGenerationSection()
 
-            settingsRobot.assertStrictDietaryModeOn()
-            settingsRobot.toggleStrictDietaryMode()
-            settingsRobot.assertStrictDietaryModeOff()
-            settingsRobot.toggleStrictDietaryMode()
-            settingsRobot.assertStrictDietaryModeOn()
-        } catch (e: Throwable) {
-            android.util.Log.w("SettingsFlowTest", "test_9_5_3_strictDietaryMode_toggle: ${e.message}")
-        }
+        settingsRobot.assertStrictDietaryModeOn()
+        settingsRobot.toggleStrictDietaryMode()
+        settingsRobot.assertStrictDietaryModeOff()
+        settingsRobot.toggleStrictDietaryMode()
+        settingsRobot.assertStrictDietaryModeOn()
     }
 
     /**
@@ -195,18 +183,14 @@ class SettingsFlowTest : BaseE2ETest() {
      */
     @Test
     fun test_9_5_4_allowRecipeRepeat_toggle() {
-        try {
-            settingsRobot.waitForSettingsScreen()
-            settingsRobot.scrollToMealGenerationSection()
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.scrollToMealGenerationSection()
 
-            settingsRobot.assertAllowRecipeRepeatOff()
-            settingsRobot.toggleAllowRecipeRepeat()
-            settingsRobot.assertAllowRecipeRepeatOn()
-            settingsRobot.toggleAllowRecipeRepeat()
-            settingsRobot.assertAllowRecipeRepeatOff()
-        } catch (e: Throwable) {
-            android.util.Log.w("SettingsFlowTest", "test_9_5_4_allowRecipeRepeat_toggle: ${e.message}")
-        }
+        settingsRobot.assertAllowRecipeRepeatOff()
+        settingsRobot.toggleAllowRecipeRepeat()
+        settingsRobot.assertAllowRecipeRepeatOn()
+        settingsRobot.toggleAllowRecipeRepeat()
+        settingsRobot.assertAllowRecipeRepeatOff()
     }
 
     // ===================== 9.6 About Section =====================
@@ -232,21 +216,17 @@ class SettingsFlowTest : BaseE2ETest() {
      */
     @Test
     fun test_9_7_signOut_flow() {
-        try {
-            settingsRobot.waitForSettingsScreen()
+        settingsRobot.waitForSettingsScreen()
 
-            // Tap sign out
-            settingsRobot.tapSignOut()
+        // Tap sign out
+        settingsRobot.tapSignOut()
 
-            // Cancel first
-            settingsRobot.cancelSignOut()
+        // Cancel first
+        settingsRobot.cancelSignOut()
 
-            // Confirm sign out
-            settingsRobot.tapSignOut()
-            settingsRobot.confirmSignOut()
-        } catch (e: Throwable) {
-            android.util.Log.w("SettingsFlowTest", "test_9_7_signOut_flow: ${e.message}")
-        }
+        // Confirm sign out
+        settingsRobot.tapSignOut()
+        settingsRobot.confirmSignOut()
     }
 
     /**
@@ -254,15 +234,11 @@ class SettingsFlowTest : BaseE2ETest() {
      */
     @Test
     fun test_9_7b_signOutDialog_showsConfirmation() {
-        try {
-            settingsRobot.waitForSettingsScreen()
+        settingsRobot.waitForSettingsScreen()
 
-            settingsRobot.tapSignOut()
-            settingsRobot.assertSignOutDialogDisplayed()
-            settingsRobot.cancelSignOut()
-        } catch (e: Throwable) {
-            android.util.Log.w("SettingsFlowTest", "test_9_7b_signOutDialog_showsConfirmation: ${e.message}")
-        }
+        settingsRobot.tapSignOut()
+        settingsRobot.assertSignOutDialogDisplayed()
+        settingsRobot.cancelSignOut()
     }
 
     // ===================== 9.8 Family Members =====================
@@ -332,12 +308,8 @@ class SettingsFlowTest : BaseE2ETest() {
      */
     @Test
     fun test_9_12_recipeRules_navigation() {
-        try {
-            settingsRobot.waitForSettingsScreen()
-            settingsRobot.navigateToRecipeRules()
-        } catch (e: Throwable) {
-            android.util.Log.w("SettingsFlowTest", "test_9_12_recipeRules_navigation: ${e.message}")
-        }
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.navigateToRecipeRules()
     }
 
     // ===================== 9.13 Dark Mode Dialog =====================
@@ -347,24 +319,20 @@ class SettingsFlowTest : BaseE2ETest() {
      */
     @Test
     fun test_9_13_darkModeDialog_showsOptions() {
-        try {
-            settingsRobot.waitForSettingsScreen()
+        settingsRobot.waitForSettingsScreen()
 
-            settingsRobot.tapSettingItem("Dark Mode")
-            waitFor(ANIMATION_DURATION)
+        settingsRobot.tapSettingItem("Dark Mode")
+        waitFor(ANIMATION_DURATION)
 
-            // Verify dialog shows all options
-            composeTestRule.onNodeWithText("System", ignoreCase = true)
-                .assertIsDisplayed()
-            composeTestRule.onNodeWithText("Light", ignoreCase = true)
-                .assertIsDisplayed()
-            composeTestRule.onNodeWithText("Dark", ignoreCase = true)
-                .assertIsDisplayed()
+        // Verify dialog shows all options
+        composeTestRule.onNodeWithText("System", ignoreCase = true)
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("Light", ignoreCase = true)
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("Dark", ignoreCase = true)
+            .assertIsDisplayed()
 
-            settingsRobot.dismissDarkModeDialog()
-        } catch (e: Throwable) {
-            android.util.Log.w("SettingsFlowTest", "test_9_13_darkModeDialog_showsOptions: ${e.message}")
-        }
+        settingsRobot.dismissDarkModeDialog()
     }
 
     // ===================== 9.14 Items Per Meal Dialog =====================
@@ -374,24 +342,20 @@ class SettingsFlowTest : BaseE2ETest() {
      */
     @Test
     fun test_9_14_itemsPerMealDialog_showsOptions() {
-        try {
-            settingsRobot.waitForSettingsScreen()
+        settingsRobot.waitForSettingsScreen()
 
-            settingsRobot.tapItemsPerMealSetting()
-            waitFor(ANIMATION_DURATION)
+        settingsRobot.tapItemsPerMealSetting()
+        waitFor(ANIMATION_DURATION)
 
-            // Verify dialog shows options
-            composeTestRule.onNodeWithText("Items per Meal", ignoreCase = true)
-                .assertIsDisplayed()
-            composeTestRule.onNodeWithText("1 item", substring = true, ignoreCase = true)
-                .assertIsDisplayed()
-            composeTestRule.onNodeWithText("2 items", substring = true, ignoreCase = true)
-                .assertIsDisplayed()
+        // Verify dialog shows options
+        composeTestRule.onNodeWithText("Items per Meal", ignoreCase = true)
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("1 item", substring = true, ignoreCase = true)
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("2 items", substring = true, ignoreCase = true)
+            .assertIsDisplayed()
 
-            settingsRobot.dismissItemsPerMealDialog()
-        } catch (e: Throwable) {
-            android.util.Log.w("SettingsFlowTest", "test_9_14_itemsPerMealDialog_showsOptions: ${e.message}")
-        }
+        settingsRobot.dismissItemsPerMealDialog()
     }
 
     // ===================== 9.15 All Sections Scroll =====================
@@ -401,20 +365,16 @@ class SettingsFlowTest : BaseE2ETest() {
      */
     @Test
     fun test_9_15_allSections_areScrollable() {
-        try {
-            settingsRobot.waitForSettingsScreen()
+        settingsRobot.waitForSettingsScreen()
 
-            // Verify all major sections can be scrolled to
-            settingsRobot.assertProfileSectionDisplayed()
-            settingsRobot.assertFamilySectionDisplayed()
-            settingsRobot.assertMealPreferencesSectionDisplayed()
-            settingsRobot.assertMealGenerationSectionDisplayed()
-            settingsRobot.assertAppSettingsSectionDisplayed()
-            settingsRobot.assertSocialSectionDisplayed()
-            settingsRobot.assertSupportSectionDisplayed()
-        } catch (e: Throwable) {
-            android.util.Log.w("SettingsFlowTest", "test_9_15_allSections_areScrollable: ${e.message}")
-        }
+        // Verify all major sections can be scrolled to
+        settingsRobot.assertProfileSectionDisplayed()
+        settingsRobot.assertFamilySectionDisplayed()
+        settingsRobot.assertMealPreferencesSectionDisplayed()
+        settingsRobot.assertMealGenerationSectionDisplayed()
+        settingsRobot.assertAppSettingsSectionDisplayed()
+        settingsRobot.assertSocialSectionDisplayed()
+        settingsRobot.assertSupportSectionDisplayed()
     }
 
     // ===================== 9.16 Disliked Ingredients =====================

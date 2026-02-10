@@ -14,11 +14,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.UUID
@@ -41,23 +38,20 @@ class SettingsRepositoryImpl @Inject constructor(
     private val networkMonitor: NetworkMonitor
 ) : SettingsRepository {
 
-    // Local app settings state (persisted in DataStore through another mechanism or in-memory for MVP)
-    private val _appSettings = MutableStateFlow(AppSettings())
-
     // Cached user data
     private var cachedUser: User? = null
 
     override fun getCurrentUser(): Flow<User?> {
         return combine(
             userPreferencesDataStore.userId,
+            userPreferencesDataStore.userEmail,
             userPreferencesDataStore.userPreferences,
             userPreferencesDataStore.isOnboarded
-        ) { userId, preferences, isOnboarded ->
+        ) { userId, email, preferences, isOnboarded ->
             if (userId != null) {
-                // Build user from stored data
                 User(
                     id = userId,
-                    email = "", // Not stored locally for privacy
+                    email = email ?: "",
                     name = preferences?.familyMembers?.firstOrNull()?.name ?: "User",
                     profileImageUrl = null,
                     isOnboarded = isOnboarded,
@@ -70,12 +64,13 @@ class SettingsRepositoryImpl @Inject constructor(
     }
 
     override fun getAppSettings(): Flow<AppSettings> {
-        return _appSettings.asStateFlow()
+        return userPreferencesDataStore.appSettings
     }
 
     override suspend fun updateDarkMode(preference: DarkModePreference): Result<Unit> {
         return try {
-            _appSettings.value = _appSettings.value.copy(darkMode = preference)
+            val current = userPreferencesDataStore.appSettings.first()
+            userPreferencesDataStore.saveAppSettings(current.copy(darkMode = preference))
             Timber.d("Updated dark mode: ${preference.displayName}")
             Result.success(Unit)
         } catch (e: Exception) {
@@ -86,7 +81,8 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun updateNotifications(enabled: Boolean): Result<Unit> {
         return try {
-            _appSettings.value = _appSettings.value.copy(notificationsEnabled = enabled)
+            val current = userPreferencesDataStore.appSettings.first()
+            userPreferencesDataStore.saveAppSettings(current.copy(notificationsEnabled = enabled))
             Timber.d("Updated notifications: $enabled")
             Result.success(Unit)
         } catch (e: Exception) {
@@ -204,7 +200,7 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun updateAppSettings(settings: AppSettings): Result<Unit> {
         return try {
-            _appSettings.value = settings
+            userPreferencesDataStore.saveAppSettings(settings)
             Timber.d("Updated app settings")
             Result.success(Unit)
         } catch (e: Exception) {
@@ -215,11 +211,10 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun signOut(): Result<Unit> {
         return try {
-            // Clear all local data
+            // Clear all local data (clearPreferences wipes DataStore including app settings)
             userPreferencesDataStore.clearAuthTokens()
             userPreferencesDataStore.clearPreferences()
             cachedUser = null
-            _appSettings.value = AppSettings() // Reset to defaults
 
             Timber.i("User signed out")
             Result.success(Unit)
