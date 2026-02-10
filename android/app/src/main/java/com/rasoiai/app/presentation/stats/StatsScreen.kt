@@ -58,6 +58,8 @@ fun StatsScreen(
     onNavigateToGrocery: () -> Unit,
     onNavigateToChat: () -> Unit,
     onNavigateToFavorites: () -> Unit,
+    onNavigateToAchievements: () -> Unit = {},
+    onNavigateToLeaderboard: () -> Unit = {},
     viewModel: StatsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -72,8 +74,8 @@ fun StatsScreen(
                 StatsNavigationEvent.NavigateToGrocery -> onNavigateToGrocery()
                 StatsNavigationEvent.NavigateToChat -> onNavigateToChat()
                 StatsNavigationEvent.NavigateToFavorites -> onNavigateToFavorites()
-                StatsNavigationEvent.NavigateToAllAchievements -> { /* TODO: Navigate to full achievements screen */ }
-                StatsNavigationEvent.NavigateToFullLeaderboard -> { /* TODO: Navigate to full leaderboard screen */ }
+                StatsNavigationEvent.NavigateToAllAchievements -> onNavigateToAchievements()
+                StatsNavigationEvent.NavigateToFullLeaderboard -> onNavigateToLeaderboard()
             }
         }
     }

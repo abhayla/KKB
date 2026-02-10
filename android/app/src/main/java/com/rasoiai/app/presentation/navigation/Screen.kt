@@ -38,6 +38,7 @@ sealed class Screen(val route: String) {
     data object Pantry : Screen("pantry")
     data object Stats : Screen("stats")
     data object RecipeRules : Screen("recipe-rules")
+    data object Achievements : Screen("achievements")
 
     // Settings sub-screens
     data object DietaryRestrictions : Screen("settings/dietary-restrictions")

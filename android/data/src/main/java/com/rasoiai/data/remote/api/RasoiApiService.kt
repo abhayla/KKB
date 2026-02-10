@@ -13,6 +13,8 @@ import com.rasoiai.data.remote.dto.NutritionGoalCreateRequest
 import com.rasoiai.data.remote.dto.NutritionGoalDto
 import com.rasoiai.data.remote.dto.NutritionGoalsListResponse
 import com.rasoiai.data.remote.dto.NutritionGoalUpdateRequest
+import com.rasoiai.data.remote.dto.RecipeRatingRequest
+import com.rasoiai.data.remote.dto.RecipeRatingResponse
 import com.rasoiai.data.remote.dto.RecipeResponse
 import com.rasoiai.data.remote.dto.RecipeRuleCreateRequest
 import com.rasoiai.data.remote.dto.RecipeRuleDto
@@ -94,6 +96,12 @@ interface RasoiApiService {
         @Path("id") id: String,
         @Query("servings") servings: Int
     ): RecipeResponse
+
+    @POST("api/v1/recipes/{id}/rate")
+    suspend fun rateRecipe(
+        @Path("id") recipeId: String,
+        @Body request: RecipeRatingRequest
+    ): RecipeRatingResponse
 
     @GET("api/v1/recipes/search")
     suspend fun searchRecipes(

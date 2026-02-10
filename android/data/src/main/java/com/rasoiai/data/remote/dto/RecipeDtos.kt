@@ -57,3 +57,20 @@ data class NutritionDto(
     val sugar: Int, // grams
     val sodium: Int // mg
 )
+
+data class RecipeRatingRequest(
+    val rating: Float,
+    val feedback: String? = null
+)
+
+data class RecipeRatingResponse(
+    val id: String,
+    @SerializedName("recipe_id")
+    val recipeId: String,
+    val rating: Float,
+    val feedback: String?,
+    @SerializedName("created_at")
+    val createdAt: String,
+    @SerializedName("updated_at")
+    val updatedAt: String
+)

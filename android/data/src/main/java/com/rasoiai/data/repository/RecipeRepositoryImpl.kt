@@ -9,6 +9,7 @@ import com.rasoiai.data.local.entity.FavoriteEntity
 import com.rasoiai.data.local.mapper.toDomain
 import com.rasoiai.data.local.mapper.toEntity
 import com.rasoiai.data.remote.api.RasoiApiService
+import com.rasoiai.data.remote.dto.RecipeRatingRequest
 import com.rasoiai.data.remote.mapper.toDomain
 import com.rasoiai.domain.model.CuisineType
 import com.rasoiai.domain.model.DietaryTag
@@ -272,6 +273,18 @@ class RecipeRepositoryImpl @Inject constructor(
             recipeRulesDao.insertKnownIngredients(entities)
         } catch (e: Exception) {
             Timber.w(e, "Failed to persist ingredient names")
+        }
+    }
+
+    override suspend fun rateRecipe(recipeId: String, rating: Int, feedback: String): Result<Unit> {
+        return try {
+            if (networkMonitor.isOnline.first()) {
+                apiService.rateRecipe(recipeId, RecipeRatingRequest(rating.toFloat(), feedback.ifBlank { null }))
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to submit recipe rating")
+            Result.failure(e)
         }
     }
 

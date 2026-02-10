@@ -210,6 +210,15 @@ object TestTags {
     const val SETTINGS_MEAL_PREFERENCES_SECTION = "settings_meal_preferences_section"
     const val SETTINGS_APP_SETTINGS_SECTION = "settings_app_settings_section"
 
+    // Achievements Screen
+    const val ACHIEVEMENTS_SCREEN = "achievements_screen"
+    const val ACHIEVEMENTS_LIST = "achievements_list"
+    const val ACHIEVEMENTS_UNLOCKED_SECTION = "achievements_unlocked_section"
+    const val ACHIEVEMENTS_LOCKED_SECTION = "achievements_locked_section"
+    const val ACHIEVEMENT_CARD_PREFIX = "achievement_card_"
+    const val ACHIEVEMENT_PROGRESS_PREFIX = "achievement_progress_"
+    const val ACHIEVEMENT_SHARE_PREFIX = "achievement_share_"
+
     // Cooking Mode Screen
     const val COOKING_MODE_SCREEN = "cooking_mode_screen"
 

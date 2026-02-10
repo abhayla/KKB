@@ -120,6 +120,10 @@ class FakeRecipeRepository @Inject constructor() : RecipeRepository {
         return recipes.map { list -> list.filter { it.isFavorite } }
     }
 
+    override suspend fun rateRecipe(recipeId: String, rating: Int, feedback: String): Result<Unit> {
+        return Result.success(Unit)
+    }
+
     private fun createSampleRecipes(): List<Recipe> {
         return listOf(
             createDalTadka().copy(isFavorite = true),

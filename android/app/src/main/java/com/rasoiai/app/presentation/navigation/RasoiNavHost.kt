@@ -31,6 +31,7 @@ import com.rasoiai.app.presentation.settings.screens.EditProfileScreen
 import com.rasoiai.app.presentation.settings.screens.FriendsLeaderboardScreen
 import com.rasoiai.app.presentation.settings.screens.UnitsScreen
 import com.rasoiai.app.presentation.splash.SplashScreen
+import com.rasoiai.app.presentation.achievements.AchievementsScreen
 import com.rasoiai.app.presentation.stats.StatsScreen
 
 @Composable
@@ -288,6 +289,12 @@ fun RasoiNavHost(
                 },
                 onNavigateToFavorites = {
                     navController.navigate(Screen.Favorites.route)
+                },
+                onNavigateToAchievements = {
+                    navController.navigate(Screen.Achievements.route)
+                },
+                onNavigateToLeaderboard = {
+                    navController.navigate(Screen.FriendsLeaderboard.route)
                 }
             )
         }
@@ -410,6 +417,13 @@ fun RasoiNavHost(
 
         composable(route = Screen.ConnectedAccounts.route) {
             ConnectedAccountsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Achievements
+        composable(route = Screen.Achievements.route) {
+            AchievementsScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

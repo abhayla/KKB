@@ -9,6 +9,7 @@ import com.rasoiai.domain.model.MealPlan
 import com.rasoiai.domain.model.MealPlanDay
 import com.rasoiai.domain.model.MealType
 import com.rasoiai.domain.model.Recipe
+import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.domain.repository.MealPlanRepository
 import com.rasoiai.domain.repository.RecipeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -63,7 +64,9 @@ data class HomeUiState(
     val isLoadingFestivalRecipes: Boolean = false,
     val selectedFestivalMealType: MealType = MealType.LUNCH,
     // Favorite added feedback message (for Snackbar)
-    val favoriteAddedMessage: String? = null
+    val favoriteAddedMessage: String? = null,
+    // Offline state
+    val isOffline: Boolean = false
 ) {
     /** Check if the selected day is locked */
     val isSelectedDayLocked: Boolean
@@ -143,7 +146,8 @@ sealed class HomeNavigationEvent {
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val mealPlanRepository: MealPlanRepository,
-    private val recipeRepository: RecipeRepository
+    private val recipeRepository: RecipeRepository,
+    private val networkMonitor: NetworkMonitor
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -154,6 +158,15 @@ class HomeViewModel @Inject constructor(
 
     init {
         loadMealPlan()
+        observeNetworkState()
+    }
+
+    private fun observeNetworkState() {
+        viewModelScope.launch {
+            networkMonitor.isOnline.collect { online ->
+                _uiState.update { it.copy(isOffline = !online) }
+            }
+        }
     }
 
     // region Data Loading

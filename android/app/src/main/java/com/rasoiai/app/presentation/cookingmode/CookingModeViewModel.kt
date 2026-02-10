@@ -326,9 +326,9 @@ class CookingModeViewModel @Inject constructor(
             val currentState = _uiState.value
             val recipeId = currentState.recipe?.id ?: return@launch
 
-            // TODO: Submit rating to repository
-            Timber.i("Rating submitted: ${currentState.rating} stars for recipe $recipeId")
-            Timber.i("Feedback: ${currentState.feedback}")
+            recipeRepository.rateRecipe(recipeId, currentState.rating, currentState.feedback)
+                .onSuccess { Timber.i("Rating submitted: ${currentState.rating} stars for recipe $recipeId") }
+                .onFailure { Timber.e(it, "Failed to submit rating for $recipeId") }
 
             _uiState.update { it.copy(showCompletionDialog = false) }
             _navigationEvent.send(CookingModeNavigationEvent.NavigateToHome)

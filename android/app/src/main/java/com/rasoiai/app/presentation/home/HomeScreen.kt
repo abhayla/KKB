@@ -93,6 +93,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rasoiai.app.presentation.common.TestTags
 import com.rasoiai.app.presentation.home.components.AddRecipeSheet
 import com.rasoiai.app.presentation.home.components.RasoiBottomNavigation
+import com.rasoiai.core.ui.OfflineBanner
 import com.rasoiai.app.presentation.navigation.Screen
 import com.rasoiai.domain.model.Recipe
 import com.rasoiai.app.presentation.theme.DietaryColors
@@ -308,6 +309,11 @@ private fun HomeScreenContent(
                         .testTag(TestTags.HOME_MEAL_LIST),
                     contentPadding = PaddingValues(bottom = spacing.md)
                 ) {
+                    // Offline Banner
+                    item {
+                        OfflineBanner(isOffline = uiState.isOffline)
+                    }
+
                     // Festival Banner
                     uiState.upcomingFestival?.let { festival ->
                         item {

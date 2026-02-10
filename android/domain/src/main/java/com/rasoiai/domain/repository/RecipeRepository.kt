@@ -43,4 +43,9 @@ interface RecipeRepository {
      * Get all favorite recipes.
      */
     fun getFavoriteRecipes(): Flow<List<Recipe>>
+
+    /**
+     * Submit a rating for a recipe.
+     */
+    suspend fun rateRecipe(recipeId: String, rating: Int, feedback: String): Result<Unit>
 }
