@@ -1,9 +1,17 @@
 """Pytest configuration and fixtures."""
 
 import asyncio
+import sqlite3
 import uuid
 from typing import AsyncGenerator
 from unittest.mock import patch
+
+# Register UUID adapter for SQLite so that uuid.UUID objects are
+# automatically converted to strings when used as bind parameters.
+# This is needed because some services do uuid.UUID(id_str) and compare
+# against String(36) columns — PostgreSQL handles this natively but
+# SQLite (used in tests) does not.
+sqlite3.register_adapter(uuid.UUID, str)
 
 import pytest
 import pytest_asyncio
