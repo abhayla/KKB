@@ -17,7 +17,7 @@ import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.pool import NullPool
+from sqlalchemy.pool import StaticPool
 
 from app.config import settings
 from app.db.base import Base
@@ -41,8 +41,11 @@ from app.models import (  # noqa: F401
     user,
 )
 
-# Test database URL (use SQLite for testing)
-TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+# Use in-memory SQLite for testing. StaticPool ensures all connections within
+# a single engine share the same underlying database, so the test session and
+# any patched async_session_maker sessions see the same tables/data.
+# Each test gets its own engine, providing full isolation between tests.
+TEST_DATABASE_URL = "sqlite+aiosqlite://"
 
 # Test session maker (will be set in fixtures)
 _test_session_maker = None
@@ -63,10 +66,17 @@ async def cleanup_production_engine():
 
 @pytest_asyncio.fixture(scope="function")
 async def db_engine():
-    """Create test database engine."""
+    """Create test database engine using in-memory SQLite.
+
+    StaticPool ensures all sessions from this engine share the same
+    in-memory database. Each test function gets a fresh engine (and
+    therefore a fresh empty database), providing full test isolation
+    without file-based SQLite locking/collision issues.
+    """
     engine = create_async_engine(
         TEST_DATABASE_URL,
-        poolclass=NullPool,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
     )
 
     # Create all tables

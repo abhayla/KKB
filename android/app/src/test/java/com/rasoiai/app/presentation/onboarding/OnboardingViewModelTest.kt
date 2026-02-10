@@ -70,13 +70,13 @@ class OnboardingViewModelTest {
         }
 
         @Test
-        @DisplayName("Default household size should be 2")
-        fun `default household size should be 2`() = runTest {
+        @DisplayName("Default household size should be 0")
+        fun `default household size should be 0`() = runTest {
             val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
                 val state = awaitItem()
-                assertEquals(2, state.householdSize)
+                assertEquals(0, state.householdSize)
                 cancelAndIgnoreRemainingEvents()
             }
         }
@@ -555,13 +555,17 @@ class OnboardingViewModelTest {
     inner class ComputedProperties {
 
         @Test
-        @DisplayName("canProceed should be true when household size > 0")
-        fun `canProceed should be true when household size greater than 0`() = runTest {
+        @DisplayName("canProceed should be false when household size is 0 and true when > 0")
+        fun `canProceed should be false when household size is 0 and true when greater than 0`() = runTest {
             val viewModel = OnboardingViewModel(mockUserPreferencesDataStore, mockSettingsRepository, mockGenerateMealPlanUseCase)
 
             viewModel.uiState.test {
-                val state = awaitItem()
-                assertTrue(state.canProceed) // Default size is 2
+                val initialState = awaitItem()
+                assertFalse(initialState.canProceed) // Default size is 0, so canProceed is false
+
+                viewModel.updateHouseholdSize(2)
+                val updatedState = awaitItem()
+                assertTrue(updatedState.canProceed) // Size is now 2, so canProceed is true
                 cancelAndIgnoreRemainingEvents()
             }
         }

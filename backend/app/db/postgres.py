@@ -25,6 +25,7 @@ engine = create_async_engine(
     pool_recycle=1800,  # Recycle connections after 30 minutes
     pool_pre_ping=True,  # Verify connections before using
     poolclass=AsyncAdaptedQueuePool,
+    connect_args={"server_settings": {"statement_timeout": "30000"}},  # 30s query timeout
 )
 
 # Create async session factory
@@ -66,7 +67,9 @@ async def init_db() -> None:
         festival,
         grocery,
         meal_plan,
+        notification,
         recipe,
+        recipe_rule,
         stats,
         user,
     )
@@ -92,7 +95,9 @@ async def create_tables() -> None:
         festival,
         grocery,
         meal_plan,
+        notification,
         recipe,
+        recipe_rule,
         stats,
         user,
     )
@@ -115,7 +120,9 @@ async def drop_tables() -> None:
         festival,
         grocery,
         meal_plan,
+        notification,
         recipe,
+        recipe_rule,
         stats,
         user,
     )
