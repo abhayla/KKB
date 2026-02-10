@@ -11,6 +11,7 @@ import com.rasoiai.domain.model.MealType
 import com.rasoiai.domain.model.Recipe
 import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.domain.repository.MealPlanRepository
+import com.rasoiai.domain.repository.NotificationRepository
 import com.rasoiai.domain.repository.RecipeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -66,7 +67,9 @@ data class HomeUiState(
     // Favorite added feedback message (for Snackbar)
     val favoriteAddedMessage: String? = null,
     // Offline state
-    val isOffline: Boolean = false
+    val isOffline: Boolean = false,
+    // Notification badge
+    val notificationBadgeCount: Int = 0
 ) {
     /** Check if the selected day is locked */
     val isSelectedDayLocked: Boolean
@@ -147,7 +150,8 @@ sealed class HomeNavigationEvent {
 class HomeViewModel @Inject constructor(
     private val mealPlanRepository: MealPlanRepository,
     private val recipeRepository: RecipeRepository,
-    private val networkMonitor: NetworkMonitor
+    private val networkMonitor: NetworkMonitor,
+    private val notificationRepository: NotificationRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -159,12 +163,21 @@ class HomeViewModel @Inject constructor(
     init {
         loadMealPlan()
         observeNetworkState()
+        observeNotificationCount()
     }
 
     private fun observeNetworkState() {
         viewModelScope.launch {
             networkMonitor.isOnline.collect { online ->
                 _uiState.update { it.copy(isOffline = !online) }
+            }
+        }
+    }
+
+    private fun observeNotificationCount() {
+        viewModelScope.launch {
+            notificationRepository.getUnreadCount().collect { count ->
+                _uiState.update { it.copy(notificationBadgeCount = count) }
             }
         }
     }

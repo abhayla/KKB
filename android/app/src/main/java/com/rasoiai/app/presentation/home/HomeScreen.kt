@@ -285,7 +285,8 @@ private fun HomeScreenContent(
         bottomBar = {
             RasoiBottomNavigation(
                 currentScreen = Screen.Home,
-                onItemClick = onBottomNavItemClick
+                onItemClick = onBottomNavItemClick,
+                notificationBadgeCount = uiState.notificationBadgeCount
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },

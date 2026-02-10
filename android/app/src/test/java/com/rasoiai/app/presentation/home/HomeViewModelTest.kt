@@ -6,7 +6,9 @@ import com.rasoiai.domain.model.MealItem
 import com.rasoiai.domain.model.MealPlan
 import com.rasoiai.domain.model.MealPlanDay
 import com.rasoiai.domain.model.MealType
+import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.domain.repository.MealPlanRepository
+import com.rasoiai.domain.repository.NotificationRepository
 import com.rasoiai.domain.repository.RecipeRepository
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -35,6 +37,8 @@ class HomeViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var mockMealPlanRepository: MealPlanRepository
     private lateinit var mockRecipeRepository: RecipeRepository
+    private lateinit var mockNetworkMonitor: NetworkMonitor
+    private lateinit var mockNotificationRepository: NotificationRepository
 
     private fun createTestMealItem(
         id: String = "meal-item-1",
@@ -84,6 +88,10 @@ class HomeViewModelTest {
         Dispatchers.setMain(testDispatcher)
         mockMealPlanRepository = mockk(relaxed = true)
         mockRecipeRepository = mockk(relaxed = true)
+        mockNetworkMonitor = mockk(relaxed = true)
+        mockNotificationRepository = mockk(relaxed = true)
+        coEvery { mockNetworkMonitor.isOnline } returns flowOf(true)
+        coEvery { mockNotificationRepository.getUnreadCount() } returns flowOf(0)
     }
 
     @AfterEach
@@ -101,7 +109,7 @@ class HomeViewModelTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(null)
             coEvery { mockMealPlanRepository.generateMealPlan(any()) } returns Result.success(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 val initialState = awaitItem()
@@ -115,7 +123,7 @@ class HomeViewModelTest {
         fun `after loading meal plan isLoading should be false`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial loading state
@@ -134,7 +142,7 @@ class HomeViewModelTest {
         fun `meal plan data should be populated correctly`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -159,7 +167,7 @@ class HomeViewModelTest {
         fun `selectDate should update selected date`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -180,7 +188,7 @@ class HomeViewModelTest {
         fun `isToday should return true for today`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -202,7 +210,7 @@ class HomeViewModelTest {
         fun `onRecipeClick should show action sheet`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -225,7 +233,7 @@ class HomeViewModelTest {
         fun `dismissRecipeActionSheet should hide action sheet`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -255,7 +263,7 @@ class HomeViewModelTest {
         fun `toggleDayLock should toggle day lock state`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -281,7 +289,7 @@ class HomeViewModelTest {
         fun `toggleMealLock should toggle meal lock state`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -302,7 +310,7 @@ class HomeViewModelTest {
         fun `day lock should take precedence over meal lock`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -330,7 +338,7 @@ class HomeViewModelTest {
         fun `viewRecipe should emit navigation event`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             // Setup state
             testDispatcher.scheduler.advanceUntilIdle()
@@ -353,7 +361,7 @@ class HomeViewModelTest {
         fun `navigateToSettings should emit settings event`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             // Subscribe first, then call method
             viewModel.navigationEvent.test {
@@ -369,7 +377,7 @@ class HomeViewModelTest {
         fun `navigateToGrocery should emit grocery event`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             // Subscribe first, then call method
             viewModel.navigationEvent.test {
@@ -390,7 +398,7 @@ class HomeViewModelTest {
         fun `clearError should clear error message`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -408,7 +416,7 @@ class HomeViewModelTest {
         fun `network error during load should show error message`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } throws Exception("Network unavailable")
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial loading
@@ -428,7 +436,7 @@ class HomeViewModelTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
             coEvery { mockMealPlanRepository.swapMeal(any(), any(), any(), any(), any()) } returns Result.failure(Exception("Swap failed"))
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -455,7 +463,7 @@ class HomeViewModelTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
             coEvery { mockMealPlanRepository.generateMealPlan(any()) } returns Result.failure(Exception("Regenerate failed"))
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -478,7 +486,7 @@ class HomeViewModelTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
             coEvery { mockMealPlanRepository.generateMealPlan(any()) } returns Result.failure(Exception("Regenerate failed"))
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -501,7 +509,7 @@ class HomeViewModelTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
             coEvery { mockMealPlanRepository.setMealLockState(any(), any(), any(), any(), any()) } returns Result.failure(Exception("Lock failed"))
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -533,7 +541,7 @@ class HomeViewModelTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(null)
             coEvery { mockMealPlanRepository.generateMealPlan(any()) } returns Result.success(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial loading
@@ -554,7 +562,7 @@ class HomeViewModelTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(null)
             coEvery { mockMealPlanRepository.generateMealPlan(any()) } returns Result.success(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 val initialState = awaitItem()
@@ -576,7 +584,7 @@ class HomeViewModelTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(null)
             coEvery { mockMealPlanRepository.generateMealPlan(any()) } returns Result.failure(Exception("Network error"))
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial loading
@@ -594,7 +602,7 @@ class HomeViewModelTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(null)
             coEvery { mockMealPlanRepository.generateMealPlan(any()) } returns Result.failure(Exception("Generation failed"))
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -617,7 +625,7 @@ class HomeViewModelTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(null)
             coEvery { mockMealPlanRepository.generateMealPlan(any()) } returns Result.success(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -642,7 +650,7 @@ class HomeViewModelTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
             coEvery { mockRecipeRepository.searchRecipes(any(), any(), any(), any(), any(), any()) } returns Result.success(emptyList())
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -671,7 +679,7 @@ class HomeViewModelTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
             coEvery { mockRecipeRepository.searchRecipes(any(), any(), any(), any(), any(), any()) } returns Result.success(emptyList())
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -702,7 +710,7 @@ class HomeViewModelTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
             coEvery { mockMealPlanRepository.swapMeal(any(), any(), any(), any(), any()) } returns Result.success(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -735,7 +743,7 @@ class HomeViewModelTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
             coEvery { mockMealPlanRepository.removeRecipeFromMeal(any(), any(), any(), any()) } returns Result.success(Unit)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -760,7 +768,7 @@ class HomeViewModelTest {
         fun `removeRecipeFromMeal should show error when recipe is locked`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -784,7 +792,7 @@ class HomeViewModelTest {
         fun `removeRecipeFromMeal should show error when day is locked`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -812,7 +820,7 @@ class HomeViewModelTest {
         fun `removeRecipeFromMeal should show error when meal slot is locked`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -840,7 +848,7 @@ class HomeViewModelTest {
         fun `removeRecipeFromMealDirect should show error when locked`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -866,7 +874,7 @@ class HomeViewModelTest {
         fun `toggleRecipeLockDirect should show error when day is locked`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -891,7 +899,7 @@ class HomeViewModelTest {
         fun `toggleRecipeLockDirect should show error when meal is locked`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -917,7 +925,7 @@ class HomeViewModelTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
             coEvery { mockMealPlanRepository.setMealLockState(any(), any(), any(), any(), any()) } returns Result.success(Unit)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
             testDispatcher.scheduler.advanceUntilIdle()
 
             val mealItem = createTestMealItem(recipeId = "recipe-1", recipeName = "Poha", isLocked = false)
@@ -949,7 +957,7 @@ class HomeViewModelTest {
         fun `showRefreshOptions should show refresh sheet`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -969,7 +977,7 @@ class HomeViewModelTest {
         fun `dismissRefreshSheet should hide refresh sheet`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -993,7 +1001,7 @@ class HomeViewModelTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
             coEvery { mockMealPlanRepository.generateMealPlan(any()) } returns Result.success(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -1019,7 +1027,7 @@ class HomeViewModelTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
             coEvery { mockMealPlanRepository.generateMealPlan(any()) } returns Result.success(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -1072,7 +1080,7 @@ class HomeViewModelTest {
             )
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(multiDayMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
             testDispatcher.scheduler.advanceUntilIdle()
 
             // Lock breakfast on today
@@ -1121,7 +1129,7 @@ class HomeViewModelTest {
             )
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(multiDayMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
             testDispatcher.scheduler.advanceUntilIdle()
 
             // Lock today
@@ -1148,7 +1156,7 @@ class HomeViewModelTest {
         fun `multiple meal locks should work independently`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
             testDispatcher.scheduler.advanceUntilIdle()
 
             // Lock breakfast
@@ -1171,7 +1179,7 @@ class HomeViewModelTest {
         fun `unlocking day should not affect meal lock states`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
             testDispatcher.scheduler.advanceUntilIdle()
 
             // Lock meal first
@@ -1203,7 +1211,7 @@ class HomeViewModelTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(null)
             coEvery { mockMealPlanRepository.generateMealPlan(any()) } returns Result.failure(Exception("Failed"))
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -1226,7 +1234,7 @@ class HomeViewModelTest {
         fun `selectDate with date not in meal plan should set null selectedDayMeals`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -1254,7 +1262,7 @@ class HomeViewModelTest {
         fun `navigateToNotifications should emit notifications event`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.navigationEvent.test {
                 viewModel.navigateToNotifications()
@@ -1269,7 +1277,7 @@ class HomeViewModelTest {
         fun `navigateToChat should emit chat event`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.navigationEvent.test {
                 viewModel.navigateToChat()
@@ -1284,7 +1292,7 @@ class HomeViewModelTest {
         fun `navigateToFavorites should emit favorites event`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.navigationEvent.test {
                 viewModel.navigateToFavorites()
@@ -1299,7 +1307,7 @@ class HomeViewModelTest {
         fun `navigateToStats should emit stats event`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.navigationEvent.test {
                 viewModel.navigateToStats()
@@ -1314,7 +1322,7 @@ class HomeViewModelTest {
         fun `viewRecipe should include lock state in navigation event`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -1348,7 +1356,7 @@ class HomeViewModelTest {
             // error was shown despite meals appearing successfully
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial loading
@@ -1373,7 +1381,7 @@ class HomeViewModelTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(null)
             coEvery { mockMealPlanRepository.generateMealPlan(any()) } returns Result.success(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
             testDispatcher.scheduler.advanceUntilIdle()
 
             // Verify generateMealPlan was only called once
@@ -1387,7 +1395,7 @@ class HomeViewModelTest {
             val mealPlanFlow = kotlinx.coroutines.flow.MutableStateFlow<MealPlan?>(testMealPlan)
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns mealPlanFlow
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial loading
@@ -1417,7 +1425,7 @@ class HomeViewModelTest {
         fun `formattedDateRange should return correct format`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -1435,7 +1443,7 @@ class HomeViewModelTest {
         fun `formattedSelectedDay should return correct format`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -1454,7 +1462,7 @@ class HomeViewModelTest {
         fun `isRecipeEffectivelyLocked should consider all lock levels`() = runTest {
             coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
 
-            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository)
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial

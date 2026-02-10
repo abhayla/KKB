@@ -12,6 +12,9 @@ import androidx.compose.material.icons.outlined.Chat
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -80,10 +83,12 @@ val bottomNavItems = listOf(
  * Displays 5 tabs: Home, Grocery, Chat, Favorites, Stats
  * Uses Material 3 NavigationBar with custom colors.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RasoiBottomNavigation(
     currentScreen: Screen,
-    onItemClick: (Screen) -> Unit
+    onItemClick: (Screen) -> Unit,
+    notificationBadgeCount: Int = 0
 ) {
     NavigationBar(
         modifier = Modifier.testTag(TestTags.BOTTOM_NAV),
@@ -106,10 +111,30 @@ fun RasoiBottomNavigation(
                 selected = isSelected,
                 onClick = { onItemClick(item.screen) },
                 icon = {
-                    Icon(
-                        imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
-                        contentDescription = item.label
-                    )
+                    val showBadge = item.screen == Screen.Home && notificationBadgeCount > 0
+                    if (showBadge) {
+                        BadgedBox(
+                            badge = {
+                                Badge(
+                                    modifier = Modifier.testTag(TestTags.NOTIFICATION_BADGE)
+                                ) {
+                                    Text(
+                                        text = if (notificationBadgeCount > 99) "99+" else notificationBadgeCount.toString()
+                                    )
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
+                                contentDescription = item.label
+                            )
+                        }
+                    } else {
+                        Icon(
+                            imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
+                            contentDescription = item.label
+                        )
+                    }
                 },
                 label = {
                     Text(
