@@ -26,6 +26,9 @@ import com.rasoiai.app.presentation.settings.screens.DislikedIngredientsScreen
 import com.rasoiai.app.presentation.settings.screens.FamilyMembersScreen
 import com.rasoiai.app.presentation.settings.screens.NotificationSettingsScreen
 import com.rasoiai.app.presentation.settings.screens.SpiceLevelScreen
+import com.rasoiai.app.presentation.settings.screens.ConnectedAccountsScreen
+import com.rasoiai.app.presentation.settings.screens.EditProfileScreen
+import com.rasoiai.app.presentation.settings.screens.FriendsLeaderboardScreen
 import com.rasoiai.app.presentation.settings.screens.UnitsScreen
 import com.rasoiai.app.presentation.splash.SplashScreen
 import com.rasoiai.app.presentation.stats.StatsScreen
@@ -321,6 +324,15 @@ fun RasoiNavHost(
                 },
                 onNavigateToUnits = {
                     navController.navigate(Screen.UnitsSettings.route)
+                },
+                onNavigateToEditProfile = {
+                    navController.navigate(Screen.EditProfile.route)
+                },
+                onNavigateToFriendsLeaderboard = {
+                    navController.navigate(Screen.FriendsLeaderboard.route)
+                },
+                onNavigateToConnectedAccounts = {
+                    navController.navigate(Screen.ConnectedAccounts.route)
                 }
             )
         }
@@ -377,6 +389,24 @@ fun RasoiNavHost(
 
         composable(route = Screen.UnitsSettings.route) {
             UnitsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = Screen.EditProfile.route) {
+            EditProfileScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = Screen.FriendsLeaderboard.route) {
+            FriendsLeaderboardScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = Screen.ConnectedAccounts.route) {
+            ConnectedAccountsScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

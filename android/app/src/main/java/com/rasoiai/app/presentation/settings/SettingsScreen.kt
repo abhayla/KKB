@@ -68,6 +68,9 @@ fun SettingsScreen(
     onNavigateToFamilyMembers: () -> Unit = {},
     onNavigateToNotificationSettings: () -> Unit = {},
     onNavigateToUnits: () -> Unit = {},
+    onNavigateToEditProfile: () -> Unit = {},
+    onNavigateToFriendsLeaderboard: () -> Unit = {},
+    onNavigateToConnectedAccounts: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -137,12 +140,10 @@ fun SettingsScreen(
                 SettingsNavigationEvent.NavigateToNotifications -> onNavigateToNotificationSettings()
                 SettingsNavigationEvent.NavigateToUnits -> onNavigateToUnits()
 
-                // Sub-screens not yet implemented
-                is SettingsNavigationEvent.NavigateToEditProfile,
-                SettingsNavigationEvent.NavigateToFriendsLeaderboard,
-                SettingsNavigationEvent.NavigateToConnectedAccounts -> {
-                    snackbarHostState.showSnackbar("Coming soon!")
-                }
+                // Remaining sub-screens
+                is SettingsNavigationEvent.NavigateToEditProfile -> onNavigateToEditProfile()
+                SettingsNavigationEvent.NavigateToFriendsLeaderboard -> onNavigateToFriendsLeaderboard()
+                SettingsNavigationEvent.NavigateToConnectedAccounts -> onNavigateToConnectedAccounts()
             }
         }
     }

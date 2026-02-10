@@ -48,6 +48,9 @@ sealed class Screen(val route: String) {
     data object FamilyMembersSettings : Screen("settings/family-members")
     data object NotificationSettings : Screen("settings/notifications")
     data object UnitsSettings : Screen("settings/units")
+    data object EditProfile : Screen("settings/edit-profile")
+    data object FriendsLeaderboard : Screen("settings/friends-leaderboard")
+    data object ConnectedAccounts : Screen("settings/connected-accounts")
 
     companion object {
         val bottomNavScreens = listOf(Home, Grocery, Chat, Favorites, Stats)
