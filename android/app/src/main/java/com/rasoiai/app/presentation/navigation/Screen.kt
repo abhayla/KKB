@@ -10,7 +10,13 @@ sealed class Screen(val route: String) {
     data object Home : Screen("home")
     data object Grocery : Screen("grocery")
     data object Favorites : Screen("favorites")
-    data object Chat : Screen("chat")
+    data object Chat : Screen("chat?context={context}") {
+        fun createRoute(context: String? = null): String {
+            val encoded = context?.let { java.net.URLEncoder.encode(it, "UTF-8") } ?: ""
+            return "chat?context=$encoded"
+        }
+        const val ARG_CONTEXT = "context"
+    }
     data object Settings : Screen("settings")
     data object Notifications : Screen("notifications")
 

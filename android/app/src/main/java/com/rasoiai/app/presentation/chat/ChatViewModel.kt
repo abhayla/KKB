@@ -1,8 +1,10 @@
 package com.rasoiai.app.presentation.chat
 
 import android.net.Uri
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rasoiai.app.presentation.navigation.Screen
 import com.rasoiai.domain.model.ChatMessage
 import com.rasoiai.domain.model.MealType
 import com.rasoiai.domain.repository.ChatRepository
@@ -54,9 +56,13 @@ sealed class ChatNavigationEvent {
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val chatRepository: ChatRepository,
     private val mealPlanRepository: MealPlanRepository
 ) : ViewModel() {
+
+    private val initialContext: String? = savedStateHandle.get<String>(Screen.Chat.ARG_CONTEXT)
+        ?.takeIf { it.isNotBlank() }
 
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
@@ -67,6 +73,17 @@ class ChatViewModel @Inject constructor(
     init {
         loadMessages()
         loadQuickActions()
+        handleInitialContext()
+    }
+
+    private fun handleInitialContext() {
+        initialContext?.let { context ->
+            viewModelScope.launch {
+                // Wait for messages to load before sending context
+                _uiState.update { it.copy(inputText = context) }
+                sendMessage()
+            }
+        }
     }
 
     // region Data Loading

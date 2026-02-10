@@ -16,8 +16,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -36,10 +39,14 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import com.rasoiai.app.presentation.common.TestTags
@@ -86,15 +93,11 @@ fun RecipeDetailScreen(
         }
     }
 
-    // Stable no-op callback for unimplemented feature
-    val onMoreClick = remember { { /* TODO: Show more options */ } }
-
     RecipeDetailContent(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
         onBackClick = viewModel::navigateBack,
         onFavoriteClick = viewModel::toggleFavorite,
-        onMoreClick = onMoreClick,
         onTabSelect = viewModel::selectTab,
         onServingsChange = viewModel::updateServings,
         onIngredientChecked = viewModel::toggleIngredientChecked,
@@ -111,7 +114,6 @@ internal fun RecipeDetailContent(
     snackbarHostState: SnackbarHostState,
     onBackClick: () -> Unit,
     onFavoriteClick: () -> Unit,
-    onMoreClick: () -> Unit,
     onTabSelect: (Int) -> Unit,
     onServingsChange: (Int) -> Unit,
     onIngredientChecked: (String) -> Unit,
@@ -155,11 +157,48 @@ internal fun RecipeDetailContent(
                             }
                         )
                     }
-                    IconButton(onClick = onMoreClick) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = "More options"
-                        )
+                    Box {
+                        var showMenu by remember { mutableStateOf(false) }
+                        val context = LocalContext.current
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "More options"
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Share") },
+                                leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                                onClick = {
+                                    showMenu = false
+                                    uiState.recipe?.let { recipe ->
+                                        val shareText = buildString {
+                                            append("Check out ${recipe.name} on RasoiAI!")
+                                            append("\n${recipe.description}")
+                                            append("\nCuisine: ${recipe.cuisineType}")
+                                            append("\nTime: ${recipe.prepTimeMinutes + recipe.cookTimeMinutes} min")
+                                        }
+                                        val intent = Intent(Intent.ACTION_SEND).apply {
+                                            type = "text/plain"
+                                            putExtra(Intent.EXTRA_TEXT, shareText)
+                                        }
+                                        context.startActivity(Intent.createChooser(intent, "Share recipe"))
+                                    }
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Add to Collection") },
+                                onClick = { showMenu = false }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Report Issue") },
+                                onClick = { showMenu = false }
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

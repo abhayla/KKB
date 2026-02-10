@@ -104,7 +104,7 @@ fun RasoiNavHost(
                     navController.navigate(Screen.Grocery.route)
                 },
                 onNavigateToChat = {
-                    navController.navigate(Screen.Chat.route)
+                    navController.navigate(Screen.Chat.createRoute())
                 },
                 onNavigateToFavorites = {
                     navController.navigate(Screen.Favorites.route)
@@ -153,8 +153,7 @@ fun RasoiNavHost(
                     navController.navigate(Screen.CookingMode.createRoute(id))
                 },
                 onNavigateToChat = { context ->
-                    navController.navigate(Screen.Chat.route)
-                    // TODO: Pass context to chat screen
+                    navController.navigate(Screen.Chat.createRoute(context))
                 }
             )
         }
@@ -189,7 +188,7 @@ fun RasoiNavHost(
                     }
                 },
                 onNavigateToChat = {
-                    navController.navigate(Screen.Chat.route)
+                    navController.navigate(Screen.Chat.createRoute())
                 },
                 onNavigateToFavorites = {
                     navController.navigate(Screen.Favorites.route)
@@ -212,7 +211,7 @@ fun RasoiNavHost(
                     navController.navigate(Screen.Grocery.route)
                 },
                 onNavigateToChat = {
-                    navController.navigate(Screen.Chat.route)
+                    navController.navigate(Screen.Chat.createRoute())
                 },
                 onNavigateToStats = {
                     navController.navigate(Screen.Stats.route)
@@ -224,7 +223,16 @@ fun RasoiNavHost(
         }
 
         // Chat
-        composable(route = Screen.Chat.route) {
+        composable(
+            route = Screen.Chat.route,
+            arguments = listOf(
+                navArgument(Screen.Chat.ARG_CONTEXT) {
+                    type = NavType.StringType
+                    defaultValue = ""
+                    nullable = false
+                }
+            )
+        ) {
             ChatScreen(
                 onNavigateToHome = {
                     navController.navigate(Screen.Home.route) {
@@ -262,7 +270,7 @@ fun RasoiNavHost(
                     navController.navigate(Screen.Grocery.route)
                 },
                 onNavigateToChat = {
-                    navController.navigate(Screen.Chat.route)
+                    navController.navigate(Screen.Chat.createRoute())
                 },
                 onNavigateToFavorites = {
                     navController.navigate(Screen.Favorites.route)
@@ -285,7 +293,7 @@ fun RasoiNavHost(
                     navController.navigate(Screen.Grocery.route)
                 },
                 onNavigateToChat = {
-                    navController.navigate(Screen.Chat.route)
+                    navController.navigate(Screen.Chat.createRoute())
                 },
                 onNavigateToFavorites = {
                     navController.navigate(Screen.Favorites.route)

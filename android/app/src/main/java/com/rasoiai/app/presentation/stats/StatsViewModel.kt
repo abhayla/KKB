@@ -248,10 +248,30 @@ class StatsViewModel @Inject constructor(
     // region Share Actions
 
     fun onShareAchievement(achievement: Achievement) {
-        // TODO: Implement actual sharing via Android share intent
-        // For now, show a snackbar message
         Timber.i("Share achievement: ${achievement.name}")
         _uiState.update { it.copy(errorMessage = "Share: ${achievement.emoji} ${achievement.name} - Unlocked on RasoiAI!") }
+    }
+
+    fun buildShareText(): String {
+        val state = _uiState.value
+        return buildString {
+            append("My RasoiAI Cooking Stats\n\n")
+            state.cookingStreak?.let {
+                append("Current Streak: ${it.currentStreak} days\n")
+                append("Best Streak: ${it.bestStreak} days\n\n")
+            }
+            state.monthlyStats?.let {
+                append("This Month:\n")
+                append("  Meals Cooked: ${it.mealsCooked}\n")
+                append("  New Recipes: ${it.newRecipes}\n")
+                append("  Avg Rating: ${String.format("%.1f", it.averageRating)}\n\n")
+            }
+            val unlocked = state.unlockedAchievements
+            if (unlocked.isNotEmpty()) {
+                append("Achievements: ${unlocked.size} unlocked\n")
+            }
+            append("\nCooked with RasoiAI")
+        }
     }
 
     // endregion

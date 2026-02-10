@@ -1,5 +1,6 @@
 package com.rasoiai.app.presentation.stats
 
+import android.content.Intent
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -29,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import com.rasoiai.app.presentation.common.TestTags
@@ -88,10 +91,20 @@ fun StatsScreen(
         }
     }
 
+    val context = LocalContext.current
+
     StatsScreenContent(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
         onBackClick = viewModel::navigateBack,
+        onShareClick = {
+            val shareText = viewModel.buildShareText()
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, shareText)
+            }
+            context.startActivity(Intent.createChooser(intent, "Share stats"))
+        },
         onPreviousMonth = viewModel::onPreviousMonth,
         onNextMonth = viewModel::onNextMonth,
         onTodayClick = viewModel::onTodayClick,
@@ -118,6 +131,7 @@ internal fun StatsScreenContent(
     uiState: StatsUiState,
     snackbarHostState: SnackbarHostState,
     onBackClick: () -> Unit,
+    onShareClick: () -> Unit = {},
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
     onTodayClick: () -> Unit,
@@ -143,6 +157,14 @@ internal fun StatsScreenContent(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onShareClick) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Share stats"
                         )
                     }
                 },
