@@ -55,6 +55,7 @@ class MealItem:
     # Rich data for AI recipe catalog
     ingredients: Optional[list[dict]] = None
     nutrition: Optional[dict] = None
+    instructions: Optional[list[dict]] = None
 
 
 @dataclass
@@ -574,6 +575,7 @@ Generate the complete 7-day meal plan now:"""
                             calories=item.get("calories", 0),
                             ingredients=item.get("ingredients"),
                             nutrition=item.get("nutrition"),
+                            instructions=item.get("instructions"),
                         )
                     )
                 return items

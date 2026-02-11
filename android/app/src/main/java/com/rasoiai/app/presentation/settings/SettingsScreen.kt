@@ -71,6 +71,7 @@ fun SettingsScreen(
     onNavigateToEditProfile: () -> Unit = {},
     onNavigateToFriendsLeaderboard: () -> Unit = {},
     onNavigateToConnectedAccounts: () -> Unit = {},
+    onNavigateToPantry: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -144,6 +145,7 @@ fun SettingsScreen(
                 is SettingsNavigationEvent.NavigateToEditProfile -> onNavigateToEditProfile()
                 SettingsNavigationEvent.NavigateToFriendsLeaderboard -> onNavigateToFriendsLeaderboard()
                 SettingsNavigationEvent.NavigateToConnectedAccounts -> onNavigateToConnectedAccounts()
+                SettingsNavigationEvent.NavigateToPantry -> onNavigateToPantry()
             }
         }
     }
@@ -169,6 +171,7 @@ fun SettingsScreen(
         onCookingTimeClick = viewModel::onCookingTimeClick,
         onSpiceLevelClick = viewModel::onSpiceLevelClick,
         onRecipeRulesClick = viewModel::onRecipeRulesClick,
+        onPantryClick = viewModel::onPantryClick,
         // Meal generation settings
         onItemsPerMealClick = viewModel::onItemsPerMealClick,
         onStrictAllergenModeToggle = viewModel::onStrictAllergenModeToggle,
@@ -229,6 +232,7 @@ internal fun SettingsScreenContent(
     onCookingTimeClick: () -> Unit,
     onSpiceLevelClick: () -> Unit,
     onRecipeRulesClick: () -> Unit,
+    onPantryClick: () -> Unit,
     // Meal generation settings
     onItemsPerMealClick: () -> Unit,
     onStrictAllergenModeToggle: (Boolean) -> Unit,
@@ -351,6 +355,10 @@ internal fun SettingsScreenContent(
                                 SettingsItem(
                                     title = "Recipe Rules",
                                     onClick = onRecipeRulesClick
+                                ),
+                                SettingsItem(
+                                    title = "Pantry",
+                                    onClick = onPantryClick
                                 )
                             ),
                             modifier = Modifier.padding(horizontal = spacing.md)
@@ -562,6 +570,7 @@ private fun SettingsScreenPreview() {
                 onCookingTimeClick = {},
                 onSpiceLevelClick = {},
                 onRecipeRulesClick = {},
+                onPantryClick = {},
                 onItemsPerMealClick = {},
                 onStrictAllergenModeToggle = {},
                 onStrictDietaryModeToggle = {},

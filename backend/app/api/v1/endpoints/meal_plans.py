@@ -148,6 +148,30 @@ async def generate(
                 detail="Meal generation timed out. Please try again.",
             )
 
+        # Create real Recipe records for all AI-generated items
+        # This replaces "AI_GENERATED" recipe_ids with real UUIDs
+        try:
+            from app.db.postgres import async_session_maker
+            from app.services.recipe_creation_service import create_recipes_for_meal_plan
+
+            # Get user cuisine preference (reused below for catalog)
+            user_repo = UserRepository()
+            prefs_data = await user_repo.get_preferences(user_id)
+            cuisine_type = "north"
+            if prefs_data and prefs_data.get("cuisine_preferences"):
+                cuisine_type = prefs_data["cuisine_preferences"][0]
+            family_size = prefs_data.get("family_size", 4) if prefs_data else 4
+
+            async with async_session_maker() as recipe_db:
+                await create_recipes_for_meal_plan(
+                    db=recipe_db,
+                    generated_plan=generated_plan,
+                    cuisine_type=cuisine_type,
+                    family_size=family_size,
+                )
+        except Exception as e:
+            logger.warning(f"Failed to create recipe records: {e}")
+
         # Convert to repository format
         # Repository expects lists of items per meal type
         days = []
@@ -179,15 +203,7 @@ async def generate(
 
         # Catalog AI-generated recipes into the shared catalog
         try:
-            from app.db.postgres import async_session_maker
             from app.services.ai_recipe_catalog_service import catalog_recipes as catalog_recipes_fn
-
-            # Get user cuisine preference
-            user_repo = UserRepository()
-            prefs_data = await user_repo.get_preferences(user_id)
-            cuisine_type = "north"
-            if prefs_data and prefs_data.get("cuisine_preferences"):
-                cuisine_type = prefs_data["cuisine_preferences"][0]
 
             async with async_session_maker() as catalog_db:
                 await catalog_recipes_fn(

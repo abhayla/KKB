@@ -14,6 +14,7 @@ import com.rasoiai.data.remote.dto.SwapMealRequest
 import com.rasoiai.domain.model.MealPlan
 import com.rasoiai.domain.model.MealType
 import java.time.DayOfWeek
+import com.rasoiai.domain.repository.GroceryRepository
 import com.rasoiai.domain.repository.MealPlanRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -38,7 +39,8 @@ class MealPlanRepositoryImpl @Inject constructor(
     private val apiService: RasoiApiService,
     @LongTimeout private val longTimeoutApiService: RasoiApiService,
     private val mealPlanDao: MealPlanDao,
-    private val networkMonitor: NetworkMonitor
+    private val networkMonitor: NetworkMonitor,
+    private val groceryRepository: GroceryRepository
 ) : MealPlanRepository {
 
     private val dateFormatter = DateTimeFormatter.ISO_DATE
@@ -92,6 +94,14 @@ class MealPlanRepositoryImpl @Inject constructor(
             }
 
             mealPlanDao.replaceMealPlan(entity, items, festivals)
+
+            // Auto-generate grocery list from the new meal plan
+            try {
+                groceryRepository.generateFromMealPlan(entity.id)
+                Timber.i("Auto-generated grocery list for meal plan: ${entity.id}")
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to auto-generate grocery list, non-critical")
+            }
 
             // Verify items were saved correctly
             val savedItems = mealPlanDao.getMealPlanItemsSync(entity.id)
@@ -294,6 +304,7 @@ class MealPlanRepositoryImpl @Inject constructor(
 
             // Create new item
             val newItem = MealPlanItemEntity(
+                id = java.util.UUID.randomUUID().toString(),
                 mealPlanId = mealPlanId,
                 date = dateStr,
                 dayName = dayName,
@@ -372,6 +383,11 @@ class MealPlanRepositoryImpl @Inject constructor(
         return mealPlanDao.hasMealPlanForDate(dateStr)
     }
 
+    override suspend fun fetchCurrentMealPlan(): MealPlan? {
+        if (!networkMonitor.isOnline.first()) return null
+        return fetchAndCacheMealPlan(LocalDate.now())
+    }
+
     /**
      * Fetch meal plan from API and cache locally.
      */
@@ -383,6 +399,14 @@ class MealPlanRepositoryImpl @Inject constructor(
             val festivals = response.toFestivalEntities()
 
             mealPlanDao.replaceMealPlan(entity, items, festivals)
+
+            // Auto-generate grocery list from fetched meal plan
+            try {
+                groceryRepository.generateFromMealPlan(entity.id)
+                Timber.i("Auto-generated grocery list for fetched meal plan: ${entity.id}")
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to auto-generate grocery list on fetch, non-critical")
+            }
 
             entity.toDomain(items, festivals)
         } catch (e: retrofit2.HttpException) {

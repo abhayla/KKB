@@ -91,6 +91,7 @@ sealed class SettingsNavigationEvent {
     data object NavigateToCookingTime : SettingsNavigationEvent()
     data object NavigateToSpiceLevel : SettingsNavigationEvent()
     data object NavigateToRecipeRules : SettingsNavigationEvent()
+    data object NavigateToPantry : SettingsNavigationEvent()
     data object NavigateToNotifications : SettingsNavigationEvent()
     data object NavigateToUnits : SettingsNavigationEvent()
     data object NavigateToFriendsLeaderboard : SettingsNavigationEvent()
@@ -240,6 +241,10 @@ class SettingsViewModel @Inject constructor(
 
     fun onRecipeRulesClick() {
         _navigationEvent.trySend(SettingsNavigationEvent.NavigateToRecipeRules)
+    }
+
+    fun onPantryClick() {
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateToPantry)
     }
 
     fun onNotificationsClick() {

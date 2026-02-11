@@ -12,6 +12,7 @@ import com.rasoiai.data.remote.dto.MealPlanDayDto
 import com.rasoiai.data.remote.dto.MealsByTypeDto
 import com.rasoiai.data.remote.dto.MealItemDto
 import com.rasoiai.domain.model.MealType
+import com.rasoiai.domain.repository.GroceryRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -41,6 +42,7 @@ class MealPlanRepositoryImplTest {
     private lateinit var mockApiService: RasoiApiService
     private lateinit var mockMealPlanDao: MealPlanDao
     private lateinit var mockNetworkMonitor: NetworkMonitor
+    private lateinit var mockGroceryRepository: GroceryRepository
     private lateinit var repository: MealPlanRepositoryImpl
 
     private val testDate = LocalDate.of(2026, 1, 27)
@@ -57,6 +59,7 @@ class MealPlanRepositoryImplTest {
 
     private val testMealItems = listOf(
         MealPlanItemEntity(
+            id = "item-1",
             mealPlanId = "plan-1",
             date = "2026-01-27",
             dayName = "Monday",
@@ -71,6 +74,7 @@ class MealPlanRepositoryImplTest {
             order = 0
         ),
         MealPlanItemEntity(
+            id = "item-2",
             mealPlanId = "plan-1",
             date = "2026-01-27",
             dayName = "Monday",
@@ -135,11 +139,14 @@ class MealPlanRepositoryImplTest {
         mockApiService = mockk(relaxed = true)
         mockMealPlanDao = mockk(relaxed = true)
         mockNetworkMonitor = mockk(relaxed = true)
+        mockGroceryRepository = mockk(relaxed = true)
 
         repository = MealPlanRepositoryImpl(
             apiService = mockApiService,
+            longTimeoutApiService = mockApiService,
             mealPlanDao = mockMealPlanDao,
-            networkMonitor = mockNetworkMonitor
+            networkMonitor = mockNetworkMonitor,
+            groceryRepository = mockGroceryRepository
         )
     }
 
@@ -276,6 +283,21 @@ class MealPlanRepositoryImplTest {
             assertTrue(result.isSuccess)
             assertEquals("plan-1", result.getOrNull()?.id)
             coVerify { mockMealPlanDao.replaceMealPlan(any(), any(), any()) }
+        }
+
+        @Test
+        @DisplayName("Should trigger grocery generation after successful meal plan generation")
+        fun `should trigger grocery generation on success`() = runTest {
+            // Given
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.generateMealPlan(any()) } returns testMealPlanResponse
+
+            // When
+            val result = repository.generateMealPlan(testDate)
+
+            // Then
+            assertTrue(result.isSuccess)
+            coVerify { mockGroceryRepository.generateFromMealPlan("plan-1") }
         }
 
         @Test

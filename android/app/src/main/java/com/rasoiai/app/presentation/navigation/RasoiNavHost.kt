@@ -351,6 +351,9 @@ fun RasoiNavHost(
                 },
                 onNavigateToConnectedAccounts = {
                     navController.navigate(Screen.ConnectedAccounts.route)
+                },
+                onNavigateToPantry = {
+                    navController.navigate(Screen.Pantry.route)
                 }
             )
         }
