@@ -34,6 +34,28 @@ Analyze and implement a fix for GitHub issue: $ARGUMENTS
    - For Backend changes: `cd backend && PYTHONPATH=. pytest`
    - Run relevant UI tests if applicable
 
+6b. **Fix Loop (if tests fail)**
+
+   If any verification tests fail — **regardless of whether the failure is known or pre-existing** — read and follow the fix-loop process in `.claude/commands/fix-loop.md` in **Full Loop** mode:
+
+   ```
+   failure_output:         {raw test failure output from Step 6}
+   failure_context:        {description of the fix and what tests verify}
+   files_of_interest:      {files modified in Step 5}
+   build_command:          {build command if Android, null if backend-only}
+   retest_command:         {same verification command from Step 6}
+   retest_timeout:         300
+   max_iterations:         6
+   max_attempts_per_issue: 3
+   prohibited_actions:     ["@Ignore", "weaken assertions"]
+   fix_target:             "production"
+   log_dir:                ".claude/logs/fix-loop/"
+   ```
+
+   The fix-loop process will iterate until all tests pass or budget is exhausted.
+
+   **CRITICAL:** Do NOT proceed to Step 7 until the fix-loop process returns **RESOLVED**.
+
 7. **Create a Commit**
    - Stage only the relevant files
    - Commit with message: `Fix #$ARGUMENTS: <brief summary>`

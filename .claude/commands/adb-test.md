@@ -4,9 +4,20 @@ Test app screens via ADB (uiautomator dump, screencap, input tap) — fully auto
 
 **Target screen:** $ARGUMENTS
 
-If `$ARGUMENTS` is empty, test ALL 12 screens sequentially. If a screen name is provided (e.g., `home`, `grocery`), test only that screen.
+If `$ARGUMENTS` is empty, test ALL 12 screens sequentially. If a screen name is provided (e.g., `home`, `grocery`), test only that screen. If a flow name is provided (e.g., `new-user-journey`), test that user journey flow.
 
 **Valid screen names:** `auth-flow`, `home`, `grocery`, `chat`, `favorites`, `stats`, `settings`, `notifications`, `recipe-detail`, `cooking-mode`, `pantry`, `recipe-rules`
+
+**Valid flow names:** `new-user-journey`, `existing-user`, `recipe-interaction`, `chat-ai`, `grocery-management`, `offline-mode`, `edge-cases`, `dark-mode`, `pantry-rules-crud`, `stats-tracking`
+
+**Special arguments:** `all-flows` (run all 10 flows sequentially), `all-flows-from <name>` (run from specified flow onwards)
+
+**Argument detection:**
+1. If `$ARGUMENTS` matches a valid screen name → run existing screen test protocol (Sections E-F)
+2. If `$ARGUMENTS` matches a valid flow name → run flow execution protocol (Section G)
+3. If `$ARGUMENTS` is `all-flows` → run all 10 flows sequentially (flow01 → flow10)
+4. If `$ARGUMENTS` is `all-flows-from <name>` → run flows from the specified flow onwards
+5. If `$ARGUMENTS` is empty → run all 12 screen tests (existing behavior)
 
 ---
 
@@ -493,12 +504,14 @@ Then clear logcat: `$ADB logcat -c`
 Track: `logcat_captures += 1`
 
 If **PASS** → move to next screen.
-If **ISSUE_FOUND** → enter Fix Loop (Section F).
+If **ISSUE_FOUND** → enter Fix Loop (Section F). **NO EXCEPTIONS** — even for known or pre-existing issues. The fix-loop budget (3 attempts per issue, 12 total) is the ONLY exit condition.
 If **BLOCKED** → log as blocked, move to next screen.
 
 ---
 
 ## FIX LOOP (when ISSUE_FOUND)
+
+**MANDATORY — NO EXCEPTIONS.** Every ISSUE_FOUND enters this loop regardless of whether the issue is known, pre-existing, or seems architectural. The budget limits (3 attempts per issue, 12 total iterations per screen) are the ONLY valid exit conditions. Do NOT skip the fix-loop based on your own judgment about issue complexity.
 
 **Per-issue budgets: 3 attempts per issue, 12 max total iterations per screen.**
 
@@ -518,91 +531,40 @@ Per-issue thinking escalation:
 
 ### Fix Loop Steps
 
-**Step F1: Read Previous Iteration Logs**
+For each issue, for each attempt (up to 3 per issue, 12 total iterations per screen):
 
-Read all previous iteration logs for this screen from `$LOG_DIR/{session}/`. Understand:
-- What was tried before
-- What the root causes were
-- Why previous fixes didn't work
-- Which issues are resolved vs. still open
-
-**Step F2: Analyze Root Cause (Code vs. Definition Decision)**
+**Step F1: Pre-Fix Decision — Code vs. Definition**
 
 Before assuming a code bug, check if the test definition is outdated:
 1. Cross-reference the screenshot — does the element exist with different text?
 2. Search XML for partial/semantic matches of the expected value
 3. **Decision:**
-   - If partial match found (e.g., expected "Grocery List" but XML has "Grocery") → update `adb-test-definitions.md` instead of production code. Track: `definition_updates += 1`
-   - If no match at all → fix production code
+   - If partial match found (e.g., expected "Grocery List" but XML has "Grocery") → update `docs/testing/adb-test-definitions.md` instead of production code. Track: `definition_updates += 1`. Skip fix-loop for this issue.
+   - If no match at all → proceed to F2 (fix production code via agent)
 
-**If fixing production code**, identify the ROOT CAUSE, not symptoms:
-- Trace to a specific file and line number
-- Common root causes:
-  - Missing text/content-desc on Compose elements
-  - Navigation route misconfiguration
-  - ViewModel state not propagating to UI
-  - Missing data from repository/API
-  - Accessibility labels not set
-  - Layout issues (element off-screen or overlapped)
+**Step F2: Run fix-loop (Single Fix mode)**
 
-**Attempt 1 (Normal):**
-Read the failure, read the relevant source files, identify the root cause manually.
+Read and follow the fix-loop process in `.claude/commands/fix-loop.md` in **Single Fix** mode (no `retest_command`):
 
-**Attempt 2 (Thinkhard):**
-Launch the `debugger` agent (via Task tool) with:
-- All previous attempt logs (concatenated)
-- Current UI dump XML
-- Current screenshot path
-- Logcat capture from E6.5
-- Instruction: "Use extended thinking (thinkhard). Systematically enumerate ALL possible root causes. Consider: Compose layout, ViewModel state flow, Room data availability, backend API response, navigation graph, accessibility semantics. Return a ranked list of hypotheses with the most likely fix."
-Track: `debugger_invocations += 1`
-
-**Attempt 3 (Ultrathink):**
-Launch the `debugger` agent with:
-- Complete history of all fix attempts
-- Instruction: "Use maximum thinking depth (thinkUltrahard). Re-examine every assumption. Consider architectural issues, cross-module interactions, non-obvious failure modes. Explore unconventional fixes."
-Track: `debugger_invocations += 1`
-
-**Step F3: Apply Fix**
-
-Make the minimum code change to fix the root cause. Fix production code (`.kt`, `.py`) not test infrastructure. If the issue was a definition mismatch (F2 decision), update `docs/testing/adb-test-definitions.md` instead.
-
-**Step F4: Code Review Gate**
-
-Launch the `code-reviewer` agent (via Task tool) with:
-- The diff of changes (`git diff`)
-- The issue that was found and the fix applied
-- Instruction: "Review this fix for: regressions to other screens, weakened UI elements, removed accessibility labels, security issues (OWASP Top 10), hardcoded values. Categorize as Critical / High / Medium / Low. Return: APPROVED or FLAGGED."
-
-- **If Critical issue found**: revert the fix (`git checkout -- <files>`), re-attempt from F2
-- **If High/Medium/Low issues**: log them in `review_issues[]` but proceed
-- **If APPROVED**: proceed
-
-Track: `code_reviews += 1`, `code_reviews_approved += 1` or `code_reviews_flagged += 1`
-
-**Step F5: Rebuild & Reinstall (with retry loop)**
-
-**If Android code changed:**
-```bash
-cd D:/Abhay/VibeCoding/KKB/android && ./gradlew assembleDebug
-$ADB install -r D:/Abhay/VibeCoding/KKB/android/app/build/outputs/apk/debug/app-debug.apk
+```
+failure_output:             {issue description + XML evidence + screenshot path + logcat}
+failure_context:            "ADB test: screen={screen_name}, issue={issue_id} ({severity})"
+files_of_interest:          {relevant source files for this screen}
+build_command:              "./gradlew assembleDebug"  (or null if backend-only)
+install_command:            "$ADB install -r android/app/build/outputs/apk/debug/app-debug.apk"  (if Android)
+attempt_number:             {current attempt for this issue}
+previous_attempts_summary:  {summary of prior attempts from iteration logs}
+prohibited_actions:         ["Delete UI elements", "Weaken checklist", "Skip testing", "Mark PASS with issues", "Fix-later issues"]
+fix_target:                 "production"
+log_dir:                    ".claude/logs/adb-test/"
+session_id:                 {current session id}
 ```
 
-**Build retry loop (max 3 attempts within F5):**
-1. If build fails → analyze compilation error, apply minimal fix, retry build
-2. If 3 build failures → revert fix (`git checkout -- {files}`), mark issue as FAILED_BUILD, proceed to F8
-3. Track: `build_failures += 1` per failure, `build_reverts += 1` if reverted
+Collect fix-loop output:
+- If `fix_applied`: append to `all_fixes[]`, accumulate metrics
+- If `revert_applied` or `fix_applied == false`: log, proceed to F5
 
-**If only backend code changed:**
-Kill existing uvicorn and restart:
-```bash
-# Find and kill uvicorn
-kill $(ps aux | grep uvicorn | grep -v grep | awk '{print $2}') 2>/dev/null
-cd D:/Abhay/VibeCoding/KKB/backend && source venv/bin/activate && uvicorn app.main:app --reload &
-```
-Poll health check every 3s for 15s before proceeding.
-
-**Step F6: Relaunch App & Navigate**
+**Step F3: Relaunch App & Navigate** (caller responsibility — ADB-specific)
 
 ```bash
 $ADB shell am force-stop $APP_PACKAGE
@@ -611,25 +573,17 @@ $ADB shell am start -n $APP_PACKAGE/$APP_ACTIVITY
 
 Wait for Home screen to load, then navigate back to the screen under test.
 
-**Step F7: Retest**
+**Step F4: Retest** (caller responsibility — ADB-specific)
 
 Repeat the full screen testing protocol (E1-E6.5) for this screen.
 
-**Step F8: Per-Issue Increment**
+**Step F5: Per-Issue Increment**
 
-- If current issue RESOLVED and other issues remain → move to next OPEN issue (reset attempt counter for new issue)
+- If current issue RESOLVED and other issues remain → move to next OPEN issue (reset attempt counter)
 - If current issue exhausted (3 attempts) → mark as UNRESOLVED, move to next OPEN issue
 - If ALL issues resolved → exit fix loop with PASS, move to next screen
 - If screen total iterations >= 12 → exit fix loop, classify remaining issues
-- New status: **PARTIAL** — some issues resolved, some not (logged as UNRESOLVED with partial fix list)
-
-### NEVER Do These During Fix Loop
-
-- Delete or hide UI elements to make issues disappear
-- Weaken the element checklist or interaction expectations
-- Skip interactive testing after a fix
-- Mark a screen as PASS when issues remain
-- Create "fix later" GitHub issues to bypass failures
+- New status: **PARTIAL** — some issues resolved, some not
 
 ---
 
@@ -728,60 +682,43 @@ Written after a screen completes (PASS, BLOCKED, or UNRESOLVED). Contains:
 
 ## AGENT INTEGRATION
 
-| Agent | Trigger | Purpose |
-|-------|---------|---------|
-| `debugger` | Fix attempt 2+ (thinkhard at 2, ultrathink at 3) | Deep root cause analysis with UI dump + screenshots + logcat + full history |
-| `code-reviewer` | After every fix (Step F4) | Quality gate — catch regressions, removed elements, security issues |
-| `tester` | Post-run (Step B, if fixes > 0) | Run backend + Android test suites as commit gate |
-| `docs-manager` | Post-run (Step A, if fixes > 0) | Update CONTINUE_PROMPT.md, test docs |
-| `git-manager` | Post-run (Step C, after tests pass) | Commit all changes with conventional format |
+| Command/Agent | Trigger | Purpose |
+|---------------|---------|---------|
+| `fix-loop` command | Step F2, for each issue (Single Fix mode) | Analyze root cause, apply fix, code review gate, rebuild |
+| `post-fix-pipeline` command | Post-run, if any fixes were applied | Test suite verification + documentation + git commit |
 
-### How Agents Are Launched
+### How Commands Are Invoked
 
-All agents are launched via the **Task tool** with `subagent_type` matching the agent name. Include in the prompt:
-- The agent's name and role context
-- All relevant inputs (error output, UI dumps, screenshots, diffs)
-- A clear instruction of what to return
+- **fix-loop**: Followed per-issue in Single Fix mode (no `retest_command`). Caller handles ADB relaunch/navigate/retest.
+- **post-fix-pipeline**: Followed once after all screens complete (if fixes were applied).
 
-### Post-Run Agent Pipeline
+### Post-Run Pipeline
 
 After all screens complete (or the single requested screen), check if any fixes were applied.
 
-**If `len(all_fixes) == 0`**: skip agents — no changes to commit.
+**If `len(all_fixes) == 0`**: skip — no changes to commit.
 
-**If `len(all_fixes) > 0`**: run sequentially:
+**If `len(all_fixes) > 0`**: read and follow the post-fix-pipeline process in `.claude/commands/post-fix-pipeline.md`:
 
-**Step A: docs-manager agent**
-- List of all fixes applied
-- Instructions: Update `docs/CONTINUE_PROMPT.md` with session summary
-
-**Step B: Test Suite Verification** (after Step A)
-
-Run test suites to verify fixes don't break existing tests:
-
-**B1. Backend tests:**
-```bash
-cd D:/Abhay/VibeCoding/KKB/backend && PYTHONPATH=. pytest --tb=short -q
 ```
-Record: pass count, fail count, test names that failed.
-
-**B2. Android unit tests:**
-```bash
-cd D:/Abhay/VibeCoding/KKB/android && ./gradlew test --console=plain
+fixes_applied:            {all_fixes from tracking}
+files_changed:            {all modified file paths}
+session_summary:          "ADB test run: {N} fixes across {screens}"
+regression_commands:      []   (ADB regression R1-R4 runs inline, not delegated)
+test_suite_commands:      [
+  { name: "backend", command: "cd backend && PYTHONPATH=. pytest --tb=short -q", timeout: 300 },
+  { name: "android-unit", command: "cd android && ./gradlew test --console=plain", timeout: 600 }
+]
+test_suite_max_fix_attempts: 2
+docs_instructions:        "Update docs/CONTINUE_PROMPT.md with session summary"
+commit_format:            "fix(adb-test): {summary}"
+commit_scope:             "adb-test"
+push:                     false
 ```
-Record: pass count, fail count, test names that failed.
 
-**B3. Gate Decision:**
-- ALL tests pass → `test_suite_gate = "PASSED"` → proceed to Step C
-- Any tests fail → launch `tester` agent with failure details and diff of changes, instruction: "Analyze these test failures against the recent ADB-test fixes. Attempt to fix the failing tests (max 2 auto-fix attempts). Return fixed/still-failing status."
-  - If auto-fix succeeds → `test_suite_gate = "PASSED_AFTER_FIX"` → proceed to Step C
-  - If still failing after 2 attempts → `test_suite_gate = "FAILED"` → **DO NOT COMMIT**, report warning in final report
-
-Track: `backend_tests_passed`, `backend_tests_failed`, `android_tests_passed`, `android_tests_failed`
-
-**Step C: git-manager agent** (after Step B, only if `test_suite_gate != "FAILED"`)
-- Instructions: Stage fix files + doc files + definition updates, create conventional commit: `fix(adb-test): [summary]`
-- Do NOT push unless user explicitly requested
+Collect pipeline output for the final report:
+- `test_suite_gate` from pipeline's test suite verification status
+- Commit hash and message from pipeline's git commit result
 
 ---
 
@@ -801,39 +738,38 @@ per_screen_issues = {}   // screen_name → [ { id, severity, description, statu
 
 // Fix tracking
 total_fixes = 0
-all_fixes = []           // { file, line, description } for each fix
+all_fixes = []           // { file, line, description } collected from fix-loop outputs
 total_iterations = 0
 definition_updates = 0   // times adb-test-definitions.md was updated instead of production code
 
-// Agent tracking
-debugger_invocations = 0
-code_reviews = 0
-code_reviews_approved = 0
-code_reviews_flagged = 0
-review_issues = []       // logged High/Medium/Low issues from code-reviewer
+// Fix-loop tracking (accumulated from fix-loop outputs)
+fix_loop_metrics = {
+  debugger_invocations: 0,
+  code_reviews: 0,
+  code_reviews_approved: 0,
+  code_reviews_flagged: 0,
+  review_issues: [],
+  build_failures: 0,
+  reverts: 0
+}
 
 // Backend health tracking
 backend_health_checks = 0
 backend_restarts = 0
 
-// Build tracking
-build_failures = 0
-build_reverts = 0
-
 // Logcat tracking
 logcat_captures = 0
 
-// Regression testing
+// Regression testing (inline R1-R4)
 regression_screens_tested = 0
 regression_passes = 0
 regressions_found = 0
 
-// Test suite verification
-backend_tests_passed = 0
-backend_tests_failed = 0
-android_tests_passed = 0
-android_tests_failed = 0
-test_suite_gate = "NOT_RUN"  // NOT_RUN | PASSED | PASSED_AFTER_FIX | FAILED
+// Post-fix pipeline results (from post-fix-pipeline command)
+pipeline_status = "NOT_RUN"       // NOT_RUN | COMPLETED | BLOCKED_BY_TEST_SUITE | NO_FIXES
+test_suite_gate = "NOT_RUN"       // NOT_RUN | PASSED | PASSED_AFTER_FIX | FAILED
+commit_hash = ""
+commit_message = ""
 
 // Timing
 start_time = now()
@@ -894,30 +830,26 @@ Regression Testing (if fixes were applied):
   - Regressed screens: [list with suspected fix cause]
   (If no fixes applied, show "Skipped — no fixes to verify")
 
-Test Suite Verification (if fixes were applied):
-  - Backend: X passed, Y failed
-  - Android: X passed, Y failed
-  - Gate: PASSED / PASSED_AFTER_FIX / FAILED
+Test Suite Verification (from post-fix-pipeline):
+  - Gate: PASSED / PASSED_AFTER_FIX / FAILED / NOT_RUN
+  - Details: [per-suite pass/fail from pipeline output]
   (If FAILED, list failing test names)
-
-Build Issues (if any):
-  - Build failures: X
-  - Build reverts: X
-  (If none, omit this section.)
 
 Logcat Captures:
   - Total captures: X
   - Files: $LOG_DIR/{session}/logcat_*.txt
   (If 0, omit this section.)
 
-Agent Activity:
-  - Debugger invocations: X
+Agent Activity (from fix-loop + post-fix-pipeline):
+  - Fix-loop invocations: X
+  - Debugger invocations: X (from fix_loop_metrics)
   - Code reviews: X (Y approved, Z flagged)
-  - Docs updated: [list of files, or "none — no fixes applied"]
-  - Commit: [hash] — [message] (or "none — no fixes applied" or "BLOCKED — test suite gate failed")
+  - Pipeline status: COMPLETED | BLOCKED_BY_TEST_SUITE | NOT_RUN
+  - Docs updated: [list from pipeline, or "none — no fixes applied"]
+  - Commit: [hash] — [message] (or "none" or "BLOCKED — test suite gate failed")
 
 Review Issues (if any):
-  - [severity] [file:line] — {description from code-reviewer}
+  - [severity] [file:line] — {description from fix-loop code review}
 
 Session logs: .claude/logs/adb-test/{session}/
 Duration: X minutes Y seconds
@@ -943,3 +875,149 @@ If only a single screen was requested, show just that screen's result.
 | `cooking-mode` | 10 | Recipe detail | No | Step navigation, complete |
 | `pantry` | 11 | Settings link | Room | Add item (or empty) |
 | `recipe-rules` | 12 | Settings link | Yes | Tabs, add rule, delete |
+
+---
+
+## SECTION G: FLOW EXECUTION PROTOCOL
+
+When `$ARGUMENTS` matches a flow name, execute the corresponding flow definition file instead of the per-screen protocol.
+
+### G1. Load Flow Definition
+
+```bash
+# Flow definition files
+FLOW_DIR=docs/testing/flows
+```
+
+| Flow Name | File |
+|-----------|------|
+| `new-user-journey` | `flow01-new-user-journey.md` |
+| `existing-user` | `flow02-existing-user.md` |
+| `recipe-interaction` | `flow03-recipe-interaction.md` |
+| `chat-ai` | `flow04-chat-ai.md` |
+| `grocery-management` | `flow05-grocery-management.md` |
+| `offline-mode` | `flow06-offline-mode.md` |
+| `edge-cases` | `flow07-edge-cases.md` |
+| `dark-mode` | `flow08-dark-mode.md` |
+| `pantry-rules-crud` | `flow09-pantry-rules-crud.md` |
+| `stats-tracking` | `flow10-stats-tracking.md` |
+
+Read the flow definition file: `$FLOW_DIR/{flow-file}.md`
+
+### G2. Check Flow Prerequisites
+
+Each flow file has a **Prerequisites** section. Verify:
+1. Standard D1-D7 prerequisites (same as screen tests)
+2. Flow-specific prerequisites (e.g., Flow 2 requires Flow 1 state — do NOT clean test data)
+3. **Depends On:** If the flow depends on another flow, verify that flow's state exists
+
+**Special prerequisite handling:**
+- If flow says "Do NOT run cleanup_user.py" → skip D4
+- If flow says "needs existing user" → skip D4 and D6 auto-onboarding
+
+### G3. Execute Steps
+
+Follow the flow's **Steps** section sequentially. Each step uses the same 13 ADB patterns from above.
+
+**Per-step execution:**
+1. Read the step's **Action** column
+2. Execute using appropriate ADB pattern (tap, type, scroll, wait, etc.)
+3. Dump UI and verify the **Expected** column
+4. If **Screenshot** column has a filename → capture: `$ADB exec-out screencap -p > $SCREENSHOT_DIR/{filename}`
+5. If **Validation** column specifies a check → run it (see G4)
+6. Run crash/ANR detection (Pattern 9) after each major navigation
+
+**Between phases:** Log phase completion:
+```
+✅ Phase {X} Complete: {N}/{total} steps passed
+```
+
+### G4. Run Validation
+
+When a step's Validation column says "V4a-V4k", run the validation script:
+
+```bash
+cd D:/Abhay/VibeCoding/KKB
+python scripts/validate_meal_plan.py \
+  --jwt "$JWT" \
+  {args from flow's Validation Checkpoints section}
+```
+
+**JWT acquisition:**
+```bash
+JWT=$(curl -s -X POST http://localhost:8000/api/v1/auth/firebase \
+  -H 'Content-Type: application/json' \
+  -d '{"firebase_token":"fake-firebase-token"}' | \
+  python -c 'import sys,json;print(json.load(sys.stdin).get("access_token",""))')
+```
+
+**Validation result handling:**
+- Exit code 0 → all checks pass, continue
+- Exit code 1 → HARD failure → log as flow issue, continue (do NOT stop flow)
+- Exit code 2 → SOFT warnings only → log as warnings, continue
+
+### G5. Per-Step Issue Detection
+
+If a step fails (expected not met, crash detected, element not found):
+
+1. **Same fix-loop integration as screen tests (MANDATORY — no exceptions, even for known issues)** — follow fix-loop process with:
+   - `failure_context: "ADB flow test: flow={flow_name}, step={step_id}"`
+   - `files_of_interest:` from the flow's **Fix Strategy** section
+2. **Max 3 attempts per step** (same as per-issue budget in screen tests)
+3. After fix, re-execute the failed step (not the entire flow)
+4. If step still fails after 3 attempts → mark as UNRESOLVED, continue to next step
+
+### G6. Flow Report
+
+After flow completes, produce a flow-level report:
+
+```
+====================================================================
+  ADB FLOW TEST REPORT: {flow-name}
+====================================================================
+Phase A: {name}          -> {N}/{total} steps PASS
+Phase B: {name}          -> {N}/{total} steps PASS
+...
+--------------------------------------------------------------------
+Validation Checkpoints:
+  Checkpoint 1: {V4a-V4k results summary}
+  Checkpoint 2: {V4a-V4k results summary}
+--------------------------------------------------------------------
+Contradictions Tested:
+  C{N}: {description} -> {PASS/FAIL/WARNING}
+--------------------------------------------------------------------
+TOTAL: {passed}/{total} steps | {fixes} fixes | {screenshots} screenshots
+Duration: X minutes Y seconds
+Session logs: .claude/logs/adb-test/{session}/
+====================================================================
+```
+
+### G7. All-Flows Mode
+
+When `$ARGUMENTS` is `all-flows`:
+1. Run flows in order: flow01 → flow10
+2. Do NOT run `cleanup_user.py` between flows (flows build on each other's state)
+3. Only run D4 cleanup before flow01
+4. Produce a combined report at the end
+
+When `$ARGUMENTS` is `all-flows-from <name>`:
+1. Find the flow number for `<name>` (e.g., `chat-ai` = flow04)
+2. Run flows from that number onwards (flow04 → flow10)
+3. Assume prior flows' state already exists
+
+---
+
+## FLOW QUICK REFERENCE
+
+| # | Flow | Screens | Contradictions | Duration | Key Feature |
+|---|------|---------|----------------|----------|-------------|
+| 1 | `new-user-journey` | 13 | C1-C5 | 15-25 min | Full onboarding + 2 meal plans |
+| 2 | `existing-user` | 4 | — | 8-12 min | Persistence + plan #3 |
+| 3 | `recipe-interaction` | 4 | — | 5-8 min | Favorite, cook, unfavorite |
+| 4 | `chat-ai` | 3 | C6-C12 | 8-15 min | Chat + tool calling |
+| 5 | `grocery-management` | 2 | C13 | 4-6 min | Categories, checkboxes, share |
+| 6 | `offline-mode` | 5 | C14-C15 | 6-10 min | WiFi off, Room cache |
+| 7 | `edge-cases` | 10 | C16-C21 | 5-8 min | Rapid nav, back stack |
+| 8 | `dark-mode` | 6 | — | 4-6 min | Theme toggle + visual |
+| 9 | `pantry-rules-crud` | 3 | C22-C27 | 8-12 min | CRUD + duplicate prevention |
+| 10 | `stats-tracking` | 1 | — | 3-5 min | Streak, chart, tabs |

@@ -793,7 +793,7 @@ The `.claude/` directory contains Claude Code customization:
 
 ```
 .claude/
-├── agents/           # 7 agent definitions
+├── agents/           # 7 agent definitions (read-only / non-code-editing)
 │   ├── code-reviewer.md
 │   ├── database-admin.md
 │   ├── debugger.md
@@ -802,9 +802,11 @@ The `.claude/` directory contains Claude Code customization:
 │   ├── planner-researcher.md
 │   └── tester.md
 ├── commands/         # Slash commands (user-invocable skills)
-│   ├── adb-test.md       # /adb-test [screen] — manual E2E via ADB (uiautomator, screencap)
+│   ├── adb-test.md       # /adb-test [screen|flow] — manual E2E via ADB (12 screens + 10 flows)
 │   ├── fix-issue.md      # /fix-issue <number> — implement fix for GitHub Issue
+│   ├── fix-loop.md       # /fix-loop — iterative fix cycle (analyze → fix → review → build → retest)
 │   ├── implement.md      # /implement — implement feature with workflow
+│   ├── post-fix-pipeline.md  # /post-fix-pipeline — post-fix verification (regression → test suite → docs → commit)
 │   └── run-e2e.md        # /run-e2e — run Android E2E tests by feature group
 ├── hooks/            # Workflow enforcement hooks
 │   ├── validate-workflow-step.sh
@@ -835,4 +837,6 @@ The `.claude/` directory contains Claude Code customization:
 | Functional Requirements | `docs/testing/Functional-Requirements.md` |
 | Recipe Rule Test Plan | `docs/testing/Recipe-Rule-Test-Plan.md` |
 | ADB Test Definitions | `docs/testing/adb-test-definitions.md` |
+| ADB Flow Definitions | `docs/testing/flows/` (10 flow files) |
+| Meal Plan Validator | `scripts/validate_meal_plan.py` |
 | Session Context | `docs/CONTINUE_PROMPT.md` |

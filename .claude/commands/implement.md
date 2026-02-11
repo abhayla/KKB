@@ -120,20 +120,36 @@ PYTHONPATH=. pytest tests/test_[feature].py -v
 
 ---
 
-### STEP 5: Fix Loop
+### STEP 5: Fix Loop (via fix-loop command)
 
-IF tests fail:
-1. Analyze failure output
-2. Fix the code
-3. Re-run tests
-4. Repeat until ALL tests pass
+IF any tests fail — **regardless of whether the failure is known or pre-existing** — read and follow the fix-loop process in `.claude/commands/fix-loop.md` in **Full Loop** mode with these parameters:
 
-**CRITICAL:** Do NOT proceed to Step 6 until ALL tests pass.
+```
+failure_output:         {raw test failure output from Step 4}
+failure_context:        {what was tested and what was expected}
+files_of_interest:      {files modified in Step 3}
+build_command:          {same build command used in Step 4, if applicable}
+retest_command:         {same test command used in Step 4}
+retest_timeout:         300
+max_iterations:         10
+max_attempts_per_issue: 3
+prohibited_actions:     ["@Ignore", "weaken assertions", "delete tests", "fix-later issues"]
+fix_target:             "either"
+log_dir:                ".claude/logs/fix-loop/"
+```
+
+The fix-loop process will iterate until all tests pass or budget is exhausted.
+
+**CRITICAL:** Do NOT proceed to Step 6 until the fix-loop process returns status **RESOLVED** (all tests passing).
+
+If it returns UNRESOLVED or MAX_ITERATIONS_EXCEEDED, report the failure and STOP.
 
 **Output Required:**
 ```
 ✅ Step 5 Complete:
+- Fix-loop status: RESOLVED
 - Iterations: X
+- Issues fixed: X
 - Final result: ALL TESTS PASSING (X/X)
 ```
 

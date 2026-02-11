@@ -239,92 +239,48 @@ Use a 10-minute timeout for groups with AI calls (meal-generation, home, chat, r
     **Skip the rest of this group** and move to the next group. Do NOT stop execution.
 - Else:
 
-  #### 4a. Diagnose the failure
+  #### 4a. Run fix-loop
 
-  **If `fail_counts[current_class] == 1` (first failure)** — lightweight manual analysis:
-    1. **Read the failure output** — identify exception/assertion message
-    2. **Read the failing test code** — understand what the test expects
-    3. **Read the production code** — understand what the code actually does
-    4. **Identify the ROOT CAUSE** — not symptoms. Common root causes:
-       - Missing Hilt bindings or module registrations
-       - Null safety issues (uninitialized lateinit, null returns)
-       - Race conditions (UI not settled before assertion)
-       - Missing test tags in Composables
-       - API contract changes (backend response format changed)
-       - Room schema mismatches
+  Read and follow the fix-loop process in `.claude/commands/fix-loop.md` in **Full Loop** mode with `max_iterations: 1`. **NO EXCEPTIONS** — invoke for all failures including known or pre-existing issues:
 
-  **If `fail_counts[current_class] >= 2 and < 4` (2nd-3rd failure)** — escalate to `debugger` agent:
-    - Launch the `debugger` agent (via Task tool, subagent_type `general-purpose` using the debugger agent prompt) with:
-      - The test class name and full failure output
-      - Description of the previous fix attempt(s) and why they didn't work
-      - Instruction: "Perform deep root cause analysis. Correlate the error with test code, production code, Hilt modules, Room schemas, and any system-level behavior. Return a diagnosis and a specific recommended fix with file paths and code changes."
-    - Use the debugger's diagnosis to guide the fix
-    - Track: `debugger_invocations += 1`, append test class name to `debugger_tests[]`
+  ```
+  failure_output:         {raw Gradle test failure output}
+  failure_context:        "E2E test {current_class} failed in group {group_name}"
+  files_of_interest:      {test class file + related production files}
+  build_command:          "cd android && ./gradlew assembleDebug assembleDebugAndroidTest"
+  retest_command:         "cd android && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class={current_class}"
+  retest_timeout:         {600 for AI groups (meal-generation, home, chat, recipe-rules, cross-cutting, full-journey), 300 for others}
+  max_iterations:         1
+  max_attempts_per_issue: 1
+  prohibited_actions:     ["@Ignore", "delete test", "weaken assertion", "Thread.sleep()", "skip group", "fix-later issue"]
+  fix_target:             "either"
+  force_thinking_level:   {computed from fail_counts: 1→"normal", 2-3→"thinkhard", 4-5→"thinkhard", 6+→"ultrathink"}
+  log_dir:                ".claude/logs/fix-loop/"
+  ```
 
-  **If `fail_counts[current_class] >= 4 and < 6` (4th-5th failure)** — `thinkhard` escalation:
-    - Launch the `debugger` agent with all previous context PLUS:
-      - All previous fix attempts and their failure reasons
-      - Instruction: "Use extended thinking (thinkhard). Systematically enumerate ALL possible root causes before proposing a fix. Consider: thread timing, async race conditions, state leaks between tests, emulator-specific quirks, Hilt graph issues, and implicit dependencies. Return a ranked list of hypotheses with the most likely fix."
-    - Track: `debugger_invocations += 1`
+  Collect fix-loop output:
+  - Append fixes to `all_fixes[]`
+  - Accumulate metrics into agent tracking variables
 
-  **If `fail_counts[current_class] >= 6` (6th+ failure)** — `thinkUltrahard` escalation:
-    - Launch the `debugger` agent with all previous context PLUS:
-      - Complete history of all fix attempts and failure reasons
-      - Instruction: "Use maximum thinking depth (thinkUltrahard). Re-examine every assumption from scratch. Consider architectural issues, cross-module interactions, non-obvious failure modes, and whether the test itself has a fundamental design flaw. Explore unconventional fixes. Return a comprehensive analysis with the recommended fix."
-    - Track: `debugger_invocations += 1`
+  #### 4b. Restart group
 
-  #### 4b. Apply the fix
-
-    5. **Fix the production code** (or the test if the test itself is wrong)
-
-  #### 4c. Code review gate (after every fix)
-
-    6. **Launch the `code-reviewer` agent** (via Task tool) with:
-       - The diff of changes made (output of `git diff`)
-       - The test that failed and the failure reason
-       - Instruction: "Review this fix for: weakened assertions, `@Ignore` additions, regressions to other tests, security issues (OWASP Top 10), and `Thread.sleep()` usage. Categorize any issues as Critical / High / Medium / Low. Return a verdict: APPROVED or FLAGGED with details."
-    - **If code-reviewer returns Critical issue**: revert the fix (`git checkout -- <files>`), log the issue, and re-attempt the fix from Step 4a
-    - **If code-reviewer returns High/Medium/Low issues**: log them in `review_issues[]` but proceed
-    - **If code-reviewer approves**: proceed
-    - Track: `code_reviews += 1`, `code_reviews_approved += 1` or `code_reviews_flagged += 1`
-
-  #### 4d. Restart group
-
-    7. **Reset `test_index = 0`** (restart group from first test)
-    8. Go to **Step 2**
-
-### NEVER Do These During Fix Loop:
-
-- `@Ignore` a failing test
-- Delete or comment out a failing test
-- Weaken an assertion (e.g., changing `assertEquals` to `assertTrue`)
-- Add `Thread.sleep()` as a fix (use `waitUntil {}` or `ComposeTestRule.waitForIdle()` instead)
-- Skip the group and move on
-- Create a "fix later" GitHub issue to bypass the failure
+    5. **Reset `test_index = 0`** (restart group from first test)
+    6. Go to **Step 2**
 
 #### When a Fix Touches Shared Code:
 
-If your fix modifies code that earlier groups also test (e.g., fixing a ViewModel used by both `ui-screens` and `home`), note it but do NOT re-run earlier groups mid-run. The final summary will flag this for the user.
+If a fix modifies code that earlier groups also test, note it but do NOT re-run earlier groups mid-run. The final summary will flag this for the user.
 
 ---
 
 ## AGENT INTEGRATION
 
-This workflow uses 4 custom agents from `.claude/agents/` at specific trigger points:
+This workflow uses 2 commands and delegates to read-only agents at specific trigger points:
 
-| Agent | Trigger | Purpose |
-|-------|---------|---------|
-| `debugger` | Step 4a, on 2nd+ failure of the same test (thinkhard at 4th, thinkUltrahard at 6th) | Deep root cause analysis with log correlation and system behavior tracing |
-| `code-reviewer` | Step 4c, after every fix is applied | Inline quality gate — catches weakened assertions, regressions, security issues |
-| `docs-manager` | Post-run, if any fixes were applied | Updates test docs (Functional-Requirement-Rule.md, CONTINUE_PROMPT.md, test counts) |
-| `git-manager` | Post-run, after docs-manager completes | Commits all changes (fixes + doc updates) with conventional commit format |
-
-### How agents are launched
-
-All agents are launched via the **Task tool** with `subagent_type: "general-purpose"`. Include in the prompt:
-- The agent's name and role context (e.g., "You are acting as the `debugger` agent")
-- All relevant inputs (error output, diff, file paths)
-- A clear instruction of what to return (diagnosis, verdict, file list, etc.)
+| Command/Agent | Trigger | Purpose |
+|---------------|---------|---------|
+| `fix-loop` command | Step 4a, on test failure | Iterative fix cycle with thinking escalation, debugger delegation, and code review |
+| `post-fix-pipeline` command | Post-run, if any fixes were applied | Documentation updates + test suite verification + git commit |
 
 ### Tracking variables
 
@@ -332,48 +288,39 @@ Initialize these alongside the Step 1 group variables:
 
 ```
 // Agent tracking (persists across all groups)
-debugger_invocations = 0
-debugger_tests = []         // test class names that triggered debugger
-code_reviews = 0
-code_reviews_approved = 0
-code_reviews_flagged = 0
-review_issues = []          // logged High/Medium/Low issues from code-reviewer
-all_fixes = []              // { file, line, description } for each fix applied
-skipped_tests = []          // { class_name, fail_count, fix_attempts[] } for 10x failures
+all_fixes = []              // { file, line, description } collected from fix-loop
+skipped_tests = []          // { class_name, fail_count } for 10x failures
+fix_loop_metrics = {        // accumulated from fix-loop outputs
+  debugger_invocations: 0,
+  code_reviews: 0,
+  code_reviews_approved: 0,
+  code_reviews_flagged: 0,
+  review_issues: []
+}
 ```
 
 ---
 
-## POST-RUN AGENT PIPELINE
+## POST-RUN PIPELINE
 
-After all groups complete (or the single requested group), check if any fixes were applied during the run.
+After all groups complete (or the single requested group), check if any fixes were applied.
 
-**If `len(all_fixes) == 0`**: skip this section entirely — no agents needed.
+**If `len(all_fixes) == 0`**: skip this section — no agents needed.
 
-**If `len(all_fixes) > 0`**: run the following agents sequentially:
+**If `len(all_fixes) > 0`**: read and follow the post-fix-pipeline process in `.claude/commands/post-fix-pipeline.md`:
 
-### Step A: docs-manager agent
+```
+fixes_applied:            {all_fixes from tracking}
+files_changed:            {all modified file paths}
+session_summary:          "E2E test run: {N} fixes applied across {groups}"
+test_suite_commands:      []   (E2E already verified by fix-loop retest)
+docs_instructions:        "Update docs/testing/Functional-Requirement-Rule.md if test files changed. Update docs/CONTINUE_PROMPT.md with session summary. Update test counts in CLAUDE.md (non-protected sections only)."
+commit_format:            "fix(e2e): {summary}"
+commit_scope:             "e2e"
+push:                     false
+```
 
-Launch the `docs-manager` agent (via Task tool) with:
-- The list of all fixes applied: `all_fixes[]` (file, line, description for each)
-- The list of test files that were modified (if any)
-- Instructions:
-  - Update `docs/testing/Functional-Requirement-Rule.md` if any test files were added or modified
-  - Update `docs/CONTINUE_PROMPT.md` with a session summary of what was fixed
-  - Update test counts in `CLAUDE.md` (non-protected sections only) if test counts changed
-  - Do NOT modify the "Rules for Claude" protected section in CLAUDE.md
-  - Return the list of documentation files that were updated
-
-### Step B: git-manager agent (runs after Step A completes)
-
-Launch the `git-manager` agent (via Task tool) with:
-- Instructions:
-  - Stage only the relevant files: the fix files + any doc files updated by docs-manager
-  - Do NOT stage `.env`, build artifacts, or files in `.gitignore`
-  - Create a conventional commit: `fix(e2e): [concise summary of fixes applied]`
-  - Include the list of fixes in the commit body
-  - Do NOT push unless the user explicitly requested it
-  - Return the commit hash and message
+Collect pipeline output for the final report.
 
 ---
 
@@ -413,11 +360,13 @@ Fixes Applied:
   1. [File:line] — [Brief description of root cause and fix]
   2. [File:line] — [Brief description of root cause and fix]
 
-Agent Activity:
-  - Debugger invocations: X (for tests: [list of class names])
-  - Code reviews: X (Y approved, Z flagged issues)
+Agent Activity (from fix-loop + post-fix-pipeline):
+  - Fix-loop iterations: X
+  - Debugger invocations: X
+  - Code reviews: X (Y approved, Z flagged)
   - Docs updated: [list of files, or "none — no fixes applied"]
   - Commit: [hash] — [message] (or "none — no fixes applied")
+  - Pipeline status: COMPLETED | BLOCKED_BY_TEST_SUITE | NO_FIXES
 
 Review Issues (if any):
   - [severity] [file:line] — [description from code-reviewer]
