@@ -285,16 +285,16 @@ Three GitHub Actions workflows in `.github/workflows/`:
 
 | Platform | Tests (approx.) | Framework |
 |----------|-----------------|-----------|
-| Backend | 342 | pytest |
+| Backend | ~353 | pytest |
 | Android Unit | ~330 | JUnit + MockK |
 | Android UI | ~750+ | Compose UI Testing |
 | Android E2E | ~67+ | Compose UI Testing + Hilt + Real API |
 
 *Counts as of Feb 2026. Run `PYTHONPATH=. pytest --collect-only -q` (backend) or `./gradlew test` (Android) for current totals.*
 
-### Backend Tests (342 total)
+### Backend Tests (~353 total)
 
-All in `backend/tests/`, named `test_{feature}.py` (25 test files). Run `PYTHONPATH=. pytest --collect-only` to list all. Tests use SQLite in-memory via conftest fixtures (see Backend Test Fixtures below).
+All in `backend/tests/`, named `test_{feature}.py` (26 test files). Run `PYTHONPATH=. pytest --collect-only` to list all. Tests use SQLite in-memory via conftest fixtures (see Backend Test Fixtures below). Some files use class-based test organization (e.g., `test_ai_meal_service.py`, `test_chat_api.py`, `test_preference_service.py`).
 
 ### Android UI Tests
 
@@ -512,7 +512,7 @@ AI-powered meal planning using Google Gemini (`gemini-2.5-flash` via `google-gen
 | Screenshot "image dimensions exceed max" (API 400) | Auto-resized by PostToolUse hook (`.claude/hooks/post-screenshot-resize.sh`). Max 1800px per dimension. To batch-resize existing files: `python .claude/hooks/resize_screenshot.py --all`. Manual fallback: `browser_resize(1280, 720)` before Playwright screenshots. |
 | 4 auth tests fail | Pre-existing: `conftest.py` globally overrides auth dependency, causing 4 failures in `test_auth.py`. Not a regression. |
 | OnboardingViewModelTest won't compile | Pre-existing: missing `generateMealPlanUseCase` constructor param. Not a regression. |
-| Festivals/Stats no tests | Endpoints exist but have no dedicated test files. Not a regression. |
+| Festivals/Stats tests | `test_festivals_api.py` (9 tests) and `test_stats_api.py` (10 tests) now exist. |
 
 ## Rules for Claude
 
