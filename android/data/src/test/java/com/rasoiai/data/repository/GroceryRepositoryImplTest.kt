@@ -56,6 +56,7 @@ class GroceryRepositoryImplTest {
 
     private val testMealPlanItems = listOf(
         MealPlanItemEntity(
+            id = "item-1",
             mealPlanId = "plan-1",
             date = "2026-01-27",
             dayName = "Monday",

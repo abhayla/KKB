@@ -36,6 +36,7 @@ class MealPlanDaoTest {
     )
 
     private val testMealPlanItem = MealPlanItemEntity(
+        id = "item-1",
         mealPlanId = "plan-1",
         date = "2026-01-27",
         dayName = "Monday",

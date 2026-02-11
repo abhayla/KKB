@@ -72,4 +72,10 @@ interface MealPlanRepository {
      * Used to determine if user has completed onboarding.
      */
     suspend fun hasMealPlanForCurrentWeek(): Boolean
+
+    /**
+     * Fetch the current meal plan from the backend and cache locally.
+     * Returns null if no plan exists on the backend.
+     */
+    suspend fun fetchCurrentMealPlan(): MealPlan?
 }

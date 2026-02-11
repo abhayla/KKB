@@ -92,6 +92,7 @@ class HomeViewModelTest {
         mockNotificationRepository = mockk(relaxed = true)
         coEvery { mockNetworkMonitor.isOnline } returns flowOf(true)
         coEvery { mockNotificationRepository.getUnreadCount() } returns flowOf(0)
+        coEvery { mockMealPlanRepository.fetchCurrentMealPlan() } returns null
     }
 
     @AfterEach

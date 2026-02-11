@@ -150,6 +150,7 @@ class EntityMappersTest {
 
             val items = listOf(
                 MealPlanItemEntity(
+                    id = "item-1",
                     mealPlanId = "plan-1",
                     date = "2026-01-27",
                     dayName = "Monday",
@@ -183,6 +184,7 @@ class EntityMappersTest {
         fun `should map MealPlanItemEntity to MealItem domain`() {
             // Given
             val entity = MealPlanItemEntity(
+                id = "item-2",
                 mealPlanId = "plan-1",
                 date = "2026-01-27",
                 dayName = "Monday",

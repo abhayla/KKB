@@ -198,10 +198,17 @@ class HomeViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false) }
                     observeMealPlan()
                 } else {
-                    // No meal plan exists - generate new one
-                    // Keep isLoading = true during generation
-                    // generateNewMealPlan will set isLoading = false and start observing on success
-                    generateNewMealPlan()
+                    // No local meal plan - try fetching from backend first
+                    val fetched = mealPlanRepository.fetchCurrentMealPlan()
+                    if (fetched != null) {
+                        Timber.i("Fetched existing meal plan from backend: ${fetched.id}")
+                        updateStateWithMealPlan(fetched)
+                        _uiState.update { it.copy(isLoading = false) }
+                        observeMealPlan()
+                    } else {
+                        // No plan on backend either - generate new one
+                        generateNewMealPlan()
+                    }
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error loading meal plan")

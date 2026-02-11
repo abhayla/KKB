@@ -79,6 +79,14 @@ interface MealPlanDao {
     @Query("DELETE FROM meal_plan_festivals WHERE mealPlanId = :mealPlanId")
     suspend fun deleteFestivalsForMealPlan(mealPlanId: String)
 
+    // ==================== Overlap Cleanup ====================
+
+    @Query("DELETE FROM meal_plan_festivals WHERE mealPlanId IN (SELECT id FROM meal_plans WHERE weekStartDate <= :weekEndDate AND weekEndDate >= :weekStartDate AND id != :excludeId)")
+    suspend fun deleteFestivalsForOverlappingPlans(weekStartDate: String, weekEndDate: String, excludeId: String)
+
+    @Query("DELETE FROM meal_plans WHERE weekStartDate <= :weekEndDate AND weekEndDate >= :weekStartDate AND id != :excludeId")
+    suspend fun deleteOverlappingPlans(weekStartDate: String, weekEndDate: String, excludeId: String)
+
     // ==================== Transactions ====================
 
     @Transaction
@@ -100,6 +108,11 @@ interface MealPlanDao {
         items: List<MealPlanItemEntity>,
         festivals: List<MealPlanFestivalEntity> = emptyList()
     ) {
+        // Clean up any older plans with overlapping date ranges (different IDs)
+        // Festivals first (no CASCADE FK), then plans (items auto-cascade via FK)
+        deleteFestivalsForOverlappingPlans(mealPlan.weekStartDate, mealPlan.weekEndDate, mealPlan.id)
+        deleteOverlappingPlans(mealPlan.weekStartDate, mealPlan.weekEndDate, mealPlan.id)
+        // Clean up this plan's existing data
         deleteMealPlanItems(mealPlan.id)
         deleteFestivalsForMealPlan(mealPlan.id)
         insertMealPlanWithItems(mealPlan, items, festivals)

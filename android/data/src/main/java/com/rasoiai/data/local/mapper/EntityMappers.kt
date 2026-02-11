@@ -127,6 +127,7 @@ fun MealItemDto.toEntity(
     mealType: String,
     order: Int
 ): MealPlanItemEntity = MealPlanItemEntity(
+    id = id,
     mealPlanId = mealPlanId,
     date = date,
     dayName = dayName,

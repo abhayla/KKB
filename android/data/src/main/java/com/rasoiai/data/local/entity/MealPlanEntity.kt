@@ -18,7 +18,6 @@ data class MealPlanEntity(
 
 @Entity(
     tableName = "meal_plan_items",
-    primaryKeys = ["mealPlanId", "date", "mealType", "recipeId"],
     foreignKeys = [
         ForeignKey(
             entity = MealPlanEntity::class,
@@ -30,6 +29,8 @@ data class MealPlanEntity(
     indices = [Index("mealPlanId"), Index("date")]
 )
 data class MealPlanItemEntity(
+    @PrimaryKey
+    val id: String,
     val mealPlanId: String,
     val date: String, // yyyy-MM-dd format
     val dayName: String, // Monday, Tuesday, etc.

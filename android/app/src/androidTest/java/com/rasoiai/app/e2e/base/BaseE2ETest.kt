@@ -343,6 +343,7 @@ abstract class BaseE2ETest {
                         }
                         items.add(
                             MealPlanItemEntity(
+                                id = item.optString("id", UUID.randomUUID().toString()),
                                 mealPlanId = planId,
                                 date = date,
                                 dayName = dayName,

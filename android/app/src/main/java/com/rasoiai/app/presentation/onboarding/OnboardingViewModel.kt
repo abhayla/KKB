@@ -127,7 +127,8 @@ object CommonDislikedIngredients {
 class OnboardingViewModel @Inject constructor(
     private val userPreferencesDataStore: UserPreferencesDataStoreInterface,
     private val settingsRepository: SettingsRepository,
-    private val generateMealPlanUseCase: com.rasoiai.domain.usecase.GenerateMealPlanUseCase
+    private val generateMealPlanUseCase: com.rasoiai.domain.usecase.GenerateMealPlanUseCase,
+    private val mealPlanRepository: com.rasoiai.domain.repository.MealPlanRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OnboardingUiState())
@@ -401,11 +402,16 @@ class OnboardingViewModel @Inject constructor(
         val result = generateMealPlanUseCase()
 
         if (result.isFailure) {
-            Timber.e(result.exceptionOrNull(), "Failed to generate meal plan during onboarding")
-            throw result.exceptionOrNull() ?: Exception("Failed to generate meal plan")
+            Timber.w(result.exceptionOrNull(), "Generation failed, trying to fetch existing plan...")
+            val fetched = mealPlanRepository.fetchCurrentMealPlan()
+            if (fetched == null) {
+                Timber.e("No existing meal plan found either")
+                throw result.exceptionOrNull() ?: Exception("Failed to generate meal plan")
+            }
+            Timber.i("Fetched existing meal plan from backend: ${fetched.id}")
+        } else {
+            Timber.i("Meal plan generated successfully: ${result.getOrNull()?.id}")
         }
-
-        Timber.i("Meal plan generated successfully: ${result.getOrNull()?.id}")
 
         _uiState.update {
             it.copy(

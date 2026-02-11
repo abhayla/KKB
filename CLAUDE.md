@@ -427,9 +427,9 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
 ## Database Schema
 
-### Room (Android) — Version 10
+### Room (Android) — Version 11
 
-20 entities in `RasoiDatabase.kt`. Migrations: `MIGRATION_7_8` (notifications + offline queue), `MIGRATION_8_9` (recipe rules refactor + cooked recipes), `MIGRATION_9_10` (known ingredients). Fresh installs seed `known_ingredients` with 40+ popular Indian cooking ingredients.
+20 entities in `RasoiDatabase.kt`. Migrations: `MIGRATION_7_8` (notifications + offline queue), `MIGRATION_8_9` (recipe rules refactor + cooked recipes), `MIGRATION_9_10` (known ingredients), `MIGRATION_10_11` (recreate `meal_plan_items` with proper `id` PK instead of composite PK). Fresh installs seed `known_ingredients` with 40+ popular Indian cooking ingredients.
 
 11 DAOs: MealPlan, Recipe, Grocery, Favorite, Collection, Pantry, Stats, RecipeRules, Chat, Notification, OfflineQueue.
 

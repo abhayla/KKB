@@ -62,7 +62,7 @@ import com.rasoiai.data.local.entity.KnownIngredientEntity
         CookedRecipeEntity::class,
         KnownIngredientEntity::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -202,6 +202,38 @@ abstract class RasoiDatabase : RoomDatabase() {
         }
 
         /**
+         * Migration from version 10 to 11: Recreate meal_plan_items with proper id PK.
+         * Old composite PK (mealPlanId, date, mealType, recipeId) caused deduplication
+         * when recipe_id was empty. New PK uses the backend-provided unique item id.
+         * Data is a cache and will be re-fetched from the backend.
+         */
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP TABLE IF EXISTS meal_plan_items")
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS meal_plan_items (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        mealPlanId TEXT NOT NULL,
+                        date TEXT NOT NULL,
+                        dayName TEXT NOT NULL,
+                        mealType TEXT NOT NULL,
+                        recipeId TEXT NOT NULL,
+                        recipeName TEXT NOT NULL,
+                        recipeImageUrl TEXT,
+                        prepTimeMinutes INTEGER NOT NULL,
+                        calories INTEGER NOT NULL,
+                        dietaryTags TEXT NOT NULL,
+                        isLocked INTEGER NOT NULL DEFAULT 0,
+                        `order` INTEGER NOT NULL DEFAULT 0,
+                        FOREIGN KEY (mealPlanId) REFERENCES meal_plans(id) ON DELETE CASCADE
+                    )
+                """)
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_meal_plan_items_mealPlanId ON meal_plan_items (mealPlanId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_meal_plan_items_date ON meal_plan_items (date)")
+            }
+        }
+
+        /**
          * Popular ingredients seeded into known_ingredients table on fresh install
          * and during migration 9→10.
          */
@@ -234,7 +266,7 @@ abstract class RasoiDatabase : RoomDatabase() {
                 RasoiDatabase::class.java,
                 DATABASE_NAME
             )
-                .addMigrations(MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+                .addMigrations(MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
                 .addCallback(object : Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
