@@ -181,16 +181,34 @@ If system dialog detected: auto-tap "Allow" or "While using the app" to dismiss.
 **12. Screenshot Validation — Verify screenshot is not blank/corrupt:**
 ```bash
 PYTHONIOENCODING=utf-8 python -c "
-import os, sys
+import os, sys, math
 path = sys.argv[1]
 size = os.path.getsize(path)
 if size < 1024:
     print(f'BLANK_SUSPECT: file size {size} bytes (< 1KB)')
     sys.exit(1)
-print(f'VALID: file size {size} bytes')
+try:
+    from PIL import Image
+    img = Image.open(path).convert('L')
+    pixels = list(img.getdata())
+    n = len(pixels)
+    mean = sum(pixels) / n
+    variance = sum((p - mean) ** 2 for p in pixels) / n
+    std_dev = math.sqrt(variance)
+    unique_colors = len(set(pixels))
+    if std_dev < 5.0 or unique_colors < 20:
+        print(f'BLANK_SUSPECT: std_dev={std_dev:.1f} unique_colors={unique_colors} (content too uniform)')
+        sys.exit(1)
+    print(f'VALID: size={size} std_dev={std_dev:.1f} unique_colors={unique_colors}')
+except ImportError:
+    print(f'WARN: PIL not available, file size {size} bytes only')
+    if size < 5000:
+        print('BLANK_SUSPECT: small file and no PIL for content check')
+        sys.exit(1)
+    print('VALID: file size check only (install Pillow for content validation)')
 " "$SCREENSHOT_DIR/{name}.png"
 ```
-If BLANK_SUSPECT: wake device (`$ADB shell input keyevent WAKEUP`), wait 2s, retry capture (max 2 retries). If still blank → skip visual analysis, rely on XML checklist only.
+If BLANK_SUSPECT: wake device (`$ADB shell input keyevent WAKEUP`), wait 2s, retry capture (max 2 retries). If still BLANK_SUSPECT after retries → set `visual_verified=false` for this screen, track `blank_screenshots += 1`. This DOES NOT skip the issue — a blank screenshot is itself evidence of an issue that must be classified in E6.
 
 **13. Logcat Capture — Capture app logs for debugging:**
 ```bash
@@ -446,7 +464,7 @@ $ADB exec-out screencap -p > $SCREENSHOT_DIR/adb-test_{screen}_{timestamp}.png
 After capture, validate the screenshot:
 1. Check file size (must be > 1KB)
 2. If BLANK_SUSPECT: wake device (`$ADB shell input keyevent WAKEUP`), wait 2s, retry (max 2 retries)
-3. If still blank after retries → skip visual analysis, rely on XML checklist only, log warning
+3. If still BLANK_SUSPECT after retries → set `visual_verified=false`, log as issue evidence. Do NOT skip — a blank screenshot means visual verification CANNOT confirm correctness. This screen CANNOT be classified as PASS unless ALL elements are verified via XML AND all interactions pass.
 
 Then read the screenshot with the Read tool and analyze:
 - Layout correctness (elements properly positioned)
@@ -454,6 +472,13 @@ Then read the screenshot with the Read tool and analyze:
 - Data presence (are actual values shown, not placeholders)
 - Color/theme correctness (matches design system)
 - Empty states (appropriate when no data)
+
+**If `visual_verified=false`:** Skip the Read tool visual analysis (there is nothing to see). Instead, log:
+```
+⚠️ VISUAL VERIFICATION SKIPPED: Screenshot blank/uniform (GPU rendering issue)
+   This screen requires ALL elements found via XML AND ALL interactions passing to achieve PASS.
+   Any MISSING element or FAILED interaction → ISSUE_FOUND (visual cannot compensate).
+```
 
 **E5. Interactive Testing**
 
@@ -479,29 +504,77 @@ Record each interaction result:
 | Tap bell icon | top bar | Open Notifications | Notifications screen shown | PASS |
 ```
 
+**E5.5. Logcat Pre-Check**
+
+Capture app-level logcat BEFORE classification to inform the Pre-Classification Gate:
+
+```bash
+$ADB logcat -d -t 50 --pid=$($ADB shell pidof $APP_PACKAGE) > $LOG_DIR/{session}/logcat_{screen}_precheck.txt
+```
+
+Scan for errors:
+```bash
+PYTHONIOENCODING=utf-8 python -c "
+import sys
+error_count = 0
+with open(sys.argv[1]) as f:
+    for line in f:
+        if ' E ' in line or 'FATAL' in line or 'Exception' in line:
+            error_count += 1
+            print(f'ERROR: {line.strip()[:200]}')
+print(f'Total app errors: {error_count}')
+" "$LOG_DIR/{session}/logcat_{screen}_precheck.txt"
+```
+
+Record `app_error_count` for use in E5.7 Gate Question 5.
+Track: `logcat_captures += 1`
+
+**E5.7. Pre-Classification Gate (MANDATORY)**
+
+Before classifying the screen in E6, you MUST answer ALL 6 questions below. Copy this checklist into your response and fill in each answer. If ANY answer is NO or a non-zero count, classification MUST be ISSUE_FOUND (not PASS).
+
+```
+□ Pre-Classification Gate for [{screen_name}]:
+  1. "All required elements found (FOUND or FOUND_AFTER_SCROLL)?" → [YES: N/N / NO: N missing — ISSUE_FOUND]
+  2. "All interactive tests passed?" → [YES: N/N / NO: N failed — ISSUE_FOUND]
+  3. "Screenshot visually verified?" → [YES / NO (blank/GPU issue) — see E4 visual_verified flag]
+  4. "Zero crashes/ANRs detected?" → [YES / NO — ISSUE_FOUND]
+  5. "Logcat shows zero app errors?" → [YES / NO: N errors — ISSUE_FOUND]
+  6. "Any observations that indicate unexpected behavior?" → [NO / YES: {list} — ISSUE_FOUND]
+
+  GATE RESULT: [PASS_ELIGIBLE / ISSUE_FOUND]
+  If ISSUE_FOUND, list each discrete issue with severity (CRASH/MISSING/FAILED/VISUAL/BEHAVIORAL).
+```
+
+**Rules:**
+- If `visual_verified=false` (from E4): Question 3 is automatically NO. The screen CAN still pass if Questions 1,2,4,5,6 are all YES — but this is a narrow gate.
+- Question 6 catches behavioral issues not covered by element checklists (e.g., "chat doesn't update preferences", "INCLUDE+EXCLUDE conflict not prevented"). These are real issues even if all XML elements are present.
+- **An "observation" IS an issue.** There is no category called "observation" or "finding" or "noted behavior" — if something deviates from expected behavior, it is an ISSUE_FOUND.
+- You MUST NOT proceed to E6 without completing this gate. Skipping the gate = PROCESS VIOLATION.
+
 **E6. Classify Screen Result**
 
-Based on E2-E5 results:
+Classification is determined by the Pre-Classification Gate (E5.7) result:
 
 | Classification | Criteria |
 |----------------|----------|
-| **PASS** | All required elements found, all interactions work as expected |
-| **ISSUE_FOUND** | Missing elements, broken interactions, or visual problems detected |
-| **BLOCKED** | Cannot reach screen (navigation failure) or cannot verify arrival |
+| **PASS** | Gate result = PASS_ELIGIBLE: ALL 6 gate questions answered YES, zero missing elements, zero failed interactions, zero crashes, zero unexpected behaviors |
+| **ISSUE_FOUND** | Gate result = ISSUE_FOUND: ANY gate question answered NO, OR any missing element (>0), OR any failed interaction (>0), OR any crash/ANR, OR any behavioral deviation from expected, OR `visual_verified=false` AND (any element MISSING or any interaction FAILED) |
+| **BLOCKED** | Cannot reach screen (navigation failure) or cannot verify arrival after 3 attempts |
 
-**E6.5. Logcat Snapshot**
+**CRITICAL:** There is no "PASS with observations" or "PASS with notes" category. If you detected ANY deviation from expected behavior — no matter how minor, known, or seemingly architectural — the classification is ISSUE_FOUND. The fix-loop budget (3 attempts per issue, 12 total) is the ONLY mechanism for resolving or marking issues as UNRESOLVED.
 
-Capture logcat based on screen result using Pattern 13:
+**E6.5. Post-Classification Logcat**
+
+Capture scope-appropriate logcat based on the E6 classification:
 
 | Screen Result | Capture Scope |
 |---------------|---------------|
-| PASS | App-specific logs: `$ADB logcat -d -t 50 --pid=$($ADB shell pidof $APP_PACKAGE)` |
-| ISSUE_FOUND | All error logs: `$ADB logcat -d -t 200 *:E` |
-| BLOCKED | Crash traces: `$ADB logcat -d -t 100 AndroidRuntime:E *:S` |
+| PASS | (E5.5 pre-check is sufficient — no additional capture needed) |
+| ISSUE_FOUND | All error logs: `$ADB logcat -d -t 200 *:E > $LOG_DIR/{session}/logcat_{screen}_errors.txt` |
+| BLOCKED | Crash traces: `$ADB logcat -d -t 100 AndroidRuntime:E *:S > $LOG_DIR/{session}/logcat_{screen}_crash.txt` |
 
-Save to: `$LOG_DIR/{session}/logcat_{screen}_{status}.txt`
 Then clear logcat: `$ADB logcat -c`
-Track: `logcat_captures += 1`
 
 If **PASS** → move to next screen.
 If **ISSUE_FOUND** → enter Fix Loop (Section F). **NO EXCEPTIONS** — even for known or pre-existing issues. The fix-loop budget (3 attempts per issue, 12 total) is the ONLY exit condition.
@@ -539,8 +612,9 @@ Before assuming a code bug, check if the test definition is outdated:
 1. Cross-reference the screenshot — does the element exist with different text?
 2. Search XML for partial/semantic matches of the expected value
 3. **Decision:**
-   - If partial match found (e.g., expected "Grocery List" but XML has "Grocery") → update `docs/testing/adb-test-definitions.md` instead of production code. Track: `definition_updates += 1`. Skip fix-loop for this issue.
+   - If partial match found (e.g., expected "Grocery List" but XML has "Grocery") → update `docs/testing/adb-test-definitions.md`. Track: `definition_updates += 1`. **Re-verify:** After updating the definition, re-run E3 element checklist with the updated definition to confirm the element now passes. If it still fails → revert definition change, proceed to F2.
    - If no match at all → proceed to F2 (fix production code via agent)
+   - **Limit:** Maximum 2 definition updates per screen. If a 3rd definition update is needed, this indicates the definitions are broadly wrong — log as UNRESOLVED and flag for manual review instead of continuing to patch definitions.
 
 **Step F2: Run fix-loop (Single Fix mode)**
 
@@ -554,7 +628,7 @@ build_command:              "./gradlew assembleDebug"  (or null if backend-only)
 install_command:            "$ADB install -r android/app/build/outputs/apk/debug/app-debug.apk"  (if Android)
 attempt_number:             {current attempt for this issue}
 previous_attempts_summary:  {summary of prior attempts from iteration logs}
-prohibited_actions:         ["Delete UI elements", "Weaken checklist", "Skip testing", "Mark PASS with issues", "Fix-later issues"]
+prohibited_actions:         ["Delete UI elements", "Weaken checklist", "Skip testing", "Mark PASS with issues", "Fix-later issues", "Downgrade issues to observations", "Skip Pre-Classification Gate", "Classify PASS with visual_verified=false AND missing/failed elements"]
 fix_target:                 "production"
 log_dir:                    ".claude/logs/adb-test/"
 session_id:                 {current session id}
@@ -760,6 +834,10 @@ backend_restarts = 0
 // Logcat tracking
 logcat_captures = 0
 
+// Visual verification tracking
+blank_screenshots = 0          // screenshots that failed PIL content validation
+visual_verified_screens = {}   // screen_name → true/false
+
 // Regression testing (inline R1-R4)
 regression_screens_tested = 0
 regression_passes = 0
@@ -958,7 +1036,17 @@ JWT=$(curl -s -X POST http://localhost:8000/api/v1/auth/firebase \
 
 ### G5. Per-Step Issue Detection
 
-If a step fails (expected not met, crash detected, element not found):
+A step **fails** when ANY of the following is true:
+- Expected text/element from the step's **Expected** column is not found in XML
+- Expected behavior described in the step did not occur (e.g., "AI responded with tool calling" but AI only gave text suggestions)
+- A crash or ANR is detected after the step's action
+- The step's **Validation** column check returns exit code 1 (HARD failure)
+- Any behavioral deviation from the step's **Expected** column, even if the app didn't crash
+- Screenshot is blank AND the expected result cannot be verified via XML alone
+
+**"Behavioral deviation" includes:** AI not performing expected actions (e.g., not calling tools, not updating preferences), missing conflict detection, missing validation that the step's Expected column describes, data not persisting as expected.
+
+When a step fails:
 
 1. **Same fix-loop integration as screen tests (MANDATORY — no exceptions, even for known issues)** — follow fix-loop process with:
    - `failure_context: "ADB flow test: flow={flow_name}, step={step_id}"`
@@ -966,6 +1054,8 @@ If a step fails (expected not met, crash detected, element not found):
 2. **Max 3 attempts per step** (same as per-issue budget in screen tests)
 3. After fix, re-execute the failed step (not the entire flow)
 4. If step still fails after 3 attempts → mark as UNRESOLVED, continue to next step
+
+**There is no "PASS with observation" for flow steps.** If the Expected column says X and you observed Y, the step FAILED.
 
 ### G6. Flow Report
 

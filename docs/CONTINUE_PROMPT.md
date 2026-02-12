@@ -9,22 +9,18 @@ Use this prompt to start a new conversation/context and continue the project fro
 ```
 I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 
-## Current State: Feature Implementation (FR-010 through FR-013 Complete)
+## Current State: Production-Ready (All Major Features Complete)
 
-Backend running on PostgreSQL with SQLAlchemy async ORM. Android app with Compose UI, Hilt DI, Room DB. Full E2E tests passing with real API calls.
+Backend running on PostgreSQL with SQLAlchemy async ORM (44 endpoints, 11 routers). Android app with Compose UI, Hilt DI, Room DB v11. Full E2E tests passing with real API calls. All 18 Settings sub-screens implemented. Gap analysis complete with Phase 1-3 fixes applied.
 
-**Latest Sessions (Post-Session 40): Feature Implementation**
-- **FR-010 (Issue #47):** AI Recipe Catalog — shared recipe search for Recipe Rules (16 backend tests)
-- **FR-011 (Issue #48):** Sharma Family Recipe Rules Test Suite — 10 backend tests, Playwright verification
-- **FR-012 (Issue #49):** Recipe Rules Duplicate Prevention & Case Normalization — Pydantic UPPERCASE validators, 409 CONFLICT on duplicate, Alembic migration, Android DAO/ViewModel support
-- **FR-013 (Issue #50):** Sync Missing Preferences + Family Members CRUD — primary_diet→dietary_type, busy_days, weekday/weekend cooking time, /api/v1/family-members CRUD
-
-**Session 40: Comprehensive Requirements Documentation**
-- Created **single source of truth** requirements documentation at `docs/requirements/`
-- **12 screen requirement files** with BDD-style (Given/When/Then) format
-- **~525 requirements** documented across all screens
-- Archived original PRD and 15 wireframe files
-- Each requirement has: ID, status, test references, acceptance criteria
+**Recent Work Highlights:**
+- **FR-010 through FR-014:** AI Recipe Catalog, Sharma Recipe Rules, Dedup, Family Members CRUD, Onboarding E2E
+- **FullJourneyFlowTest:** 7-step E2E (Auth → Onboarding → MealGen → Home → RecipeRules → MealGen2 → Home2)
+- **Email Uniqueness + Auth Merge Fix:** Unique email constraint, account merging on Firebase UID change
+- **Settings Screens (Phase A-G):** All 18 navigation destinations with real screens, 76+ backend tests
+- **Gap Analysis:** 39 gaps identified, Phases 1A/2/3 implemented (auth URLs, chat nav, meal gen timeout, recipe search)
+- **Quick-Win Features:** Notification Badge (#57), Voice Input (#12), Camera/Gallery for Pantry (#14/#15), Recipe Detail menu (#24), Stats share (#25), Chat context (#30)
+- **Recipe Rating endpoint, Room DB v11** (meal_plan_items PK fix, known ingredients seed)
 
 **Requirements Documentation Structure:**
 ```
@@ -50,19 +46,13 @@ docs/requirements/
     └── wireframes/               # 15 original wireframes (archived)
 ```
 
-**Previous Sessions:**
-- Session 40: Requirements Documentation (12 screen files, ~525 requirements)
-- Session 39: Issues #13 (Photo Attachment) and #16 (Items per Meal Dialog)
-- Session 38: Home Screen E2E Tests (24 tests)
-- Session 37: E2E Test Reliability Phase 2
-
 **Test Results Summary:**
 | Platform | Tests | Status |
 |----------|-------|--------|
-| Backend | 240 | PASS |
-| Android Unit | 319 | PASS |
-| Android UI | 400+ | PASS |
-| Android E2E | 65+ | PASS |
+| Backend | ~351 (26 files) | PASS |
+| Android Unit | ~330 | PASS |
+| Android UI | 750+ | PASS |
+| Android E2E | 67+ | PASS |
 
 **Key Documentation:**
 | Document | Path |
@@ -110,21 +100,21 @@ Each requirement in the documentation follows this BDD-style format:
 - Then: [outcome]
 - And: [additional outcomes]
 
-### Backend API Endpoints (32 total)
+### Backend API Endpoints (44 total across 11 routers)
 
 | Router | Endpoints | Purpose |
 |--------|-----------|---------|
-| auth | 1 | Firebase token exchange |
-| users | 2 | User profile management |
-| meal_plans | 5 | Meal plan CRUD, swap, lock |
-| recipes | 4 | Recipe details, search |
+| auth | 1 | Firebase token exchange (with account merging) |
+| users | 3 | User profile, preferences, onboarding |
+| meal_plans | 7 | Meal plan CRUD, swap, lock, generation |
+| recipes | 5 | Recipe details, search, rating |
 | grocery | 5 | Grocery list management |
 | festivals | 2 | Festival calendar |
 | chat | 2 | AI chat, image analysis |
 | stats | 3 | Cooking statistics |
 | notifications | 3 | Push notifications |
 | family_members | 4 | Family member CRUD |
-| nutrition_goals | 5 | Nutrition goals CRUD |
+| recipe_rules | 9 | Recipe rules CRUD + nutrition goals |
 ```
 
 ---
@@ -137,15 +127,32 @@ Each requirement in the documentation follows this BDD-style format:
 | PostgreSQL migration | DONE | SQLAlchemy async ORM |
 | 2-item pairing logic | DONE | Default 2 items per slot |
 | INCLUDE/EXCLUDE rules | DONE | Full tracking across week |
-| Android Compose UI | DONE | 15 screens implemented |
-| E2E Test Suite | DONE | 65+ tests passing |
-| UI Tests | DONE | ~400 tests |
+| Android Compose UI | DONE | 18+ screens implemented |
+| E2E Test Suite | DONE | 67+ tests passing |
+| UI Tests | DONE | 750+ tests |
 | Photo Attachment | DONE | Issue #13 - Gemini Vision |
 | Items per Meal Dialog | DONE | Issue #16 - Settings |
 | AI Recipe Catalog | DONE | Issue #47 (FR-010) - Shared recipe search |
-| Sharma Recipe Rules Tests | DONE | Issue #48 (FR-011) - 10 backend tests |
+| Sharma Recipe Rules Tests | DONE | Issue #48 (FR-011) - 13 backend tests |
 | Recipe Rules Dedup | DONE | Issue #49 (FR-012) - Case normalization, 409 on dup |
 | Family Members CRUD | DONE | Issue #50 (FR-013) - Preferences sync + CRUD |
+| Sharma Onboarding E2E | DONE | Issue #52 (FR-014) - 5-step onboarding verification |
+| FullJourneyFlowTest | DONE | 7-step E2E: Auth→Onboarding→MealGen→Home→Rules→MealGen2→Home2 |
+| Email Uniqueness | DONE | Unique email constraint, Alembic migration |
+| Auth Merge Fix | DONE | Account merging on Firebase UID change |
+| Settings Screens (A-G) | DONE | All 18 destinations with real screens, 76+ backend tests |
+| Gap Analysis | DONE | 39 gaps identified across all screens |
+| Phase 1A Quick Wins | DONE | Auth URLs, Chat nav, etc. |
+| Phase 2 Code Quality | DONE | Error handling, validation fixes |
+| Phase 3 Performance | DONE | Meal gen timeout, recipe search optimization |
+| Notification Badge | DONE | Issue #57 - Unread count badge |
+| Voice Input for Chat | DONE | Issue #12 - Speech-to-text |
+| Camera/Gallery for Pantry | DONE | Issues #14/#15 - Image capture |
+| Recipe Detail Menu | DONE | Issue #24 - Share/favorite/actions |
+| Stats Share | DONE | Issue #25 - Share cooking stats |
+| Chat Context | DONE | Issue #30 - Contextual chat |
+| Recipe Rating | DONE | Backend endpoint for recipe ratings |
+| Room DB v11 | DONE | meal_plan_items PK fix, known ingredients seed |
 
 ---
 
@@ -189,34 +196,44 @@ Each requirement in the documentation follows this BDD-style format:
 
 ## TEST SUMMARY
 
-### Backend Tests (240 total)
+### Backend Tests (351 total, 26 files)
 
 | Test File | Tests | Purpose |
 |-----------|-------|---------|
 | `test_health.py` | 2 | Health check |
 | `test_auth.py` | 6 | Firebase auth |
+| `test_auth_merge.py` | 5 | Auth account merging |
 | `test_preference_service.py` | 26 | PreferenceUpdateService |
 | `test_chat_integration.py` | 27 | Chat tool calling |
 | `test_ai_meal_service.py` | 22 | AI meal generation service |
 | `test_chat_api.py` | 12 | Chat API |
 | `test_recipe_cache.py` | 35 | Recipe cache |
-| `test_recipe_rules_api.py` | 21 | Recipe rules API |
+| `test_recipe_rules_api.py` | 20 | Recipe rules API |
 | `test_recipe_search.py` | 10 | Recipe search |
 | `test_notification_service.py` | 19 | Notification service |
 | `test_notification_api.py` | 11 | Notification API |
 | `test_migrate_legacy_rules.py` | 11 | Legacy rule migration |
-| `test_ai_recipe_catalog.py` | 17 | AI recipe catalog (FR-010) |
-| `test_sharma_recipe_rules.py` | 10 | Sharma family rules (FR-011) |
-| `test_recipe_rules_dedup.py` | 6 | Recipe rules dedup (FR-012) |
-| `test_family_members_api.py` | 9 | Family members CRUD (FR-013) |
+| `test_ai_recipe_catalog.py` | 16 | AI recipe catalog (FR-010) |
+| `test_sharma_recipe_rules.py` | 13 | Sharma family rules (FR-011/FR-014) |
+| `test_recipe_rules_dedup.py` | 5 | Recipe rules dedup (FR-012) |
+| `test_family_members_api.py` | 8 | Family members CRUD (FR-013) |
+| `test_email_uniqueness.py` | 7 | Email uniqueness enforcement |
+| `test_recipe_rating.py` | 11 | Recipe rating endpoint |
+| `test_recipe_creation_service.py` | 7 | Recipe creation service |
+| `test_recipes_api.py` | 13 | Recipes API |
+| `test_users_api.py` | 10 | Users API |
+| `test_meal_plans_api.py` | 27 | Meal plans API |
+| `test_grocery_api.py` | 9 | Grocery API |
+| `test_festivals_api.py` | 9 | Festivals API |
+| `test_stats_api.py` | 10 | Stats API |
 
 ### Android Tests
 
 | Category | Tests | Notes |
 |----------|-------|-------|
-| Unit Tests | 319 | ViewModels, repositories |
-| UI Tests | 400+ | Compose UI testing |
-| E2E Tests | 65+ | Full user flows |
+| Unit Tests | ~330 | ViewModels, repositories |
+| UI Tests | 750+ | Compose UI testing |
+| E2E Tests | 67+ | Full user flows (incl. FullJourneyFlowTest) |
 
 ---
 
@@ -240,17 +257,27 @@ DEBUG=true
 
 ## PREVIOUS SESSIONS SUMMARY
 
-### Post-Session 40: Feature Implementation (Current)
+### Post-Session 40: Feature Implementation & Completion
 - FR-010 (Issue #47): AI Recipe Catalog
 - FR-011 (Issue #48): Sharma Recipe Rules Test Suite
 - FR-012 (Issue #49): Recipe Rules Dedup & Case Normalization
 - FR-013 (Issue #50): Sync Missing Preferences + Family Members CRUD
+- FR-014 (Issue #52): Sharma Onboarding E2E Verification
 - Auth test fix (Issue #51): unauthenticated_client fixture
+- FullJourneyFlowTest: 7-step E2E (Auth→Onboarding→MealGen→Home→Rules→MealGen2→Home2)
+- Email Uniqueness Enforcement: unique index, email normalization
+- Auth Merge Fix: account merging on Firebase UID change (was "Failed to save preferences" bug)
+- Settings Screens (Phase A-G): All 18 navigation destinations, 76+ backend tests
+- Gap Analysis: 39 gaps identified, Phases 1A/2/3 fixes applied
+- Quick-Win Features: Notification Badge, Voice Input, Camera/Gallery, Recipe Detail menu, Stats share, Chat context
+- Recipe Rating endpoint, Recipe Creation Service
+- Room DB v11: meal_plan_items PK fix, known ingredients seed
+- Meal plan enhancements: flow definitions, validation script
 
 ### Session 40: Requirements Documentation
 - Created comprehensive requirements documentation system
 - 12 screen files with ~525 BDD-style requirements
-- API requirements file for 32 backend endpoints
+- API requirements file for 44 backend endpoints
 - Archived original PRD and wireframes
 - README.md index with navigation
 
@@ -262,8 +289,8 @@ DEBUG=true
 - 24 tests for locking, actions, navigation
 
 ### Sessions 1-37: Core Implementation
-- Android Compose UI with 15 screens
-- PostgreSQL backend with FastAPI
+- Android Compose UI with 18+ screens
+- PostgreSQL backend with FastAPI (44 endpoints, 11 routers)
 - E2E test infrastructure
 - 3,580 recipes imported
 
@@ -294,6 +321,6 @@ DEBUG=true
 
 ---
 
-*Last Updated: February 6, 2026*
-*Post-Session 40: FR-010 through FR-013 implemented. 240 backend tests. 319 Android unit tests. 65+ E2E tests. ~400 UI tests.*
-*3,580 recipes. ~525 requirements across 12 screen files.*
+*Last Updated: February 12, 2026*
+*All major features complete. 351 backend tests (26 files). ~330 Android unit tests. 67+ E2E tests. 750+ UI tests.*
+*44 API endpoints across 11 routers. 3,580 recipes. ~525 requirements across 12 screen files. Room DB v11.*

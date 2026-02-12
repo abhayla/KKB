@@ -321,6 +321,23 @@ class RecipeRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun prefetchRecipes(recipeIds: List<String>) {
+        val cached = recipeDao.getRecipesByIdsSync(recipeIds).map { it.id }.toSet()
+        val missing = recipeIds.filter { it !in cached }
+        if (missing.isEmpty()) {
+            Timber.d("prefetchRecipes: all ${recipeIds.size} recipes already cached")
+            return
+        }
+        Timber.d("prefetchRecipes: ${missing.size}/${recipeIds.size} recipes need fetching")
+        missing.forEach { id ->
+            try {
+                fetchAndCacheRecipe(id)
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to prefetch recipe: $id")
+            }
+        }
+    }
+
     override suspend fun rateRecipe(recipeId: String, rating: Int, feedback: String): Result<Unit> {
         return try {
             if (networkMonitor.isOnline.first()) {

@@ -131,7 +131,8 @@ async def generate(
             week_start = date.today()
             week_start = week_start - timedelta(days=week_start.weekday())
 
-        # Generate meal plan using the AI service (with 60s timeout)
+        # Generate meal plan using the AI service (with 120s timeout)
+        # Gemini calls regularly take 45-90s; 60s was too aggressive
         ai_service = AIMealService()
         try:
             generated_plan = await asyncio.wait_for(
@@ -139,38 +140,63 @@ async def generate(
                     user_id=user_id,
                     week_start_date=week_start,
                 ),
-                timeout=60,
+                timeout=120,
             )
         except asyncio.TimeoutError:
-            logger.error(f"Meal generation timed out after 60s for user {user_id}")
+            logger.error(f"Meal generation timed out after 120s for user {user_id}")
             raise HTTPException(
                 status_code=504,
                 detail="Meal generation timed out. Please try again.",
             )
 
+        # Get user cuisine preference (reused for recipe creation + catalog)
+        from app.db.postgres import async_session_maker
+        from app.services.recipe_creation_service import create_recipes_for_meal_plan
+
+        user_repo = UserRepository()
+        prefs_data = await user_repo.get_preferences(user_id)
+        cuisine_type = "north"
+        if prefs_data and prefs_data.get("cuisine_preferences"):
+            cuisine_type = prefs_data["cuisine_preferences"][0]
+        family_size = prefs_data.get("family_size", 4) if prefs_data else 4
+
         # Create real Recipe records for all AI-generated items
         # This replaces "AI_GENERATED" recipe_ids with real UUIDs
-        try:
-            from app.db.postgres import async_session_maker
-            from app.services.recipe_creation_service import create_recipes_for_meal_plan
-
-            # Get user cuisine preference (reused below for catalog)
-            user_repo = UserRepository()
-            prefs_data = await user_repo.get_preferences(user_id)
-            cuisine_type = "north"
-            if prefs_data and prefs_data.get("cuisine_preferences"):
-                cuisine_type = prefs_data["cuisine_preferences"][0]
-            family_size = prefs_data.get("family_size", 4) if prefs_data else 4
-
-            async with async_session_maker() as recipe_db:
-                await create_recipes_for_meal_plan(
-                    db=recipe_db,
-                    generated_plan=generated_plan,
-                    cuisine_type=cuisine_type,
-                    family_size=family_size,
+        # Retry once on failure — recipe creation is critical for Recipe Detail screen
+        recipe_creation_success = False
+        for attempt in range(1, 3):
+            try:
+                async with async_session_maker() as recipe_db:
+                    await create_recipes_for_meal_plan(
+                        db=recipe_db,
+                        generated_plan=generated_plan,
+                        cuisine_type=cuisine_type,
+                        family_size=family_size,
+                    )
+                recipe_creation_success = True
+                break
+            except Exception as e:
+                logger.error(
+                    f"Recipe creation attempt {attempt}/2 failed for user {user_id}: {e}",
+                    exc_info=True,
                 )
-        except Exception as e:
-            logger.warning(f"Failed to create recipe records: {e}")
+
+        # Audit: count items with real UUIDs vs still "AI_GENERATED"
+        total_items = 0
+        real_ids = 0
+        for day in generated_plan.days:
+            for slot in ["breakfast", "lunch", "dinner", "snacks"]:
+                for item in getattr(day, slot, []):
+                    total_items += 1
+                    if item.recipe_id and item.recipe_id not in ("AI_GENERATED", "GENERIC"):
+                        real_ids += 1
+        if not recipe_creation_success:
+            logger.error(
+                f"Recipe creation FAILED after 2 attempts. "
+                f"{real_ids}/{total_items} items have real recipe IDs"
+            )
+        else:
+            logger.info(f"Recipe creation OK: {real_ids}/{total_items} items have real recipe IDs")
 
         # Convert to repository format
         # Repository expects lists of items per meal type

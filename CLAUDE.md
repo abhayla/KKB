@@ -160,7 +160,8 @@ navController.navigate(Screen.RecipeDetail.createRoute(recipeId, isLocked = true
 | Main (bottom nav) | Home, Grocery, Chat, Favorites, Stats |
 | Main (other) | Settings, Notifications |
 | Detail | RecipeDetail (`{recipeId}`), CookingMode (`{recipeId}`) |
-| Feature | Pantry, RecipeRules |
+| Feature | Pantry, RecipeRules, Achievements |
+| Settings sub-screens | DietaryRestrictions, DislikedIngredients, CuisinePreferences, SpiceLevelSettings, CookingTimeSettings, FamilyMembersSettings, NotificationSettings, UnitsSettings, EditProfile, FriendsLeaderboard, ConnectedAccounts |
 
 ### Bottom Navigation
 
@@ -274,8 +275,9 @@ GRANT ALL PRIVILEGES ON DATABASE rasoiai TO rasoiai_user;
 
 ### CI/CD Pipeline
 
-Three GitHub Actions workflows in `.github/workflows/`:
+Four GitHub Actions workflows in `.github/workflows/`:
 - **`android-ci.yml`** — Lint, unit tests, build APK on push; emulator tests (API 29) on PRs
+- **`backend-ci.yml`** — Backend pytest suite on push/PR when `backend/` changes (Python 3.11, Ubuntu)
 - **`claude.yml`** — Claude Code agent triggered by `@claude` mentions in issues/PRs (read-only permissions)
 - **`claude-code-review.yml`** — Automatic code review on all PR opens/updates
 
@@ -285,14 +287,14 @@ Three GitHub Actions workflows in `.github/workflows/`:
 
 | Platform | Tests (approx.) | Framework |
 |----------|-----------------|-----------|
-| Backend | ~353 | pytest |
+| Backend | ~351 | pytest |
 | Android Unit | ~330 | JUnit + MockK |
 | Android UI | ~750+ | Compose UI Testing |
 | Android E2E | ~67+ | Compose UI Testing + Hilt + Real API |
 
 *Counts as of Feb 2026. Run `PYTHONPATH=. pytest --collect-only -q` (backend) or `./gradlew test` (Android) for current totals.*
 
-### Backend Tests (~353 total)
+### Backend Tests (~351 total)
 
 All in `backend/tests/`, named `test_{feature}.py` (26 test files). Run `PYTHONPATH=. pytest --collect-only` to list all. Tests use SQLite in-memory via conftest fixtures (see Backend Test Fixtures below). Some files use class-based test organization (e.g., `test_ai_meal_service.py`, `test_chat_api.py`, `test_preference_service.py`).
 
@@ -409,7 +411,7 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
 ## Backend API
 
-38 endpoints across 11 routers: Auth, Users, Meal Plans, Recipes, Grocery, Chat, Recipe Rules (includes Nutrition Goals), Family Members, Festivals, Stats, Notifications. Run `PYTHONPATH=. pytest --collect-only -q` or visit `http://localhost:8000/docs` for current counts.
+44 endpoints across 11 routers: Auth, Users, Meal Plans, Recipes, Grocery, Chat, Recipe Rules (includes Nutrition Goals), Family Members, Festivals, Stats, Notifications. Run `PYTHONPATH=. pytest --collect-only -q` or visit `http://localhost:8000/docs` for current counts.
 
 **Full interactive docs:** `http://localhost:8000/docs` (Swagger UI)
 
@@ -831,6 +833,7 @@ The `.claude/` directory contains Claude Code customization:
 | Data Flow Diagram | `docs/design/Data-Flow-Diagram.md` |
 | Meal Generation Algorithm | `docs/design/Meal-Generation-Algorithm.md` |
 | Meal Generation Config | `docs/design/Meal-Generation-Config-Architecture.md` |
+| Design System | `docs/design/RasoiAI Design System.md` |
 | **Workflow Rules** | `docs/rules/Claude Code Enforced Workflow Rules.md` |
 | E2E Testing Guide | `docs/testing/E2E-Testing-Prompt.md` |
 | E2E Test Plan | `docs/testing/E2E-Test-Plan.md` |

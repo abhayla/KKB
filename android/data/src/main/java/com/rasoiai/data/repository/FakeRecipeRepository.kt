@@ -120,6 +120,10 @@ class FakeRecipeRepository @Inject constructor() : RecipeRepository {
         return recipes.map { list -> list.filter { it.isFavorite } }
     }
 
+    override suspend fun prefetchRecipes(recipeIds: List<String>) {
+        // No-op for fake repository - all recipes are in-memory
+    }
+
     override suspend fun rateRecipe(recipeId: String, rating: Int, feedback: String): Result<Unit> {
         return Result.success(Unit)
     }

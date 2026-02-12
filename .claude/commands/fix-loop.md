@@ -335,6 +335,10 @@ Before applying ANY fix, verify it does not involve any action in the `prohibite
 - Adding `Thread.sleep()` as a timing fix
 - Creating "fix later" issues to bypass failures
 - Skipping test groups or suites
+- Classifying a screen/step as PASS when any issue was detected
+- Downgrading issues to "observations", "findings", or "notes" to avoid fix-loop
+- Skipping visual verification without setting visual_verified=false
+- Bypassing the Pre-Classification Gate (E5.7)
 
 If the ONLY viable fix would violate a prohibited action, mark the issue as UNRESOLVED with the reason "Only available fix violates prohibited action: {action}".
 

@@ -8,7 +8,8 @@ AI-powered Indian meal planning API built with FastAPI and PostgreSQL.
 
 - Python 3.11+
 - PostgreSQL database
-- Anthropic API key (for AI features)
+- Anthropic API key (for AI chat features)
+- Google AI API key (for Gemini meal generation)
 
 ### Local Development
 
@@ -30,6 +31,7 @@ AI-powered Indian meal planning API built with FastAPI and PostgreSQL.
    DATABASE_URL=postgresql+asyncpg://rasoiai_user:password@localhost:5432/rasoiai
    FIREBASE_CREDENTIALS_PATH=./rasoiai-firebase-service-account.json
    ANTHROPIC_API_KEY=sk-ant-...
+   GOOGLE_AI_API_KEY=your-gemini-api-key
    JWT_SECRET_KEY=your-secret-key
    DEBUG=true
    ```
@@ -80,14 +82,14 @@ backend/
 │   ├── meal_generation.yaml     # Pairing rules, meal structure
 │   └── reference_data/          # Ingredients, dishes, cuisines
 ├── scripts/                     # Utility scripts
-├── tests/                       # Test suite (170 tests)
+├── tests/                       # Test suite (~351 tests, 26 files)
 └── requirements.txt
 ```
 
 ## Testing
 
 ```bash
-# Run all tests (170 total)
+# Run all tests (~351 total)
 PYTHONPATH=. pytest
 
 # Run with coverage

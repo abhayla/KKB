@@ -126,21 +126,26 @@ fun MealItemDto.toEntity(
     dayName: String,
     mealType: String,
     order: Int
-): MealPlanItemEntity = MealPlanItemEntity(
-    id = id,
-    mealPlanId = mealPlanId,
-    date = date,
-    dayName = dayName,
-    mealType = mealType,
-    recipeId = recipeId,
-    recipeName = recipeName,
-    recipeImageUrl = recipeImageUrl,
-    prepTimeMinutes = prepTimeMinutes,
-    calories = calories,
-    dietaryTags = dietaryTags,
-    isLocked = isLocked,
-    order = order
-)
+): MealPlanItemEntity {
+    if (recipeId.isBlank()) {
+        Timber.w("MealItemDto.toEntity: blank recipeId for '$recipeName' (item id=$id, date=$date, mealType=$mealType)")
+    }
+    return MealPlanItemEntity(
+        id = id,
+        mealPlanId = mealPlanId,
+        date = date,
+        dayName = dayName,
+        mealType = mealType,
+        recipeId = recipeId,
+        recipeName = recipeName,
+        recipeImageUrl = recipeImageUrl,
+        prepTimeMinutes = prepTimeMinutes,
+        calories = calories,
+        dietaryTags = dietaryTags,
+        isLocked = isLocked,
+        order = order
+    )
+}
 
 fun FestivalDto.toEntity(mealPlanId: String, date: String): MealPlanFestivalEntity = MealPlanFestivalEntity(
     id = id,

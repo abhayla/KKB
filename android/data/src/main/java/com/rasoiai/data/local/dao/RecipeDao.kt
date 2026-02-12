@@ -19,6 +19,9 @@ interface RecipeDao {
     @Query("SELECT * FROM recipes WHERE id IN (:ids)")
     fun getRecipesByIds(ids: List<String>): Flow<List<RecipeEntity>>
 
+    @Query("SELECT * FROM recipes WHERE id IN (:ids)")
+    suspend fun getRecipesByIdsSync(ids: List<String>): List<RecipeEntity>
+
     @Query("SELECT * FROM recipes ORDER BY name")
     fun getAllRecipes(): Flow<List<RecipeEntity>>
 

@@ -46,11 +46,13 @@ class MealPlanRepository:
             )
             plan = result.scalar_one_or_none()
             if plan:
-                # Check if plan is current (within this week)
-                if plan.week_end_date and plan.week_end_date >= today:
-                    return self._plan_to_dict(plan)
-                # Return latest even if expired
+                logger.debug(
+                    f"Found active plan {plan.id} for user {user_id}: "
+                    f"{plan.week_start_date} to {plan.week_end_date}, "
+                    f"{len(plan.items)} items"
+                )
                 return self._plan_to_dict(plan)
+            logger.warning(f"No active meal plan found for user {user_id}")
             return None
 
     async def get_history_for_user(
@@ -103,6 +105,10 @@ class MealPlanRepository:
                             # Convert placeholder recipe_ids to None for AI-generated meals
                             recipe_id = meal_item.get("recipe_id")
                             if recipe_id in ("GENERIC", "AI_GENERATED"):
+                                logger.warning(
+                                    f"Item '{meal_item.get('recipe_name')}' has placeholder "
+                                    f"recipe_id='{recipe_id}' — setting to None"
+                                )
                                 recipe_id = None
 
                             item = MealPlanItem(

@@ -13,6 +13,7 @@ import com.rasoiai.data.remote.dto.MealsByTypeDto
 import com.rasoiai.data.remote.dto.MealItemDto
 import com.rasoiai.domain.model.MealType
 import com.rasoiai.domain.repository.GroceryRepository
+import com.rasoiai.domain.repository.RecipeRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -43,6 +44,7 @@ class MealPlanRepositoryImplTest {
     private lateinit var mockMealPlanDao: MealPlanDao
     private lateinit var mockNetworkMonitor: NetworkMonitor
     private lateinit var mockGroceryRepository: GroceryRepository
+    private lateinit var mockRecipeRepository: RecipeRepository
     private lateinit var repository: MealPlanRepositoryImpl
 
     private val testDate = LocalDate.of(2026, 1, 27)
@@ -140,13 +142,15 @@ class MealPlanRepositoryImplTest {
         mockMealPlanDao = mockk(relaxed = true)
         mockNetworkMonitor = mockk(relaxed = true)
         mockGroceryRepository = mockk(relaxed = true)
+        mockRecipeRepository = mockk(relaxed = true)
 
         repository = MealPlanRepositoryImpl(
             apiService = mockApiService,
             longTimeoutApiService = mockApiService,
             mealPlanDao = mockMealPlanDao,
             networkMonitor = mockNetworkMonitor,
-            groceryRepository = mockGroceryRepository
+            groceryRepository = mockGroceryRepository,
+            recipeRepository = mockRecipeRepository
         )
     }
 

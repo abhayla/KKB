@@ -358,6 +358,12 @@ class HomeViewModel @Inject constructor(
         val state = _uiState.value
         val mealItem = state.selectedMealItem ?: return
         val mealType = state.selectedMealType ?: return
+        if (mealItem.recipeId.isBlank()) {
+            Timber.w("viewRecipe: recipeId is blank for '${mealItem.recipeName}', skipping navigation")
+            dismissRecipeActionSheet()
+            _uiState.update { it.copy(errorMessage = "Recipe details not available") }
+            return
+        }
         val isLocked = state.isRecipeEffectivelyLocked(mealItem, mealType)
         dismissRecipeActionSheet()
         _navigationEvent.trySend(HomeNavigationEvent.NavigateToRecipeDetail(mealItem.recipeId, isLocked))

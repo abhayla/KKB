@@ -16,6 +16,7 @@ import com.rasoiai.domain.model.MealType
 import java.time.DayOfWeek
 import com.rasoiai.domain.repository.GroceryRepository
 import com.rasoiai.domain.repository.MealPlanRepository
+import com.rasoiai.domain.repository.RecipeRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -40,7 +41,8 @@ class MealPlanRepositoryImpl @Inject constructor(
     @LongTimeout private val longTimeoutApiService: RasoiApiService,
     private val mealPlanDao: MealPlanDao,
     private val networkMonitor: NetworkMonitor,
-    private val groceryRepository: GroceryRepository
+    private val groceryRepository: GroceryRepository,
+    private val recipeRepository: RecipeRepository
 ) : MealPlanRepository {
 
     private val dateFormatter = DateTimeFormatter.ISO_DATE
@@ -94,6 +96,17 @@ class MealPlanRepositoryImpl @Inject constructor(
             }
 
             mealPlanDao.replaceMealPlan(entity, items, festivals)
+
+            // Pre-cache recipe details for offline access
+            try {
+                val recipeIds = items.map { it.recipeId }.distinct().filter { it.isNotBlank() }
+                if (recipeIds.isNotEmpty()) {
+                    recipeRepository.prefetchRecipes(recipeIds)
+                    Timber.i("Pre-cached ${recipeIds.size} recipes from meal plan")
+                }
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to pre-cache recipes, non-critical")
+            }
 
             // Auto-generate grocery list from the new meal plan
             try {
@@ -399,6 +412,17 @@ class MealPlanRepositoryImpl @Inject constructor(
             val festivals = response.toFestivalEntities()
 
             mealPlanDao.replaceMealPlan(entity, items, festivals)
+
+            // Pre-cache recipe details for offline access
+            try {
+                val recipeIds = items.map { it.recipeId }.distinct().filter { it.isNotBlank() }
+                if (recipeIds.isNotEmpty()) {
+                    recipeRepository.prefetchRecipes(recipeIds)
+                    Timber.i("Pre-cached ${recipeIds.size} recipes from fetched meal plan")
+                }
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to pre-cache recipes on fetch, non-critical")
+            }
 
             // Auto-generate grocery list from fetched meal plan
             try {

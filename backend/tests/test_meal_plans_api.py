@@ -13,6 +13,8 @@ Note: Endpoints use MealPlanRepository and RecipeRepository directly (not via DI
 so we mock at the repository method level.
 """
 
+import asyncio
+
 import pytest
 from datetime import date, datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -274,6 +276,87 @@ async def test_generate_invalid_date_fallback(mp_client: AsyncClient, mp_user: U
 
     # Should still succeed (falls back to current Monday)
     assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_generate_timeout_returns_504(mp_client: AsyncClient, mp_user: User):
+    """POST /generate returns 504 when AI generation times out."""
+    with (
+        patch(
+            "app.api.v1.endpoints.meal_plans.AIMealService"
+        ) as MockAI,
+        patch(
+            "app.api.v1.endpoints.meal_plans.UserRepository"
+        ) as MockUserRepo,
+    ):
+        mock_ai_instance = MockAI.return_value
+        mock_ai_instance.generate_meal_plan = AsyncMock(
+            side_effect=asyncio.TimeoutError()
+        )
+
+        mock_user_repo_instance = MockUserRepo.return_value
+        mock_user_repo_instance.get_preferences = AsyncMock(return_value=None)
+
+        response = await mp_client.post(
+            "/api/v1/meal-plans/generate",
+            json={"week_start_date": date.today().isoformat()},
+        )
+
+    assert response.status_code == 504
+    assert "timed out" in response.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_generate_succeeds_when_recipe_creation_fails(
+    mp_client: AsyncClient, mp_user: User
+):
+    """POST /generate still returns 200 when recipe creation fails (degraded)."""
+    plan_id = str(uuid4())
+    mock_plan = _make_plan(plan_id=plan_id, user_id=mp_user.id)
+
+    mock_generated = MagicMock()
+    mock_generated.days = []
+    mock_generated.week_start_date = date.today().isoformat()
+    mock_generated.week_end_date = (date.today() + timedelta(days=6)).isoformat()
+    mock_generated.rules_applied = []
+
+    with (
+        patch(
+            "app.api.v1.endpoints.meal_plans.AIMealService"
+        ) as MockAI,
+        patch(
+            "app.api.v1.endpoints.meal_plans.MealPlanRepository"
+        ) as MockRepo,
+        patch(
+            "app.api.v1.endpoints.meal_plans.UserRepository"
+        ) as MockUserRepo,
+        patch(
+            "app.services.recipe_creation_service.create_recipes_for_meal_plan",
+            new_callable=AsyncMock,
+            side_effect=Exception("DB connection failed"),
+        ),
+    ):
+        mock_ai_instance = MockAI.return_value
+        mock_ai_instance.generate_meal_plan = AsyncMock(return_value=mock_generated)
+
+        mock_repo_instance = MockRepo.return_value
+        mock_repo_instance.deactivate_old_plans = AsyncMock(return_value=0)
+        mock_repo_instance.create = AsyncMock(return_value=mock_plan)
+
+        mock_user_repo_instance = MockUserRepo.return_value
+        mock_user_repo_instance.get_preferences = AsyncMock(
+            return_value={"cuisine_preferences": ["south"]}
+        )
+
+        response = await mp_client.post(
+            "/api/v1/meal-plans/generate",
+            json={"week_start_date": date.today().isoformat()},
+        )
+
+    # Plan is still created even though recipe creation failed
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == plan_id
 
 
 @pytest.mark.asyncio

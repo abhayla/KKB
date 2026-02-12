@@ -210,8 +210,9 @@ async def create_recipes_for_meal_plan(
                     created_count += 1
 
                 except Exception as e:
-                    logger.warning(
-                        f"Failed to create recipe for '{item.recipe_name}': {e}"
+                    logger.error(
+                        f"Failed to create recipe for '{item.recipe_name}': {e}",
+                        exc_info=True,
                     )
                     # Non-critical: item keeps its original recipe_id
 

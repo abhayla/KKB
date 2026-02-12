@@ -48,4 +48,10 @@ interface RecipeRepository {
      * Submit a rating for a recipe.
      */
     suspend fun rateRecipe(recipeId: String, rating: Int, feedback: String): Result<Unit>
+
+    /**
+     * Pre-fetch and cache recipes by their IDs for offline access.
+     * Skips recipes already cached in Room.
+     */
+    suspend fun prefetchRecipes(recipeIds: List<String>)
 }
