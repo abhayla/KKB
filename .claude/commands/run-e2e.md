@@ -262,6 +262,19 @@ Use a 10-minute timeout for groups with AI calls (meal-generation, home, chat, r
     Log: `❌ Test [class_name] has failed 10 times — skipping remaining tests in this group.`
     Record all 10 attempted fixes in `skipped_tests[]`.
     **Skip the rest of this group** and move to the next group. Do NOT stop execution.
+
+    **4c. Auto-File Issue for Skipped Tests:**
+    For each skipped test (10-failure limit reached):
+    1. Duplicate check: `gh issue list --search "E2E Skip: {class_name}" --state open --limit 5`
+    2. If no duplicate:
+       ```bash
+       gh issue create \
+         --title "E2E Skip: {class_name} - 10x failure limit" \
+         --body "## Auto-Filed Issue\n\n**Test:** {class_name}\n**Group:** {group_name}\n**Attempts:** 10\n**Last error:** {last failure summary}\n\n## Fix History\n{summary of all 10 fix attempts}\n\n---\n*Auto-filed by the learning system*" \
+         --label "bug,e2e-test,unresolved,auto-filed"
+       ```
+    3. Track: append to `auto_filed_issues[]`
+
 - Else:
 
   #### 4a. Invoke /fix-loop Skill
@@ -451,6 +464,18 @@ Shared Code Warning:
 ```
 
 If only a single group was requested, show just that group's line in the report.
+
+---
+
+## POST-RUN LEARNING CAPTURE
+
+After producing the final summary, automatically invoke the learning reflection:
+
+```
+Skill("reflect", args="session")
+```
+
+This captures the session outcomes into structured learning logs and updates memory topic files. Runs even if all groups passed (captures success patterns too).
 
 ---
 

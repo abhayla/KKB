@@ -136,6 +136,18 @@ This marks the session as a `fix-issue` workflow. Hooks will track Skill invocat
 
    The /post-fix-pipeline Skill handles: test suite verification gate, documentation updates, and git commit with Co-Authored-By tag.
 
+## POST-WORKFLOW LEARNING CAPTURE
+
+After the workflow completes (Step 7 done, or stopped due to failure), automatically invoke:
+
+```
+Skill("reflect", args="session")
+```
+
+This captures the fix-issue session outcomes into structured learning logs and updates memory topic files.
+
+---
+
 ## Guidelines
 
 - Follow existing patterns documented in CLAUDE.md

@@ -52,6 +52,7 @@ You operate in one of two modes based on the presence of `retest_command`:
 | `session_id` | string | auto-generated | Any string | Session identifier for log subdirectory |
 | `max_cascade_depth` | int | `2` | 1-5 | Maximum depth of cascading fix-loops (a fix causing a new failure that triggers another fix-loop) |
 | `current_cascade_depth` | int | `0` | 0+ | Current cascade depth (incremented by callers when re-invoking after a fix caused a new failure) |
+| `auto_file_issue` | bool | `false` | true/false | When true AND outcome is UNRESOLVED/MAX_ITERATIONS_EXCEEDED, auto-create GitHub issue before returning |
 
 ### Single Fix Mode Extras
 
@@ -203,6 +204,19 @@ FINALIZE:
       "timestamp": "ISO8601"
     }
     ```
+
+  AUTO-FILE ISSUE (if auto_file_issue=true):
+    If overall status is UNRESOLVED or MAX_ITERATIONS_EXCEEDED:
+      For each unresolved issue:
+        1. Duplicate check: `gh issue list --search "{issue description}" --state open --limit 5`
+        2. If no duplicate:
+           ```bash
+           gh issue create \
+             --title "Fix-loop: {brief issue description}" \
+             --body "## Auto-Filed from Fix-Loop\n\n**Context:** {failure_context}\n**Iterations:** {N}/{max}\n**Unresolved:** {description}\n**Session:** {session_id}\n\n## Fix Attempts\n{summary of all attempts}\n\n---\n*Auto-filed by fix-loop (auto_file_issue=true)*" \
+             --label "bug,fix-loop,unresolved,auto-filed"
+           ```
+        3. Record filed issue in summary-evidence.json under `autoFiledIssues`
 
 RETURN structured results (see Output section)
 ```

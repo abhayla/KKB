@@ -357,6 +357,32 @@ Repeat full screen protocol (E1-E6.5) for this screen.
 - Screen total >= 12 → exit, classify remaining issues
 - **PARTIAL** — some resolved, some not
 
+**Step F5.5: Auto-File GitHub Issues for UNRESOLVED Items**
+
+After fix-loop exhaustion for a screen (all issues processed), for each UNRESOLVED issue:
+
+1. **Skip conditions** (do NOT auto-file):
+   - Screen is BLOCKED (navigation failure, not a code bug)
+   - Issue matches a known pre-existing issue in MEMORY.md (search `Key Lessons` and `skill-gaps.md`)
+
+2. **Duplicate check:**
+   ```bash
+   gh issue list --search "ADB Test: {screen_name} - {issue_description}" --state open --limit 5
+   ```
+   If a matching open issue exists → skip, log "Duplicate of #{N}"
+
+3. **Auto-file:**
+   ```bash
+   gh issue create \
+     --title "ADB Test: {screen_name} - {brief_description}" \
+     --body "{formatted body with context, reproduction steps, evidence paths}" \
+     --label "bug,adb-test,unresolved,auto-filed"
+   ```
+
+4. **Track:** Append filed issue number to `auto_filed_issues[]`
+
+5. **Log:** `log_event "AUTO_FILED_ISSUE" "screen={screen}" "issue=#{N}" "description={desc}"`
+
 ---
 
 ## REGRESSION TESTING (after Fix Loop)
@@ -506,6 +532,20 @@ Skill Activity (from /fix-loop + /post-fix-pipeline):
 Session logs: .claude/logs/adb-test/{session}/
 Duration: X minutes Y seconds
 ```
+
+---
+
+## POST-RUN LEARNING CAPTURE
+
+After producing the final report (screen or flow), automatically invoke the learning reflection:
+
+```
+Skill("reflect", args="session")
+```
+
+This captures the session outcomes into structured learning logs and updates memory topic files. The `post-skill-learning.sh` hook will also fire independently on this skill invocation, but the explicit `/reflect session` provides deeper analysis.
+
+**Do NOT skip this step.** It runs even if all screens passed (captures success patterns too).
 
 ---
 

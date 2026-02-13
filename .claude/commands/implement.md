@@ -279,6 +279,18 @@ Before proceeding past each major phase, answer these questions:
 
 ---
 
+## POST-WORKFLOW LEARNING CAPTURE
+
+After the workflow completes (Step 7 done, or stopped due to failure), automatically invoke:
+
+```
+Skill("reflect", args="session")
+```
+
+This captures the implementation session outcomes into structured learning logs and updates memory topic files.
+
+---
+
 ## VIOLATIONS
 
 The following are violations of the workflow:

@@ -233,3 +233,137 @@ with os.fdopen(fd, 'w') as f:
 os.replace(tmp, '$WORKFLOW_STATE_FILE')
 " 2>/dev/null
 }
+
+# =============================================================================
+# Learning System Utilities (Phase 1)
+# =============================================================================
+
+LEARNING_LOG_DIR=".claude/logs/learning"
+MEMORY_DIR="C:/Users/itsab/.claude/projects/D--Abhay-VibeCoding-KKB/memory"
+
+parse_skill_outcome() {
+    # Extract structured outcome from Skill tool_output text.
+    # Sets shell variables: SKILL_OUTCOME, SKILL_ISSUES_FOUND, SKILL_ISSUES_RESOLVED,
+    # SKILL_FIXES (JSON array), SKILL_UNRESOLVED (JSON array)
+    local output="$1"
+    eval "$(python -c "
+import re, json, sys
+
+output = sys.stdin.read()
+
+# Detect outcome
+outcome = 'UNKNOWN'
+if re.search(r'RESOLVED(?!.*UN)', output[:500]):
+    outcome = 'RESOLVED'
+elif re.search(r'UNRESOLVED|MAX_ITERATIONS_EXCEEDED|MAX_CASCADE_EXCEEDED', output):
+    outcome = 'UNRESOLVED'
+elif re.search(r'PARTIALLY_RESOLVED', output):
+    outcome = 'PARTIALLY_RESOLVED'
+elif re.search(r'PASS(?:ED)?.*(?:\d+/\d+|\ball\b)', output, re.I):
+    outcome = 'PASSED'
+elif re.search(r'FAIL|BLOCKED|ERROR', output, re.I):
+    outcome = 'FAILED'
+
+# Extract fix counts
+found_m = re.search(r'Issues?\s*found:\s*(\d+)', output, re.I)
+resolved_m = re.search(r'Issues?\s*resolved:\s*(\d+)', output, re.I)
+issues_found = int(found_m.group(1)) if found_m else 0
+issues_resolved = int(resolved_m.group(1)) if resolved_m else 0
+
+# Extract fixes applied (file:line patterns)
+fixes = []
+for m in re.finditer(r'\[([^\]]+?):(\d+)\]\s*[-—]\s*(.+)', output):
+    fixes.append({'file': m.group(1), 'line': int(m.group(2)), 'description': m.group(3).strip()[:200]})
+
+# Extract unresolved items
+unresolved = []
+in_unresolved = False
+for line in output.split('\n'):
+    if re.search(r'Unresolved\s*(Issues|Items)', line, re.I):
+        in_unresolved = True
+        continue
+    if in_unresolved:
+        if line.strip().startswith(('-', '*', '1', '2', '3', '4', '5')):
+            item = re.sub(r'^[\s\-\*\d.]+', '', line).strip()
+            if item:
+                unresolved.append(item[:200])
+        elif line.strip() == '' or line.startswith('#'):
+            in_unresolved = False
+
+print(f\"SKILL_OUTCOME='{outcome}'\")
+print(f\"SKILL_ISSUES_FOUND={issues_found}\")
+print(f\"SKILL_ISSUES_RESOLVED={issues_resolved}\")
+print(f\"SKILL_FIXES='{json.dumps(fixes)}'\")
+print(f\"SKILL_UNRESOLVED='{json.dumps(unresolved)}'\")
+" <<< "$output" 2>/dev/null)"
+}
+
+format_issue_body() {
+    # Format a GitHub issue body for auto-filing from unresolved test items.
+    # Args: $1=screen/context, $2=description, $3=session_id, $4=skill_name
+    local context="$1" desc="$2" session_id="$3" skill_name="$4"
+    cat <<ISSUE_EOF
+## Auto-Filed Issue
+
+**Source:** \`/$skill_name\` skill run
+**Context:** $context
+**Session:** $session_id
+**Filed:** $(date -Iseconds 2>/dev/null || date +"%Y-%m-%dT%H:%M:%S")
+
+## Description
+
+$desc
+
+## Reproduction
+
+This issue was discovered during automated testing. Re-run \`/$skill_name\` targeting the affected area to reproduce.
+
+## Evidence
+
+- Session logs: \`.claude/logs/${skill_name}/${session_id}/\`
+- Learning capture: \`.claude/logs/learning/\`
+
+---
+*Auto-filed by the learning system (post-skill-learning.sh)*
+ISSUE_EOF
+}
+
+append_memory_topic() {
+    # Append a timestamped entry to a memory topic file, keeping under 500 lines.
+    # Args: $1=topic filename (e.g., "testing-lessons.md"), $2=entry text
+    local topic_file="$1" entry="$2"
+    local full_path="$MEMORY_DIR/$topic_file"
+    if [ ! -f "$full_path" ]; then return 1; fi
+    local ts
+    ts=$(date +"%Y-%m-%d %H:%M" 2>/dev/null || date +"%Y-%m-%d")
+    python -c "
+import sys
+
+topic_file = '$full_path'
+timestamp = '$ts'
+entry = '''$entry'''.strip()
+if not entry:
+    sys.exit(0)
+
+with open(topic_file, 'r', encoding='utf-8') as f:
+    lines = f.readlines()
+
+# Find insertion point (after the '<!-- Entries' comment line)
+insert_idx = len(lines)
+for i, line in enumerate(lines):
+    if '<!-- Entries' in line:
+        insert_idx = i + 1
+        break
+
+# Build new entry
+new_entry = f'\n### {timestamp}\n{entry}\n'
+lines.insert(insert_idx, new_entry)
+
+# Trim to 500 lines (remove oldest entries from bottom)
+if len(lines) > 500:
+    lines = lines[:500]
+
+with open(topic_file, 'w', encoding='utf-8') as f:
+    f.writelines(lines)
+" 2>/dev/null
+}
