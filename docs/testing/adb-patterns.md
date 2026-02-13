@@ -1,6 +1,6 @@
 # ADB Interaction Patterns Reference
 
-13 reusable ADB patterns for manual E2E testing via uiautomator. Referenced by `/adb-test` Skill.
+14 reusable ADB patterns for manual E2E testing via uiautomator. Referenced by `/adb-test` Skill.
 
 **Constants:**
 ```
@@ -231,6 +231,74 @@ $ADB logcat -d -t 50 --pid=$($ADB shell pidof $APP_PACKAGE) > $LOG_DIR/{session}
 ```
 
 Capture scope depends on screen result: PASS=app-only (50 lines), ISSUE_FOUND=all errors (200 lines), BLOCKED=crash traces (100 lines).
+
+---
+
+## Pattern 14: Dropdown/Popup Interaction (ExposedDropdownMenu)
+
+Compose `ExposedDropdownMenu` renders popup items in a **separate window layer**. ADB `input tap` dispatches only to the main window, making popup items unreachable. Use this 4-strategy fallback chain:
+
+**Strategy A: contentDescription search** (preferred)
+```bash
+# 1. Tap dropdown anchor to open popup
+$ADB shell input tap {anchor_cx} {anchor_cy}
+sleep 0.5
+
+# 2. Dump UI (note: may dismiss popup on some devices)
+$ADB shell uiautomator dump //sdcard/window_dump.xml && $ADB pull //sdcard/window_dump.xml /tmp/window_dump.xml
+
+# 3. Search for content-desc matching target option
+PYTHONIOENCODING=utf-8 python -c "
+import xml.etree.ElementTree as ET, re
+tree = ET.parse('/tmp/window_dump.xml')
+target = 'Weekend 60 minutes'  # contentDescription set in OnboardingScreen.kt
+for node in tree.iter('node'):
+    desc = node.get('content-desc', '')
+    if target.lower() in desc.lower():
+        bounds = node.get('bounds', '')
+        m = re.match(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', bounds)
+        if m:
+            cx = (int(m.group(1)) + int(m.group(3))) // 2
+            cy = (int(m.group(2)) + int(m.group(4))) // 2
+            print(f'FOUND: desc={desc!r} tap={cx},{cy}')
+"
+# 4. Tap the found element
+$ADB shell input tap {cx} {cy}
+```
+
+**Strategy B: Coordinate estimation**
+```bash
+# Use a known-working dropdown (household size) to calibrate item height (~100px on Pixel 6).
+# Calculate target item y = anchor_bottom + (item_index * item_height) + (item_height / 2)
+# For 5-item lists (15,30,45,60,90 min): item_index is 0-based position of target value
+$ADB shell input tap {anchor_cx} {anchor_cy}  # open popup
+sleep 0.3
+$ADB shell input tap {anchor_cx} {estimated_item_cy}  # tap estimated position
+```
+
+**Strategy C: Shell chaining** (single shell session keeps popup alive)
+```bash
+$ADB shell "input tap {anchor_cx} {anchor_cy}; sleep 0.5; input tap {item_cx} {item_cy}"
+```
+
+**Strategy D: Backend API fallback** (skip UI entirely)
+```bash
+curl -X PUT http://localhost:8000/api/v1/users/preferences \
+  -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  -d '{"weekend_cooking_time": 60}'
+```
+
+**Stall detection rule:** If Strategy A fails, immediately try B. If B fails, try C. If C fails, use D. Max 2 attempts per strategy. Total budget: 8 attempts before declaring BLOCKED.
+
+**Known contentDescription values** (set in OnboardingScreen.kt):
+
+| Dropdown | contentDescription pattern | Example |
+|----------|---------------------------|---------|
+| Household size | `"{N} people"` | `"4 people"` |
+| Spice level | `"Spice {Level}"` | `"Spice Medium"` |
+| Weekday time | `"Weekday {N} minutes"` | `"Weekday 30 minutes"` |
+| Weekend time | `"Weekend {N} minutes"` | `"Weekend 60 minutes"` |
 
 ---
 

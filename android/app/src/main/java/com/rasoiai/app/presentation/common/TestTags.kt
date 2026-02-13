@@ -48,6 +48,8 @@ object TestTags {
     // Onboarding - Step 5: Cooking Time
     const val WEEKDAY_TIME_DROPDOWN = "weekday_time_dropdown"
     const val WEEKEND_TIME_DROPDOWN = "weekend_time_dropdown"
+    const val WEEKDAY_TIME_OPTION_PREFIX = "weekday_time_option_"
+    const val WEEKEND_TIME_OPTION_PREFIX = "weekend_time_option_"
     const val BUSY_DAY_CHIP_PREFIX = "busy_day_chip_"
 
     // Generating Screen

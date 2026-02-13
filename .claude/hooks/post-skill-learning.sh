@@ -95,6 +95,55 @@ for item in items[:5]:
     append_memory_topic "skill-gaps.md" "$GAP_ENTRY"
 fi
 
+# Update failure index for non-PASSED outcomes
+if [ "$SKILL_OUTCOME" != "PASSED" ] && [ "$SKILL_OUTCOME" != "RESOLVED" ]; then
+    # Determine issue type from skill args or output
+    ISSUE_TYPE=$(echo "$SKILL_ARGS" | python -c "
+import sys
+args = sys.stdin.read()
+if 'dropdown' in args.lower(): print('dropdown_interaction')
+elif 'crash' in args.lower() or 'anr' in args.lower(): print('crash_anr')
+elif 'navigation' in args.lower(): print('navigation_failure')
+elif 'timeout' in args.lower(): print('timeout')
+else: print('general_failure')
+" 2>/dev/null)
+    ISSUE_TYPE="${ISSUE_TYPE:-general_failure}"
+    update_failure_index "$SKILL_NAME" "$ISSUE_TYPE" "$SKILL_OUTCOME" "" ""
+fi
+
+# Auto-threshold escalation: if same (skill, issue_type) fails 5+ times, auto-file GitHub issue
+if [ "$SKILL_OUTCOME" = "UNRESOLVED" ]; then
+    python -c "
+import json, subprocess, os
+try:
+    with open('$FAILURE_INDEX') as f:
+        d = json.load(f)
+    for e in d.get('entries', []):
+        if e.get('skill') == '$SKILL_NAME' and len(e.get('occurrences', [])) >= 5:
+            if not e.get('auto_escalation_filed'):
+                desc = f\"Recurring failure in /{e['skill']}: {e['issue_type']} ({len(e['occurrences'])} occurrences)\"
+                # Check for duplicate before filing
+                result = subprocess.run(
+                    ['gh', 'issue', 'list', '--search', f\"{e['skill']} {e['issue_type']}\", '--state', 'open', '--limit', '3'],
+                    capture_output=True, text=True, timeout=10
+                )
+                if e['issue_type'] not in result.stdout:
+                    subprocess.run(
+                        ['gh', 'issue', 'create', '--title', f\"Recurring: {e['skill']} - {e['issue_type']}\",
+                         '--body', desc, '--label', 'bug,recurring-failure,auto-filed'],
+                        capture_output=True, text=True, timeout=15
+                    )
+                    e['auto_escalation_filed'] = True
+                    import tempfile
+                    fd, tmp = tempfile.mkstemp(dir='.claude/logs/learning')
+                    with os.fdopen(fd, 'w') as f2:
+                        json.dump(d, f2, indent=2)
+                    os.replace(tmp, '$FAILURE_INDEX')
+except Exception:
+    pass
+" 2>/dev/null
+fi
+
 # Log the learning capture event
 log_event "LEARNING_CAPTURE" "skill=$SKILL_NAME" "outcome=$SKILL_OUTCOME" "capture=$CAPTURE_ID"
 

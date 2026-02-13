@@ -48,7 +48,7 @@ APP_PACKAGE = com.rasoiai.app
 APP_ACTIVITY = com.rasoiai.app.MainActivity
 ```
 
-**Read `docs/testing/adb-patterns.md` for the 13 reusable ADB interaction patterns** (UI dump, screenshot, tap, text input, back press, parse bounds, find element, scroll/redump, crash/ANR detection, keyboard dismiss, system dialog detection, screenshot validation, logcat capture).
+**Read `docs/testing/adb-patterns.md` for the 14 reusable ADB interaction patterns** (UI dump, screenshot, tap, text input, back press, parse bounds, find element, scroll/redump, crash/ANR detection, keyboard dismiss, system dialog detection, screenshot validation, logcat capture, dropdown/popup interaction).
 
 ### CRITICAL: Compose testTag() is NOT visible in uiautomator XML
 
@@ -58,6 +58,31 @@ Jetpack Compose `testTag()` values do NOT appear in uiautomator XML dumps. All e
 - **`resource-id`** attribute — Android resource IDs (rare in Compose)
 - **`class`** attribute — widget type
 - **Bounds position** — relative screen position (bottom nav y > 90%, top bar y < 15%)
+
+### Known Limitations
+
+| Component | Limitation | Workaround |
+|-----------|-----------|------------|
+| ExposedDropdownMenu | Popup renders in separate window layer; `input tap` dispatches to main window only | Use Pattern 14 (4-strategy chain) |
+| uiautomator dump | May dismiss popup by forcing focus change | Strategy A: dump AFTER popup opens but search content-desc; Strategy B/C: coordinate-based |
+| Compose testTag | Not visible in uiautomator XML | Use `text`, `content-desc`, bounds position |
+
+### Stall Detection
+
+If the same ADB action (tap/text/dump) fails 3 consecutive times with the same outcome:
+1. Log stall: element, action, 3 failure details
+2. Switch to next fallback strategy (Pattern 14 chain for dropdowns)
+3. If all strategies exhausted: use backend API to set the value directly
+4. NEVER ask the user — use the fallback chain autonomously
+
+### Onboarding Dropdown Coordinate Hints (Pixel 6, 1080x2400)
+
+| Dropdown | Anchor testTag | Item Height | contentDescription Pattern |
+|----------|---------------|-------------|---------------------------|
+| Household size | `household_size_dropdown` | ~100px | `"{N} people"` |
+| Spice level | `spice_level_dropdown` | ~100px | `"Spice {Level}"` |
+| Weekday time | `weekday_time_dropdown` | ~100px | `"Weekday {N} minutes"` |
+| Weekend time | `weekend_time_dropdown` | ~100px | `"Weekend {N} minutes"` |
 
 ---
 

@@ -235,6 +235,87 @@ os.replace(tmp, '$WORKFLOW_STATE_FILE')
 }
 
 # =============================================================================
+# Failure Index Utilities
+# =============================================================================
+
+FAILURE_INDEX=".claude/logs/learning/failure-index.json"
+
+init_failure_index() {
+    if [ ! -f "$FAILURE_INDEX" ]; then
+        mkdir -p "$(dirname "$FAILURE_INDEX")" 2>/dev/null
+        echo '{"version":1,"entries":[]}' > "$FAILURE_INDEX" 2>/dev/null
+    fi
+}
+
+read_failure_entry() {
+    # Read entry by (skill, issue_type) key. Returns JSON or empty.
+    local skill="$1" issue_type="$2"
+    init_failure_index
+    python -c "
+import json
+with open('$FAILURE_INDEX') as f:
+    d = json.load(f)
+for e in d.get('entries', []):
+    if e.get('skill') == '$skill' and e.get('issue_type') == '$issue_type':
+        print(json.dumps(e))
+        break
+" 2>/dev/null
+}
+
+update_failure_index() {
+    # Append an occurrence to an existing entry, or create new entry.
+    # Args: $1=skill, $2=issue_type, $3=outcome, $4=component, $5=workaround
+    local skill="$1" issue_type="$2" outcome="$3" component="${4:-}" workaround="${5:-}"
+    init_failure_index
+    python -c "
+import json, os, tempfile
+with open('$FAILURE_INDEX') as f:
+    d = json.load(f)
+ts = '$(date +%Y-%m-%d 2>/dev/null || echo "unknown")'
+skill, itype = '$skill', '$issue_type'
+entry = None
+for e in d.get('entries', []):
+    if e.get('skill') == skill and e.get('issue_type') == itype:
+        entry = e
+        break
+if entry is None:
+    entry = {'skill': skill, 'issue_type': itype, 'component': '$component',
+             'first_seen': ts, 'occurrences': [], 'known_workaround': None,
+             'prevention': None, 'threshold_reached': False, 'auto_escalation': None}
+    d['entries'].append(entry)
+entry['occurrences'].append({
+    'date': ts, 'outcome': '$outcome', 'workaround_used': '$workaround' or None
+})
+if len(entry['occurrences']) >= 3:
+    entry['threshold_reached'] = True
+if '$workaround':
+    entry['known_workaround'] = '$workaround'
+fd, tmp = tempfile.mkstemp(dir='.claude/logs/learning')
+with os.fdopen(fd, 'w') as f:
+    json.dump(d, f, indent=2)
+os.replace(tmp, '$FAILURE_INDEX')
+" 2>/dev/null
+}
+
+check_known_limitations() {
+    # Search failure index for matching (skill, issue_type) with a known workaround.
+    # Returns workaround string or empty.
+    local skill="$1" issue_type="$2"
+    init_failure_index
+    python -c "
+import json
+with open('$FAILURE_INDEX') as f:
+    d = json.load(f)
+for e in d.get('entries', []):
+    if e.get('skill') == '$skill' and e.get('issue_type') == '$issue_type':
+        w = e.get('known_workaround')
+        if w:
+            print(w)
+        break
+" 2>/dev/null
+}
+
+# =============================================================================
 # Learning System Utilities (Phase 1)
 # =============================================================================
 

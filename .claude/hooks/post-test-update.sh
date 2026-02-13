@@ -17,6 +17,13 @@ if ! is_test_command "$CMD"; then exit 0; fi
 TARGET=$(extract_test_target "$CMD")
 RESULT=$(detect_test_result "$HOOK_TOOL_OUTPUT")
 
+# Detect test platform for learning system enrichment
+PLATFORM="unknown"
+if echo "$CMD" | grep -qiE "pytest|python.*test"; then PLATFORM="backend"
+elif echo "$CMD" | grep -qiE "gradlew.*connectedDebug"; then PLATFORM="android-e2e"
+elif echo "$CMD" | grep -qiE "gradlew.*test"; then PLATFORM="android-unit"
+fi
+
 if [ ! -f "$WORKFLOW_STATE_FILE" ]; then init_workflow_state "null"; fi
 
 if [ "$RESULT" = "pass" ]; then
@@ -40,7 +47,7 @@ fi
 append_test_run_evidence "$CMD" "$TARGET" "$RESULT"
 
 TS=$(date +%Y%m%d-%H%M%S 2>/dev/null || echo "$$")
-EJ=$(python -c "import json;print(json.dumps({'timestamp':'$TS','command':'$(echo "$CMD"|head -c 200)','target':'$TARGET','claimedResult':'$RESULT'}))" 2>/dev/null)
+EJ=$(python -c "import json;print(json.dumps({'timestamp':'$TS','command':'$(echo "$CMD"|head -c 200)','target':'$TARGET','claimedResult':'$RESULT','platform':'$PLATFORM'}))" 2>/dev/null)
 if [ -n "$EJ" ]; then write_evidence "$EVIDENCE_DIR" "run-${TS}.json" "$EJ" >/dev/null; fi
 
 exit 0

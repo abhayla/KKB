@@ -72,9 +72,9 @@ Beyond standard D1-D7 prerequisites:
 | B6 | Select "North Indian" and "South Indian" | Both highlighted | — | — |
 | B7 | Tap "Next" | Step 4: Dislikes & cooking time | — | — |
 | B8 | Enter disliked: Karela, Lauki | Dislike chips visible | — | — |
-| B9 | Set spice level to Medium | Spice selector shows Medium | — | — |
-| B10 | Set weekday cooking time: 30 min | Time dropdown shows 30 | — | — |
-| B11 | Set weekend cooking time: 60 min | Time dropdown shows 60 | — | — |
+| B9 | Set spice level to Medium (use Pattern 14 for dropdown) | Spice selector shows Medium | — | — |
+| B10 | Set weekday cooking time: 30 min (use Pattern 14 for dropdown) | Time dropdown shows 30 | — | — |
+| B11 | Set weekend cooking time: 60 min (use Pattern 14 for dropdown) | Time dropdown shows 60 | — | — |
 | B12 | Tap "Next" or "Generate" | Step 5 or generation begins | `flow01_onboarding_complete.png` | — |
 
 ### Phase C: First Meal Plan Generation (Steps 16-20)
@@ -224,7 +224,7 @@ Two validation checkpoints using `validate_meal_plan.py`:
 
 **Common issues:**
 - Gemini timeout → retry once, then generate via backend API directly
-- Onboarding stuck → check dropdown testTags, use coordinate-based taps
+- Onboarding stuck on dropdown → Use Pattern 14 (4-strategy chain): contentDesc search → coordinate estimation → shell chaining → backend API fallback. If UI dropdown fails after 2 strategies, fall back to backend API to set cooking times directly.
 - Settings changes not persisting → verify DataStore + backend sync
 
 ## Screen Coverage

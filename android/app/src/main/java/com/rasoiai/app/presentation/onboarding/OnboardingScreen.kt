@@ -85,6 +85,8 @@ import com.rasoiai.app.presentation.common.TestTags
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -391,7 +393,9 @@ private fun HouseholdSizeStep(
                             onHouseholdSizeChange(size)
                             expanded = false
                         },
-                        modifier = Modifier.testTag("${TestTags.HOUSEHOLD_SIZE_OPTION_PREFIX}$size")
+                        modifier = Modifier
+                            .testTag("${TestTags.HOUSEHOLD_SIZE_OPTION_PREFIX}$size")
+                            .semantics { contentDescription = "$size people" }
                     )
                 }
             }
@@ -972,7 +976,10 @@ private fun CuisinePreferencesStep(
                         onClick = {
                             onSpiceLevelChange(level)
                             expanded = false
-                        }
+                        },
+                        modifier = Modifier
+                            .testTag("${TestTags.SPICE_LEVEL_OPTION_PREFIX}${level.name.lowercase()}")
+                            .semantics { contentDescription = "Spice ${level.displayName}" }
                     )
                 }
             }
@@ -1262,7 +1269,10 @@ private fun CookingTimeStep(
                         onClick = {
                             onWeekdayTimeChange(time)
                             weekdayExpanded = false
-                        }
+                        },
+                        modifier = Modifier
+                            .testTag("${TestTags.WEEKDAY_TIME_OPTION_PREFIX}$time")
+                            .semantics { contentDescription = "Weekday $time minutes" }
                     )
                 }
             }
@@ -1304,7 +1314,10 @@ private fun CookingTimeStep(
                         onClick = {
                             onWeekendTimeChange(time)
                             weekendExpanded = false
-                        }
+                        },
+                        modifier = Modifier
+                            .testTag("${TestTags.WEEKEND_TIME_OPTION_PREFIX}$time")
+                            .semantics { contentDescription = "Weekend $time minutes" }
                     )
                 }
             }

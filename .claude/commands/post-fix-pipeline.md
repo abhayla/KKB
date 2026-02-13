@@ -217,6 +217,18 @@ Return a structured report:
 
 ---
 
+## POST-RUN LEARNING CAPTURE
+
+After producing the output report (regardless of pipeline status), automatically invoke:
+
+```
+Skill("reflect", args="session")
+```
+
+This captures the pipeline outcomes into structured learning logs and updates memory topic files. Runs for all statuses including NO_FIXES and BLOCKED.
+
+---
+
 ## Error Handling
 
 | Scenario | Behavior |

@@ -30,6 +30,35 @@ This skill MUST NOT invoke itself. The `post-skill-learning.sh` hook already ski
 
 ---
 
+## STEP 0: PRE-EXECUTION KNOWLEDGE CHECK
+
+Before any skill execution, check the failure index for known issues:
+
+1. **Search failure-index.json** for matching `(skill, issue_type)`:
+   ```bash
+   python -c "
+   import json
+   try:
+       with open('.claude/logs/learning/failure-index.json') as f:
+           d = json.load(f)
+       for e in d.get('entries', []):
+           if e.get('known_workaround'):
+               print(f\"KNOWN: {e['skill']}/{e['issue_type']} -> {e['known_workaround']}\")
+           if e.get('threshold_reached'):
+               print(f\"THRESHOLD: {e['skill']}/{e['issue_type']} ({len(e['occurrences'])} occurrences)\")
+   except FileNotFoundError:
+       print('No failure index found')
+   "
+   ```
+
+2. **If known limitation found** → apply documented workaround immediately (skip exploration)
+3. **If previous stall found** → start with the strategy that eventually worked
+4. **Log:** `"Pre-execution check: found/not-found, applying: {strategy}"`
+
+This step is informational in `session` mode (just reports what's known). In `deep` mode, it informs which skills to prioritize for re-testing.
+
+---
+
 ## STEP 1: GATHER
 
 Read the following data sources (adjust scope by mode):
