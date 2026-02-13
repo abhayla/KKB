@@ -236,62 +236,65 @@ Capture scope depends on screen result: PASS=app-only (50 lines), ISSUE_FOUND=al
 
 ## Pattern 14: Dropdown/Popup Interaction (ExposedDropdownMenu)
 
-Compose `ExposedDropdownMenu` renders popup items in a **separate window layer**. ADB `input tap` dispatches only to the main window, making popup items unreachable. Use this 4-strategy fallback chain:
+Compose `ExposedDropdownMenu` creates its popup via `Popup` → `PopupLayout` → `WindowManager.addView()` as a **separate `TYPE_APPLICATION_PANEL` window** with `FLAG_NOT_FOCUSABLE`. When `adb shell input tap x y` dispatches a touch event, Android's `InputDispatcher` routes it to the **focused window** (the main Activity), not the popup window. The popup never receives the tap.
 
-**Strategy A: contentDescription search** (preferred)
+**This is unfixable at the ADB level** — there is no ADB mechanism to target a specific window or change window focus.
+
+### Strategy: 1 UI attempt + Backend API fallback
+
+**Step 1: Try `input tap` once** (in case future Android/Compose versions fix the routing)
 ```bash
-# 1. Tap dropdown anchor to open popup
+# Tap dropdown anchor to open popup
 $ADB shell input tap {anchor_cx} {anchor_cy}
 sleep 0.5
-
-# 2. Dump UI (note: may dismiss popup on some devices)
-$ADB shell uiautomator dump //sdcard/window_dump.xml && $ADB pull //sdcard/window_dump.xml /tmp/window_dump.xml
-
-# 3. Search for content-desc matching target option
-PYTHONIOENCODING=utf-8 python -c "
-import xml.etree.ElementTree as ET, re
-tree = ET.parse('/tmp/window_dump.xml')
-target = 'Weekend 60 minutes'  # contentDescription set in OnboardingScreen.kt
-for node in tree.iter('node'):
-    desc = node.get('content-desc', '')
-    if target.lower() in desc.lower():
-        bounds = node.get('bounds', '')
-        m = re.match(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', bounds)
-        if m:
-            cx = (int(m.group(1)) + int(m.group(3))) // 2
-            cy = (int(m.group(2)) + int(m.group(4))) // 2
-            print(f'FOUND: desc={desc!r} tap={cx},{cy}')
-"
-# 4. Tap the found element
-$ADB shell input tap {cx} {cy}
-```
-
-**Strategy B: Coordinate estimation**
-```bash
-# Use a known-working dropdown (household size) to calibrate item height (~100px on Pixel 6).
-# Calculate target item y = anchor_bottom + (item_index * item_height) + (item_height / 2)
-# For 5-item lists (15,30,45,60,90 min): item_index is 0-based position of target value
-$ADB shell input tap {anchor_cx} {anchor_cy}  # open popup
+# Tap estimated item position
+$ADB shell input tap {anchor_cx} {estimated_item_cy}
+sleep 0.5
+# Dismiss popup (tap elsewhere or BACK)
+$ADB shell input keyevent BACK
 sleep 0.3
-$ADB shell input tap {anchor_cx} {estimated_item_cy}  # tap estimated position
+# Dump UI and check if value changed
+$ADB shell uiautomator dump //sdcard/window_dump.xml && $ADB pull //sdcard/window_dump.xml /tmp/window_dump.xml
+# Verify: search for the expected value in the dropdown anchor text
 ```
 
-**Strategy C: Shell chaining** (single shell session keeps popup alive)
+**Step 2: If tap didn't change the value → use backend API**
 ```bash
-$ADB shell "input tap {anchor_cx} {anchor_cy}; sleep 0.5; input tap {item_cx} {item_cy}"
-```
+# Get JWT
+JWT=$(curl -s -X POST http://localhost:8000/api/v1/auth/firebase \
+  -H 'Content-Type: application/json' \
+  -d '{"firebase_token":"fake-firebase-token"}' | \
+  python -c 'import sys,json;print(json.load(sys.stdin).get("access_token",""))')
 
-**Strategy D: Backend API fallback** (skip UI entirely)
-```bash
-curl -X PUT http://localhost:8000/api/v1/users/preferences \
+# Set the value directly via API
+curl -s -X PUT http://localhost:8000/api/v1/users/preferences \
   -H "Authorization: Bearer $JWT" \
   -H "Content-Type: application/json" \
-  -d '{"weekend_cooking_time": 60}'
+  -d '{"weekday_cooking_time": 30, "weekend_cooking_time": 60}'
 ```
 
-**Stall detection rule:** If Strategy A fails, immediately try B. If B fails, try C. If C fails, use D. Max 2 attempts per strategy. Total budget: 8 attempts before declaring BLOCKED.
+**Budget:** 1 UI attempt + 1 API call. No multi-attempt chains.
 
-**Known contentDescription values** (set in OnboardingScreen.kt):
+**For onboarding dropdowns:** Accept default values via UI (tap "Next"/"Create My Meal Plan" without changing dropdowns), then correct specific values via backend API after onboarding completes.
+
+### Non-Working Strategies (documented for reference)
+
+The following strategies all fail for the **same root cause** — `input tap` dispatches to the focused main window, not the popup window:
+
+| Strategy | Why it fails |
+|----------|-------------|
+| **A: contentDesc search** | Even if the popup item is found in XML dump, `input tap` at those coordinates hits the main window, not the popup. Also, `uiautomator dump` may dismiss the popup by forcing a focus change. |
+| **B: Coordinate estimation** | Same `input tap` routing issue — coordinates are correct but events go to wrong window. |
+| **C: Shell chaining** | Keeping the shell session alive doesn't change which window receives `input tap` events. The popup is still a separate `TYPE_APPLICATION_PANEL` window. |
+
+### What DOES work for dropdown selection
+
+| Method | Context |
+|--------|---------|
+| **Compose test APIs** (`composeTestRule.performClick()`) | Bypasses the window system entirely. Used in `OnboardingRobot.kt` for automated E2E tests. |
+| **Backend API** | Skips the UI, sets values directly via REST. Used for ADB manual testing. |
+
+**Known contentDescription values** (set in OnboardingScreen.kt, useful for Compose test APIs):
 
 | Dropdown | contentDescription pattern | Example |
 |----------|---------------------------|---------|

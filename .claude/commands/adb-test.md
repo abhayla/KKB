@@ -61,19 +61,19 @@ Jetpack Compose `testTag()` values do NOT appear in uiautomator XML dumps. All e
 
 ### Known Limitations
 
-| Component | Limitation | Workaround |
-|-----------|-----------|------------|
-| ExposedDropdownMenu | Popup renders in separate window layer; `input tap` dispatches to main window only | Use Pattern 14 (4-strategy chain) |
-| uiautomator dump | May dismiss popup by forcing focus change | Strategy A: dump AFTER popup opens but search content-desc; Strategy B/C: coordinate-based |
-| Compose testTag | Not visible in uiautomator XML | Use `text`, `content-desc`, bounds position |
+| Component | Limitation | Root Cause | Workaround |
+|-----------|-----------|------------|------------|
+| ExposedDropdownMenu | Popup items unreachable by `input tap` | Compose popup uses `WindowManager.addView()` as `TYPE_APPLICATION_PANEL` — `input tap` routes to focused main Activity window, not popup | Accept default values in UI, correct via backend API after onboarding (Pattern 14) |
+| uiautomator dump | May dismiss popup by forcing focus change | `uiautomator dump` triggers a window focus change that closes the popup | N/A — popup interaction via UI is not viable for ADB testing |
+| Compose testTag | Not visible in uiautomator XML | testTag is Compose semantics-only, not mapped to Android accessibility | Use `text`, `content-desc`, bounds position |
 
 ### Stall Detection
 
 If the same ADB action (tap/text/dump) fails 3 consecutive times with the same outcome:
 1. Log stall: element, action, 3 failure details
-2. Switch to next fallback strategy (Pattern 14 chain for dropdowns)
-3. If all strategies exhausted: use backend API to set the value directly
-4. NEVER ask the user — use the fallback chain autonomously
+2. For dropdowns: skip to backend API fallback immediately (Pattern 14 — UI attempts are known non-working)
+3. For other elements: try alternative search strategy (text → content-desc → bounds)
+4. NEVER ask the user — use the fallback autonomously
 
 ### Onboarding Dropdown Coordinate Hints (Pixel 6, 1080x2400)
 
@@ -186,9 +186,29 @@ Wait 3 seconds, dump UI, detect which screen:
 | 2. Dietary | Tap a diet preference (e.g., text="Vegetarian"), tap "Next" |
 | 3. Cuisine | Tap a cuisine (e.g., text="North Indian"), tap "Next" |
 | 4. Dislikes | Tap "Next" (skip dislikes for speed) |
-| 5. Cooking Time | Tap "Next" or "Get Started" or "Generate" |
+| 5. Cooking Time | **Accept default dropdown values** (do NOT attempt to change dropdowns via ADB), tap "Create My Meal Plan" or "Generate" |
 
 After each step, wait 1-2s and dump UI to verify progression. If generation screen appears, wait up to 90s for meal plan generation.
+
+**Dropdown API Correction (after onboarding completes):**
+
+Onboarding dropdowns (cooking times, household size, spice level) cannot be changed via ADB `input tap` — see Pattern 14 root cause. After onboarding completes and the user has a JWT, correct any values that differ from the test persona via backend API:
+
+```bash
+# Get JWT
+JWT=$(curl -s -X POST http://localhost:8000/api/v1/auth/firebase \
+  -H 'Content-Type: application/json' \
+  -d '{"firebase_token":"fake-firebase-token"}' | \
+  python -c 'import sys,json;print(json.load(sys.stdin).get("access_token",""))')
+
+# Correct cooking times (and any other dropdown-set values) via API
+curl -s -X PUT http://localhost:8000/api/v1/users/preferences \
+  -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  -d '{"weekday_cooking_time": 30, "weekend_cooking_time": 60}'
+```
+
+**Rule:** For onboarding dropdowns, accept default values via UI tap of "Next"/"Create My Meal Plan", then correct specific values via backend API after onboarding completes but before validation checkpoints.
 
 **If no meal plan data on Home screen:** Generate via backend API:
 ```bash
