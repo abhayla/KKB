@@ -399,6 +399,7 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 | `RecipeRule` | id, type, action, targetId, frequency, enforcement, mealSlot |
 | `NutritionGoal` | id, category (FoodCategory enum), targetServings, timeframe, isActive |
 | `FamilyMember` | id, name, type (MemberType enum), dietaryPreferences |
+| `AiRecipeCatalog` | id, display_name, normalized_name, dietary_tags, cuisine, usage_count |
 
 **Key Enums:**
 - `DietaryTag`: VEGETARIAN, NON_VEGETARIAN, VEGAN, JAIN, SATTVIC, HALAL, EGGETARIAN
@@ -411,7 +412,7 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
 ## Backend API
 
-44 endpoints across 11 routers: Auth, Users, Meal Plans, Recipes, Grocery, Chat, Recipe Rules (includes Nutrition Goals), Family Members, Festivals, Stats, Notifications. Run `PYTHONPATH=. pytest --collect-only -q` or visit `http://localhost:8000/docs` for current counts.
+39 endpoints across 11 routers: Auth, Users, Meal Plans, Recipes, Grocery, Chat, Recipe Rules (includes Nutrition Goals), Family Members, Festivals, Stats, Notifications. Run `PYTHONPATH=. pytest --collect-only -q` or visit `http://localhost:8000/docs` for current counts.
 
 **Full interactive docs:** `http://localhost:8000/docs` (Swagger UI)
 
