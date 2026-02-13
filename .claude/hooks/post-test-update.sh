@@ -29,16 +29,39 @@ if [ ! -f "$WORKFLOW_STATE_FILE" ]; then init_workflow_state "null"; fi
 if [ "$RESULT" = "pass" ]; then
     update_workflow_state '.steps.step4_runTests.completed = true'
     update_workflow_state '.steps.step5_fixLoop.completed = true'
-    echo ""; echo "WORKFLOW: Tests PASSED. Steps 4+5 complete."
+    update_workflow_state '.testFailuresPending = false'
+    update_workflow_state '.testFailurePendingDetails = null'
+    echo ""; echo "WORKFLOW: Tests PASSED. Steps 4+5 complete. testFailuresPending cleared."
     echo "Next: Step 6 (screenshots), Step 7 (verify+commit)"; echo ""
     log_event "STEP_4_COMPLETE" "tests=passed" "target=$TARGET"
 elif [ "$RESULT" = "fail" ]; then
     update_workflow_state '.steps.step4_runTests.completed = true'
     IT=$(get_state_field ".steps.step5_fixLoop.iterations"); IT=${IT:-0}; IT=$((IT + 1))
     update_workflow_state ".steps.step5_fixLoop.iterations = $IT"
-    echo ""; echo "WORKFLOW: Tests FAILED (iteration $IT). Use Skill(\"fix-loop\")."
+    update_workflow_state '.testFailuresPending = true'
+    # Store failure details for gate enforcement
+    TS_DETAIL=$(date -Iseconds 2>/dev/null || date +"%Y-%m-%dT%H:%M:%S")
+    python -c "
+import json, os, tempfile
+with open('$WORKFLOW_STATE_FILE') as f:
+    d = json.load(f)
+d['testFailurePendingDetails'] = {
+    'command': '''$(echo "$CMD" | head -c 200)''',
+    'platform': '$PLATFORM',
+    'target': '$TARGET',
+    'timestamp': '$TS_DETAIL'
+}
+fd, tmp = tempfile.mkstemp(dir='.claude')
+with os.fdopen(fd, 'w') as f:
+    json.dump(d, f, indent=2)
+os.replace(tmp, '$WORKFLOW_STATE_FILE')
+" 2>/dev/null
+    echo ""
+    echo "WORKFLOW: Tests FAILED (iteration $IT)."
+    echo ">>> Write/Edit to code files is BLOCKED until Skill(\"fix-loop\") is invoked. <<<"
+    echo ">>> No exceptions for 'pre-existing' or 'unrelated' failures. ALL failures must be investigated. <<<"
     echo "DO NOT proceed to Step 6 until all tests pass."; echo ""
-    log_event "STEP_4_COMPLETE" "tests=failed" "target=$TARGET" "iteration=$IT"
+    log_event "STEP_4_COMPLETE" "tests=failed" "target=$TARGET" "iteration=$IT" "testFailuresPending=true"
 else
     update_workflow_state '.steps.step4_runTests.completed = true'
     log_event "TEST_RUN" "result=unknown" "target=$TARGET"

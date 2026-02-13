@@ -20,6 +20,13 @@ if [ "$HOOK_TOOL_NAME" = "Skill" ]; then
         SKILL_SUCCESS=$(detect_skill_success "$HOOK_TOOL_OUTPUT")
         log_event "SKILL_INVOKED" "name=$SKILL_NAME" "success=$SKILL_SUCCESS"
         record_skill_invocation "$SKILL_NAME" "$SKILL_SUCCESS"
+
+        # Clear fixLoopInvestigating when fix-loop completes
+        # Note: testFailuresPending is cleared by post-test-update.sh when tests pass
+        if [ "$SKILL_NAME" = "fix-loop" ]; then
+            update_workflow_state '.fixLoopInvestigating = false'
+            log_event "FIXLOOP_COMPLETE" "success=$SKILL_SUCCESS" "investigating=cleared"
+        fi
     fi
     exit 0
 fi

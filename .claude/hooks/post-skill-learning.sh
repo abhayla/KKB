@@ -121,6 +121,27 @@ else: print('general_failure')
     update_failure_index "$SKILL_NAME" "$ISSUE_TYPE" "$SKILL_OUTCOME" "" "" "$AUTO_FIX"
 fi
 
+# Detect "test failures ignored" meta-pattern (ENFORCEMENT_GAP detection)
+# If test failures are pending and we're NOT in a fix-loop investigation,
+# then the system is running skills while ignoring test failures.
+if [ -f "$WORKFLOW_STATE_FILE" ]; then
+    IGNORED=$(python -c "
+import json
+with open('$WORKFLOW_STATE_FILE') as f:
+    d = json.load(f)
+tfp = d.get('testFailuresPending', False)
+fli = d.get('fixLoopInvestigating', False)
+if tfp and not fli:
+    details = d.get('testFailurePendingDetails') or {}
+    print(f\"IGNORED: {details.get('platform','?')} failures from {details.get('command','?')[:80]}\")
+" 2>/dev/null)
+    if [ -n "$IGNORED" ]; then
+        update_failure_index "system" "test_failure_bypass" "ENFORCEMENT_GAP" "hooks" "" "true"
+        append_memory_topic "skill-gaps.md" "- **ENFORCEMENT GAP:** $IGNORED (detected during /$SKILL_NAME execution)"
+        log_event "ENFORCEMENT_GAP" "skill=$SKILL_NAME" "detail=$IGNORED"
+    fi
+fi
+
 # Auto-threshold escalation: if same (skill, issue_type) fails 5+ times, auto-file GitHub issue
 if [ "$SKILL_OUTCOME" = "UNRESOLVED" ]; then
     python -c "

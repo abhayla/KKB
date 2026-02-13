@@ -108,6 +108,9 @@ state = {
         'step6_screenshots': {'completed': False, 'before': None, 'after': None},
         'step7_verify': {'completed': False, 'verification': None}
     },
+    'testFailuresPending': False,
+    'testFailurePendingDetails': None,
+    'fixLoopInvestigating': False,
     'blocked': False, 'blockedReason': None,
     'skillInvocations': {
         'fixLoopInvoked': False, 'fixLoopCount': 0,

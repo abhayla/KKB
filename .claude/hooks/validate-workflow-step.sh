@@ -43,6 +43,53 @@ if [ ! -f "$WORKFLOW_STATE_FILE" ]; then
     exit 0
 fi
 
+# =============================================================================
+# Test Failure Pending Gate (independent of activeCommand)
+# Blocks code edits and commits when test failures are pending and fix-loop
+# has NOT been invoked. This fires for ALL test runs, including ad-hoc.
+# =============================================================================
+TFP=$(get_state_field ".testFailuresPending")
+FLI=$(get_state_field ".fixLoopInvestigating")
+
+if [ "$TFP" = "true" -o "$TFP" = "True" ] && [ "$FLI" != "true" ] && [ "$FLI" != "True" ]; then
+    case "$HOOK_TOOL_NAME" in
+        "Write"|"Edit")
+            TFP_FILE=$(extract_input_field "file_path")
+            if [ -n "$TFP_FILE" ]; then
+                # Allow: .claude/, docs/, .github/, CLAUDE.md, any .md file
+                if echo "$TFP_FILE" | grep -qE "(\.claude/|docs/|\.github/|CLAUDE\.md|\.md$)"; then
+                    : # Allowed — documentation and config files
+                else
+                    # Block: all code files (.kt, .py, .java, .xml, etc.)
+                    if echo "$TFP_FILE" | grep -qE "\.(kt|py|java|xml|kts|gradle|json|yaml|yml|toml|properties)$"; then
+                        TFP_DETAILS=$(get_state_field ".testFailurePendingDetails")
+                        echo ""
+                        echo "BLOCKED: Test failures are pending. Write/Edit to code files is blocked."
+                        echo ">>> You MUST invoke Skill(\"fix-loop\") to investigate ALL test failures. <<<"
+                        echo ">>> No exceptions for 'pre-existing' or 'unrelated' failures. <<<"
+                        echo "Failure details: $TFP_DETAILS"
+                        echo ""
+                        log_event "BLOCKED" "reason=testFailuresPending" "file=$TFP_FILE"
+                        exit 2
+                    fi
+                fi
+            fi
+            ;;
+        "Bash")
+            TFP_CMD=$(extract_input_field "command")
+            if echo "$TFP_CMD" | grep -qE "git commit"; then
+                echo ""
+                echo "BLOCKED: Test failures are pending. Commits are blocked."
+                echo ">>> You MUST invoke Skill(\"fix-loop\") to investigate ALL test failures. <<<"
+                echo ">>> No exceptions for 'pre-existing' or 'unrelated' failures. <<<"
+                echo ""
+                log_event "BLOCKED" "reason=testFailuresPending_commit"
+                exit 2
+            fi
+            ;;
+    esac
+fi
+
 case "$HOOK_TOOL_NAME" in
     "Write"|"Edit")
         FILE_PATH=$(extract_input_field "file_path")

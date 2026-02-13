@@ -785,14 +785,15 @@ The 7-step workflow (Rule #7) is enforced by shell hooks in `.claude/hooks/`. Al
 | Hook | Trigger | Purpose |
 |------|---------|---------|
 | `hook-utils.sh` | (sourced) | Shared library — stdin parsing, state mgmt, test detection, evidence writing |
-| `validate-workflow-step.sh` | PreToolUse (Write/Edit/Bash) | Blocks actions if prior workflow steps are incomplete; blocks commits without pipeline |
+| `validate-workflow-step.sh` | PreToolUse (Write/Edit/Bash) | Blocks actions if prior workflow steps are incomplete; blocks commits without pipeline; **blocks code edits when testFailuresPending** |
+| `pre-skill-fixloop-unblock.sh` | PreToolUse (Skill) | Sets `fixLoopInvestigating=true` when fix-loop is invoked, unblocking code edits during investigation |
 | `verify-evidence-artifacts.sh` | PreToolUse (Bash) | Blocks `git commit` when required evidence is missing (Skill invocations not tracked) |
-| `post-test-update.sh` | PostToolUse (Bash) | Records test results in workflow state and evidence files |
+| `post-test-update.sh` | PostToolUse (Bash) | Records test results in workflow state and evidence files; **sets/clears testFailuresPending flag** |
 | `verify-test-rerun.sh` | PostToolUse (Bash) | Re-runs same test independently; **blocks** if claimed PASS but re-run FAIL |
-| `log-workflow.sh` | PostToolUse (Bash/Skill/Write/Edit) | Logs events; **tracks Skill invocations** (fix-loop, post-fix-pipeline) |
+| `log-workflow.sh` | PostToolUse (Bash/Skill/Write/Edit) | Logs events; **tracks Skill invocations**; **clears fixLoopInvestigating on fix-loop completion** |
 | `post-screenshot-resize.sh` | PostToolUse (Bash/Playwright) | Auto-resize screenshots >1800px |
 
-Workflow state is tracked in `.claude/workflow-state.json` (extended schema with `skillInvocations`, `evidence`, `agentDelegations`). The full hook system and enforcement logic is documented in `docs/rules/Claude Code Enforced Workflow Rules.md`.
+Workflow state is tracked in `.claude/workflow-state.json` (extended schema with `testFailuresPending`, `fixLoopInvestigating`, `skillInvocations`, `evidence`, `agentDelegations`). The full hook system and enforcement logic is documented in `docs/rules/Claude Code Enforced Workflow Rules.md`.
 
 ## Claude Code Configuration
 
@@ -816,9 +817,10 @@ The `.claude/` directory contains Claude Code customization:
 │   ├── post-fix-pipeline.md  # /post-fix-pipeline — post-fix verification (regression → test suite → docs → commit)
 │   ├── reflect.md        # /reflect — learning system analysis & self-modification
 │   └── run-e2e.md        # /run-e2e — run Android E2E tests by feature group
-├── hooks/            # Workflow enforcement hooks (8 hooks + 1 shared library)
+├── hooks/            # Workflow enforcement hooks (9 hooks + 1 shared library)
 │   ├── hook-utils.sh               # Shared library sourced by all hooks (stdin parsing, state mgmt)
-│   ├── validate-workflow-step.sh   # PreToolUse: block actions if workflow steps incomplete
+│   ├── validate-workflow-step.sh   # PreToolUse: block actions if workflow steps incomplete + testFailuresPending gate
+│   ├── pre-skill-fixloop-unblock.sh # PreToolUse: set fixLoopInvestigating=true when fix-loop invoked
 │   ├── verify-evidence-artifacts.sh # PreToolUse: block git commit if evidence missing
 │   ├── post-test-update.sh         # PostToolUse: record test results in workflow state
 │   ├── verify-test-rerun.sh        # PostToolUse: re-run tests independently, block on inconsistency

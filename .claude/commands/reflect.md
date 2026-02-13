@@ -205,6 +205,45 @@ Issues in `skill-gaps.md` that remain open across 2+ sessions:
 | ...
 ```
 
+### Hook Effectiveness Audit
+
+Cross-reference `workflow-sessions.log` to detect enforcement gaps:
+
+1. Find all `STEP_4_COMPLETE` events where `tests=failed` and `testFailuresPending=true`
+2. For each, check if `SKILL_INVOKED name=fix-loop` followed within the same session
+3. If failures exist without fix-loop invocation → flag as **ENFORCEMENT_GAP**
+
+```bash
+python -c "
+import re
+with open('.claude/logs/workflow-sessions.log') as f:
+    lines = f.readlines()
+sessions = {}
+current_session = None
+for line in lines:
+    if 'SESSION_START' in line:
+        m = re.search(r'id=(\S+)', line)
+        current_session = m.group(1) if m else 'unknown'
+        sessions[current_session] = {'failures': [], 'fixloops': []}
+    if current_session and 'tests=failed' in line:
+        sessions[current_session]['failures'].append(line.strip())
+    if current_session and 'SKILL_INVOKED' in line and 'fix-loop' in line:
+        sessions[current_session]['fixloops'].append(line.strip())
+print('| Session | Test Failures | Fix-Loop Followed? | Gap? |')
+print('|---------|---------------|-------------------|------|')
+for sid, data in sessions.items():
+    if data['failures']:
+        has_fixloop = 'YES' if data['fixloops'] else 'NO'
+        gap = 'ENFORCEMENT_GAP' if not data['fixloops'] else '-'
+        print(f'| {sid[:20]} | {len(data[\"failures\"])} | {has_fixloop} | {gap} |')
+"
+```
+
+**Per-mode behavior:**
+- **session**: Log warning + add to `skill-gaps.md` if gaps found
+- **deep**: Propose hook modifications to close the gap
+- **meta**: Track as meta-pattern (system failing to enforce its own rules)
+
 ### Duration Trends
 Average skill execution time trending up or down.
 
