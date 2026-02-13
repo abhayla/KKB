@@ -264,8 +264,8 @@ for e in d.get('entries', []):
 
 update_failure_index() {
     # Append an occurrence to an existing entry, or create new entry.
-    # Args: $1=skill, $2=issue_type, $3=outcome, $4=component, $5=workaround
-    local skill="$1" issue_type="$2" outcome="$3" component="${4:-}" workaround="${5:-}"
+    # Args: $1=skill, $2=issue_type, $3=outcome, $4=component, $5=workaround, $6=auto_fix_eligible
+    local skill="$1" issue_type="$2" outcome="$3" component="${4:-}" workaround="${5:-}" auto_fix_eligible="${6:-false}"
     init_failure_index
     python -c "
 import json, os, tempfile
@@ -290,6 +290,8 @@ if len(entry['occurrences']) >= 3:
     entry['threshold_reached'] = True
 if '$workaround':
     entry['known_workaround'] = '$workaround'
+if '$auto_fix_eligible' == 'true':
+    entry['auto_fix_eligible'] = True
 fd, tmp = tempfile.mkstemp(dir='.claude/logs/learning')
 with os.fdopen(fd, 'w') as f:
     json.dump(d, f, indent=2)

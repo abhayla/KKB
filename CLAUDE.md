@@ -296,7 +296,7 @@ Four GitHub Actions workflows in `.github/workflows/`:
 
 ### Backend Tests (~351 total)
 
-All in `backend/tests/`, named `test_{feature}.py` (26 test files). Run `PYTHONPATH=. pytest --collect-only` to list all. Tests use SQLite in-memory via conftest fixtures (see Backend Test Fixtures below). Some files use class-based test organization (e.g., `test_ai_meal_service.py`, `test_chat_api.py`, `test_preference_service.py`).
+All in `backend/tests/`, named `test_{feature}.py` (25 test files). Run `PYTHONPATH=. pytest --collect-only` to list all. Tests use SQLite in-memory via conftest fixtures (see Backend Test Fixtures below). Some files use class-based test organization (e.g., `test_ai_meal_service.py`, `test_chat_api.py`, `test_preference_service.py`).
 
 ### Android UI Tests
 
@@ -814,14 +814,16 @@ The `.claude/` directory contains Claude Code customization:
 │   ├── fix-loop.md       # /fix-loop — iterative fix cycle (analyze → fix → review → build → retest)
 │   ├── implement.md      # /implement — implement feature with workflow
 │   ├── post-fix-pipeline.md  # /post-fix-pipeline — post-fix verification (regression → test suite → docs → commit)
+│   ├── reflect.md        # /reflect — learning system analysis & self-modification
 │   └── run-e2e.md        # /run-e2e — run Android E2E tests by feature group
-├── hooks/            # Workflow enforcement hooks (7 hooks + 1 shared library)
+├── hooks/            # Workflow enforcement hooks (8 hooks + 1 shared library)
 │   ├── hook-utils.sh               # Shared library sourced by all hooks (stdin parsing, state mgmt)
 │   ├── validate-workflow-step.sh   # PreToolUse: block actions if workflow steps incomplete
 │   ├── verify-evidence-artifacts.sh # PreToolUse: block git commit if evidence missing
 │   ├── post-test-update.sh         # PostToolUse: record test results in workflow state
 │   ├── verify-test-rerun.sh        # PostToolUse: re-run tests independently, block on inconsistency
 │   ├── log-workflow.sh             # PostToolUse: log events + track Skill invocations
+│   ├── post-skill-learning.sh      # PostToolUse: learning system capture after skill execution
 │   ├── post-screenshot-resize.sh   # PostToolUse: auto-resize screenshots >1800px after capture
 │   └── resize_screenshot.py        # Screenshot resize utility (batch mode: --all)
 ├── logs/             # Workflow session logs

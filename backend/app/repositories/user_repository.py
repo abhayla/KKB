@@ -295,6 +295,10 @@ class UserRepository:
             "last_change": prefs.last_change,
             "family_size": prefs.family_size,
             "cooking_skill_level": prefs.cooking_skill_level,
+            "items_per_meal": prefs.items_per_meal,
+            "strict_allergen_mode": prefs.strict_allergen_mode,
+            "strict_dietary_mode": prefs.strict_dietary_mode,
+            "allow_recipe_repeat": prefs.allow_recipe_repeat,
             "created_at": prefs.created_at,
             "updated_at": prefs.updated_at,
         }
@@ -317,6 +321,10 @@ class UserRepository:
             "last_change": "last_change",
             "family_size": "family_size",
             "cooking_skill_level": "cooking_skill_level",
+            "items_per_meal": "items_per_meal",
+            "strict_allergen_mode": "strict_allergen_mode",
+            "strict_dietary_mode": "strict_dietary_mode",
+            "allow_recipe_repeat": "allow_recipe_repeat",
         }
 
         for key, attr in field_map.items():

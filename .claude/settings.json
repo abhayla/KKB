@@ -58,6 +58,11 @@
           },
           {
             "type": "command",
+            "command": "bash .claude/hooks/auto-fix-pattern-scan.sh",
+            "timeout": 10
+          },
+          {
+            "type": "command",
             "command": "bash .claude/hooks/log-workflow.sh",
             "timeout": 5
           }

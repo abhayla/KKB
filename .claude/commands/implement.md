@@ -6,7 +6,32 @@ Implement the requested feature or fix following the **mandatory 7-step workflow
 
 ---
 
-## STEP 0: Initialize Workflow State
+## STEP 0: Pre-Execution Knowledge Check + Initialize Workflow State
+
+### 0a. Knowledge Check
+
+Before implementation, check the failure index for known issues related to this feature area:
+
+```bash
+python -c "
+import json
+try:
+    with open('.claude/logs/learning/failure-index.json') as f:
+        d = json.load(f)
+    for e in d.get('entries', []):
+        if e.get('skill') == 'implement' or e.get('skill') == 'fix-loop':
+            if e.get('known_workaround'):
+                print(f'Step 0: Known workaround for {e[\"issue_type\"]}: {e[\"known_workaround\"]}')
+            if e.get('auto_fix_eligible'):
+                print(f'AUTO-FIX ELIGIBLE: {e[\"issue_type\"]}')
+except FileNotFoundError:
+    print('Step 0: No failure index found')
+"
+```
+
+Read `memory/fix-patterns.md` for code-level patterns that may apply to the feature being implemented. If a pattern matches the current task, apply the known fix proactively instead of rediscovering it.
+
+### 0b. Initialize Workflow State
 
 Before any other action, initialize the workflow tracking state so hooks can enforce the pipeline:
 
@@ -171,7 +196,15 @@ The /fix-loop Skill will iterate until all tests pass or budget is exhausted.
 
 **CRITICAL:** Do NOT proceed to Step 6 until the fix-loop process returns status **RESOLVED** (all tests passing).
 
-If it returns UNRESOLVED or MAX_ITERATIONS_EXCEEDED, report the failure and STOP.
+If it returns UNRESOLVED or MAX_ITERATIONS_EXCEEDED:
+1. **Check failure-index.json** for `(implement, {issue_type})` occurrences
+2. If occurrences >= 2 AND fix-patterns.md has a matching entry with file paths:
+   - Re-invoke `Skill("fix-loop")` with enhanced context:
+     - `force_thinking_level`: "thinkhard" (2-3 occurrences) or "ultrathink" (4+)
+     - `previous_attempts_summary`: all prior attempts from failure-index
+     - `failure_context`: "AUTO-DELEGATED: implement recurring #{count}"
+   - Log: `"Auto-delegating to /fix-loop (occurrence #{count})"`
+3. If still UNRESOLVED after auto-delegation → report the failure and STOP.
 
 **Output Required:**
 ```

@@ -165,26 +165,31 @@ class MealPlanRepository:
                         day_date = day_date_raw
 
                     for meal_type in ["breakfast", "lunch", "dinner", "snacks"]:
-                        meal_data = day.get(meal_type)
+                        # Handle both flat structure (from generate) and
+                        # nested "meals" structure (from _plan_to_dict)
+                        meal_data = day.get(meal_type) or (day.get("meals") or {}).get(meal_type)
                         if meal_data:
-                            # Convert placeholder recipe_ids to None for AI-generated meals
-                            recipe_id = meal_data.get("recipe_id")
-                            if recipe_id in ("GENERIC", "AI_GENERATED"):
-                                recipe_id = None
+                            # Handle list of items or single item
+                            items_list = meal_data if isinstance(meal_data, list) else [meal_data]
+                            for meal_item in items_list:
+                                # Convert placeholder recipe_ids to None
+                                recipe_id = meal_item.get("recipe_id")
+                                if recipe_id in ("GENERIC", "AI_GENERATED"):
+                                    recipe_id = None
 
-                            item = MealPlanItem(
-                                id=str(uuid.uuid4()),
-                                meal_plan_id=plan_id,
-                                recipe_id=recipe_id,
-                                date=day_date,
-                                meal_type=meal_type,
-                                servings=meal_data.get("servings", 2),
-                                is_locked=meal_data.get("is_locked", False),
-                                is_swapped=meal_data.get("is_swapped", False),
-                                recipe_name=meal_data.get("recipe_name"),
-                                festival_name=day.get("festival"),
-                            )
-                            session.add(item)
+                                item = MealPlanItem(
+                                    id=str(uuid.uuid4()),
+                                    meal_plan_id=plan_id,
+                                    recipe_id=recipe_id,
+                                    date=day_date,
+                                    meal_type=meal_type,
+                                    servings=meal_item.get("servings", 2),
+                                    is_locked=meal_item.get("is_locked", False),
+                                    is_swapped=meal_item.get("is_swapped", False),
+                                    recipe_name=meal_item.get("recipe_name"),
+                                    festival_name=day.get("festival"),
+                                )
+                                session.add(item)
 
             plan.updated_at = datetime.now(timezone.utc)
             await session.commit()

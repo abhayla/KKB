@@ -86,6 +86,95 @@ If the same ADB action (tap/text/dump) fails 3 consecutive times with the same o
 
 ---
 
+## STEP 0: PRE-EXECUTION KNOWLEDGE CHECK
+
+Before any testing, check the failure index for known issues that affect this skill:
+
+1. **Read failure-index.json** for known workarounds and recurring failures:
+   ```bash
+   python -c "
+   import json
+   try:
+       with open('.claude/logs/learning/failure-index.json') as f:
+           d = json.load(f)
+       applied = []
+       for e in d.get('entries', []):
+           if e.get('skill') == 'adb-test' or e.get('skill') == 'fix-loop':
+               if e.get('known_workaround'):
+                   applied.append(f\"WORKAROUND: {e['issue_type']} -> {e['known_workaround']}\")
+                   print(f\"Step 0: Applying workaround for {e['issue_type']}: {e['known_workaround']}\")
+               if e.get('threshold_reached'):
+                   print(f\"WARNING: {e['issue_type']} has {len(e['occurrences'])} prior failures\")
+               if e.get('auto_fix_eligible'):
+                   print(f\"AUTO-FIX ELIGIBLE: {e['issue_type']} — flag for post-run delegation\")
+       if not applied:
+           print('Step 0: No known workarounds to apply')
+   except FileNotFoundError:
+       print('Step 0: No failure index found (first run)')
+   "
+   ```
+
+2. **Read fix-patterns.md** for matching code-level patterns:
+   ```bash
+   python -c "
+   import os
+   fp = 'C:/Users/itsab/.claude/projects/D--Abhay-VibeCoding-KKB/memory/fix-patterns.md'
+   if os.path.exists(fp):
+       with open(fp) as f:
+           content = f.read()
+       if 'Auto-fix eligible' in content:
+           print('Step 0: Found auto-fix eligible patterns in fix-patterns.md')
+   "
+   ```
+
+3. **Scan fix-patterns.md for auto-fix eligible entries and auto-invoke /fix-loop:**
+   ```bash
+   python -c "
+   import re, os
+   fp = 'C:/Users/itsab/.claude/projects/D--Abhay-VibeCoding-KKB/memory/fix-patterns.md'
+   if not os.path.exists(fp):
+       print('Step 0: No fix-patterns.md found')
+       exit(0)
+   with open(fp) as f:
+       content = f.read()
+   sections = re.split(r'(?=^### )', content, flags=re.MULTILINE)
+   unfixed = []
+   for s in sections:
+       if 'Auto-fix eligible: Yes' not in s:
+           continue
+       title_m = re.match(r'### (.+)', s)
+       if not title_m:
+           continue
+       title = title_m.group(1).strip()
+       if title.endswith('FIXED'):
+           continue
+       files_m = re.search(r'\*\*Files?:\*\*\s*(.+)', s)
+       files = files_m.group(1).strip() if files_m else 'unknown'
+       unfixed.append((title, files))
+   if unfixed:
+       for t, f in unfixed:
+           print(f'UNFIXED AUTO-FIX: {t} -> files: {f}')
+   else:
+       print('Step 0: All auto-fix eligible patterns are resolved')
+   "
+   ```
+   For each unfixed entry found:
+   - Auto-invoke `/fix-loop` with:
+     ```
+     failure_output: {pattern description from fix-patterns.md}
+     failure_context: "Pre-execution auto-fix: {pattern name}"
+     files_of_interest: {files from fix-patterns.md entry}
+     build_command: appropriate build command
+     ```
+   - Log: `"Step 0: Auto-fixed {N} patterns from fix-patterns.md"`
+
+4. **Apply known workarounds proactively:**
+   - If `dropdown_interaction` workaround exists → pre-set Pattern 14 as default strategy (skip UI attempts)
+   - If `crash_anr` workaround exists → add extra crash recovery delay
+   - Log: `"Step 0 complete: {N} workarounds applied, {M} auto-fix eligible patterns noted"`
+
+---
+
 ## SESSION INITIALIZATION
 
 Before prerequisites, initialize the workflow tracking state:
@@ -314,6 +403,35 @@ Rules:
 - An "observation" IS an issue — no category for "noted behavior".
 - You MUST NOT proceed to E6 without completing this gate.
 
+**E5.8. Backend API Bug Detection (during flow steps)**
+
+If a flow step or interactive test reveals a backend API returning incorrect data (e.g., stale values, wrong defaults, missing fields):
+1. Classify as **ISSUE_FOUND** (not "Known Issue" or observation)
+2. Check fix-patterns.md for matching auto-fix eligible entry:
+   ```bash
+   python -c "
+   import re, os
+   fp = 'C:/Users/itsab/.claude/projects/D--Abhay-VibeCoding-KKB/memory/fix-patterns.md'
+   if not os.path.exists(fp):
+       exit(0)
+   with open(fp) as f:
+       content = f.read()
+   sections = re.split(r'(?=^### )', content, flags=re.MULTILINE)
+   for s in sections:
+       if 'Auto-fix eligible: Yes' not in s:
+           continue
+       title_m = re.match(r'### (.+)', s)
+       if not title_m:
+           continue
+       title = title_m.group(1).strip()
+       if title.endswith('FIXED'):
+           continue
+       print(f'UNFIXED: {title}')
+   "
+   ```
+3. If matching auto-fix entry found → invoke `/fix-loop` immediately with fix-patterns context
+4. If no matching entry → log as new discovery, add to fix-patterns.md after fix-loop resolves it
+
 **E6. Classify Screen Result**
 
 | Classification | Criteria |
@@ -402,7 +520,70 @@ Repeat full screen protocol (E1-E6.5) for this screen.
 - Screen total >= 12 → exit, classify remaining issues
 - **PARTIAL** — some resolved, some not
 
-**Step F5.5: Auto-File GitHub Issues for UNRESOLVED Items**
+**Step F5.5: Auto-Delegate to /fix-loop for Recurring UNRESOLVED Items**
+
+After fix-loop exhaustion for an issue, if the issue is UNRESOLVED:
+
+1. **Check failure-index.json** for prior occurrences of `(adb-test, {issue_type})`:
+   ```bash
+   python -c "
+   import json
+   try:
+       with open('.claude/logs/learning/failure-index.json') as f:
+           d = json.load(f)
+       for e in d.get('entries', []):
+           if e.get('skill') == 'adb-test' and e.get('issue_type') == '{detected_issue_type}':
+               count = len(e.get('occurrences', []))
+               eligible = e.get('auto_fix_eligible', False)
+               print(f'OCCURRENCES: {count}, AUTO_FIX_ELIGIBLE: {eligible}')
+               break
+   except: pass
+   "
+   ```
+
+2. **Also check fix-patterns.md** for matching auto-fix eligible entry:
+   ```bash
+   python -c "
+   import re, os
+   fp = 'C:/Users/itsab/.claude/projects/D--Abhay-VibeCoding-KKB/memory/fix-patterns.md'
+   issue_type = '{detected_issue_type}'
+   if not os.path.exists(fp):
+       exit(0)
+   with open(fp) as f:
+       content = f.read()
+   sections = re.split(r'(?=^### )', content, flags=re.MULTILINE)
+   for s in sections:
+       if 'Auto-fix eligible: Yes' not in s:
+           continue
+       title_m = re.match(r'### (.+)', s)
+       if not title_m:
+           continue
+       title = title_m.group(1).strip()
+       if title.endswith('FIXED'):
+           continue
+       if issue_type.lower() in title.lower() or any(kw in title.lower() for kw in issue_type.lower().split('_')):
+           files_m = re.search(r'\*\*Files?:\*\*\s*(.+)', s)
+           files = files_m.group(1).strip() if files_m else 'unknown'
+           print(f'FIX_PATTERN_MATCH: {title} -> files: {files}')
+   "
+   ```
+   If fix-patterns.md has a match → use those file paths as `files_of_interest`.
+
+3. **If occurrences >= 2 AND auto_fix_eligible is true** (or fix-patterns.md has matching entry with file paths):
+   - Auto-invoke `/fix-loop` with enhanced context:
+     ```
+     Skill("fix-loop") with:
+       failure_output:            {issue description + all prior attempt summaries from failure-index}
+       failure_context:           "AUTO-DELEGATED: adb-test recurring issue #{count} for {issue_type}"
+       files_of_interest:         {target files from fix-patterns.md}
+       force_thinking_level:      {"thinkhard" if count <= 3, "ultrathink" if count >= 4}
+       previous_attempts_summary: {concatenated summaries from failure-index occurrences}
+     ```
+   - Log: `"Auto-delegating to /fix-loop (occurrence #{count} for {issue_type})"`
+
+3. **If occurrences < 2 OR not auto_fix_eligible** → proceed to F5.5b (auto-file issue)
+
+**Step F5.5b: Auto-File GitHub Issues for UNRESOLVED Items**
 
 After fix-loop exhaustion for a screen (all issues processed), for each UNRESOLVED issue:
 

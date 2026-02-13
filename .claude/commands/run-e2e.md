@@ -21,6 +21,47 @@ If `$ARGUMENTS` is empty, run ALL groups sequentially. If a group name is provid
 
 ---
 
+## STEP 0: PRE-EXECUTION KNOWLEDGE CHECK
+
+Before any test execution, check the failure index for known issues:
+
+1. **Read failure-index.json** for known workarounds:
+   ```bash
+   python -c "
+   import json
+   try:
+       with open('.claude/logs/learning/failure-index.json') as f:
+           d = json.load(f)
+       for e in d.get('entries', []):
+           if e.get('skill') == 'run-e2e' or e.get('skill') == 'fix-loop':
+               if e.get('known_workaround'):
+                   print(f\"Step 0: Known workaround for {e['issue_type']}: {e['known_workaround']}\")
+               if e.get('threshold_reached'):
+                   print(f\"WARNING: {e['issue_type']} has {len(e['occurrences'])} prior failures\")
+               if e.get('auto_fix_eligible'):
+                   print(f\"AUTO-FIX ELIGIBLE: {e['issue_type']}\")
+   except FileNotFoundError:
+       print('Step 0: No failure index found')
+   "
+   ```
+
+2. **Read fix-patterns.md** for auto-fix eligible patterns:
+   ```bash
+   python -c "
+   import os
+   fp = 'C:/Users/itsab/.claude/projects/D--Abhay-VibeCoding-KKB/memory/fix-patterns.md'
+   if os.path.exists(fp):
+       with open(fp) as f:
+           content = f.read()
+       if 'Auto-fix eligible' in content:
+           print('Step 0: Found auto-fix eligible patterns')
+   "
+   ```
+
+3. **Apply proactively:** If known workarounds exist for common E2E failures (e.g., timeout issues, backend health), apply them before test execution starts.
+
+---
+
 ## SESSION INITIALIZATION
 
 Before prerequisites, initialize the workflow tracking state:
@@ -305,6 +346,18 @@ Use a 10-minute timeout for groups with AI calls (meal-generation, home, chat, r
   Collect Skill output:
   - Append fixes to `all_fixes[]`
   - Accumulate metrics into tracking variables
+
+  #### 4a-auto. Auto-Delegate for Recurring Failures
+
+  After fix-loop returns, if outcome is UNRESOLVED:
+  1. Check failure-index.json for `(run-e2e, {issue_type})` occurrences
+  2. If occurrences >= 2 AND (auto_fix_eligible OR fix-patterns.md has matching entry):
+     - Re-invoke `Skill("fix-loop")` with:
+       - `force_thinking_level`: "thinkhard" (2-3 occurrences) or "ultrathink" (4+)
+       - `previous_attempts_summary`: all prior attempts from failure-index
+       - `failure_context`: "AUTO-DELEGATED: run-e2e recurring #{count}"
+     - Log: `"Auto-delegating to /fix-loop (occurrence #{count})"`
+  3. If still UNRESOLVED after auto-delegation → continue to 4b (restart group)
 
   #### 4b. Restart group
 

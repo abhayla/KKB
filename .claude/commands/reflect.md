@@ -22,6 +22,38 @@ Parse `$ARGUMENTS`:
 - Contains `test-run` → test-run mode
 - `--depth N` → set recursion depth (used internally by auto-invocation)
 
+### Auto-Escalation to Deep Mode
+
+After parsing arguments, check failure-index.json for recurring unresolved failures:
+
+```bash
+python -c "
+import json
+try:
+    with open('.claude/logs/learning/failure-index.json') as f:
+        d = json.load(f)
+    for e in d.get('entries', []):
+        # Count consecutive UNRESOLVED occurrences (most recent first)
+        consecutive = 0
+        for occ in reversed(e.get('occurrences', [])):
+            if occ.get('outcome') in ('UNRESOLVED', 'PARTIALLY_RESOLVED', 'FAILED'):
+                consecutive += 1
+            else:
+                break
+        if consecutive >= 3:
+            print(f'AUTO-DEEP: {e[\"skill\"]}/{e[\"issue_type\"]} has {consecutive} consecutive unresolved')
+except FileNotFoundError:
+    pass
+"
+```
+
+**If any entry has 3+ consecutive unresolved occurrences:**
+- Override mode to `deep` regardless of user arguments
+- Set `target_skill` and `target_issue_type` for focused analysis in Steps 4-5
+- Log: `"Auto-escalating to deep mode for {skill}/{issue_type} ({N} consecutive unresolved)"`
+
+This ensures persistent failures are automatically investigated at the deepest level without requiring the user to manually invoke `/reflect deep`.
+
 ---
 
 ## SELF-SKIP RULE
@@ -56,6 +88,52 @@ Before any skill execution, check the failure index for known issues:
 4. **Log:** `"Pre-execution check: found/not-found, applying: {strategy}"`
 
 This step is informational in `session` mode (just reports what's known). In `deep` mode, it informs which skills to prioritize for re-testing.
+
+---
+
+## STEP 0.5: PRE-FLIGHT AUTO-FIX SCAN (all modes)
+
+Before gathering data, scan fix-patterns.md for unfixed auto-fix eligible patterns:
+
+```bash
+python -c "
+import re, os
+
+fp = 'C:/Users/itsab/.claude/projects/D--Abhay-VibeCoding-KKB/memory/fix-patterns.md'
+if not os.path.exists(fp):
+    print('Step 0.5: No fix-patterns.md found')
+    exit(0)
+with open(fp) as f:
+    content = f.read()
+sections = re.split(r'(?=^### )', content, flags=re.MULTILINE)
+unfixed = []
+for s in sections:
+    if 'Auto-fix eligible: Yes' not in s:
+        continue
+    title_m = re.match(r'### (.+)', s)
+    if not title_m:
+        continue
+    title = title_m.group(1).strip()
+    if title.endswith('FIXED'):
+        continue
+    files_m = re.search(r'\*\*Files?:\*\*\s*(.+)', s)
+    files = files_m.group(1).strip() if files_m else 'unknown'
+    unfixed.append((title, files))
+if unfixed:
+    for t, f in unfixed:
+        print(f'UNFIXED: {t} -> {f}')
+    print(f'Step 0.5: {len(unfixed)} unfixed auto-fix pattern(s) found')
+else:
+    print('Step 0.5: All auto-fix eligible patterns are resolved')
+"
+```
+
+**Per-mode behavior:**
+- **session mode:** Log warning — `"Unfixed auto-fix pattern: {name}"`
+- **deep mode:** Auto-invoke `/fix-loop` for each unfixed pattern with files from the entry
+- **meta / test-run mode:** Include in analysis tables as unresolved infrastructure gaps
+
+Output: `"Step 0.5: {N} unfixed auto-fix patterns found, {M} auto-fixed"`
 
 ---
 

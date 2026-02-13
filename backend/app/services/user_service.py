@@ -32,6 +32,10 @@ def build_user_response(user: User) -> UserResponse:
             busy_days=user.preferences.busy_days or [],
             weekday_cooking_time_minutes=user.preferences.weekday_cooking_time_minutes,
             weekend_cooking_time_minutes=user.preferences.weekend_cooking_time_minutes,
+            items_per_meal=user.preferences.items_per_meal,
+            strict_allergen_mode=user.preferences.strict_allergen_mode,
+            strict_dietary_mode=user.preferences.strict_dietary_mode,
+            allow_recipe_repeat=user.preferences.allow_recipe_repeat,
         )
 
     return UserResponse(
@@ -113,12 +117,22 @@ async def update_user_preferences(
         preferences.weekday_cooking_time_minutes = preferences_update.weekday_cooking_time
     if preferences_update.weekend_cooking_time is not None:
         preferences.weekend_cooking_time_minutes = preferences_update.weekend_cooking_time
+    if preferences_update.items_per_meal is not None:
+        preferences.items_per_meal = preferences_update.items_per_meal
+    if preferences_update.strict_allergen_mode is not None:
+        preferences.strict_allergen_mode = preferences_update.strict_allergen_mode
+    if preferences_update.strict_dietary_mode is not None:
+        preferences.strict_dietary_mode = preferences_update.strict_dietary_mode
+    if preferences_update.allow_recipe_repeat is not None:
+        preferences.allow_recipe_repeat = preferences_update.allow_recipe_repeat
 
     # Mark user as onboarded if not already
     if not user.is_onboarded:
         user.is_onboarded = True
 
     await db.commit()
+    await db.refresh(preferences)
+    await db.refresh(user)
 
     # Reload and return
     return await get_user_with_preferences(db, user)

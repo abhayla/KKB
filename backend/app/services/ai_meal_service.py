@@ -96,6 +96,7 @@ class UserPreferences:
     exclude_rules: list[dict] = field(default_factory=list)
     family_size: int = 4
     spice_level: str = "medium"
+    items_per_meal: int = 2
 
 
 # ==============================================================================
@@ -256,6 +257,7 @@ class AIMealService:
             exclude_rules=exclude_rules,
             family_size=prefs_data.get("family_size") or 4,
             spice_level=prefs_data.get("spice_level") or "medium",
+            items_per_meal=prefs_data.get("items_per_meal") or 2,
         )
 
     async def _load_festivals(self, week_start: date) -> dict[date, dict]:
@@ -428,7 +430,7 @@ class AIMealService:
 {pairing_section}
 
 ## IMPORTANT RULES
-1. Each meal slot MUST have exactly 2 items (a main dish + accompaniment)
+1. Each meal slot MUST have exactly {prefs.items_per_meal} items (a main dish + accompaniment{'s' if prefs.items_per_meal > 2 else ''})
 2. ALLERGIES are STRICT - NEVER include any dish containing allergen ingredients
 3. INCLUDE rules MUST be satisfied at the specified frequency
 4. EXCLUDE rules MUST be respected - never include on specified days

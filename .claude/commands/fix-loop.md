@@ -54,6 +54,20 @@ You operate in one of two modes based on the presence of `retest_command`:
 | `current_cascade_depth` | int | `0` | 0+ | Current cascade depth (incremented by callers when re-invoking after a fix caused a new failure) |
 | `auto_file_issue` | bool | `false` | true/false | When true AND outcome is UNRESOLVED/MAX_ITERATIONS_EXCEEDED, auto-create GitHub issue before returning |
 
+### Failure Index Context (for auto-delegated invocations)
+
+When invoked by auto-delegation (from Step 0 or post-failure hooks), these additional parameters provide context from the failure index:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `failure_index_context` | object | Prior failure summaries from failure-index.json: `{occurrences: N, prior_outcomes: [...], known_workaround: "...", target_files: [...]}` |
+
+When `failure_index_context` is provided:
+- Skip approaches already documented as failed in prior occurrences
+- Start with the `known_workaround` if one exists
+- Focus on `target_files` from fix-patterns.md
+- Use the occurrence count to auto-set thinking level (2-3 → thinkhard, 4+ → ultrathink) unless `force_thinking_level` overrides
+
 ### Single Fix Mode Extras
 
 These are used when `retest_command` is absent (caller retests externally):

@@ -108,7 +108,17 @@ elif 'timeout' in args.lower(): print('timeout')
 else: print('general_failure')
 " 2>/dev/null)
     ISSUE_TYPE="${ISSUE_TYPE:-general_failure}"
-    update_failure_index "$SKILL_NAME" "$ISSUE_TYPE" "$SKILL_OUTCOME" "" ""
+
+    # Check if fix-patterns.md has a matching entry with file paths (auto-fix eligible)
+    AUTO_FIX="false"
+    if [ -f "$MEMORY_DIR/fix-patterns.md" ]; then
+        FIX_MATCH=$(grep -i -A3 "$ISSUE_TYPE\|$SKILL_NAME" "$MEMORY_DIR/fix-patterns.md" 2>/dev/null | grep -i "auto-fix eligible.*yes" 2>/dev/null)
+        if [ -n "$FIX_MATCH" ]; then
+            AUTO_FIX="true"
+        fi
+    fi
+
+    update_failure_index "$SKILL_NAME" "$ISSUE_TYPE" "$SKILL_OUTCOME" "" "" "$AUTO_FIX"
 fi
 
 # Auto-threshold escalation: if same (skill, issue_type) fails 5+ times, auto-file GitHub issue
