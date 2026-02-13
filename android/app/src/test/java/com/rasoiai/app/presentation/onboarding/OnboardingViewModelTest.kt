@@ -1,7 +1,7 @@
 package com.rasoiai.app.presentation.onboarding
 
 import app.cash.turbine.test
-import com.rasoiai.data.local.datastore.UserPreferencesDataStore
+import com.rasoiai.data.local.datastore.UserPreferencesDataStoreInterface
 import com.rasoiai.domain.model.CuisineType
 import com.rasoiai.domain.model.DayOfWeek
 import com.rasoiai.domain.model.DietaryRestriction
@@ -35,7 +35,7 @@ import org.junit.jupiter.api.Test
 class OnboardingViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
-    private lateinit var mockUserPreferencesDataStore: UserPreferencesDataStore
+    private lateinit var mockUserPreferencesDataStore: UserPreferencesDataStoreInterface
     private lateinit var mockSettingsRepository: SettingsRepository
     private lateinit var mockGenerateMealPlanUseCase: GenerateMealPlanUseCase
     private lateinit var mockMealPlanRepository: MealPlanRepository

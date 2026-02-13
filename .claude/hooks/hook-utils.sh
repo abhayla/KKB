@@ -191,22 +191,40 @@ os.replace(tmp, '$WORKFLOW_STATE_FILE')
 " 2>/dev/null
 }
 
+detect_skill_success() {
+    local output="$1"
+    if echo "$output" | grep -qiE "UNRESOLVED|MAX_ITERATIONS_EXCEEDED|MAX_CASCADE_EXCEEDED"; then
+        echo "false"; return
+    fi
+    if echo "$output" | grep -qiE "Traceback|stacktrace|FATAL|panic:"; then
+        echo "false"; return
+    fi
+    if echo "$output" | grep -qiE "RESOLVED|COMPLETED|PASSED"; then
+        echo "true"; return
+    fi
+    echo "unknown"
+}
+
 record_skill_invocation() {
     local skill_name="$1"
+    local succeeded="${2:-unknown}"
     if [ ! -f "$WORKFLOW_STATE_FILE" ]; then return 1; fi
     python -c "
 import json, os, tempfile
 with open('$WORKFLOW_STATE_FILE') as f:
     d = json.load(f)
 si = d.setdefault('skillInvocations', {
-    'fixLoopInvoked': False, 'fixLoopCount': 0,
+    'fixLoopInvoked': False, 'fixLoopCount': 0, 'fixLoopSucceeded': None,
     'fixLoopEvidence': [], 'postFixPipelineInvoked': False,
     'postFixPipelineEvidence': None
 })
 s = '$skill_name'
+succ = '$succeeded'
 if s == 'fix-loop':
     si['fixLoopInvoked'] = True
     si['fixLoopCount'] = si.get('fixLoopCount', 0) + 1
+    if succ in ('true', 'false'):
+        si['fixLoopSucceeded'] = (succ == 'true')
 elif s == 'post-fix-pipeline':
     si['postFixPipelineInvoked'] = True
 fd, tmp = tempfile.mkstemp(dir='.claude')

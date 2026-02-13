@@ -17,8 +17,9 @@ if [ -z "$HOOK_TOOL_NAME" ]; then exit 0; fi
 if [ "$HOOK_TOOL_NAME" = "Skill" ]; then
     SKILL_NAME=$(echo "$HOOK_TOOL_INPUT" | python -c "import sys,json;d=json.load(sys.stdin);print(d.get('skill',d.get('name','')))" 2>/dev/null)
     if [ -n "$SKILL_NAME" ]; then
-        log_event "SKILL_INVOKED" "name=$SKILL_NAME"
-        record_skill_invocation "$SKILL_NAME"
+        SKILL_SUCCESS=$(detect_skill_success "$HOOK_TOOL_OUTPUT")
+        log_event "SKILL_INVOKED" "name=$SKILL_NAME" "success=$SKILL_SUCCESS"
+        record_skill_invocation "$SKILL_NAME" "$SKILL_SUCCESS"
     fi
     exit 0
 fi

@@ -50,6 +50,8 @@ You operate in one of two modes based on the presence of `retest_command`:
 | `revert_on_critical_review` | bool | `true` | true/false | Revert on Critical code review findings |
 | `log_dir` | string | `".claude/logs/fix-loop/"` | Any path | Directory for iteration log files |
 | `session_id` | string | auto-generated | Any string | Session identifier for log subdirectory |
+| `max_cascade_depth` | int | `2` | 1-5 | Maximum depth of cascading fix-loops (a fix causing a new failure that triggers another fix-loop) |
+| `current_cascade_depth` | int | `0` | 0+ | Current cascade depth (incremented by callers when re-invoking after a fix caused a new failure) |
 
 ### Single Fix Mode Extras
 
@@ -66,11 +68,16 @@ These are used when `retest_command` is absent (caller retests externally):
 
 ```
 INITIALIZE:
+  If current_cascade_depth >= max_cascade_depth:
+    Return immediately with status: MAX_CASCADE_EXCEEDED
+    Log: "Cascade depth {current_cascade_depth} >= max {max_cascade_depth}. Stopping to prevent infinite cascading."
+
   Create {log_dir}/{session_id}/ directory
   Parse failure_output into discrete issues
   Sort issues by severity (crashes > assertion failures > warnings)
   total_iterations = 0
-  results = { issues_found: N, issues_resolved: 0, fixes: [], unresolved: [] }
+  cascade_depth = current_cascade_depth
+  results = { issues_found: N, issues_resolved: 0, fixes: [], unresolved: [], cascadeDepth: cascade_depth }
   metrics = { debugger_invocations: 0, code_reviews: 0, approved: 0, flagged: 0, build_failures: 0, reverts: 0 }
 
 FOR each issue (while total_iterations < max_iterations):
@@ -179,6 +186,7 @@ Determine overall status:
   - Some resolved, some not → PARTIALLY_RESOLVED
   - None resolved → UNRESOLVED
   - Budget exhausted with remaining issues → MAX_ITERATIONS_EXCEEDED
+  - Cascade depth exceeded at init → MAX_CASCADE_EXCEEDED
 
 FINALIZE:
   Write summary evidence artifact:
@@ -219,7 +227,8 @@ Returns the fix details for the caller to evaluate and retest externally.
 | Build fails `max_build_retries` times | Revert fix, mark FAILED_BUILD, move to next issue |
 | Code reviewer returns Critical | Revert fix, re-attempt with rejection context |
 | `max_iterations` exceeded | Stop all processing, return MAX_ITERATIONS_EXCEEDED |
-| Fix creates a NEW issue | Add the new issue to the issue queue |
+| Fix creates a NEW issue | Add the new issue to the issue queue (increment cascade_depth if re-invoking) |
+| Cascade depth exceeded | Return MAX_CASCADE_EXCEEDED immediately, do not process any issues |
 | Retest times out | Treat as failure, proceed to next attempt |
 | No `files_of_interest` | Infer relevant files via Grep/Glob on error messages |
 | Debugger Agent returns nothing actionable | Fall back to direct analysis |
@@ -235,8 +244,9 @@ Return a structured report:
 ## Fix Loop Results
 
 ### Status
-- **Overall:** RESOLVED | PARTIALLY_RESOLVED | UNRESOLVED | MAX_ITERATIONS_EXCEEDED
+- **Overall:** RESOLVED | PARTIALLY_RESOLVED | UNRESOLVED | MAX_ITERATIONS_EXCEEDED | MAX_CASCADE_EXCEEDED
 - **Iterations used:** N / max_iterations
+- **Cascade depth:** N / max_cascade_depth
 - **Issues found:** N
 - **Issues resolved:** N
 - **Issues unresolved:** N

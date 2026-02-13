@@ -32,6 +32,20 @@ case "$ACTIVE_CMD" in
                 if [ "$FLI" != "true" ] && [ "$FLI" != "True" ]; then
                     MISSING="$MISSING  - /fix-loop not invoked (test failures detected)\n"
                 fi
+                # Check fix-loop succeeded (budget exhaustion blocking)
+                FLS=$(get_state_field ".skillInvocations.fixLoopSucceeded")
+                if [ "$FLS" = "false" ] || [ "$FLS" = "False" ]; then
+                    # Also check latest summary-evidence for confirmation
+                    LATEST_SUMMARY=$(ls -t .claude/logs/fix-loop/*/summary-evidence.json 2>/dev/null | head -1)
+                    if [ -n "$LATEST_SUMMARY" ]; then
+                        OVERALL=$(python -c "import json;print(json.load(open('$LATEST_SUMMARY')).get('overallStatus',''))" 2>/dev/null)
+                        if [ "$OVERALL" = "UNRESOLVED" ] || [ "$OVERALL" = "MAX_ITERATIONS_EXCEEDED" ]; then
+                            MISSING="$MISSING  - /fix-loop ended with $OVERALL (tests still failing)\n"
+                        fi
+                    else
+                        MISSING="$MISSING  - /fix-loop did not succeed (fixLoopSucceeded=false)\n"
+                    fi
+                fi
             fi
             PI=$(get_state_field ".skillInvocations.postFixPipelineInvoked")
             if [ "$PI" != "true" ] && [ "$PI" != "True" ]; then

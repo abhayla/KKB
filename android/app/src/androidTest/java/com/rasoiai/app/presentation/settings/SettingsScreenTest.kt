@@ -329,6 +329,7 @@ private fun SettingsTestContent(
         onRateAppClick = onRateAppClick,
         onPrivacyPolicyClick = onPrivacyPolicyClick,
         onTermsOfServiceClick = onTermsOfServiceClick,
+        onPantryClick = {},
         onSignOutClick = onSignOutClick
     )
 }

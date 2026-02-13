@@ -82,6 +82,36 @@ This marks the session as a `fix-issue` workflow. Hooks will track Skill invocat
 
    **CRITICAL:** Do NOT proceed to Step 7 until /fix-loop returns **RESOLVED**.
 
+6c. **Screenshot Capture**
+
+   Capture before/after evidence to `docs/testing/screenshots/`:
+
+   **Android changes:**
+   ```bash
+   # Before screenshot (capture current state before fix is visible)
+   adb exec-out screencap -p > docs/testing/screenshots/$ARGUMENTS_before.png
+   # After screenshot (capture state with fix applied)
+   adb exec-out screencap -p > docs/testing/screenshots/$ARGUMENTS_after.png
+   ```
+
+   **Backend changes (Swagger UI via Playwright):**
+   ```javascript
+   await browser_take_screenshot({
+     filename: "docs/testing/screenshots/$ARGUMENTS_before.png",
+     type: "png"
+   })
+   // After fix
+   await browser_take_screenshot({
+     filename: "docs/testing/screenshots/$ARGUMENTS_after.png",
+     type: "png"
+   })
+   ```
+
+   Read both screenshots and describe the visible difference.
+   Update workflow state `step6_screenshots` with before/after paths.
+
+   **If ADB/Playwright is unavailable:** Log `⚠️ Screenshot capture unavailable — {reason}`. Proceed to Step 7 but note the gap.
+
 7. **Post-Fix Pipeline (via /post-fix-pipeline Skill)**
 
    > **ENFORCEMENT GATE:** Hooks track whether you invoke `/post-fix-pipeline` via the Skill tool. If tests were run and you attempt to commit without invoking the pipeline, the `verify-evidence-artifacts.sh` hook will **block your commit**. You MUST use `Skill("post-fix-pipeline")`.

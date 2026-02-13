@@ -10,7 +10,14 @@ Read and follow this process using the parameters passed by the caller (via `$AR
 
 This Skill is invoked by: `/adb-test`, `/run-e2e`, `/implement`, `/fix-issue`. Each provides different `test_suite_commands` and `commit_format`. Adapt behavior accordingly.
 
-**Important:** If `test_suite_commands` is empty `[]`, log a warning: `⚠️ No test suite commands provided. Skipping test suite gate — commits proceed without verification.` At minimum, the caller should provide backend pytest.
+**Important:** If `test_suite_commands` is empty `[]` AND code files were changed (check `git diff --name-only` for `.kt`, `.py`, `.java`, `.xml` files), default to:
+```
+test_suite_commands: [
+  { name: "backend", command: "cd backend && PYTHONPATH=. pytest --tb=short -q", timeout: 300 },
+  { name: "android-unit", command: "cd android && ./gradlew test --console=plain", timeout: 600 }
+]
+```
+If `test_suite_commands` is empty AND no code files changed, log: `⚠️ No test suite commands and no code changes. Skipping test suite gate.`
 
 ---
 
@@ -29,7 +36,8 @@ This Skill is invoked by: `/adb-test`, `/run-e2e`, `/implement`, `/fix-issue`. E
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `regression_commands` | `[]` | Commands to run for regression testing: `[{name, command, timeout}]` |
-| `regression_auto_fix` | `false` | If true, attempt to fix regressions. If false (default), log only to avoid cascading fix loops |
+| `regression_auto_fix` | `true` | If true (default), enter fix-loop for regressions. If false, log only |
+| `regression_max_fix_attempts` | `3` | Maximum fix-loop iterations for regression failures |
 
 ### Test Suite Verification
 
@@ -77,9 +85,18 @@ STEP 2: REGRESSION TESTING (if regression_commands is non-empty)
     Run the command with its timeout
     Record: { name, status: PASSED|FAILED, output }
 
-  Log all results. Regressions are informational — they do NOT block the pipeline.
-  If regression_auto_fix is true:
-    Attempt to fix regressions (not recommended — can cascade)
+  Gate decision:
+    ALL regressions pass → proceed to Step 3
+    Any regression fails:
+      Enter fix-loop for the regression (max {regression_max_fix_attempts} iterations)
+      After fix-loop → re-run ALL regression commands
+      If still failing after max attempts → HARD BLOCK — skip Steps 3-5
+      If all fixed → proceed to Step 3
+
+  Write regression evidence:
+    .claude/logs/post-fix-pipeline/evidence-regression-{timestamp}.json
+    { "event": "regression_complete", "gate": "PASSED|PASSED_AFTER_FIX|FAILED|NOT_RUN",
+      "perCommand": [...], "fixAttempts": N, "timestamp": "ISO8601" }
 
 STEP 3: TEST SUITE VERIFICATION (if test_suite_commands is non-empty)
   For each command in test_suite_commands:
@@ -109,7 +126,7 @@ STEP 3: TEST SUITE VERIFICATION (if test_suite_commands is non-empty)
     { "event": "test_suite_complete", "gate": "PASSED|PASSED_AFTER_FIX|FAILED",
       "perSuite": [...], "autoFixAttempts": N, "timestamp": "ISO8601" }
 
-STEP 4: DOCUMENTATION (only if gate != FAILED)
+STEP 4: DOCUMENTATION (only if regression gate != FAILED AND test suite gate != FAILED)
   If docs_instructions is non-empty:
     Launch docs_agent_name Agent (via Task tool) with:
       - fixes_applied list
@@ -121,7 +138,7 @@ STEP 4: DOCUMENTATION (only if gate != FAILED)
         Return the list of documentation files updated."
     Record files updated by docs Agent
 
-STEP 5: GIT COMMIT (only if gate != FAILED)
+STEP 5: GIT COMMIT (only if regression gate != FAILED AND test suite gate != FAILED)
   Launch git_agent_name Agent (via Task tool) with:
     - files_changed (fix files + any doc files from Step 4)
     - commit_format with scope and summary filled in
@@ -135,8 +152,8 @@ STEP 5: GIT COMMIT (only if gate != FAILED)
 STEP 6: FINALIZE EVIDENCE
   Write pipeline-complete evidence:
     .claude/logs/post-fix-pipeline/evidence-complete-{timestamp}.json
-    { "event": "pipeline_complete", "status": "COMPLETED|BLOCKED_BY_TEST_SUITE|NO_FIXES",
-      "testSuiteGate": "...", "commitHash": "...", "commitMessage": "...",
+    { "event": "pipeline_complete", "status": "COMPLETED|BLOCKED_BY_REGRESSION|BLOCKED_BY_TEST_SUITE|NO_FIXES",
+      "regressionGate": "...", "testSuiteGate": "...", "commitHash": "...", "commitMessage": "...",
       "filesChanged": [...], "timestamp": "ISO8601" }
 ```
 
@@ -147,11 +164,14 @@ STEP 6: FINALIZE EVIDENCE
 | Condition | Regression? | Docs? | Commit? |
 |-----------|-------------|-------|---------|
 | No fixes applied | NO | NO | NO |
-| Regressions found (informational) | YES (log) | YES | YES |
+| Regressions PASSED | YES (all pass) | YES | YES |
+| Regressions PASSED_AFTER_FIX | YES (fixed) | YES | YES |
+| Regressions FAILED (after max attempts) | YES (blocked) | **NO** | **NO** |
 | Test suite PASSED | N/A | YES | YES |
 | Test suite PASSED_AFTER_FIX | N/A | YES | YES |
 | Test suite FAILED | N/A | **NO** | **NO** |
 | No test_suite_commands | N/A | YES | YES |
+| No regression_commands | N/A | YES | YES |
 
 ---
 
@@ -163,7 +183,7 @@ Return a structured report:
 ## Post-Fix Pipeline Results
 
 ### Overall Status
-- **Status:** COMPLETED | BLOCKED_BY_TEST_SUITE | NO_FIXES
+- **Status:** COMPLETED | BLOCKED_BY_REGRESSION | BLOCKED_BY_TEST_SUITE | NO_FIXES
 
 ### Regression Testing
 - **Commands run:** N
@@ -201,7 +221,8 @@ Return a structured report:
 
 | Scenario | Behavior |
 |----------|----------|
-| Regression command times out | Log as TIMEOUT, proceed (non-blocking) |
+| Regression command times out | Treat as FAILED, enter fix-loop flow |
+| Regression fix-loop exhausted | Gate = FAILED, block docs + commit |
 | Test suite command times out | Treat as FAILED, enter auto-fix flow |
 | Tester Agent fails to respond | Gate = FAILED, block commit |
 | Docs Agent fails | Log warning, proceed to commit (non-blocking) |

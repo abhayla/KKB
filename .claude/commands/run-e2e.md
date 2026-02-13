@@ -368,6 +368,32 @@ Collect Skill output for the final report.
 
 ---
 
+## POST-RUN SCREENSHOTS
+
+After all groups complete (or the single requested group), capture emulator state:
+
+```bash
+# Capture final emulator state
+C:/Users/itsab/AppData/Local/Android/Sdk/platform-tools/adb.exe exec-out screencap -p > docs/testing/screenshots/e2e_final_state.png
+```
+
+For groups with fixes applied, capture group-specific screenshots:
+```bash
+# Per-group screenshot (if fixes were applied in that group)
+C:/Users/itsab/AppData/Local/Android/Sdk/platform-tools/adb.exe exec-out screencap -p > docs/testing/screenshots/e2e_{group_name}_after_fix.png
+```
+
+Add screenshot paths to the evidence tracking:
+```
+all_screenshots = [
+  { group: "{group_name}", path: "docs/testing/screenshots/e2e_{group_name}_after_fix.png" }
+]
+```
+
+**If ADB is unavailable:** Log `⚠️ Screenshot capture unavailable — ADB not connected`. Proceed to summary but note the gap.
+
+---
+
 ## FINAL SUMMARY
 
 After all groups complete (or after the single requested group), produce this report:
@@ -414,6 +440,10 @@ Skill Activity (from /fix-loop + /post-fix-pipeline):
 
 Review Issues (if any):
   - [severity] [file:line] — [description from code-reviewer Agent]
+
+Screenshots:
+  - Final state: docs/testing/screenshots/e2e_final_state.png
+  - [Per-group screenshots if fixes applied]
 
 Shared Code Warning:
   - [If any fix touched code tested by earlier groups, list here]

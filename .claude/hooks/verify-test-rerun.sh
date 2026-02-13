@@ -16,7 +16,15 @@ if [ "$HOOK_TOOL_NAME" != "Bash" ]; then exit 0; fi
 
 CMD=$(extract_input_field "command")
 if ! is_test_command "$CMD"; then exit 0; fi
-if echo "$CMD" | grep -qE "connectedDebugAndroidTest|connectedAndroidTest"; then exit 0; fi
+
+IS_E2E=false
+RERUN_TIMEOUT=300
+if echo "$CMD" | grep -qE "connectedDebugAndroidTest|connectedAndroidTest"; then
+    IS_E2E=true
+    RERUN_TIMEOUT=600
+    # Skip full E2E suite (no specific class target) — too expensive
+    if ! echo "$CMD" | grep -qE "class="; then exit 0; fi
+fi
 
 TARGET=$(extract_test_target "$CMD")
 if [ -z "$TARGET" ]; then exit 0; fi
@@ -24,6 +32,25 @@ if echo "$TARGET" | grep -qE "[, ]"; then exit 0; fi
 
 CLAIMED=$(detect_test_result "$HOOK_TOOL_OUTPUT")
 if [ "$CLAIMED" = "unknown" ]; then exit 0; fi
+
+# Infrastructure pre-check
+if echo "$CMD" | grep -qiE "pytest"; then
+    if ! command -v python &>/dev/null; then
+        TS=$(date +%Y%m%d-%H%M%S 2>/dev/null || echo "$$")
+        EJ='{"event":"rerun_infra_warn","reason":"python_not_found","target":"'"$TARGET"'","timestamp":"'"$(date -Iseconds 2>/dev/null)"'"}'
+        write_evidence "$EVIDENCE_DIR" "rerun-infra-warn-${TS}.json" "$EJ" >/dev/null
+        log_event "VERIFY_RERUN_INFRA_MISSING" "reason=python_not_found" "target=$TARGET"
+        exit 0
+    fi
+elif echo "$CMD" | grep -qiE "gradlew"; then
+    if [ ! -f "android/gradlew" ]; then
+        TS=$(date +%Y%m%d-%H%M%S 2>/dev/null || echo "$$")
+        EJ='{"event":"rerun_infra_warn","reason":"gradlew_not_found","target":"'"$TARGET"'","timestamp":"'"$(date -Iseconds 2>/dev/null)"'"}'
+        write_evidence "$EVIDENCE_DIR" "rerun-infra-warn-${TS}.json" "$EJ" >/dev/null
+        log_event "VERIFY_RERUN_INFRA_MISSING" "reason=gradlew_not_found" "target=$TARGET"
+        exit 0
+    fi
+fi
 
 # Build re-run command
 RERUN_CMD=""
@@ -33,6 +60,9 @@ if echo "$CMD" | grep -qiE "pytest"; then
     else
         RERUN_CMD="cd backend && PYTHONPATH=. python -m pytest tests/$TARGET --tb=short -q 2>&1"
     fi
+elif [ "$IS_E2E" = "true" ]; then
+    # E2E re-run with specific class target
+    RERUN_CMD="cd android && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=$TARGET --console=plain 2>&1"
 elif echo "$CMD" | grep -qiE "gradlew.*test"; then
     if echo "$TARGET" | grep -qE "^com\.|^\*\."; then
         RERUN_CMD="cd android && ./gradlew :app:testDebugUnitTest --tests \"$TARGET\" --console=plain 2>&1"
@@ -43,7 +73,7 @@ fi
 if [ -z "$RERUN_CMD" ]; then exit 0; fi
 
 # Re-run with timeout
-RERUN_OUTPUT=$(timeout 300 bash -c "$RERUN_CMD" 2>&1) || true
+RERUN_OUTPUT=$(timeout $RERUN_TIMEOUT bash -c "$RERUN_CMD" 2>&1) || true
 RC=$?
 if [ "$RC" -eq 124 ]; then
     log_event "VERIFY_RERUN_TIMEOUT" "target=$TARGET"; exit 0

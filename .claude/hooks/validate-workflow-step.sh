@@ -69,6 +69,23 @@ case "$HOOK_TOOL_NAME" in
         ;;
     "Bash")
         CMD=$(extract_input_field "command")
+        # Detect bash file-modification commands targeting code files
+        if echo "$CMD" | grep -qE "(sed -i|awk.*>|echo.*>|cat.*>|tee |printf.*>|cp .*(\.kt|\.py|\.java|\.xml)|mv .*(\.kt|\.py|\.java|\.xml))"; then
+            # Extract target file from common patterns
+            BASH_TARGET=$(echo "$CMD" | grep -oE "[^ \"'>|]+\.(kt|py|java|xml)" | tail -1)
+            if [ -n "$BASH_TARGET" ]; then
+                # Exclude non-production paths
+                if ! echo "$BASH_TARGET" | grep -qE "(\.claude/|docs/|test_|Test\.kt|androidTest|_test\.py)"; then
+                    if is_code_file "$BASH_TARGET"; then
+                        if [ "$(get_step_status step2_tests)" != "true" ]; then
+                            echo ""; echo "WORKFLOW BLOCKED: Bash command modifies code file before Step 2 (tests)."
+                            echo "File: $BASH_TARGET — Create test file first."; echo ""
+                            log_event "BLOCKED" "reason=bash_modify_before_step2" "file=$BASH_TARGET"; exit 2
+                        fi
+                    fi
+                fi
+            fi
+        fi
         if echo "$CMD" | grep -qE "git commit"; then
             INCOMPLETE=$(check_all_steps_complete)
             if [ "$INCOMPLETE" != "all" ]; then
