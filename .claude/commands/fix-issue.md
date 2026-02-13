@@ -2,6 +2,28 @@
 
 Analyze and implement a fix for GitHub issue: $ARGUMENTS
 
+## Step 0: Initialize Workflow State
+
+Before any other action, initialize the workflow tracking state so hooks can enforce the pipeline:
+
+```bash
+# Hooks will auto-initialize on first tool use, but explicitly set activeCommand
+python -c "
+import json, os
+state_file = '.claude/workflow-state.json'
+if os.path.exists(state_file):
+    with open(state_file) as f:
+        d = json.load(f)
+    d['activeCommand'] = 'fix-issue'
+    with open(state_file, 'w') as f:
+        json.dump(d, f, indent=2)
+"
+```
+
+This marks the session as a `fix-issue` workflow. Hooks will track Skill invocations and block commits if required evidence is missing.
+
+---
+
 ## Steps
 
 1. **Fetch Issue Details**
@@ -36,6 +58,8 @@ Analyze and implement a fix for GitHub issue: $ARGUMENTS
 
 6b. **Fix Loop (via /fix-loop Skill)**
 
+   > **ENFORCEMENT GATE:** Hooks track whether you invoke `/fix-loop` via the Skill tool. If test failures were detected and you fix issues inline without using the Skill tool, the `verify-evidence-artifacts.sh` hook will **block your commit**. You MUST use `Skill("fix-loop")`.
+
    If any verification tests fail — **regardless of whether the failure is known or pre-existing** — **use the Skill tool** to invoke `/fix-loop` in Full Loop mode. Do NOT read fix-loop.md and follow it inline.
 
    Invoke: `skill: "fix-loop"` with arguments:
@@ -59,6 +83,8 @@ Analyze and implement a fix for GitHub issue: $ARGUMENTS
    **CRITICAL:** Do NOT proceed to Step 7 until /fix-loop returns **RESOLVED**.
 
 7. **Post-Fix Pipeline (via /post-fix-pipeline Skill)**
+
+   > **ENFORCEMENT GATE:** Hooks track whether you invoke `/post-fix-pipeline` via the Skill tool. If tests were run and you attempt to commit without invoking the pipeline, the `verify-evidence-artifacts.sh` hook will **block your commit**. You MUST use `Skill("post-fix-pipeline")`.
 
    **Use the Skill tool** to invoke `/post-fix-pipeline`. Do NOT commit manually.
 

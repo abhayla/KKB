@@ -61,6 +61,12 @@ This Skill is invoked by: `/adb-test`, `/run-e2e`, `/implement`, `/fix-issue`. E
 ## Algorithm
 
 ```
+STEP 0: INITIALIZE EVIDENCE
+  Create evidence directory: .claude/logs/post-fix-pipeline/
+  Write pipeline-init evidence:
+    .claude/logs/post-fix-pipeline/evidence-init-{timestamp}.json
+    { "event": "pipeline_start", "fixCount": N, "filesChanged": [...], "timestamp": "ISO8601" }
+
 STEP 1: GATE CHECK
   If fixes_applied is empty:
     Return immediately with status: NO_FIXES
@@ -98,6 +104,11 @@ STEP 3: TEST SUITE VERIFICATION (if test_suite_commands is non-empty)
       If still failing after max attempts:
         gate = FAILED → HARD BLOCK — skip Steps 4 and 5
 
+  Write test-suite evidence:
+    .claude/logs/post-fix-pipeline/evidence-testsuite-{timestamp}.json
+    { "event": "test_suite_complete", "gate": "PASSED|PASSED_AFTER_FIX|FAILED",
+      "perSuite": [...], "autoFixAttempts": N, "timestamp": "ISO8601" }
+
 STEP 4: DOCUMENTATION (only if gate != FAILED)
   If docs_instructions is non-empty:
     Launch docs_agent_name Agent (via Task tool) with:
@@ -120,6 +131,13 @@ STEP 5: GIT COMMIT (only if gate != FAILED)
       Include the fix list in the commit body.
       Do NOT push unless push=true."
   Record commit hash and message
+
+STEP 6: FINALIZE EVIDENCE
+  Write pipeline-complete evidence:
+    .claude/logs/post-fix-pipeline/evidence-complete-{timestamp}.json
+    { "event": "pipeline_complete", "status": "COMPLETED|BLOCKED_BY_TEST_SUITE|NO_FIXES",
+      "testSuiteGate": "...", "commitHash": "...", "commitMessage": "...",
+      "filesChanged": [...], "timestamp": "ISO8601" }
 ```
 
 ---

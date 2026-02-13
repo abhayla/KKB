@@ -1,0 +1,65 @@
+#!/bin/bash
+# =============================================================================
+# Claude Code Evidence Artifacts Verification Hook (PreToolUse)
+# =============================================================================
+# Blocks git commit when required evidence is missing.
+# Exit 0 = allow, Exit 2 = BLOCK (missing evidence).
+# No active workflow (null) = always allow.
+# =============================================================================
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/hook-utils.sh"
+parse_hook_input
+
+if [ "$HOOK_TOOL_NAME" != "Bash" ]; then exit 0; fi
+
+CMD=$(extract_input_field "command")
+if ! echo "$CMD" | grep -qE "git commit"; then exit 0; fi
+if [ ! -f "$WORKFLOW_STATE_FILE" ]; then exit 0; fi
+
+ACTIVE_CMD=$(get_state_field ".activeCommand")
+if [ -z "$ACTIVE_CMD" ] || [ "$ACTIVE_CMD" = "null" ] || [ "$ACTIVE_CMD" = "None" ]; then exit 0; fi
+
+MISSING=""
+
+case "$ACTIVE_CMD" in
+    "fix-issue"|"implement")
+        TC=$(python -c "import json;print(len(json.load(open('$WORKFLOW_STATE_FILE')).get('evidence',{}).get('testRuns',[])))" 2>/dev/null)
+        if [ "${TC:-0}" -gt 0 ]; then
+            HF=$(python -c "import json;r=json.load(open('$WORKFLOW_STATE_FILE')).get('evidence',{}).get('testRuns',[]);print('true' if any(x.get('claimedResult')=='fail' for x in r) else 'false')" 2>/dev/null)
+            if [ "$HF" = "true" ]; then
+                FLI=$(get_state_field ".skillInvocations.fixLoopInvoked")
+                if [ "$FLI" != "true" ] && [ "$FLI" != "True" ]; then
+                    MISSING="$MISSING  - /fix-loop not invoked (test failures detected)\n"
+                fi
+            fi
+            PI=$(get_state_field ".skillInvocations.postFixPipelineInvoked")
+            if [ "$PI" != "true" ] && [ "$PI" != "True" ]; then
+                MISSING="$MISSING  - /post-fix-pipeline not invoked\n"
+            fi
+        fi
+        ;;
+    "adb-test"|"run-e2e")
+        FLC=$(get_state_field ".skillInvocations.fixLoopCount"); FLC=${FLC:-0}
+        if [ "$FLC" -gt 0 ]; then
+            PI=$(get_state_field ".skillInvocations.postFixPipelineInvoked")
+            if [ "$PI" != "true" ] && [ "$PI" != "True" ]; then
+                MISSING="$MISSING  - /post-fix-pipeline not invoked (fixes applied)\n"
+            fi
+        fi
+        TC=$(python -c "import json;print(len(json.load(open('$WORKFLOW_STATE_FILE')).get('evidence',{}).get('testRuns',[])))" 2>/dev/null)
+        if [ "${TC:-0}" -eq 0 ]; then
+            MISSING="$MISSING  - No test runs recorded\n"
+        fi
+        ;;
+esac
+
+if [ -n "$MISSING" ]; then
+    echo ""; echo "COMMIT BLOCKED - Missing evidence for $ACTIVE_CMD workflow:"
+    echo -e "$MISSING"
+    echo "Use Skill tool to invoke missing Skills, then retry."; echo ""
+    log_event "COMMIT_BLOCKED_EVIDENCE" "command=$ACTIVE_CMD"
+    exit 2
+fi
+
+exit 0

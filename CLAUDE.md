@@ -780,15 +780,19 @@ AI-powered meal planning using Google Gemini (`gemini-2.5-flash` via `google-gen
 
 ## Workflow Enforcement Hooks
 
-The 7-step workflow (Rule #7) is enforced by shell hooks in `.claude/hooks/`:
+The 7-step workflow (Rule #7) is enforced by shell hooks in `.claude/hooks/`. All hooks source `hook-utils.sh` for shared stdin JSON parsing and state management.
 
-| Hook | Purpose |
-|------|---------|
-| `validate-workflow-step.sh` | Pre-tool-use gate — blocks actions if prior workflow steps are incomplete |
-| `post-test-update.sh` | Post-test hook — updates workflow state after test runs |
-| `log-workflow.sh` | Session logging — appends to `.claude/logs/workflow-sessions.log` |
+| Hook | Trigger | Purpose |
+|------|---------|---------|
+| `hook-utils.sh` | (sourced) | Shared library — stdin parsing, state mgmt, test detection, evidence writing |
+| `validate-workflow-step.sh` | PreToolUse (Write/Edit/Bash) | Blocks actions if prior workflow steps are incomplete; blocks commits without pipeline |
+| `verify-evidence-artifacts.sh` | PreToolUse (Bash) | Blocks `git commit` when required evidence is missing (Skill invocations not tracked) |
+| `post-test-update.sh` | PostToolUse (Bash) | Records test results in workflow state and evidence files |
+| `verify-test-rerun.sh` | PostToolUse (Bash) | Re-runs same test independently; **blocks** if claimed PASS but re-run FAIL |
+| `log-workflow.sh` | PostToolUse (Bash/Skill/Write/Edit) | Logs events; **tracks Skill invocations** (fix-loop, post-fix-pipeline) |
+| `post-screenshot-resize.sh` | PostToolUse (Bash/Playwright) | Auto-resize screenshots >1800px |
 
-Workflow state is tracked in `.claude/workflow-state.json`. The full hook system and enforcement logic is documented in `docs/rules/Claude Code Enforced Workflow Rules.md`.
+Workflow state is tracked in `.claude/workflow-state.json` (extended schema with `skillInvocations`, `evidence`, `agentDelegations`). The full hook system and enforcement logic is documented in `docs/rules/Claude Code Enforced Workflow Rules.md`.
 
 ## Claude Code Configuration
 
@@ -811,11 +815,14 @@ The `.claude/` directory contains Claude Code customization:
 │   ├── implement.md      # /implement — implement feature with workflow
 │   ├── post-fix-pipeline.md  # /post-fix-pipeline — post-fix verification (regression → test suite → docs → commit)
 │   └── run-e2e.md        # /run-e2e — run Android E2E tests by feature group
-├── hooks/            # Workflow enforcement hooks
-│   ├── validate-workflow-step.sh
-│   ├── post-test-update.sh
-│   ├── log-workflow.sh
-│   ├── post-screenshot-resize.sh   # Auto-resize screenshots >1800px after capture
+├── hooks/            # Workflow enforcement hooks (7 hooks + 1 shared library)
+│   ├── hook-utils.sh               # Shared library sourced by all hooks (stdin parsing, state mgmt)
+│   ├── validate-workflow-step.sh   # PreToolUse: block actions if workflow steps incomplete
+│   ├── verify-evidence-artifacts.sh # PreToolUse: block git commit if evidence missing
+│   ├── post-test-update.sh         # PostToolUse: record test results in workflow state
+│   ├── verify-test-rerun.sh        # PostToolUse: re-run tests independently, block on inconsistency
+│   ├── log-workflow.sh             # PostToolUse: log events + track Skill invocations
+│   ├── post-screenshot-resize.sh   # PostToolUse: auto-resize screenshots >1800px after capture
 │   └── resize_screenshot.py        # Screenshot resize utility (batch mode: --all)
 ├── logs/             # Workflow session logs
 ├── settings.json
@@ -838,7 +845,7 @@ The `.claude/` directory contains Claude Code customization:
 | **Workflow Rules** | `docs/rules/Claude Code Enforced Workflow Rules.md` |
 | E2E Testing Guide | `docs/testing/E2E-Testing-Prompt.md` |
 | E2E Test Plan | `docs/testing/E2E-Test-Plan.md` |
-| Functional Requirements | `docs/testing/Functional-Requirements.md` |
+| Functional Requirement Traceability | `docs/testing/Functional-Requirement-Rule.md` |
 | Recipe Rule Test Plan | `docs/testing/Recipe-Rule-Test-Plan.md` |
 | ADB Test Definitions | `docs/testing/adb-test-definitions.md` |
 | ADB Flow Definitions | `docs/testing/flows/` (10 flow files) |

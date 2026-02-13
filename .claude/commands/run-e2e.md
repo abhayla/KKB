@@ -21,6 +21,31 @@ If `$ARGUMENTS` is empty, run ALL groups sequentially. If a group name is provid
 
 ---
 
+## SESSION INITIALIZATION
+
+Before prerequisites, initialize the workflow tracking state:
+
+```bash
+python -c "
+import json, os
+state_file = '.claude/workflow-state.json'
+if os.path.exists(state_file):
+    with open(state_file) as f:
+        d = json.load(f)
+    d['activeCommand'] = 'run-e2e'
+    with open(state_file, 'w') as f:
+        json.dump(d, f, indent=2)
+"
+```
+
+This marks the session as a `run-e2e` workflow. Hooks will:
+- Track all Skill invocations (fix-loop, post-fix-pipeline)
+- Independently verify test results via re-run
+- Block commits if fixes were applied but pipeline was not invoked
+- Log all tool events for audit trail
+
+---
+
 ## PREREQUISITES — Run These First (Every Time)
 
 ### 1. Check Emulator
@@ -241,6 +266,8 @@ Use a 10-minute timeout for groups with AI calls (meal-generation, home, chat, r
 
   #### 4a. Invoke /fix-loop Skill
 
+  > **ENFORCEMENT GATE:** Hooks track whether you invoke `/fix-loop` via the Skill tool. If you fix issues inline without using the Skill tool, the `log-workflow.sh` hook will NOT record a `fixLoopInvoked` event, and the `verify-evidence-artifacts.sh` hook will **block your commit**. You MUST use `Skill("fix-loop")`.
+
   **MANDATORY: Use the Skill tool** to invoke `/fix-loop` in Full Loop mode. Do NOT read fix-loop.md and follow it inline — you MUST invoke it as a Skill.
 
   Invoke: `skill: "fix-loop"` with arguments:
@@ -315,7 +342,11 @@ After all groups complete (or the single requested group), check if any fixes we
 
 **If `len(all_fixes) == 0`**: skip this section — no agents needed.
 
-**If `len(all_fixes) > 0`**: **Use the Skill tool** to invoke `/post-fix-pipeline`. Do NOT read post-fix-pipeline.md and follow it inline.
+**If `len(all_fixes) > 0`**:
+
+> **ENFORCEMENT GATE:** Hooks track whether you invoke `/post-fix-pipeline` via the Skill tool. If fixes were applied and you attempt to commit without invoking the pipeline, the `verify-evidence-artifacts.sh` hook will **block your commit**. You MUST use `Skill("post-fix-pipeline")`.
+
+**Use the Skill tool** to invoke `/post-fix-pipeline`. Do NOT read post-fix-pipeline.md and follow it inline.
 
 Invoke: `skill: "post-fix-pipeline"` with arguments:
 ```

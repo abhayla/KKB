@@ -1,39 +1,47 @@
 #!/bin/bash
 # =============================================================================
-# Claude Code Workflow Logging Hook
+# Claude Code Workflow Logging Hook (PostToolUse)
 # =============================================================================
-# Purpose: Lightweight logging for workflow events, debugging, and auditing.
-#
-# Usage: Can be called from other hooks or directly
-#        .claude/hooks/log-workflow.sh <EVENT_TYPE> [KEY=VALUE...]
-#
-# Examples:
-#        .claude/hooks/log-workflow.sh STEP_COMPLETE step=1 issue=47
-#        .claude/hooks/log-workflow.sh COMMIT_BLOCKED reason="tests_failing"
+# Logs events and tracks Skill invocations (fix-loop, post-fix-pipeline).
+# This is the KEY mechanism that detects Skill tool usage.
+# Exit 0 always (logging, never blocks).
 # =============================================================================
 
-LOG_FILE=".claude/logs/workflow-sessions.log"
-EVENT_TYPE="${1:-INFO}"
-shift
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/hook-utils.sh"
+parse_hook_input
 
-# Ensure log directory exists
-mkdir -p .claude/logs 2>/dev/null
+if [ -z "$HOOK_TOOL_NAME" ]; then exit 0; fi
 
-# Get timestamp
-TIMESTAMP=$(date -Iseconds 2>/dev/null || date +"%Y-%m-%dT%H:%M:%S")
-
-# Build log entry
-LOG_ENTRY="[$TIMESTAMP] $EVENT_TYPE"
-
-# Add any additional key=value pairs
-for arg in "$@"; do
-    LOG_ENTRY="$LOG_ENTRY | $arg"
-done
-
-# Write to log file
-echo "$LOG_ENTRY" >> "$LOG_FILE"
-
-# Also output for immediate feedback if verbose mode
-if [ "${CLAUDE_HOOK_VERBOSE:-}" = "true" ]; then
-    echo "[LOG] $LOG_ENTRY"
+# Skill invocation tracking
+if [ "$HOOK_TOOL_NAME" = "Skill" ]; then
+    SKILL_NAME=$(echo "$HOOK_TOOL_INPUT" | python -c "import sys,json;d=json.load(sys.stdin);print(d.get('skill',d.get('name','')))" 2>/dev/null)
+    if [ -n "$SKILL_NAME" ]; then
+        log_event "SKILL_INVOKED" "name=$SKILL_NAME"
+        record_skill_invocation "$SKILL_NAME"
+    fi
+    exit 0
 fi
+
+# Event logging for other tools
+case "$HOOK_TOOL_NAME" in
+    "Bash")
+        CMD=$(extract_input_field "command")
+        log_event "BASH_CMD" "cmd=$(echo "$CMD" | head -c 100)"
+        ;;
+    "Write")
+        log_event "FILE_WRITTEN" "path=$(extract_input_field file_path)"
+        ;;
+    "Edit")
+        log_event "FILE_MODIFIED" "path=$(extract_input_field file_path)"
+        ;;
+    "Task")
+        AT=$(echo "$HOOK_TOOL_INPUT" | python -c "import sys,json;print(json.load(sys.stdin).get('subagent_type',''))" 2>/dev/null)
+        log_event "AGENT_DELEGATED" "type=$AT"
+        ;;
+    *)
+        log_event "TOOL_USED" "tool=$HOOK_TOOL_NAME"
+        ;;
+esac
+
+exit 0

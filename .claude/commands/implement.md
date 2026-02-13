@@ -6,6 +6,31 @@ Implement the requested feature or fix following the **mandatory 7-step workflow
 
 ---
 
+## STEP 0: Initialize Workflow State
+
+Before any other action, initialize the workflow tracking state so hooks can enforce the pipeline:
+
+```bash
+# Hooks will auto-initialize on first tool use, but explicitly set activeCommand
+python -c "
+import json, os
+state_file = '.claude/workflow-state.json'
+if os.path.exists(state_file):
+    with open(state_file) as f:
+        d = json.load(f)
+    d['activeCommand'] = 'implement'
+    with open(state_file, 'w') as f:
+        json.dump(d, f, indent=2)
+"
+```
+
+This marks the session as an `implement` workflow. Hooks will:
+- Track all Skill invocations (fix-loop, post-fix-pipeline)
+- Independently verify test results via re-run
+- Block commits if required evidence artifacts are missing
+
+---
+
 ## MANDATORY WORKFLOW
 
 You MUST follow these 7 steps in order. Do NOT skip any step.
@@ -122,6 +147,8 @@ PYTHONPATH=. pytest tests/test_[feature].py -v
 
 ### STEP 5: Fix Loop (via /fix-loop Skill)
 
+> **ENFORCEMENT GATE:** Hooks track whether you invoke `/fix-loop` via the Skill tool. If test failures were detected and you fix issues inline without using the Skill tool, the `verify-evidence-artifacts.sh` hook will **block your commit**. You MUST use `Skill("fix-loop")`.
+
 IF any tests fail — **regardless of whether the failure is known or pre-existing** — **use the Skill tool** to invoke `/fix-loop` in Full Loop mode. Do NOT read fix-loop.md and follow it inline.
 
 Invoke: `skill: "fix-loop"` with arguments:
@@ -188,6 +215,8 @@ await browser_take_screenshot({
 ---
 
 ### STEP 7: Verify and Post-Fix Pipeline
+
+> **ENFORCEMENT GATE:** Hooks track whether you invoke `/post-fix-pipeline` via the Skill tool. If tests were run and you attempt to commit without invoking the pipeline, the `verify-evidence-artifacts.sh` hook will **block your commit**. You MUST use `Skill("post-fix-pipeline")`.
 
 1. Read both screenshots using the Read tool
 2. Describe the visible difference between before and after

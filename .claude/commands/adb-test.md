@@ -61,6 +61,35 @@ Jetpack Compose `testTag()` values do NOT appear in uiautomator XML dumps. All e
 
 ---
 
+## SESSION INITIALIZATION
+
+Before prerequisites, initialize the workflow tracking state:
+
+```bash
+python -c "
+import json, os
+state_file = '.claude/workflow-state.json'
+if os.path.exists(state_file):
+    with open(state_file) as f:
+        d = json.load(f)
+    d['activeCommand'] = 'adb-test'
+    with open(state_file, 'w') as f:
+        json.dump(d, f, indent=2)
+"
+```
+
+Create session log directory:
+```bash
+mkdir -p .claude/logs/adb-test/$(date +%Y%m%d_%H%M%S)
+```
+
+This marks the session as an `adb-test` workflow. Hooks will:
+- Track all Skill invocations (fix-loop, post-fix-pipeline)
+- Block commits if fixes were applied but pipeline was not invoked
+- Log all tool events for audit trail
+
+---
+
 ## PREREQUISITES — Run These First (Every Time)
 
 ### D1. Check Emulator
@@ -288,6 +317,8 @@ Before assuming a code bug, check if the test definition is outdated:
 
 **Step F2: Invoke /fix-loop Skill (Single Fix mode)**
 
+> **ENFORCEMENT GATE:** Hooks track whether you invoke `/fix-loop` via the Skill tool. If you fix issues inline without using the Skill tool, the `log-workflow.sh` hook will NOT record a `fixLoopInvoked` event, and if fixes are applied, the `verify-evidence-artifacts.sh` hook will **block your commit**. You MUST use `Skill("fix-loop")`.
+
 **MANDATORY: Use the Skill tool** to invoke `/fix-loop`. Do NOT read fix-loop.md and follow it inline — you MUST invoke it as a Skill.
 
 Invoke: `skill: "fix-loop"` with these arguments:
@@ -401,7 +432,11 @@ After all screens complete (or single screen), check if fixes were applied.
 
 **If `len(all_fixes) == 0`**: skip — no changes to commit.
 
-**If `len(all_fixes) > 0`**: **Use the Skill tool** to invoke `/post-fix-pipeline`:
+**If `len(all_fixes) > 0`**:
+
+> **ENFORCEMENT GATE:** Hooks track whether you invoke `/post-fix-pipeline` via the Skill tool. If fixes were applied and you attempt to commit without invoking the pipeline, the `verify-evidence-artifacts.sh` hook will **block your commit**. You MUST use `Skill("post-fix-pipeline")`.
+
+**Use the Skill tool** to invoke `/post-fix-pipeline`:
 
 Invoke: `skill: "post-fix-pipeline"` with these arguments:
 ```

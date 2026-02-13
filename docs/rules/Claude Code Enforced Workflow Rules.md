@@ -292,22 +292,72 @@ Claude MUST answer these questions in its response before proceeding:
 
 ## Hook Configuration
 
-The following hooks enforce the workflow:
+The workflow is enforced through 7 shell hooks registered in `.claude/settings.json`. All hooks source `.claude/hooks/hook-utils.sh` for shared utilities (stdin JSON parsing, state management, test detection).
+
+### Shared Library: `hook-utils.sh`
+
+Not a standalone hook. Sourced by all hooks via `source "$(dirname "$0")/hook-utils.sh"`. Provides:
+- `parse_hook_input` — Read stdin JSON, set `$HOOK_TOOL_NAME`, `$HOOK_TOOL_INPUT`, `$HOOK_TOOL_OUTPUT`
+- `init_workflow_state(command)` — Create workflow-state.json with extended schema
+- `is_test_command(cmd)` / `extract_test_target(cmd)` / `detect_test_result(output)` — Test detection
+- `update_workflow_state(expr)` — Atomic read-modify-write (jq + Python fallback)
+- `record_skill_invocation(name)` — Track Skill tool usage
+- `write_evidence(dir, filename, json)` / `log_event(type, kv...)` — Artifacts and logging
 
 ### Pre-Tool-Use Hooks
 
-| Trigger | Hook | Purpose |
+| Matcher | Hook | Purpose |
 |---------|------|---------|
-| `Write(*)` | `validate-workflow-step.sh` | Block test creation before Step 1 |
-| `Edit(*)` | `validate-workflow-step.sh` | Block code edits before Step 2 |
-| `Bash(git commit*)` | `validate-workflow-step.sh` | Block commits before Steps 1-7 |
+| `Write` | `validate-workflow-step.sh` | Block test creation before Step 1; block code edits before Step 2 |
+| `Edit` | `validate-workflow-step.sh` | Same as Write |
+| `Bash` | `validate-workflow-step.sh` | Block commits before Steps 1-7; check pipeline was invoked |
+| `Bash` | `verify-evidence-artifacts.sh` | Block `git commit` when required evidence is missing (fix-loop/pipeline not invoked) |
 
 ### Post-Tool-Use Hooks
 
-| Trigger | Hook | Purpose |
-|---------|------|---------|
-| `Bash(*gradlew*test*)` | `post-test-update.sh` | Update workflow state after tests |
-| `Bash(*pytest*)` | `post-test-update.sh` | Update workflow state after tests |
+Execution order for `Bash` matcher matters:
+
+| Order | Matcher | Hook | Purpose |
+|-------|---------|------|---------|
+| 1 | `Bash` | `post-test-update.sh` | Record test results in workflow state and evidence files |
+| 2 | `Bash` | `verify-test-rerun.sh` | Re-run same test independently; **BLOCK** if claimed PASS but re-run FAIL |
+| 3 | `Bash` | `post-screenshot-resize.sh` | Resize screenshots >1800px (existing, preserved) |
+| 4 | `Bash` | `log-workflow.sh` | Log events; **track Skill invocations** (fix-loop, post-fix-pipeline) |
+| — | `mcp__playwright__browser_take_screenshot` | `post-screenshot-resize.sh` | Resize Playwright screenshots |
+| — | `Skill` | `log-workflow.sh` | **Key mechanism:** Records when `/fix-loop` or `/post-fix-pipeline` are invoked via Skill tool |
+| — | `Write` | `log-workflow.sh` | Log file writes |
+| — | `Edit` | `log-workflow.sh` | Log file edits |
+
+### Independent Test Verification
+
+The `verify-test-rerun.sh` hook provides independent verification of test results:
+
+| Re-run Result | Claimed Result | Action |
+|---------------|----------------|--------|
+| PASS | PASS | Allow (consistent) |
+| FAIL | FAIL | Allow (test genuinely fails) |
+| FAIL | PASS | **BLOCK** — "Independent verification failed" |
+| PASS | FAIL | Allow + warning (flaky test) |
+
+**Skip conditions:** Non-test commands, full suite runs (no specific target), Android E2E tests (`connectedDebugAndroidTest`), multiple test files, re-run infrastructure failure (fail open).
+
+**Timeout:** 300s (5 minutes). Evidence written to `.claude/logs/test-evidence/rerun-{timestamp}.json`.
+
+---
+
+## Evidence Artifacts
+
+Hooks and commands produce JSON evidence files for audit trail:
+
+| Producer | Location | Content |
+|----------|----------|---------|
+| `post-test-update.sh` | `.claude/logs/test-evidence/run-{ts}.json` | Test command, target, claimed result |
+| `verify-test-rerun.sh` | `.claude/logs/test-evidence/rerun-{ts}.json` | Re-run result, consistency check |
+| `/fix-loop` (command) | `.claude/logs/fix-loop/{session}/evidence-{N}.json` | Per-iteration fix details |
+| `/fix-loop` (command) | `.claude/logs/fix-loop/{session}/summary-evidence.json` | Overall fix-loop outcome |
+| `/post-fix-pipeline` (command) | `.claude/logs/post-fix-pipeline/evidence-*.json` | Pipeline init, test suite, completion |
+
+All evidence directories are under `.claude/logs/` which is gitignored.
 
 ---
 
@@ -317,9 +367,10 @@ File: `.claude/workflow-state.json` (auto-generated, gitignored)
 
 ```json
 {
-  "sessionId": "2026-02-04-abc123",
+  "sessionId": "20260213-143000",
   "issueNumber": null,
   "requirementId": null,
+  "activeCommand": "fix-issue|implement|adb-test|run-e2e|null",
   "steps": {
     "step1_requirements": { "completed": false, "timestamp": null, "artifacts": [] },
     "step2_tests": { "completed": false, "timestamp": null, "testFile": null },
@@ -330,7 +381,31 @@ File: `.claude/workflow-state.json` (auto-generated, gitignored)
     "step7_verify": { "completed": false, "verification": null }
   },
   "blocked": false,
-  "blockedReason": null
+  "blockedReason": null,
+  "skillInvocations": {
+    "fixLoopInvoked": false,
+    "fixLoopCount": 0,
+    "fixLoopEvidence": [],
+    "postFixPipelineInvoked": false,
+    "postFixPipelineEvidence": null
+  },
+  "evidence": {
+    "testRuns": [
+      {
+        "timestamp": "ISO8601",
+        "command": "...",
+        "target": "tests/test_auth.py",
+        "claimedResult": "pass|fail",
+        "independentVerification": {
+          "rerunResult": "pass|fail",
+          "consistent": true
+        }
+      }
+    ],
+    "screenshots": [],
+    "fixLoopLogs": []
+  },
+  "agentDelegations": []
 }
 ```
 

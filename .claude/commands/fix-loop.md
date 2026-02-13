@@ -143,7 +143,7 @@ FOR each issue (while total_iterations < max_iterations):
       If non-zero → analyze new failure output, continue to next attempt
       If timeout → treat as failure
 
-    STEP 7: LOG ITERATION
+    STEP 7: LOG ITERATION + EVIDENCE ARTIFACT
       Write iteration-{NNN}.md to {log_dir}/{session_id}/ with:
         - Metadata (session, iteration, issue, attempt, thinking_level, timestamp)
         - Previous iterations summary
@@ -152,6 +152,22 @@ FOR each issue (while total_iterations < max_iterations):
         - Code review result (verdict, findings)
         - Build result (status, attempts)
         - Retest result (PASSED / FAILED / PENDING_CALLER_RETEST)
+
+      MANDATORY evidence artifact (JSON):
+        {log_dir}/{session_id}/evidence-{NNN}.json
+        ```json
+        {
+          "iteration": NNN,
+          "mode": "full_loop|single_fix",
+          "issue": "{issue_description}",
+          "fixApplied": { "file": "...", "line": N, "change": "..." },
+          "rootCause": "...",
+          "codeReviewVerdict": "APPROVED|FLAGGED",
+          "buildResult": "PASSED|FAILED|SKIPPED",
+          "retestResult": "PASSED|FAILED|TIMEOUT|PENDING_CALLER_RETEST",
+          "timestamp": "ISO8601"
+        }
+        ```
   END attempt loop
 
   If issue not resolved after max_attempts_per_issue:
@@ -163,6 +179,22 @@ Determine overall status:
   - Some resolved, some not → PARTIALLY_RESOLVED
   - None resolved → UNRESOLVED
   - Budget exhausted with remaining issues → MAX_ITERATIONS_EXCEEDED
+
+FINALIZE:
+  Write summary evidence artifact:
+    {log_dir}/{session_id}/summary-evidence.json
+    ```json
+    {
+      "overallStatus": "RESOLVED|PARTIALLY_RESOLVED|UNRESOLVED|MAX_ITERATIONS_EXCEEDED",
+      "iterationsUsed": N,
+      "issuesFound": N,
+      "issuesResolved": N,
+      "fixesApplied": [ { "file": "...", "line": N, "description": "..." } ],
+      "unresolvedIssues": [ "..." ],
+      "metrics": { ... },
+      "timestamp": "ISO8601"
+    }
+    ```
 
 RETURN structured results (see Output section)
 ```
