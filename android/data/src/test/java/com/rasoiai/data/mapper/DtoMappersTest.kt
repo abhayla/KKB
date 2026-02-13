@@ -169,10 +169,10 @@ class DtoMappersTest {
 
             // Then
             assertEquals(350, domain.calories)
-            assertEquals(15.0, domain.proteinGrams)
-            assertEquals(40.0, domain.carbohydratesGrams)
-            assertEquals(10.0, domain.fatGrams)
-            assertEquals(5.0, domain.fiberGrams)
+            assertEquals(15, domain.proteinGrams)
+            assertEquals(40, domain.carbohydratesGrams)
+            assertEquals(10, domain.fatGrams)
+            assertEquals(5, domain.fiberGrams)
         }
     }
 

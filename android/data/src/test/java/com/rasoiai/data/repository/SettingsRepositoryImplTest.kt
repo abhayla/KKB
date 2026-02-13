@@ -99,6 +99,7 @@ class SettingsRepositoryImplTest {
         fun `should return user when userId exists`() = runTest {
             // Given
             every { mockUserPreferencesDataStore.userId } returns flowOf("user-1")
+            every { mockUserPreferencesDataStore.userEmail } returns flowOf("test@example.com")
             every { mockUserPreferencesDataStore.userPreferences } returns flowOf(testPreferences)
             every { mockUserPreferencesDataStore.isOnboarded } returns flowOf(true)
 
@@ -118,6 +119,7 @@ class SettingsRepositoryImplTest {
         fun `should return null when no userId`() = runTest {
             // Given
             every { mockUserPreferencesDataStore.userId } returns flowOf(null)
+            every { mockUserPreferencesDataStore.userEmail } returns flowOf(null)
             every { mockUserPreferencesDataStore.userPreferences } returns flowOf(null)
             every { mockUserPreferencesDataStore.isOnboarded } returns flowOf(false)
 
@@ -138,6 +140,9 @@ class SettingsRepositoryImplTest {
         @Test
         @DisplayName("Should return default app settings")
         fun `should return default app settings`() = runTest {
+            // Given
+            every { mockUserPreferencesDataStore.appSettings } returns flowOf(AppSettings())
+
             // When & Then
             repository.getAppSettings().test {
                 val settings = awaitItem()
@@ -156,16 +161,18 @@ class SettingsRepositoryImplTest {
         @Test
         @DisplayName("Should update dark mode preference")
         fun `should update dark mode preference`() = runTest {
+            // Given
+            every { mockUserPreferencesDataStore.appSettings } returns flowOf(AppSettings())
+
             // When
             val result = repository.updateDarkMode(DarkModePreference.DARK)
 
             // Then
             assertTrue(result.isSuccess)
-
-            repository.getAppSettings().test {
-                val settings = awaitItem()
-                assertEquals(DarkModePreference.DARK, settings.darkMode)
-                cancelAndIgnoreRemainingEvents()
+            coVerify {
+                mockUserPreferencesDataStore.saveAppSettings(
+                    match { it.darkMode == DarkModePreference.DARK }
+                )
             }
         }
     }
@@ -177,16 +184,18 @@ class SettingsRepositoryImplTest {
         @Test
         @DisplayName("Should update notifications setting")
         fun `should update notifications setting`() = runTest {
+            // Given
+            every { mockUserPreferencesDataStore.appSettings } returns flowOf(AppSettings())
+
             // When
             val result = repository.updateNotifications(false)
 
             // Then
             assertTrue(result.isSuccess)
-
-            repository.getAppSettings().test {
-                val settings = awaitItem()
-                assertEquals(false, settings.notificationsEnabled)
-                cancelAndIgnoreRemainingEvents()
+            coVerify {
+                mockUserPreferencesDataStore.saveAppSettings(
+                    match { !it.notificationsEnabled }
+                )
             }
         }
     }

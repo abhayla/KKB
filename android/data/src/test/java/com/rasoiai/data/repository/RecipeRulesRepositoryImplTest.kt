@@ -178,7 +178,9 @@ class RecipeRulesRepositoryImplTest {
         @Test
         @DisplayName("Should create rule with generated ID and timestamps")
         fun `should create rule with generated ID and timestamps`() = runTest {
-            // Given
+            // Given - ensure findDuplicate returns null (no existing duplicate)
+            coEvery { mockRecipeRulesDao.findDuplicate(any(), any(), any()) } returns null
+
             val newRule = RecipeRule(
                 id = "",
                 type = RuleType.INGREDIENT,

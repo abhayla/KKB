@@ -39,7 +39,7 @@ class PantryRepositoryImplTest {
     private val testPantryEntity = PantryItemEntity(
         id = "pantry-1",
         name = "Tomatoes",
-        category = "vegetables",
+        category = "VEGETABLES",
         quantity = 5,
         unit = "piece",
         addedDate = "2026-01-27",

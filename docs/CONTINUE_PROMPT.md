@@ -327,6 +327,21 @@ DEBUG=true
 - **Backend tests:** 351/351 passing after fix
 - **Key learnings:** Shell chaining for dropdowns works inconsistently (onboarding yes, settings no). Backend API fallback is the reliable strategy. Python bytecache (.pyc) can serve stale code — clear `__pycache__` after fixes.
 
+### Session 42: Data Module Test Fixes + Workflow Enforcement
+- **Data Module Tests:** Fixed 15 test failures across 7 files in `android/data/src/test/`
+  - DtoMappersTest, EntityMappersTest, AuthRepositoryImplTest, SettingsRepositoryImplTest, PantryRepositoryImplTest, RecipeRulesRepositoryImplTest, MealPlanRepositoryImplTest
+  - Type mismatches (Double vs Int assertions), case sensitivity (uppercase enum values: BREAKFAST, LUNCH, DINNER, SNACKS vs breakfast, lunch, dinner, snacks)
+  - Eager flow capture in AuthRepositoryImpl mock setup
+  - Missing mock stubs (userEmail, appSettings, findDuplicate)
+  - Wrong test expectations (refreshToken as String not Boolean)
+- **Hook Enforcement (Prior Commit 4821989):** Added `testFailuresPending` flag-and-gate mechanism
+  - `post-test-update.sh`: sets flag when test FAIL or REGRESSION detected
+  - `validate-workflow-step.sh`: blocks Step 3 (implement) until flag cleared
+  - `log-workflow.sh`: tracks gate state
+  - `pre-skill-fixloop-unblock.sh`: resets flag when `/fix-loop` invoked
+- **Test Results:** Backend 364 tests passing, Android all modules (debug + release) pass
+- **Next Steps:** All data module tests passing. Ready for next feature work.
+
 *Last Updated: February 13, 2026*
-*All major features complete. 351 backend tests (26 files). ~330 Android unit tests. 67+ E2E tests. 750+ UI tests.*
+*All major features complete. 364 backend tests (26 files). ~330 Android unit tests. 67+ E2E tests. 750+ UI tests.*
 *44 API endpoints across 11 routers. 3,580 recipes. ~525 requirements across 12 screen files. Room DB v11.*

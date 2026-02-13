@@ -344,7 +344,7 @@ class MealPlanRepositoryImplTest {
                 mockMealPlanDao.updateMealItemLockState(
                     mealPlanId = "plan-1",
                     date = testDateString,
-                    mealType = "BREAKFAST",
+                    mealType = "breakfast",
                     recipeId = "recipe-1",
                     isLocked = true
                 )

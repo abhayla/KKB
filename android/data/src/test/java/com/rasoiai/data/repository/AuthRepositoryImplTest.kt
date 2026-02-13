@@ -11,6 +11,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -75,8 +76,9 @@ class AuthRepositoryImplTest {
         @Test
         @DisplayName("Should return true when authenticated")
         fun `should return true when authenticated`() = runTest {
-            // Given
+            // Given - must set up mock BEFORE constructing repository (eager flow capture)
             every { mockUserPreferencesDataStore.isAuthenticated } returns flowOf(true)
+            repository = AuthRepositoryImpl(apiService = mockApiService, userPreferencesDataStore = mockUserPreferencesDataStore)
 
             // When & Then
             repository.isAuthenticated.test {
@@ -88,8 +90,9 @@ class AuthRepositoryImplTest {
         @Test
         @DisplayName("Should return false when not authenticated")
         fun `should return false when not authenticated`() = runTest {
-            // Given
+            // Given - must set up mock BEFORE constructing repository (eager flow capture)
             every { mockUserPreferencesDataStore.isAuthenticated } returns flowOf(false)
+            repository = AuthRepositoryImpl(apiService = mockApiService, userPreferencesDataStore = mockUserPreferencesDataStore)
 
             // When & Then
             repository.isAuthenticated.test {
@@ -106,14 +109,16 @@ class AuthRepositoryImplTest {
         @Test
         @DisplayName("Should return null when not authenticated")
         fun `should return null when not authenticated`() = runTest {
-            // Given
+            // Given - must set up mock BEFORE constructing repository (eager flow capture)
             every { mockUserPreferencesDataStore.isAuthenticated } returns flowOf(false)
+            repository = AuthRepositoryImpl(apiService = mockApiService, userPreferencesDataStore = mockUserPreferencesDataStore)
 
-            // When & Then
-            repository.currentUser.test {
-                assertNull(awaitItem())
-                cancelAndIgnoreRemainingEvents()
-            }
+            // When — use .first() instead of Turbine test{} to avoid UncompletedCoroutinesError
+            // from combine() with never-completing StateFlow
+            val user = repository.currentUser.first()
+
+            // Then
+            assertNull(user)
         }
     }
 
@@ -226,17 +231,17 @@ class AuthRepositoryImplTest {
         }
 
         @Test
-        @DisplayName("Should return failure when refresh not implemented")
-        fun `should return failure when refresh not implemented`() = runTest {
+        @DisplayName("Should return failure when API refresh fails")
+        fun `should return failure when API refresh fails`() = runTest {
             // Given
             coEvery { mockUserPreferencesDataStore.getRefreshToken() } returns "refresh-token"
+            coEvery { mockApiService.refreshToken(any()) } throws RuntimeException("Token refresh failed")
 
             // When
             val result = repository.refreshToken()
 
             // Then
             assertTrue(result.isFailure)
-            assertEquals("Token refresh not implemented", result.exceptionOrNull()?.message)
         }
     }
 
