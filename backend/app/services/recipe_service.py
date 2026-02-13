@@ -118,7 +118,7 @@ async def get_recipe_by_id(
             selectinload(Recipe.instructions),
             selectinload(Recipe.nutrition),
         )
-        .where(Recipe.id == recipe_uuid, Recipe.is_active == True)
+        .where(Recipe.id == str(recipe_uuid), Recipe.is_active == True)
     )
     recipe = result.scalar_one_or_none()
 
@@ -158,7 +158,7 @@ async def scale_recipe(
             selectinload(Recipe.instructions),
             selectinload(Recipe.nutrition),
         )
-        .where(Recipe.id == recipe_uuid, Recipe.is_active == True)
+        .where(Recipe.id == str(recipe_uuid), Recipe.is_active == True)
     )
     recipe = result.scalar_one_or_none()
 
@@ -242,14 +242,15 @@ async def get_recipes_by_ids(
     Returns:
         List of Recipe models
     """
-    uuids = []
+    valid_ids = []
     for rid in recipe_ids:
         try:
-            uuids.append(uuid.UUID(rid))
+            uuid.UUID(rid)  # validate format
+            valid_ids.append(rid)
         except ValueError:
             continue
 
-    if not uuids:
+    if not valid_ids:
         return []
 
     result = await db.execute(
@@ -259,7 +260,7 @@ async def get_recipes_by_ids(
             selectinload(Recipe.instructions),
             selectinload(Recipe.nutrition),
         )
-        .where(Recipe.id.in_(uuids), Recipe.is_active == True)
+        .where(Recipe.id.in_(valid_ids), Recipe.is_active == True)
     )
     return list(result.scalars().all())
 

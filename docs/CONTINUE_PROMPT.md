@@ -321,6 +321,12 @@ DEBUG=true
 
 ---
 
-*Last Updated: February 12, 2026*
+### Session 41: ADB Flow Test — New User Journey
+- **ADB Test:** `/adb-test new-user-journey` — Flow 01 complete, 79/79 steps PASS
+- **Bug Fix:** Recipe endpoint 500 error — `recipe_service.py` compared `uuid.UUID` with `String(36)` column in PostgreSQL → type mismatch. Fixed 3 functions (`get_recipe_by_id`, `scale_recipe`, `get_recipes_by_ids`) to compare as strings.
+- **Backend tests:** 351/351 passing after fix
+- **Key learnings:** Shell chaining for dropdowns works inconsistently (onboarding yes, settings no). Backend API fallback is the reliable strategy. Python bytecache (.pyc) can serve stale code — clear `__pycache__` after fixes.
+
+*Last Updated: February 13, 2026*
 *All major features complete. 351 backend tests (26 files). ~330 Android unit tests. 67+ E2E tests. 750+ UI tests.*
 *44 API endpoints across 11 routers. 3,580 recipes. ~525 requirements across 12 screen files. Room DB v11.*
