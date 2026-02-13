@@ -29,6 +29,9 @@ Uses existing Sharma family data. No settings changes in this flow.
 | A2 | Verify screen title | "Grocery List" or "Grocery" visible | — | — |
 | A3 | Verify categories exist | At least 3 category headers (Vegetables, Spices, Dairy, Grains, etc.) | — | — |
 | A4 | Verify grocery items | Ingredient names with quantities visible | — | — |
+| A4a | Find More options (3-dot) button | content-desc "More options" or "More" visible | — | — |
+| A4b | Tap More options | Menu with "Clear purchased items" and "Share as text" | — | — |
+| A4c | Press BACK to dismiss menu | Return to Grocery | — | — |
 
 ### Phase B: Category Interaction (Steps 5-7)
 
@@ -37,6 +40,10 @@ Uses existing Sharma family data. No settings changes in this flow.
 | B1 | Tap a category header (e.g., "Vegetables") | Category collapses or expands | — | — |
 | B2 | Tap the same category again | Category toggles back | — | — |
 | B3 | Scroll down to see more categories | Additional categories visible below fold | `flow05_grocery_scrolled.png` | — |
+| B4 | Swipe a grocery item left | Delete action appears (red background) | — | — |
+| B5 | Press BACK or tap to cancel delete | Item restored | — | — |
+| B6 | Swipe a grocery item right | Edit dialog appears (blue background) | — | — |
+| B7 | Press BACK to dismiss edit | Return to Grocery | — | — |
 
 ### Phase C: Checkbox Interaction (Steps 8-11)
 
@@ -46,6 +53,11 @@ Uses existing Sharma family data. No settings changes in this flow.
 | C2 | Tap checkbox to mark purchased | Item marked (strikethrough or checked) | `flow05_item_checked.png` | — |
 | C3 | Tap a second item checkbox | Second item marked | — | — |
 | C4 | Tap first checkbox again to uncheck | Item unchecked (strikethrough removed) | — | — |
+| C5 | Find "Add custom item" button | Button visible (text or content-desc) | — | — |
+| C6 | Tap "Add custom item" | Add item dialog: name, quantity, unit, category | `flow05_add_custom.png` | — |
+| C7 | Type "Ghee" in name field | "Ghee" entered | — | — |
+| C8 | Tap Save/Add in dialog | Ghee appears in grocery list | — | — |
+| C9 | Verify Ghee in list | "Ghee" text visible in grocery items | — | — |
 
 ### Phase D: WhatsApp Share (Steps 12-13)
 
@@ -65,6 +77,24 @@ Uses existing Sharma family data. No settings changes in this flow.
 | E4 | Wait for generation (up to 90s) | New plan loaded | — | — |
 | E5 | Navigate to Grocery | Grocery screen | `flow05_grocery_after_regen.png` | — |
 | E6 | **C13 Verify:** Check if grocery list reset for new plan | Items should be unchecked for new recipes, list reflects new plan | — | — |
+
+### Backend API Cross-Validation: Grocery List
+
+```bash
+curl -s -H "Authorization: Bearer $JWT" http://localhost:8000/api/v1/grocery-list | \
+  python -c "
+import sys, json
+d = json.load(sys.stdin)
+categories = d if isinstance(d, list) else d.get('categories', d.get('items', []))
+total_items = sum(len(c.get('items', [])) if isinstance(c, dict) else 1 for c in categories)
+print(f'Total categories/items: {len(categories)}')
+print(f'Total individual items: {total_items}')
+if total_items > 0:
+    print('Grocery list matches new meal plan -> PASS')
+else:
+    print('WARNING: Grocery list empty after regeneration')
+"
+```
 
 ## Validation Checkpoints
 

@@ -8,14 +8,14 @@ If `$ARGUMENTS` is empty, test ALL 12 screens sequentially. If a screen name is 
 
 **Valid screen names:** `auth-flow`, `home`, `grocery`, `chat`, `favorites`, `stats`, `settings`, `notifications`, `recipe-detail`, `cooking-mode`, `pantry`, `recipe-rules`
 
-**Valid flow names:** `new-user-journey`, `existing-user`, `recipe-interaction`, `chat-ai`, `grocery-management`, `offline-mode`, `edge-cases`, `dark-mode`, `pantry-rules-crud`, `stats-tracking`
+**Valid flow names:** `new-user-journey`, `existing-user`, `recipe-interaction`, `chat-ai`, `grocery-management`, `offline-mode`, `edge-cases`, `dark-mode`, `pantry-rules-crud`, `stats-tracking`, `settings-deep-dive`
 
-**Special arguments:** `all-flows` (run all 10 flows sequentially), `all-flows-from <name>` (run from specified flow onwards)
+**Special arguments:** `all-flows` (run all 11 flows sequentially), `all-flows-from <name>` (run from specified flow onwards)
 
 **Argument detection:**
 1. If `$ARGUMENTS` matches a valid screen name → run screen test protocol (Sections E-F)
 2. If `$ARGUMENTS` matches a valid flow name → run flow execution protocol (Section G)
-3. If `$ARGUMENTS` is `all-flows` → run all 10 flows sequentially (flow01 → flow10)
+3. If `$ARGUMENTS` is `all-flows` → run all 11 flows sequentially (flow01 → flow11)
 4. If `$ARGUMENTS` is `all-flows-from <name>` → run flows from the specified flow onwards
 5. If `$ARGUMENTS` is empty → run all 12 screen tests
 
@@ -816,6 +816,7 @@ FLOW_DIR=docs/testing/flows
 | `dark-mode` | `flow08-dark-mode.md` |
 | `pantry-rules-crud` | `flow09-pantry-rules-crud.md` |
 | `stats-tracking` | `flow10-stats-tracking.md` |
+| `settings-deep-dive` | `flow11-settings-deep-dive.md` |
 
 Read the flow definition file: `$FLOW_DIR/{flow-file}.md`
 
@@ -920,7 +921,7 @@ Session logs: .claude/logs/adb-test/{session}/
 
 ### G7. All-Flows Mode
 
-**`all-flows`:** Run flow01 → flow10 in order. Do NOT run `cleanup_user.py` between flows. Only D4 before flow01. Combined report at end.
+**`all-flows`:** Run flow01 → flow11 in order. Do NOT run `cleanup_user.py` between flows. Only D4 before flow01. Combined report at end.
 
 **`all-flows-from <name>`:** Find flow number, run from there onwards. Assume prior state exists.
 
@@ -940,3 +941,4 @@ Session logs: .claude/logs/adb-test/{session}/
 | 8 | `dark-mode` | 6 | — | 4-6 min | Theme toggle + visual |
 | 9 | `pantry-rules-crud` | 3 | C22-C27 | 8-12 min | CRUD + duplicate prevention |
 | 10 | `stats-tracking` | 1 | — | 3-5 min | Streak, chart, tabs |
+| 11 | `settings-deep-dive` | 13 | — | 15-20 min | 12 sub-screens, CRUD, preferences |

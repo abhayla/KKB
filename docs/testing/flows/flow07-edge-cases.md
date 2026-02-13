@@ -70,6 +70,36 @@ Uses existing Sharma family data. This flow tests stability, not functionality.
 | C19 | Sign back in (tap "Sign in with Google") | Fake auth completes | — | — |
 | C20 | Wait for Home screen | Home loads with preserved data | `flow07_c21_resignin.png` | — |
 | C21 | Verify data preserved | Meal plan, preferences still intact | — | — |
+| C21a | **Backend verification:** meal plan preserved | curl check below | — | — |
+| C21b | **Backend verification:** preferences intact | curl check below | — | — |
+
+### Backend API Cross-Validation: Sign-Out/In Data Preservation
+
+```bash
+# Verify meal plan still exists after sign-out/sign-in cycle
+curl -s -H "Authorization: Bearer $JWT" http://localhost:8000/api/v1/meal-plans/current | \
+  python -c "
+import sys, json
+d = json.load(sys.stdin)
+days = d.get('days', [])
+print(f'Meal plan days: {len(days)} (expected: 7)')
+if len(days) == 7:
+    print('Meal plan preserved after sign-out/in -> PASS')
+else:
+    print('WARNING: Meal plan data may be lost')
+"
+
+# Verify preferences intact
+curl -s -H "Authorization: Bearer $JWT" http://localhost:8000/api/v1/users/me | \
+  python -c "
+import sys, json
+d = json.load(sys.stdin)
+print(f'dietary_type: {d.get(\"dietary_type\")}')
+print(f'spice_level: {d.get(\"spice_level\")}')
+print(f'cuisines: {d.get(\"cuisines\")}')
+print('Preferences intact -> PASS' if d.get('dietary_type') else 'FAIL: preferences missing')
+"
+```
 
 ### Phase D: Final Stability Check (Steps 22-23)
 

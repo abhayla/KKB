@@ -82,12 +82,29 @@ $ADB shell svc data disable
 | E5 | Verify favorited recipe still in list | Recipe from C6 visible | — | — |
 | E6 | Navigate to Settings | Verify setting from C2 persisted | — | — |
 | E7 | Verify no data corruption | All screens load normally | — | — |
+| E7a | **Backend Cross-Validation:** Verify offline settings synced | Run curl check below | — | — |
 | E8 | Run crash/ANR detection (Pattern 9) | No crashes | — | — |
 
 **ADB commands to restore network:**
 ```bash
 $ADB shell svc wifi enable
 $ADB shell svc data enable
+```
+
+### Backend API Cross-Validation: Offline Sync
+
+```bash
+# Verify offline setting changes synced to backend after reconnect
+curl -s -H "Authorization: Bearer $JWT" http://localhost:8000/api/v1/users/me | \
+  python -c "
+import sys, json
+d = json.load(sys.stdin)
+print(f'Settings after offline sync:')
+print(f'  dietary_type: {d.get(\"dietary_type\")}')
+print(f'  allergies: {d.get(\"allergies\")}')
+# Compare with expected values after C2 change
+print('If values match post-C2 state -> offline sync PASS')
+"
 ```
 
 ## Validation Checkpoints

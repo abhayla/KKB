@@ -137,6 +137,35 @@ python scripts/validate_meal_plan.py \
 | D11 | Change items per meal to 3 | Items per meal = 3 | — | — |
 | D12 | Navigate back to Home | Home screen | `flow01_settings_changed.png` | — |
 
+### Backend Cross-Validation: Settings Persistence
+
+After changing settings in Phase D, verify backend received the updates:
+
+```bash
+# Verify all settings changes persisted to backend
+curl -s -H "Authorization: Bearer $JWT" http://localhost:8000/api/v1/users/me | \
+  python -c "
+import sys, json
+d = json.load(sys.stdin)
+checks = {
+    'dietary_type': ('Vegetarian', d.get('dietary_type')),
+    'spice_level': ('Mild', d.get('spice_level')),
+    'items_per_meal': (3, d.get('items_per_meal')),
+}
+for k, (exp, act) in checks.items():
+    status = 'PASS' if str(exp).lower() == str(act).lower() else 'FAIL'
+    print(f'{k}: expected={exp}, actual={act} -> {status}')
+# Also verify disliked ingredients include Capsicum
+dislikes = d.get('disliked_ingredients', [])
+has_capsicum = any('capsicum' in x.lower() for x in dislikes)
+print(f'disliked_has_capsicum: {has_capsicum} -> {\"PASS\" if has_capsicum else \"FAIL\"}')
+# Verify East Indian in cuisines
+cuisines = d.get('cuisines', [])
+has_east = any('east' in x.lower() for x in cuisines)
+print(f'cuisines_has_east_indian: {has_east} -> {\"PASS\" if has_east else \"FAIL\"}')
+"
+```
+
 ### Phase E: Contradictions C1-C5 (Inline) — MANDATORY, NO SKIP
 
 | Step | Action | Expected | Screenshot | Validation |
@@ -184,8 +213,14 @@ Tour all major screens and verify they load properly after plan generation.
 | G4 | Scroll back to top | BREAKFAST visible | — | — |
 | G5 | Tap bottom nav "Grocery" | Grocery screen with categories | `flow01_grocery.png` | HARD |
 | G6 | Verify grocery categories exist | At least 3 categories visible (auto-generated from meal plan) | — | HARD |
+| G6a | Tap a grocery item checkbox | Item marked as purchased (strikethrough) | — | — |
+| G6b | Tap "Add custom item" if visible | Add item dialog appears | — | — |
+| G6c | Press BACK to dismiss dialog | Return to Grocery | — | — |
 | G7 | Tap bottom nav "Chat" | Chat screen with input field | `flow01_chat.png` | — |
 | G8 | Verify chat welcome message | "Hi" or "Hello" or assistant greeting | — | — |
+| G8a | Verify attachment button exists | content-desc "Attach" or "Attachment" visible in XML | — | — |
+| G8b | Verify voice input button exists | content-desc "Voice" visible in XML | — | — |
+| G8c | Verify quick action chips exist | Suggestion chips visible below welcome message | — | — |
 | G9 | Tap bottom nav "Favs" | Favorites screen (empty state expected) | `flow01_favorites.png` | — |
 | G10 | Verify empty state message | "No favorites" or similar | — | — |
 | G11 | Tap bottom nav "Stats" | Stats screen | `flow01_stats.png` | — |
@@ -197,10 +232,13 @@ Tour all major screens and verify they load properly after plan generation.
 | G17 | Verify notifications (empty state OK) | Screen loads without crash | — | — |
 | G18 | Press BACK to Home | Home screen | — | — |
 | G19 | Tap a BREAKFAST meal card | Action sheet appears | — | — |
+| G19a | Verify action sheet has 4 items | "View Recipe", "Swap Recipe", "Lock Recipe", "Remove from Meal" all in XML | — | HARD |
 | G20 | Tap "View Recipe" | Recipe Detail screen (real recipe data, not "Recipe not found") | `flow01_recipe_detail.png` | HARD |
 | G21 | Verify ingredients section | "Ingredients" heading + items (real ingredient list) | — | HARD |
 | G22 | Scroll to "Start Cooking" button | Button visible | — | HARD |
 | G23 | Tap "Start Cooking" | Cooking Mode screen | `flow01_cooking_mode.png` | HARD |
+| G23a | Verify voice guidance toggle exists | content-desc "Voice" or toggle visible | — | — |
+| G23b | Verify progress indicator exists | Progress bar or step indicator visible | — | — |
 | G24 | Verify step counter | "Step 1 of N" visible (real cooking steps) | — | HARD |
 | G25 | Tap Next step | Step 2 shown | — | HARD |
 | G26 | Press BACK twice | Return to Home | — | — |

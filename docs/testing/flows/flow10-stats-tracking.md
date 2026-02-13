@@ -33,6 +33,9 @@ Uses existing Sharma family data. Read-only verification.
 | A5 | Tap "Month" tab | Stats update for monthly view | `flow10_stats_month.png` | — |
 | A6 | Tap "All Time" tab | Stats update for all-time view | — | — |
 | A7 | Tap "Week" tab (back to default) | Weekly view restored | — | — |
+| A7a | Look for Share button | content-desc "Share" visible | — | — |
+| A7b | Tap Share button (if found) | Share intent launches | — | — |
+| A7c | Press BACK to dismiss share | Return to Stats | — | — |
 
 ### Phase B: Chart & Achievements (Steps 8-12)
 
@@ -41,8 +44,28 @@ Uses existing Sharma family data. Read-only verification.
 | B1 | Look for cuisine distribution chart | Chart or "No data" placeholder | — | — |
 | B2 | Scroll down for more stats | Additional sections visible below fold | `flow10_stats_scrolled.png` | — |
 | B3 | Look for achievements section | Achievements/badges or placeholder | — | — |
+| B3a | Look for "View All" achievements link | text "View All" near achievements | — | — |
+| B3b | Tap "View All" if found | Achievements screen loads | `flow10_achievements.png` | — |
+| B3c | Press BACK | Return to Stats | — | — |
+| B3d | Look for leaderboard/challenge sections | text "Leaderboard" or "Challenge" | — | — |
 | B4 | Verify data consistency | If streak > 0, cuisine chart should have data | — | — |
 | B5 | Run crash/ANR detection (Pattern 9) | No crashes | — | — |
+
+### Backend API Cross-Validation: Stats Data
+
+```bash
+curl -s -H "Authorization: Bearer $JWT" http://localhost:8000/api/v1/stats | \
+  python -c "
+import sys, json
+d = json.load(sys.stdin)
+print(f'cooking_streak: {d.get(\"cooking_streak\", 0)}')
+print(f'total_cooked: {d.get(\"total_cooked\", 0)}')
+cuisine_breakdown = d.get('cuisine_breakdown', {})
+print(f'cuisine_breakdown: {len(cuisine_breakdown)} cuisines')
+for cuisine, count in cuisine_breakdown.items():
+    print(f'  {cuisine}: {count}')
+"
+```
 
 ### Phase C: Final State (Steps 13-14)
 

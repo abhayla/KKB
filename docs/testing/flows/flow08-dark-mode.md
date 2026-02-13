@@ -28,7 +28,9 @@ Uses existing Sharma family data. Tests visual theme, not functionality.
 |------|--------|----------|------------|------------|
 | A1 | Navigate: Profile icon → Settings | Settings screen (light theme) | `flow08_settings_light.png` | — |
 | A2 | Find dark mode / theme toggle | Toggle or setting for "Dark Mode" or "Theme" | — | — |
-| A3 | Enable dark mode | Screen background changes to dark colors | `flow08_settings_dark.png` | — |
+| A3 | Tap "Dark Mode" item | Dialog appears with Light / Dark / System options | — | — |
+| A3a | Verify dialog has 3 options | text="Light", text="Dark", text="System" all visible | — | — |
+| A3b | Tap "Dark" option | Dark theme applied, dialog closes | `flow08_settings_dark.png` | — |
 
 **Note:** If dark mode toggle is not directly in Settings, check system settings or the app's appearance section. Some apps follow system theme — in that case:
 ```bash
@@ -49,6 +51,8 @@ $ADB shell cmd uimode night yes
 | B7 | Visual check: input field, messages visible | No invisible text | — | — |
 | B8 | Tap bottom nav "Favs" | Favorites in dark theme | `flow08_favorites_dark.png` | — |
 | B9 | Visual check: cards or empty state readable | Proper theming | — | — |
+| B9a | Tap bottom nav "Stats" | Stats in dark theme | `flow08_stats_dark.png` | — |
+| B9b | Visual check: streak, chart, tabs readable | Proper contrast on stats elements | — | — |
 | B10 | Tap bottom nav "Home" → tap meal card → "View Recipe" | Recipe Detail in dark theme | `flow08_recipe_dark.png` | — |
 | B11 | Visual check: ingredients, instructions readable | No contrast issues | — | — |
 
@@ -57,7 +61,8 @@ $ADB shell cmd uimode night yes
 | Step | Action | Expected | Screenshot | Validation |
 |------|--------|----------|------------|------------|
 | C1 | Navigate to Settings | Settings screen | — | — |
-| C2 | Disable dark mode (toggle back to light) | Screen returns to light theme | — | — |
+| C2 | Tap "Dark Mode" item | Dialog appears | — | — |
+| C2a | Tap "Light" option | Light theme restored, dialog closes | — | — |
 | C3 | Verify Home in light mode | Light background restored | `flow08_home_light_restored.png` | — |
 
 **If system theme was used:**

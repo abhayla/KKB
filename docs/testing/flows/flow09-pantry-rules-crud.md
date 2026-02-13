@@ -28,6 +28,9 @@ Uses existing Sharma family data. CRUD operations on rules and pantry.
 | A1 | Navigate: Profile icon → Settings → scroll to "Pantry" | Pantry link visible | — | — |
 | A2 | Tap "Pantry" | Pantry screen loads | `flow09_pantry.png` | — |
 | A3 | Verify initial state | Empty or existing pantry items | — | — |
+| A3a | Verify Camera/Scan button exists | content-desc "Camera" or "Scan" visible in XML | — | — |
+| A3b | Verify Gallery button exists | content-desc "Gallery" visible in XML | — | — |
+| A3c | Verify "Find Recipes" button exists | text "Find Recipes" visible (may need scroll) | — | — |
 | A4 | Tap Add button ("+" or "Add Item") | Add item dialog/sheet appears | `flow09_pantry_add.png` | — |
 | A5 | Type "Turmeric" and confirm | Turmeric added to pantry | — | — |
 | A6 | Add second item: "Cumin Seeds" | Cumin Seeds added | — | — |
@@ -45,11 +48,33 @@ Uses existing Sharma family data. CRUD operations on rules and pantry.
 | B4 | Tap Add rule button ("+" or "Add Rule") | Add rule bottom sheet appears | `flow09_add_rule.png` | — |
 | B5 | Create INCLUDE rule: "Dal Tadka" for DINNER | Fill action=INCLUDE, search for Dal Tadka, select DINNER | — | — |
 | B6 | Confirm/Save rule | Rule appears in list | `flow09_rule_added.png` | — |
+| B6a | Verify toggle switch on new rule | Switch/toggle visible on Dal Tadka rule card | — | — |
+| B6b | Tap toggle to disable rule | Rule becomes inactive (toggle off) | — | — |
+| B6c | Tap toggle again to re-enable | Rule becomes active (toggle on) | — | — |
 | B7 | Create EXCLUDE rule: "Karela Sabzi" for ANY meal | Fill action=EXCLUDE, target=Karela Sabzi | — | — |
 | B8 | Confirm/Save rule | Second rule in list | — | — |
 | B9 | Tap Nutrition tab | Nutrition Goals tab shows | `flow09_nutrition_tab.png` | — |
 | B10 | Verify Nutrition tab loads | Goals list or empty state | — | — |
 | B11 | Tap back to Rules tab | Rules tab active | — | — |
+
+### Backend API Cross-Validation: Rule CRUD
+
+```bash
+# Verify rules created on backend
+curl -s -H "Authorization: Bearer $JWT" http://localhost:8000/api/v1/recipe-rules | \
+  python -c "
+import sys, json
+d = json.load(sys.stdin)
+rules = d if isinstance(d, list) else d.get('rules', [])
+print(f'Total rules: {len(rules)}')
+include_rules = [r for r in rules if r.get('action') == 'INCLUDE']
+exclude_rules = [r for r in rules if r.get('action') == 'EXCLUDE']
+print(f'  INCLUDE: {len(include_rules)} (expected: at least 1 - Dal Tadka)')
+print(f'  EXCLUDE: {len(exclude_rules)} (expected: at least 1 - Karela Sabzi)')
+for r in rules:
+    print(f'  {r.get(\"action\")}: {r.get(\"target_name\")} for {r.get(\"meal_slot\", \"ANY\")}')
+"
+```
 
 ### Phase C: Contradictions C22-C27 (Steps 21-35)
 
@@ -60,7 +85,27 @@ Uses existing Sharma family data. CRUD operations on rules and pantry.
 | C3 | Dismiss error/dialog | Return to rules list | — | — |
 | C4 | **C23:** Try to add same rule twice (INCLUDE "Dal Tadka" for DINNER again) | Tap Add, recreate identical rule | — | — |
 | C5 | Attempt to save | 409 CONFLICT, snackbar "already exists" | `flow09_c23_duplicate.png` | — |
+| C5a | **Backend verification:** Confirm only 1 Dal Tadka INCLUDE rule exists | curl check below | — | — |
 | C6 | Dismiss error | Return to rules list | — | — |
+
+### Backend API Cross-Validation: Duplicate Prevention
+
+```bash
+# Verify no duplicate rules on backend
+curl -s -H "Authorization: Bearer $JWT" http://localhost:8000/api/v1/recipe-rules | \
+  python -c "
+import sys, json
+d = json.load(sys.stdin)
+rules = d if isinstance(d, list) else d.get('rules', [])
+dal_rules = [r for r in rules if 'dal' in r.get('target_name', '').lower() and 'tadka' in r.get('target_name', '').lower()]
+print(f'Dal Tadka rules count: {len(dal_rules)} (expected: 1, not 2)')
+if len(dal_rules) == 1:
+    print('Duplicate prevention -> PASS')
+else:
+    print('WARNING: Duplicate rules exist!')
+"
+```
+
 | C7 | **C24:** Create INCLUDE rule for "Karela" (which is in disliked list) | Tap Add, INCLUDE "Karela" | — | — |
 | C8 | Attempt to save | Warning about dislike conflict, or allows (INCLUDE overrides dislike) | `flow09_c24_dislike.png` | — |
 | C9 | Note behavior | Document how app handles rule-vs-dislike conflict | — | — |

@@ -29,6 +29,12 @@ Uses existing Sharma family data. No settings changes in this flow.
 | A2 | Tap "View Recipe" | Recipe Detail screen loads | `flow03_recipe_detail.png` | — |
 | A3 | Verify recipe content | Recipe name, cuisine, prep time, Ingredients section | — | — |
 | A4 | Verify servings selector | Servings count visible (should match household size ~4) | — | — |
+| A4a | Verify action sheet had all 4 items | "View Recipe", "Swap Recipe", "Lock Recipe", "Remove from Meal" seen in A1 dump | — | HARD |
+| A5 | Tap "Ingredients" tab (if tabbed layout) | Ingredients list shown | — | — |
+| A6 | Tap "Instructions" tab | Instructions/steps shown | — | — |
+| A7 | Tap an ingredient checkbox | Ingredient text struck through | — | — |
+| A8 | Scroll down to "Add all to Grocery" | Button visible | — | — |
+| A9 | Verify "Modify with AI" button | Button visible below fold | — | — |
 
 ### Phase B: Favorite Toggle (Steps 5-7)
 
@@ -37,6 +43,28 @@ Uses existing Sharma family data. No settings changes in this flow.
 | B1 | Tap Favorite button (heart icon) | Heart fills/toggles, snackbar "Added to favorites" | `flow03_favorited.png` | — |
 | B2 | Note the recipe name | Record name for later verification in Favorites screen | — | — |
 | B3 | Verify favorite state persisted in UI | Heart icon remains filled after scroll up/down | — | — |
+
+### Backend Cross-Validation: Recipe Data
+
+```bash
+# Verify recipe detail matches backend data
+# Use the recipe name captured from the meal card
+curl -s -H "Authorization: Bearer $JWT" "http://localhost:8000/api/v1/recipes?search=$RECIPE_NAME" | \
+  python -c "
+import sys, json
+d = json.load(sys.stdin)
+recipes = d if isinstance(d, list) else d.get('recipes', [])
+if recipes:
+    r = recipes[0]
+    print(f'name: {r.get(\"name\")}')
+    print(f'cuisine: {r.get(\"cuisine_type\")}')
+    print(f'prep_time: {r.get(\"prep_time_minutes\")} min')
+    print(f'ingredients: {len(r.get(\"ingredients\", []))} items')
+    print(f'instructions: {len(r.get(\"instructions\", []))} steps')
+else:
+    print('WARN: Recipe not found via search API')
+"
+```
 
 ### Phase C: Cooking Mode (Steps 8-12)
 
@@ -47,6 +75,10 @@ Uses existing Sharma family data. No settings changes in this flow.
 | C3 | Verify step 1 | "Step 1 of N" visible, instruction text | — | — |
 | C4 | Tap Next until last step | Each step advances, counter increments | — | — |
 | C5 | Tap "Complete" / "Finish Cooking" on last step | Completion dialog or return to Recipe Detail | `flow03_cooking_complete.png` | — |
+| C5a | Verify voice guidance toggle was available | Toggle visible in cooking mode XML dumps | — | — |
+| C5b | Verify progress bar/indicator was visible | Progress element found in XML | — | — |
+| C6 | If rating dialog appears, tap 4 stars | 4 stars selected | `flow03_rating.png` | — |
+| C7 | Tap "Submit" or "Skip" on rating | Dialog dismissed, returns to Recipe Detail | — | — |
 
 ### Phase D: Verify Favorites (Steps 13-16)
 

@@ -72,6 +72,24 @@ python scripts/validate_meal_plan.py \
   --output "$LOG_DIR/flow02_validation1.json"
 ```
 
+### Backend API Cross-Validation: Plan #2 Persistence
+
+```bash
+# Direct API check: verify plan #2 still exists on backend
+PLAN_DATA=$(curl -s -H "Authorization: Bearer $JWT" http://localhost:8000/api/v1/meal-plans/current)
+echo "$PLAN_DATA" | python -c "
+import sys, json
+d = json.load(sys.stdin)
+days = d.get('days', [])
+print(f'Plan has {len(days)} days')
+for day in days[:2]:
+    meals = day.get('meals', {})
+    for slot in ['breakfast', 'lunch', 'dinner', 'snacks']:
+        items = meals.get(slot, [])
+        print(f'  {day.get(\"date\", \"?\")} {slot}: {len(items)} items')
+"
+```
+
 ### Phase C: Settings Changes (Steps 11-17)
 
 | Step | Action | Expected | Screenshot | Validation |
@@ -85,6 +103,19 @@ python scripts/validate_meal_plan.py \
 | C7 | Find "Allow Recipe Repeat" toggle | Currently OFF | — | — |
 | C8 | Toggle to ON | Allow repeats = ON | `flow02_settings_updated.png` | — |
 | C9 | Navigate back to Home | Home screen | — | — |
+
+### Backend API Cross-Validation: Settings Update
+
+```bash
+curl -s -H "Authorization: Bearer $JWT" http://localhost:8000/api/v1/users/me | \
+  python -c "
+import sys, json
+d = json.load(sys.stdin)
+print(f'weekday_cooking_time: {d.get(\"weekday_cooking_time\")} (expected: 45)')
+print(f'busy_days: {d.get(\"busy_days\")} (expected: [Wednesday, Friday])')
+print(f'allow_repeats: {d.get(\"allow_repeats\")} (expected: True)')
+"
+```
 
 ### Phase D: Third Meal Plan Generation (Steps 18-23)
 
