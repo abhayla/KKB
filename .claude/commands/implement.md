@@ -120,10 +120,11 @@ PYTHONPATH=. pytest tests/test_[feature].py -v
 
 ---
 
-### STEP 5: Fix Loop (via fix-loop command)
+### STEP 5: Fix Loop (via /fix-loop Skill)
 
-IF any tests fail — **regardless of whether the failure is known or pre-existing** — read and follow the fix-loop process in `.claude/commands/fix-loop.md` in **Full Loop** mode with these parameters:
+IF any tests fail — **regardless of whether the failure is known or pre-existing** — **use the Skill tool** to invoke `/fix-loop` in Full Loop mode. Do NOT read fix-loop.md and follow it inline.
 
+Invoke: `skill: "fix-loop"` with arguments:
 ```
 failure_output:         {raw test failure output from Step 4}
 failure_context:        {what was tested and what was expected}
@@ -137,8 +138,9 @@ prohibited_actions:     ["@Ignore", "weaken assertions", "delete tests", "fix-la
 fix_target:             "either"
 log_dir:                ".claude/logs/fix-loop/"
 ```
+Budget rationale: `max_iterations: 10` with `max_attempts_per_issue: 3` — generous budget for feature implementation where multiple issues may surface.
 
-The fix-loop process will iterate until all tests pass or budget is exhausted.
+The /fix-loop Skill will iterate until all tests pass or budget is exhausted.
 
 **CRITICAL:** Do NOT proceed to Step 6 until the fix-loop process returns status **RESOLVED** (all tests passing).
 
@@ -185,25 +187,29 @@ await browser_take_screenshot({
 
 ---
 
-### STEP 7: Verify and Confirm
+### STEP 7: Verify and Post-Fix Pipeline
 
 1. Read both screenshots using the Read tool
 2. Describe the visible difference between before and after
-3. Confirm the feature has been implemented correctly
-4. Create the commit
+3. **Use the Skill tool** to invoke `/post-fix-pipeline`. Do NOT commit manually.
 
-**Commit Format:**
-```bash
-git commit -m "$(cat <<'EOF'
-Fix #XX: [Brief description]
-
-- [Change 1]
-- [Change 2]
-
-Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
-EOF
-)"
+Invoke: `skill: "post-fix-pipeline"` with arguments:
 ```
+fixes_applied:            {list of changes from Steps 3+5}
+files_changed:            {all modified file paths}
+session_summary:          "Implement: #{issue_number} - {description}"
+test_suite_commands:      [
+  { name: "backend", command: "cd backend && PYTHONPATH=. pytest --tb=short -q", timeout: 300 },
+  { name: "android-unit", command: "cd android && ./gradlew test --console=plain", timeout: 600 }
+]
+test_suite_max_fix_attempts: 2
+docs_instructions:        "Update docs/testing/Functional-Requirement-Rule.md with test links. Update docs/CONTINUE_PROMPT.md with session summary."
+commit_format:            "feat({scope}): {summary}\n\nFix #{issue_number}"
+commit_scope:             "{feature-area}"
+push:                     false
+```
+
+The /post-fix-pipeline Skill handles: test suite verification gate, documentation updates, and git commit with Co-Authored-By tag.
 
 **Final Output Required:**
 ```
@@ -215,6 +221,8 @@ EOF
   - Before: docs/testing/screenshots/XX_before.png
   - After: docs/testing/screenshots/XX_after.png
 - Verification: [describe visible change]
+- Pipeline: COMPLETED | BLOCKED_BY_TEST_SUITE
+- Commit: [hash] — [message]
 
 The feature has been implemented and all tests pass.
 ```

@@ -23,56 +23,42 @@ You operate in one of two modes based on the presence of `retest_command`:
 
 ## Input Parameters
 
-### Core Parameters
+### Required Parameters
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `failure_output` | Yes | Raw failure output (test errors, stack traces, assertion messages) |
-| `failure_context` | Yes | What was tested and what was expected to happen |
-| `files_of_interest` | Yes | File paths to read for understanding the code under test |
-| `build_command` | No | Rebuild command after fix (null = skip rebuild) |
-| `install_command` | No | Deploy/install command after build (e.g., install APK) |
-| `retest_command` | No | Retest command. **Present = Full Loop mode, absent = Single Fix mode** |
-| `retest_timeout` | No | Retest timeout in seconds (default: 300) |
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `failure_output` | string | Raw failure output (test errors, stack traces, assertion messages) |
+| `failure_context` | string | What was tested and what was expected to happen |
+| `files_of_interest` | string[] | File paths to read for understanding the code under test |
 
-### Budget Parameters
+### Optional Parameters (with defaults)
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `max_iterations` | 10 | Maximum total fix-build-test cycles |
-| `max_attempts_per_issue` | 3 | Maximum attempts to fix a single discrete issue |
-| `max_build_retries` | 3 | Build failures allowed before reverting the fix |
-
-### Escalation Parameters
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `force_thinking_level` | null | Override thinking level: `"normal"` / `"thinkhard"` / `"ultrathink"` |
-| `thinking_escalation` | auto | Auto-escalation: attempt 1 → normal, 2-3 → thinkhard, 4+ → ultrathink |
-| `debugger_agent_name` | `"debugger"` | Agent name for deep root cause analysis |
-| `code_reviewer_agent_name` | `"code-reviewer"` | Agent name for quality gate reviews |
-
-### Behavioral Parameters
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `prohibited_actions` | `[]` | Actions you must NEVER take (e.g., `["@Ignore", "weaken assertions"]`) |
-| `fix_target` | `"production"` | What to fix: `"production"` (source code only), `"test"` (test code only), `"either"` (whichever is wrong) |
-| `revert_on_critical_review` | `true` | Whether to revert fixes that receive Critical code review findings |
-
-### Logging Parameters
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `log_dir` | `".claude/logs/fix-loop/"` | Directory for iteration log files |
-| `session_id` | auto-generated | Session identifier for log subdirectory |
+| Parameter | Type | Default | Valid Values | Description |
+|-----------|------|---------|-------------|-------------|
+| `build_command` | string | null | Any shell command | Rebuild command after fix (null = skip rebuild) |
+| `install_command` | string | null | Any shell command | Deploy/install command after build (e.g., install APK) |
+| `retest_command` | string | null | Any shell command | **Present = Full Loop mode, absent = Single Fix mode** |
+| `retest_timeout` | int | 300 | 60-600 | Retest timeout in seconds |
+| `max_iterations` | int | 10 | 1-20 | Maximum total fix-build-test cycles |
+| `max_attempts_per_issue` | int | 3 | 1-5 | Maximum attempts per discrete issue |
+| `max_build_retries` | int | 3 | 1-5 | Build failures before reverting |
+| `force_thinking_level` | string | null | `"normal"`, `"thinkhard"`, `"ultrathink"` | Override auto-escalation |
+| `debugger_agent_name` | string | `"debugger"` | Any Agent name | Agent for deep root cause analysis (launched via Task tool) |
+| `code_reviewer_agent_name` | string | `"code-reviewer"` | Any Agent name | Agent for quality gate reviews (launched via Task tool) |
+| `prohibited_actions` | string[] | `[]` | Any action description | Actions you must NEVER take |
+| `fix_target` | string | `"production"` | `"production"`, `"test"`, `"either"` | What to fix |
+| `revert_on_critical_review` | bool | `true` | true/false | Revert on Critical code review findings |
+| `log_dir` | string | `".claude/logs/fix-loop/"` | Any path | Directory for iteration log files |
+| `session_id` | string | auto-generated | Any string | Session identifier for log subdirectory |
 
 ### Single Fix Mode Extras
 
-| Parameter | Description |
-|-----------|-------------|
-| `attempt_number` | Current attempt number for this issue (used for thinking escalation) |
-| `previous_attempts_summary` | Summary of what was tried in prior attempts and why it failed |
+These are used when `retest_command` is absent (caller retests externally):
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `attempt_number` | int | Current attempt number for this issue (used for thinking escalation) |
+| `previous_attempts_summary` | string | Summary of what was tried in prior attempts and why it failed |
 
 ---
 
@@ -102,11 +88,11 @@ FOR each issue (while total_iterations < max_iterations):
         - Else auto-escalate: attempt 1 → normal, 2-3 → thinkhard, 4+ → ultrathink
 
       normal: Analyze directly — read failure, trace to code, identify root cause
-      thinkhard: Launch debugger agent (read-only) with extended thinking instruction and all prior attempt logs
-      ultrathink: Launch debugger agent (read-only) with maximum depth instruction and complete history
+      thinkhard: Launch debugger Agent (read-only, via Task tool) with extended thinking instruction and all prior attempt logs
+      ultrathink: Launch debugger Agent (read-only, via Task tool) with maximum depth instruction and complete history
 
-      The debugger agent returns a root cause analysis report.
-      YOU (main Claude) then apply fixes based on that analysis.
+      The debugger Agent returns a root cause analysis report.
+      YOU (main Claude session) then apply fixes based on that analysis.
 
       Respect fix_target:
         - "production": only fix source/production code
@@ -119,13 +105,13 @@ FOR each issue (while total_iterations < max_iterations):
       Record: { file, line, root_cause, change_description }
 
     STEP 4: CODE REVIEW GATE
-      Launch code-reviewer agent (read-only) with:
+      Launch code-reviewer Agent (read-only, via Task tool) with:
         - The git diff of changes
         - The failure context and root cause
         - Instruction: "Review for regressions, weakened assertions, prohibited patterns, security issues. Categorize findings as Critical/High/Medium/Low. Return APPROVED or FLAGGED."
 
-      The code-reviewer agent returns a review report.
-      YOU handle the result:
+      The code-reviewer Agent returns a review report.
+      YOU (main Claude session) handle the result:
         - FLAGGED with Critical finding + revert_on_critical_review:
           → Revert fix (git checkout -- <files>)
           → Log the rejection reason
@@ -204,7 +190,7 @@ Returns the fix details for the caller to evaluate and retest externally.
 | Fix creates a NEW issue | Add the new issue to the issue queue |
 | Retest times out | Treat as failure, proceed to next attempt |
 | No `files_of_interest` | Infer relevant files via Grep/Glob on error messages |
-| Debugger agent returns nothing actionable | Fall back to direct analysis |
+| Debugger Agent returns nothing actionable | Fall back to direct analysis |
 | All `prohibited_actions` violated by only fix | Mark issue UNRESOLVED, log reason |
 
 ---
@@ -344,18 +330,22 @@ If the ONLY viable fix would violate a prohibited action, mark the issue as UNRE
 
 ---
 
-## Thinking Escalation Details
+## Thinking Escalation (Canonical — ALL callers use this)
+
+This is the **single source of truth** for thinking escalation. Callers (adb-test, run-e2e, implement, fix-issue) reference this table — they do NOT define their own escalation rules.
 
 | Level | When | Approach |
 |-------|------|----------|
-| **normal** | Attempt 1 (or forced) | Analyze directly — read failure output, trace to source code, identify root cause |
-| **thinkhard** | Attempt 2-3 (or forced) | Launch debugger agent (read-only) with instruction to use extended thinking, all prior attempt logs, and systematic root cause enumeration |
-| **ultrathink** | Attempt 4+ (or forced) | Launch debugger agent (read-only) with maximum thinking depth, complete history, instruction to re-examine all assumptions and explore unconventional fixes |
+| **normal** | Attempt 1 (or `force_thinking_level: "normal"`) | Analyze directly — read failure output, trace to source code, identify root cause |
+| **thinkhard** | Attempt 2-3 (or `force_thinking_level: "thinkhard"`) | Launch debugger Agent (read-only, via Task tool) with extended thinking, all prior attempt logs, and systematic root cause enumeration |
+| **ultrathink** | Attempt 4+ (or `force_thinking_level: "ultrathink"`) | Launch debugger Agent (read-only, via Task tool) with maximum thinking depth, complete history, re-examine all assumptions, explore unconventional fixes |
 
-When launching the debugger agent, always include:
+**Override:** The `force_thinking_level` parameter skips the attempt-based auto-escalation table above.
+
+When launching the debugger Agent (via Task tool), always include:
 - Complete failure output
 - All files of interest
 - Summary of all previous fix attempts and why they failed
 - The specific thinking level instruction
 
-The debugger agent returns analysis only — YOU apply the fixes directly.
+The debugger Agent returns analysis only — YOU (the main Claude session) apply the fixes directly.

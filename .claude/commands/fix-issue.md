@@ -34,10 +34,11 @@ Analyze and implement a fix for GitHub issue: $ARGUMENTS
    - For Backend changes: `cd backend && PYTHONPATH=. pytest`
    - Run relevant UI tests if applicable
 
-6b. **Fix Loop (if tests fail)**
+6b. **Fix Loop (via /fix-loop Skill)**
 
-   If any verification tests fail — **regardless of whether the failure is known or pre-existing** — read and follow the fix-loop process in `.claude/commands/fix-loop.md` in **Full Loop** mode:
+   If any verification tests fail — **regardless of whether the failure is known or pre-existing** — **use the Skill tool** to invoke `/fix-loop` in Full Loop mode. Do NOT read fix-loop.md and follow it inline.
 
+   Invoke: `skill: "fix-loop"` with arguments:
    ```
    failure_output:         {raw test failure output from Step 6}
    failure_context:        {description of the fix and what tests verify}
@@ -51,14 +52,33 @@ Analyze and implement a fix for GitHub issue: $ARGUMENTS
    fix_target:             "production"
    log_dir:                ".claude/logs/fix-loop/"
    ```
+   Budget rationale: `max_iterations: 6` — smaller budget than /implement since issue fixes are typically more focused.
 
-   The fix-loop process will iterate until all tests pass or budget is exhausted.
+   The /fix-loop Skill will iterate until all tests pass or budget is exhausted.
 
-   **CRITICAL:** Do NOT proceed to Step 7 until the fix-loop process returns **RESOLVED**.
+   **CRITICAL:** Do NOT proceed to Step 7 until /fix-loop returns **RESOLVED**.
 
-7. **Create a Commit**
-   - Stage only the relevant files
-   - Commit with message: `Fix #$ARGUMENTS: <brief summary>`
+7. **Post-Fix Pipeline (via /post-fix-pipeline Skill)**
+
+   **Use the Skill tool** to invoke `/post-fix-pipeline`. Do NOT commit manually.
+
+   Invoke: `skill: "post-fix-pipeline"` with arguments:
+   ```
+   fixes_applied:            {list of changes from Steps 5+6b}
+   files_changed:            {all modified file paths}
+   session_summary:          "Fix #$ARGUMENTS: {brief description}"
+   test_suite_commands:      [
+     { name: "backend", command: "cd backend && PYTHONPATH=. pytest --tb=short -q", timeout: 300 },
+     { name: "android-unit", command: "cd android && ./gradlew test --console=plain", timeout: 600 }
+   ]
+   test_suite_max_fix_attempts: 2
+   docs_instructions:        "Update any related TODO comments to reference the fix."
+   commit_format:            "fix({scope}): {summary}\n\nFix #$ARGUMENTS"
+   commit_scope:             "{affected-area}"
+   push:                     false
+   ```
+
+   The /post-fix-pipeline Skill handles: test suite verification gate, documentation updates, and git commit with Co-Authored-By tag.
 
 ## Guidelines
 
@@ -78,13 +98,10 @@ gh issue view 42
 # 2. After implementing the fix, run tests
 cd android && ./gradlew :app:testDebugUnitTest
 
-# 3. Commit the changes
-git add <files>
-git commit -m "Fix #42: Implement Add Recipe button on Home screen
-
-- Added showAddRecipeSheet state to HomeViewModel
-- Wired up onAddClick handlers in MealSlotCard
-- AddRecipeSheet now displays for selected meal type
-
-Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
+# 3. /post-fix-pipeline Skill handles commit automatically with format:
+# "fix(home): implement Add Recipe button
+#
+# Fix #42
+#
+# Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 ```

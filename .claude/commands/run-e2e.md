@@ -239,10 +239,11 @@ Use a 10-minute timeout for groups with AI calls (meal-generation, home, chat, r
     **Skip the rest of this group** and move to the next group. Do NOT stop execution.
 - Else:
 
-  #### 4a. Run fix-loop
+  #### 4a. Invoke /fix-loop Skill
 
-  Read and follow the fix-loop process in `.claude/commands/fix-loop.md` in **Full Loop** mode with `max_iterations: 1`. **NO EXCEPTIONS** — invoke for all failures including known or pre-existing issues:
+  **MANDATORY: Use the Skill tool** to invoke `/fix-loop` in Full Loop mode. Do NOT read fix-loop.md and follow it inline — you MUST invoke it as a Skill.
 
+  Invoke: `skill: "fix-loop"` with arguments:
   ```
   failure_output:         {raw Gradle test failure output}
   failure_context:        "E2E test {current_class} failed in group {group_name}"
@@ -257,15 +258,20 @@ Use a 10-minute timeout for groups with AI calls (meal-generation, home, chat, r
   force_thinking_level:   {computed from fail_counts: 1→"normal", 2-3→"thinkhard", 4-5→"thinkhard", 6+→"ultrathink"}
   log_dir:                ".claude/logs/fix-loop/"
   ```
+  Budget rationale: `max_iterations: 1` because the group restart loop is the outer retry — each fix-loop invocation gets one attempt, but the group restarts up to 10 times total.
 
-  Collect fix-loop output:
+  **NO EXCEPTIONS** — invoke for ALL failures including known or pre-existing issues.
+
+  Collect Skill output:
   - Append fixes to `all_fixes[]`
-  - Accumulate metrics into agent tracking variables
+  - Accumulate metrics into tracking variables
 
   #### 4b. Restart group
 
     5. **Reset `test_index = 0`** (restart group from first test)
     6. Go to **Step 2**
+
+> **REMINDER: Always use the Skill tool for /fix-loop. Do NOT fix test failures inline.**
 
 #### When a Fix Touches Shared Code:
 
@@ -273,14 +279,16 @@ If a fix modifies code that earlier groups also test, note it but do NOT re-run 
 
 ---
 
-## AGENT INTEGRATION
+## SKILL INTEGRATION
 
-This workflow uses 2 commands and delegates to read-only agents at specific trigger points:
+This workflow invokes 2 Skills via the Skill tool, and those Skills delegate to read-only Agents via the Task tool:
 
-| Command/Agent | Trigger | Purpose |
-|---------------|---------|---------|
-| `fix-loop` command | Step 4a, on test failure | Iterative fix cycle with thinking escalation, debugger delegation, and code review |
-| `post-fix-pipeline` command | Post-run, if any fixes were applied | Documentation updates + test suite verification + git commit |
+| Skill | Trigger | Purpose |
+|-------|---------|---------|
+| `/fix-loop` | Step 4a, on test failure | Iterative fix cycle with thinking escalation, debugger Agent delegation, and code review |
+| `/post-fix-pipeline` | Post-run, if any fixes were applied | Test suite verification + documentation via docs-manager Agent + git commit via git-manager Agent |
+
+> **REMINDER: Always use the Skill tool to invoke /fix-loop and /post-fix-pipeline. Do NOT read the .md files and follow them inline.**
 
 ### Tracking variables
 
@@ -307,20 +315,25 @@ After all groups complete (or the single requested group), check if any fixes we
 
 **If `len(all_fixes) == 0`**: skip this section — no agents needed.
 
-**If `len(all_fixes) > 0`**: read and follow the post-fix-pipeline process in `.claude/commands/post-fix-pipeline.md`:
+**If `len(all_fixes) > 0`**: **Use the Skill tool** to invoke `/post-fix-pipeline`. Do NOT read post-fix-pipeline.md and follow it inline.
 
+Invoke: `skill: "post-fix-pipeline"` with arguments:
 ```
 fixes_applied:            {all_fixes from tracking}
 files_changed:            {all modified file paths}
 session_summary:          "E2E test run: {N} fixes applied across {groups}"
-test_suite_commands:      []   (E2E already verified by fix-loop retest)
+test_suite_commands:      [
+  { name: "backend", command: "cd backend && PYTHONPATH=. pytest --tb=short -q", timeout: 300 },
+  { name: "android-unit", command: "cd android && ./gradlew test --console=plain", timeout: 600 }
+]
+test_suite_max_fix_attempts: 2
 docs_instructions:        "Update docs/testing/Functional-Requirement-Rule.md if test files changed. Update docs/CONTINUE_PROMPT.md with session summary. Update test counts in CLAUDE.md (non-protected sections only)."
 commit_format:            "fix(e2e): {summary}"
 commit_scope:             "e2e"
 push:                     false
 ```
 
-Collect pipeline output for the final report.
+Collect Skill output for the final report.
 
 ---
 
@@ -360,16 +373,16 @@ Fixes Applied:
   1. [File:line] — [Brief description of root cause and fix]
   2. [File:line] — [Brief description of root cause and fix]
 
-Agent Activity (from fix-loop + post-fix-pipeline):
+Skill Activity (from /fix-loop + /post-fix-pipeline):
   - Fix-loop iterations: X
-  - Debugger invocations: X
+  - Debugger Agent invocations: X
   - Code reviews: X (Y approved, Z flagged)
   - Docs updated: [list of files, or "none — no fixes applied"]
   - Commit: [hash] — [message] (or "none — no fixes applied")
   - Pipeline status: COMPLETED | BLOCKED_BY_TEST_SUITE | NO_FIXES
 
 Review Issues (if any):
-  - [severity] [file:line] — [description from code-reviewer]
+  - [severity] [file:line] — [description from code-reviewer Agent]
 
 Shared Code Warning:
   - [If any fix touched code tested by earlier groups, list here]

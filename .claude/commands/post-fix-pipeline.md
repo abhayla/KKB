@@ -1,10 +1,16 @@
 # Post-Fix Pipeline
 
-Post-fix verification and commit process. Runs regression tests, test suite verification with auto-fix, documentation updates via docs-manager agent, and git commit via git-manager agent. Uses gate logic to block commits when test suites fail. Fully project-agnostic.
+Post-fix verification and commit process. Runs regression tests, test suite verification with auto-fix, documentation updates via docs-manager Agent, and git commit via git-manager Agent. Uses gate logic to block commits when test suites fail. Fully project-agnostic.
 
 **Arguments:** $ARGUMENTS
 
-Read and follow this process using the parameters passed by the caller (via `$ARGUMENTS` or inline in the calling command).
+Read and follow this process using the parameters passed by the caller (via `$ARGUMENTS` or inline in the calling Skill).
+
+## Caller Context
+
+This Skill is invoked by: `/adb-test`, `/run-e2e`, `/implement`, `/fix-issue`. Each provides different `test_suite_commands` and `commit_format`. Adapt behavior accordingly.
+
+**Important:** If `test_suite_commands` is empty `[]`, log a warning: `⚠️ No test suite commands provided. Skipping test suite gate — commits proceed without verification.` At minimum, the caller should provide backend pytest.
 
 ---
 
@@ -31,15 +37,15 @@ Read and follow this process using the parameters passed by the caller (via `$AR
 |-----------|---------|-------------|
 | `test_suite_commands` | `[]` | Test suite commands as commit gate: `[{name, command, timeout}]` |
 | `test_suite_max_fix_attempts` | `2` | Maximum auto-fix attempts when suites fail |
-| `tester_agent_name` | `"tester"` | Agent name for test failure analysis |
+| `tester_agent_name` | `"tester"` | Agent name for test failure analysis (launched via Task tool) |
 
 ### Documentation
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `docs_instructions` | `""` | Instructions for the docs-manager agent. Empty string = skip documentation step |
+| `docs_instructions` | `""` | Instructions for the docs-manager Agent. Empty string = skip documentation step |
 | `docs_files_to_update` | `[]` | Specific documentation files to update |
-| `docs_agent_name` | `"docs-manager"` | Agent name for documentation updates |
+| `docs_agent_name` | `"docs-manager"` | Agent name for documentation updates (launched via Task tool) |
 
 ### Git Commit
 
@@ -48,7 +54,7 @@ Read and follow this process using the parameters passed by the caller (via `$AR
 | `commit_format` | `"fix({scope}): {summary}"` | Commit message template |
 | `commit_scope` | `"fix"` | Scope for the commit message |
 | `push` | `false` | Whether to push after committing |
-| `git_agent_name` | `"git-manager"` | Agent name for git operations |
+| `git_agent_name` | `"git-manager"` | Agent name for git operations (launched via Task tool) |
 
 ---
 
@@ -77,14 +83,14 @@ STEP 3: TEST SUITE VERIFICATION (if test_suite_commands is non-empty)
   Gate decision:
     ALL suites pass → gate = PASSED → proceed to Step 4
     Any suite fails:
-      Launch tester agent (read-only analysis) with:
+      Launch tester Agent (read-only, via Task tool) with:
         - Failed test names and output
         - Diff of recent changes (files_changed)
         - Instruction: "Analyze these test failures against the recent fixes.
           Determine if the fixes caused the failures."
 
-      The tester agent returns analysis only.
-      YOU apply fixes based on that analysis (max {test_suite_max_fix_attempts} attempts).
+      The tester Agent returns analysis only.
+      YOU (main Claude session) apply fixes based on that analysis (max {test_suite_max_fix_attempts} attempts).
       Re-run the test suite after each fix attempt.
 
       If all failures fixed:
@@ -94,7 +100,7 @@ STEP 3: TEST SUITE VERIFICATION (if test_suite_commands is non-empty)
 
 STEP 4: DOCUMENTATION (only if gate != FAILED)
   If docs_instructions is non-empty:
-    Launch docs_agent_name with:
+    Launch docs_agent_name Agent (via Task tool) with:
       - fixes_applied list
       - files_changed list
       - session_summary
@@ -102,10 +108,10 @@ STEP 4: DOCUMENTATION (only if gate != FAILED)
       - docs_files_to_update
       - Instruction: "Update documentation based on the fixes applied.
         Return the list of documentation files updated."
-    Record files updated by docs agent
+    Record files updated by docs Agent
 
 STEP 5: GIT COMMIT (only if gate != FAILED)
-  Launch git_agent_name with:
+  Launch git_agent_name Agent (via Task tool) with:
     - files_changed (fix files + any doc files from Step 4)
     - commit_format with scope and summary filled in
     - push flag
@@ -179,8 +185,8 @@ Return a structured report:
 |----------|----------|
 | Regression command times out | Log as TIMEOUT, proceed (non-blocking) |
 | Test suite command times out | Treat as FAILED, enter auto-fix flow |
-| Tester agent fails to respond | Gate = FAILED, block commit |
-| Docs agent fails | Log warning, proceed to commit (non-blocking) |
-| Git agent fails | Log error, report COMMIT_FAILED |
+| Tester Agent fails to respond | Gate = FAILED, block commit |
+| Docs Agent fails | Log warning, proceed to commit (non-blocking) |
+| Git Agent fails | Log error, report COMMIT_FAILED |
 | No test_suite_commands | Skip verification, proceed directly to docs + commit |
 | No docs_instructions | Skip documentation, proceed to commit |
