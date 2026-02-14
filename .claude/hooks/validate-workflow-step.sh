@@ -90,6 +90,49 @@ if [ "$TFP" = "true" -o "$TFP" = "True" ] && [ "$FLI" != "true" ] && [ "$FLI" !=
     esac
 fi
 
+# =============================================================================
+# Visual Issues Pending Gate (independent of activeCommand)
+# Mirrors the Test Failure Pending Gate for screenshot validation issues.
+# =============================================================================
+VIP=$(get_state_field ".visualIssuesPending")
+
+if [ "$VIP" = "true" -o "$VIP" = "True" ] && [ "$FLI" != "true" ] && [ "$FLI" != "True" ]; then
+    case "$HOOK_TOOL_NAME" in
+        "Write"|"Edit")
+            VIP_FILE=$(extract_input_field "file_path")
+            if [ -n "$VIP_FILE" ]; then
+                # Allow: .claude/, docs/, .github/, CLAUDE.md, any .md file
+                if echo "$VIP_FILE" | grep -qE "(\.claude/|docs/|\.github/|CLAUDE\.md|\.md$)"; then
+                    : # Allowed — documentation and config files
+                else
+                    # Block: all code files (.kt, .py, .java, .xml, etc.)
+                    if echo "$VIP_FILE" | grep -qE "\.(kt|py|java|xml|kts|gradle|json|yaml|yml|toml|properties)$"; then
+                        VIP_DETAILS=$(get_state_field ".visualIssuePendingDetails")
+                        echo ""
+                        echo "BLOCKED: Visual issues are pending. Write/Edit to code files is blocked."
+                        echo ">>> You MUST invoke Skill(\"fix-loop\") to fix visual issues. <<<"
+                        echo "Details: $VIP_DETAILS"
+                        echo ""
+                        log_event "BLOCKED" "reason=visualIssuesPending" "file=$VIP_FILE"
+                        exit 2
+                    fi
+                fi
+            fi
+            ;;
+        "Bash")
+            VIP_CMD=$(extract_input_field "command")
+            if echo "$VIP_CMD" | grep -qE "git commit"; then
+                echo ""
+                echo "BLOCKED: Visual issues are pending. Commits are blocked."
+                echo ">>> You MUST invoke Skill(\"fix-loop\") to fix visual issues. <<<"
+                echo ""
+                log_event "BLOCKED" "reason=visualIssuesPending_commit"
+                exit 2
+            fi
+            ;;
+    esac
+fi
+
 case "$HOOK_TOOL_NAME" in
     "Write"|"Edit")
         FILE_PATH=$(extract_input_field "file_path")

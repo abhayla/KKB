@@ -53,6 +53,7 @@ You operate in one of two modes based on the presence of `retest_command`:
 | `max_cascade_depth` | int | `2` | 1-5 | Maximum depth of cascading fix-loops (a fix causing a new failure that triggers another fix-loop) |
 | `current_cascade_depth` | int | `0` | 0+ | Current cascade depth (incremented by callers when re-invoking after a fix caused a new failure) |
 | `auto_file_issue` | bool | `false` | true/false | When true AND outcome is UNRESOLVED/MAX_ITERATIONS_EXCEEDED, auto-create GitHub issue before returning |
+| `clear_flags` | string[] | `[]` | `["visualIssuesPending"]` | Workflow state flags to clear on RESOLVED |
 
 ### Failure Index Context (for auto-delegated invocations)
 
@@ -232,6 +233,13 @@ FINALIZE:
            ```
         3. Record filed issue in summary-evidence.json under `autoFiledIssues`
 
+  CLEAR FLAGS (if clear_flags is non-empty AND overallStatus is RESOLVED):
+    For each flag in clear_flags:
+      Set flag to false in workflow-state.json
+      Clear associated details field:
+        - visualIssuesPending → also clear visualIssuePendingDetails = null
+      Log: "Cleared flag {flag} after RESOLVED fix-loop"
+
 RETURN structured results (see Output section)
 ```
 
@@ -296,6 +304,9 @@ Return a structured report:
 ### Files Changed
 - {file_path_1}
 - {file_path_2}
+
+### Flags Cleared
+- {flag_name}: cleared (or "No flags to clear")
 
 ### Iteration Log Directory
 {log_dir}/{session_id}/

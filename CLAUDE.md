@@ -793,9 +793,10 @@ The 7-step workflow (Rule #7) is enforced by shell hooks in `.claude/hooks/`. Al
 | `verify-test-rerun.sh` | PostToolUse (Bash) | Re-runs same test independently; **blocks** if claimed PASS but re-run FAIL |
 | `log-workflow.sh` | PostToolUse (Bash/Skill/Write/Edit) | Logs events; **tracks Skill invocations**; **clears fixLoopInvestigating on fix-loop completion** |
 | `post-screenshot-resize.sh` | PostToolUse (Bash/Playwright) | Auto-resize screenshots >1800px |
+| `post-screenshot-validate.sh` | PostToolUse (Bash/Playwright) | Records screenshot metadata; validates file exists and non-zero; updates `screenshotsCaptured[]` in workflow state |
 | `auto-fix-pattern-scan.sh` | PostToolUse | Scans for common fix patterns after tool use |
 
-Workflow state is tracked in `.claude/workflow-state.json` (extended schema with `testFailuresPending`, `fixLoopInvestigating`, `skillInvocations`, `evidence`, `agentDelegations`). The full hook system and enforcement logic is documented in `docs/rules/Claude Code Enforced Workflow Rules.md`.
+Workflow state is tracked in `.claude/workflow-state.json` (extended schema with `testFailuresPending`, `fixLoopInvestigating`, `visualIssuesPending`, `screenshotsCaptured`, `backendChecks`, `skillInvocations`, `evidence`, `agentDelegations`). The full hook system and enforcement logic is documented in `docs/rules/Claude Code Enforced Workflow Rules.md`.
 
 ## Claude Code Configuration
 
@@ -818,8 +819,9 @@ The `.claude/` directory contains Claude Code customization:
 │   ├── implement.md      # /implement — implement feature with workflow
 │   ├── post-fix-pipeline.md  # /post-fix-pipeline — post-fix verification (regression → test suite → docs → commit)
 │   ├── reflect.md        # /reflect — learning system analysis & self-modification
-│   └── run-e2e.md        # /run-e2e — run Android E2E tests by feature group
-├── hooks/            # Workflow enforcement hooks (10 hooks + 1 shared library)
+│   ├── run-e2e.md        # /run-e2e — run Android E2E tests by feature group
+│   └── verify-screenshots.md  # /verify-screenshots — deep screenshot + backend verification
+├── hooks/            # Workflow enforcement hooks (11 hooks + 1 shared library)
 │   ├── hook-utils.sh               # Shared library sourced by all hooks (stdin parsing, state mgmt)
 │   ├── validate-workflow-step.sh   # PreToolUse: block actions if workflow steps incomplete + testFailuresPending gate
 │   ├── pre-skill-fixloop-unblock.sh # PreToolUse: set fixLoopInvestigating=true when fix-loop invoked
@@ -829,6 +831,7 @@ The `.claude/` directory contains Claude Code customization:
 │   ├── log-workflow.sh             # PostToolUse: log events + track Skill invocations
 │   ├── post-skill-learning.sh      # PostToolUse: learning system capture after skill execution
 │   ├── post-screenshot-resize.sh   # PostToolUse: auto-resize screenshots >1800px after capture
+│   ├── post-screenshot-validate.sh # PostToolUse: record screenshot metadata, validate file integrity
 │   ├── auto-fix-pattern-scan.sh    # PostToolUse: scan for common fix patterns
 │   └── resize_screenshot.py        # Screenshot resize utility (batch mode: --all)
 ├── logs/             # Workflow session logs

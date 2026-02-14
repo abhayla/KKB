@@ -25,7 +25,21 @@ if [ "$HOOK_TOOL_NAME" = "Skill" ]; then
         # Note: testFailuresPending is cleared by post-test-update.sh when tests pass
         if [ "$SKILL_NAME" = "fix-loop" ]; then
             update_workflow_state '.fixLoopInvestigating = false'
+            # Check if fix-loop args contain visual flag clearing request
+            CLEAR_VISUAL=$(echo "$HOOK_TOOL_INPUT" | python -c "import sys,json;d=json.load(sys.stdin);a=d.get('args','');print('true' if 'visualIssuesPending' in str(a) else 'false')" 2>/dev/null)
+            if [ "$CLEAR_VISUAL" = "true" ] && [ "$SKILL_SUCCESS" = "true" ]; then
+                update_workflow_state '.visualIssuesPending = false'
+                update_workflow_state '.visualIssuePendingDetails = null'
+                log_event "VISUAL_ISSUES_CLEARED" "by=fix-loop"
+            fi
             log_event "FIXLOOP_COMPLETE" "success=$SKILL_SUCCESS" "investigating=cleared"
+        fi
+
+        # Track verify-screenshots invocations
+        if [ "$SKILL_NAME" = "verify-screenshots" ]; then
+            update_workflow_state '.skillInvocations.verifyScreenshotsInvoked = true'
+            update_workflow_state ".skillInvocations.verifyScreenshotsResult = \"$SKILL_SUCCESS\""
+            log_event "VERIFY_SCREENSHOTS_INVOKED" "success=$SKILL_SUCCESS"
         fi
     fi
     exit 0

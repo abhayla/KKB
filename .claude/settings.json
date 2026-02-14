@@ -68,6 +68,11 @@
           },
           {
             "type": "command",
+            "command": "bash .claude/hooks/post-screenshot-validate.sh",
+            "timeout": 10
+          },
+          {
+            "type": "command",
             "command": "bash .claude/hooks/auto-fix-pattern-scan.sh",
             "timeout": 10
           },
@@ -85,6 +90,11 @@
             "type": "command",
             "command": "bash .claude/hooks/post-screenshot-resize.sh",
             "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/post-screenshot-validate.sh",
+            "timeout": 10
           }
         ]
       },

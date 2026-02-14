@@ -46,6 +46,19 @@ This marks the session as a `fix-issue` workflow. Hooks will track Skill invocat
    - Consider existing patterns from CLAUDE.md
    - Check for reusable components
 
+4b. **Define backend verification checks** (if API changes involved):
+   ```bash
+   python -c "
+   import json
+   with open('.claude/workflow-state.json') as f: d = json.load(f)
+   d['backendChecks'] = [
+       # Example: {'endpoint': '/api/v1/...', 'method': 'GET', 'expect': 'status 200, has X field'}
+   ]
+   with open('.claude/workflow-state.json', 'w') as f: json.dump(d, f, indent=2)
+   "
+   ```
+   Skip if UI-only fix with no API changes.
+
 5. **Implement the Fix**
    - Make minimal, focused changes
    - Follow existing code patterns
@@ -107,16 +120,31 @@ This marks the session as a `fix-issue` workflow. Hooks will track Skill invocat
    })
    ```
 
-   Read both screenshots and describe the visible difference.
    Update workflow state `step6_screenshots` with before/after paths.
 
    **If ADB/Playwright is unavailable:** Log `⚠️ Screenshot capture unavailable — {reason}`. Proceed to Step 7 but note the gap.
 
-7. **Post-Fix Pipeline (via /post-fix-pipeline Skill)**
+7. **Verify Screenshots, Backend, and Post-Fix Pipeline**
 
-   > **ENFORCEMENT GATE:** Hooks track whether you invoke `/post-fix-pipeline` via the Skill tool. If tests were run and you attempt to commit without invoking the pipeline, the `verify-evidence-artifacts.sh` hook will **block your commit**. You MUST use `Skill("post-fix-pipeline")`.
+   > **ENFORCEMENT GATE:** Hooks track whether you invoke `/verify-screenshots` and `/post-fix-pipeline` via the Skill tool. If screenshots were captured but not validated, or tests were run without invoking the pipeline, the hooks will **block your commit**. You MUST use both Skills.
 
-   **Use the Skill tool** to invoke `/post-fix-pipeline`. Do NOT commit manually.
+   **7a. Invoke `/verify-screenshots`** to validate all captured screenshots and backend checks:
+   ```
+   Skill("verify-screenshots")
+   ```
+
+   **7b. If ISSUES_FOUND** → invoke `/fix-loop` with visual flag clearing:
+   ```
+   Skill("fix-loop", args="clear_flags: [\"visualIssuesPending\"]
+   failure_output: {description of visual issues}
+   failure_context: Screenshot validation found critical visual issues
+   files_of_interest: {files modified in Step 5}
+   retest_command: null
+   max_iterations: 3")
+   ```
+   After fix-loop → re-capture screenshots → re-invoke `/verify-screenshots`. Repeat until PASSED.
+
+   **7c. Once PASSED** → invoke `/post-fix-pipeline`. Do NOT commit manually.
 
    Invoke: `skill: "post-fix-pipeline"` with arguments:
    ```

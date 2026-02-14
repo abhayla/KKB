@@ -91,12 +91,26 @@ You MUST follow these 7 steps in order. Do NOT skip any step.
 
 4. Add traceability entry to `docs/testing/Functional-Requirement-Rule.md`
 
+5. **Define backend verification checks** (if API changes involved):
+   ```bash
+   python -c "
+   import json
+   with open('.claude/workflow-state.json') as f: d = json.load(f)
+   d['backendChecks'] = [
+       # Example: {'endpoint': '/api/v1/...', 'method': 'GET', 'expect': 'status 200, has X field'}
+   ]
+   with open('.claude/workflow-state.json', 'w') as f: json.dump(d, f, indent=2)
+   "
+   ```
+   Skip this substep if the feature is UI-only with no API changes.
+
 **Output Required:**
 ```
 ✅ Step 1 Complete:
 - GitHub Issue: #XX (created/existing)
 - Requirement ID: SCREEN-XXX
 - Traceability: Added to Functional-Requirement-Rule.md
+- Backend checks: N defined (or "None — UI-only")
 ```
 
 ---
@@ -247,13 +261,28 @@ await browser_take_screenshot({
 
 ---
 
-### STEP 7: Verify and Post-Fix Pipeline
+### STEP 7: Verify Screenshots, Backend, and Post-Fix Pipeline
 
-> **ENFORCEMENT GATE:** Hooks track whether you invoke `/post-fix-pipeline` via the Skill tool. If tests were run and you attempt to commit without invoking the pipeline, the `verify-evidence-artifacts.sh` hook will **block your commit**. You MUST use `Skill("post-fix-pipeline")`.
+> **ENFORCEMENT GATE:** Hooks track whether you invoke `/verify-screenshots` and `/post-fix-pipeline` via the Skill tool. If screenshots were captured but not validated, or tests were run without invoking the pipeline, the hooks will **block your commit**. You MUST use both Skills.
 
-1. Read both screenshots using the Read tool
-2. Describe the visible difference between before and after
-3. **Use the Skill tool** to invoke `/post-fix-pipeline`. Do NOT commit manually.
+1. **Invoke `/verify-screenshots`** to validate all captured screenshots and backend checks:
+   ```
+   Skill("verify-screenshots")
+   ```
+
+2. **If ISSUES_FOUND** → invoke `/fix-loop` with visual flag clearing:
+   ```
+   Skill("fix-loop", args="clear_flags: [\"visualIssuesPending\"]
+   failure_output: {description of visual issues from verify-screenshots}
+   failure_context: Screenshot validation found critical visual issues
+   files_of_interest: {files modified in Step 3}
+   retest_command: null
+   max_iterations: 3")
+   ```
+   After fix-loop → re-capture screenshots → re-invoke `/verify-screenshots`
+   Repeat until PASSED.
+
+3. **Once PASSED** → invoke `/post-fix-pipeline`. Do NOT commit manually.
 
 Invoke: `skill: "post-fix-pipeline"` with arguments:
 ```
@@ -307,6 +336,9 @@ Before proceeding past each major phase, answer these questions:
 ```
 □ ALL tests passing? → [YES: X/X passed / NO - STOP]
 □ AFTER screenshot captured? → [YES: path / NO - STOP]
+□ /verify-screenshots invoked? → [YES: result / NO - STOP]
+□ visualIssuesPending cleared? → [YES / NO - STOP]
+□ Backend checks passed? → [YES: N/N / SKIPPED / NO - STOP]
 □ Before/after compared? → [YES: difference is ___ / NO - STOP]
 ```
 

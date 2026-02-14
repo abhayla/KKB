@@ -105,8 +105,10 @@ state = {
         'step3_implement': {'completed': False, 'timestamp': None, 'filesChanged': []},
         'step4_runTests': {'completed': False, 'timestamp': None, 'testsPassed': None, 'testsTotal': None},
         'step5_fixLoop': {'completed': False, 'iterations': 0, 'allTestsPassing': False},
-        'step6_screenshots': {'completed': False, 'before': None, 'after': None},
-        'step7_verify': {'completed': False, 'verification': None}
+        'step6_screenshots': {'completed': False, 'before': None, 'after': None,
+                              'validated': False, 'validationResult': None},
+        'step7_verify': {'completed': False, 'verification': None,
+                         'backendChecksResult': None}
     },
     'testFailuresPending': False,
     'testFailurePendingDetails': None,
@@ -115,10 +117,16 @@ state = {
     'skillInvocations': {
         'fixLoopInvoked': False, 'fixLoopCount': 0,
         'fixLoopEvidence': [], 'postFixPipelineInvoked': False,
-        'postFixPipelineEvidence': None
+        'postFixPipelineEvidence': None,
+        'verifyScreenshotsInvoked': False,
+        'verifyScreenshotsResult': None
     },
     'evidence': {'testRuns': [], 'screenshots': [], 'fixLoopLogs': []},
-    'agentDelegations': []
+    'agentDelegations': [],
+    'visualIssuesPending': False,
+    'visualIssuePendingDetails': None,
+    'screenshotsCaptured': [],
+    'backendChecks': []
 }
 os.makedirs('.claude', exist_ok=True)
 with open('.claude/workflow-state.json', 'w') as f:
@@ -145,6 +153,16 @@ extract_test_target() {
         if [ -n "$t" ]; then echo "$t"; return 0; fi
     fi
     echo ""
+}
+
+is_screenshot_command() {
+    local cmd="$1"
+    echo "$cmd" | grep -qiE "(screencap|screenshot)"
+}
+
+extract_screenshot_path() {
+    local cmd="$1"
+    echo "$cmd" | grep -oE '>\s*[^ ]+\.png' | sed 's/^>\s*//'
 }
 
 detect_test_result() {

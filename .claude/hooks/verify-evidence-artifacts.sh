@@ -68,6 +68,19 @@ case "$ACTIVE_CMD" in
         ;;
 esac
 
+# =============================================================================
+# Screenshot verification gate (applies to ALL active commands)
+# If screenshots were captured during this session, /verify-screenshots must
+# have been invoked before committing — regardless of workflow type.
+# =============================================================================
+SC_COUNT=$(python -c "import json;print(len(json.load(open('$WORKFLOW_STATE_FILE')).get('screenshotsCaptured',[])))" 2>/dev/null)
+if [ "${SC_COUNT:-0}" -gt 0 ]; then
+    VSI=$(get_state_field ".skillInvocations.verifyScreenshotsInvoked")
+    if [ "$VSI" != "true" ] && [ "$VSI" != "True" ]; then
+        MISSING="$MISSING  - /verify-screenshots not invoked (${SC_COUNT} screenshots captured but not validated)\n"
+    fi
+fi
+
 if [ -n "$MISSING" ]; then
     echo ""; echo "COMMIT BLOCKED - Missing evidence for $ACTIVE_CMD workflow:"
     echo -e "$MISSING"
