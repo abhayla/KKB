@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.time.DayOfWeek
@@ -642,7 +643,7 @@ class RecipeRulesViewModel @Inject constructor(
     // region Toggle Active
 
     fun toggleRuleActive(rule: RecipeRule) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             repository.toggleRuleActive(rule.id, !rule.isActive)
                 .onFailure { e ->
                     Timber.e(e, "Failed to toggle rule active state")
@@ -652,7 +653,7 @@ class RecipeRulesViewModel @Inject constructor(
     }
 
     fun toggleNutritionGoalActive(goal: NutritionGoal) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             repository.toggleNutritionGoalActive(goal.id, !goal.isActive)
                 .onFailure { e ->
                     Timber.e(e, "Failed to toggle nutrition goal active state")

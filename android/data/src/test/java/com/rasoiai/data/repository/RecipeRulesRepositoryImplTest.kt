@@ -1,7 +1,9 @@
 package com.rasoiai.data.repository
 
+import android.content.Context
 import app.cash.turbine.test
 import com.rasoiai.data.local.dao.FavoriteDao
+import com.rasoiai.data.local.dao.OfflineQueueDao
 import com.rasoiai.data.local.dao.RecipeDao
 import com.rasoiai.data.local.dao.RecipeRulesDao
 import com.rasoiai.data.local.entity.NutritionGoalEntity
@@ -46,6 +48,8 @@ class RecipeRulesRepositoryImplTest {
     private lateinit var mockFavoriteDao: FavoriteDao
     private lateinit var mockApiService: RasoiApiService
     private lateinit var mockNetworkMonitor: NetworkMonitor
+    private lateinit var mockOfflineQueueDao: OfflineQueueDao
+    private lateinit var mockContext: Context
     private lateinit var repository: RecipeRulesRepositoryImpl
 
     private val testRuleEntity = RecipeRuleEntity(
@@ -103,6 +107,8 @@ class RecipeRulesRepositoryImplTest {
         mockFavoriteDao = mockk(relaxed = true)
         mockApiService = mockk(relaxed = true)
         mockNetworkMonitor = mockk(relaxed = true)
+        mockOfflineQueueDao = mockk(relaxed = true)
+        mockContext = mockk(relaxed = true)
 
         // Default to offline to avoid network calls in tests
         every { mockNetworkMonitor.isOnline } returns flowOf(false)
@@ -112,7 +118,9 @@ class RecipeRulesRepositoryImplTest {
             recipeDao = mockRecipeDao,
             favoriteDao = mockFavoriteDao,
             apiService = mockApiService,
-            networkMonitor = mockNetworkMonitor
+            networkMonitor = mockNetworkMonitor,
+            offlineQueueDao = mockOfflineQueueDao,
+            context = mockContext
         )
     }
 

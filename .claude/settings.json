@@ -78,6 +78,11 @@
           },
           {
             "type": "command",
+            "command": "bash .claude/hooks/post-anr-detection.sh",
+            "timeout": 10
+          },
+          {
+            "type": "command",
             "command": "bash .claude/hooks/log-workflow.sh",
             "timeout": 5
           }

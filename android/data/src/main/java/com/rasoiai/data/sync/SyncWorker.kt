@@ -15,6 +15,8 @@ import com.rasoiai.data.local.dao.OfflineQueueDao
 import com.rasoiai.data.local.mapper.toDomain
 import com.rasoiai.data.remote.api.RasoiApiService
 import com.rasoiai.data.remote.dto.FcmTokenRequest
+import com.rasoiai.data.remote.dto.NutritionGoalUpdateRequest
+import com.rasoiai.data.remote.dto.RecipeRuleUpdateRequest
 import com.rasoiai.data.remote.dto.SwapMealRequest
 import com.rasoiai.domain.model.OfflineAction
 import com.rasoiai.domain.model.OfflineActionType
@@ -180,6 +182,22 @@ class SyncWorker @AssistedInject constructor(
                 Timber.d("UPDATE_GROCERY: Local-only operation, marking complete")
                 true
             }
+
+            OfflineActionType.TOGGLE_RECIPE_RULE -> {
+                val ruleId = extractStringField(action.payload, "rule_id")
+                val isActive = extractBooleanField(action.payload, "is_active")
+                apiService.updateRecipeRule(ruleId, RecipeRuleUpdateRequest(isActive = isActive))
+                Timber.d("TOGGLE_RECIPE_RULE: Synced rule=$ruleId, isActive=$isActive")
+                true
+            }
+
+            OfflineActionType.TOGGLE_NUTRITION_GOAL -> {
+                val goalId = extractStringField(action.payload, "goal_id")
+                val isActive = extractBooleanField(action.payload, "is_active")
+                apiService.updateNutritionGoal(goalId, NutritionGoalUpdateRequest(isActive = isActive))
+                Timber.d("TOGGLE_NUTRITION_GOAL: Synced goal=$goalId, isActive=$isActive")
+                true
+            }
         }
     }
 
@@ -211,6 +229,21 @@ class SyncWorker @AssistedInject constructor(
         return payload.substringAfter("\"recipe_id\":")
             .substringAfter("\"")
             .substringBefore("\"")
+    }
+
+    private fun extractStringField(payload: String, field: String): String {
+        return payload.substringAfter("\"$field\":")
+            .substringAfter("\"")
+            .substringBefore("\"")
+    }
+
+    private fun extractBooleanField(payload: String, field: String): Boolean {
+        val value = payload.substringAfter("\"$field\":")
+            .trim()
+            .substringBefore(",")
+            .substringBefore("}")
+            .trim()
+        return value == "true"
     }
 
     // endregion

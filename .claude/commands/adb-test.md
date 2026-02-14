@@ -8,14 +8,14 @@ If `$ARGUMENTS` is empty, test ALL 12 screens sequentially. If a screen name is 
 
 **Valid screen names:** `auth-flow`, `home`, `grocery`, `chat`, `favorites`, `stats`, `settings`, `notifications`, `recipe-detail`, `cooking-mode`, `pantry`, `recipe-rules`
 
-**Valid flow names:** `new-user-journey`, `existing-user`, `recipe-interaction`, `chat-ai`, `grocery-management`, `offline-mode`, `edge-cases`, `dark-mode`, `pantry-rules-crud`, `stats-tracking`, `settings-deep-dive`, `multi-family-medical`, `festival-meals`, `nutrition-goals`, `notifications-lifecycle`, `achievement-earning`, `pantry-suggestions`, `photo-analysis`, `multi-week-history`, `recipe-scaling`
+**Valid flow names:** `new-user-journey`, `existing-user`, `recipe-interaction`, `chat-ai`, `grocery-management`, `offline-mode`, `edge-cases`, `dark-mode`, `pantry-rules-crud`, `stats-tracking`, `settings-deep-dive`, `multi-family-medical`, `festival-meals`, `nutrition-goals`, `notifications-lifecycle`, `achievement-earning`, `pantry-suggestions`, `photo-analysis`, `multi-week-history`, `recipe-scaling`, `recipe-rules-comprehensive`
 
-**Special arguments:** `all-flows` (run all 20 flows sequentially), `all-flows-from <name>` (run from specified flow onwards)
+**Special arguments:** `all-flows` (run all 21 flows sequentially), `all-flows-from <name>` (run from specified flow onwards)
 
 **Argument detection:**
 1. If `$ARGUMENTS` matches a valid screen name → run screen test protocol (Sections E-F)
 2. If `$ARGUMENTS` matches a valid flow name → run flow execution protocol (Section G)
-3. If `$ARGUMENTS` is `all-flows` → run all 20 flows sequentially (flow01 → flow20)
+3. If `$ARGUMENTS` is `all-flows` → run all 21 flows sequentially (flow01 → flow21)
 4. If `$ARGUMENTS` is `all-flows-from <name>` → run flows from the specified flow onwards
 5. If `$ARGUMENTS` is empty → run all 12 screen tests
 
@@ -383,11 +383,29 @@ $ADB logcat -d -t 50 --pid=$($ADB shell pidof $APP_PACKAGE) > $LOG_DIR/{session}
 ```
 Scan for errors (` E `, `FATAL`, `Exception`). Record `app_error_count`.
 
+**E5.6b. ANR Auto-Detection (MANDATORY)**
+
+Before the Pre-Classification Gate, scan for ANR signals:
+```bash
+# Check logcat for ANR patterns
+$ADB logcat -d -t 100 --pid=$($ADB shell pidof $APP_PACKAGE) 2>/dev/null | grep -iE "ANR in|isn't responding|Application Not Responding|Input dispatching timed out" > /tmp/anr_check.txt
+ANR_LINES=$(wc -l < /tmp/anr_check.txt)
+if [ "$ANR_LINES" -gt 0 ]; then
+    echo "ANR DETECTED ($ANR_LINES occurrences) → auto-classify as ISSUE_FOUND"
+    cat /tmp/anr_check.txt
+fi
+```
+If ANR detected:
+- Auto-classify as `ISSUE_FOUND` (skip remaining gate questions)
+- Capture full logcat: `$ADB logcat -d -t 500 > $LOG_DIR/{session}/logcat_{screen}_anr.txt`
+- **MUST invoke `/fix-loop`** — ANR is always a code bug, never skip
+
 **E5.7. Pre-Classification Gate (MANDATORY)**
 
 Copy and fill in ALL 6 questions before classifying:
 ```
 □ Pre-Classification Gate for [{screen_name}]:
+  0. "ANR auto-detection clear?" → [YES / NO — ISSUE_FOUND (must invoke /fix-loop)]
   1. "All required elements found (FOUND or FOUND_AFTER_SCROLL)?" → [YES: N/N / NO: N missing — ISSUE_FOUND]
   2. "All interactive tests passed?" → [YES: N/N / NO: N failed — ISSUE_FOUND]
   3. "Screenshot visually verified?" → [YES / NO (blank/GPU issue)]
@@ -826,6 +844,7 @@ FLOW_DIR=docs/testing/flows
 | `photo-analysis` | `flow18-photo-analysis.md` |
 | `multi-week-history` | `flow19-multi-week-history.md` |
 | `recipe-scaling` | `flow20-recipe-scaling.md` |
+| `recipe-rules-comprehensive` | `flow21-recipe-rules-comprehensive.md` |
 
 Read the flow definition file: `$FLOW_DIR/{flow-file}.md`
 

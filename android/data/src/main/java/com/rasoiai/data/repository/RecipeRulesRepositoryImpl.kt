@@ -1,10 +1,13 @@
 package com.rasoiai.data.repository
 
+import android.content.Context
 import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.data.local.dao.FavoriteDao
+import com.rasoiai.data.local.dao.OfflineQueueDao
 import com.rasoiai.data.local.dao.RecipeDao
 import com.rasoiai.data.local.dao.RecipeRulesDao
 import com.rasoiai.data.local.entity.KnownIngredientEntity
+import com.rasoiai.data.local.entity.OfflineQueueEntity
 import com.rasoiai.data.local.entity.SyncStatus
 import com.rasoiai.data.local.mapper.toDomain
 import com.rasoiai.data.local.mapper.toEntity
@@ -14,18 +17,24 @@ import com.rasoiai.data.remote.dto.NutritionGoalCreateRequest
 import com.rasoiai.data.remote.dto.RecipeRuleCreateRequest
 import com.rasoiai.data.remote.dto.SyncRequest
 import com.rasoiai.data.remote.dto.toDomain
+import com.rasoiai.data.sync.SyncWorker
 import com.rasoiai.domain.model.DuplicateRuleException
 import com.rasoiai.domain.model.FoodCategory
 import com.rasoiai.domain.model.NutritionGoal
+import com.rasoiai.domain.model.OfflineActionType
 import com.rasoiai.domain.model.Recipe
 import com.rasoiai.domain.model.RecipeRule
 import com.rasoiai.domain.model.RuleType
 import com.rasoiai.domain.repository.RecipeRulesRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 import java.io.IOException
 import java.time.LocalDateTime
@@ -50,7 +59,9 @@ class RecipeRulesRepositoryImpl @Inject constructor(
     private val recipeDao: RecipeDao,
     private val favoriteDao: FavoriteDao,
     private val apiService: RasoiApiService,
-    private val networkMonitor: NetworkMonitor
+    private val networkMonitor: NetworkMonitor,
+    private val offlineQueueDao: OfflineQueueDao,
+    @ApplicationContext private val context: Context
 ) : RecipeRulesRepository {
 
     companion object {
@@ -245,30 +256,54 @@ class RecipeRulesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun toggleRuleActive(ruleId: String, isActive: Boolean): Result<Unit> {
-        return try {
-            val now = LocalDateTime.now().format(dateTimeFormatter)
-            recipeRulesDao.updateRuleActive(ruleId, isActive, now)
-            recipeRulesDao.updateRuleSyncStatus(ruleId, SyncStatus.PENDING, now)
-            Timber.d("Toggled rule $ruleId active: $isActive")
+        return withContext(Dispatchers.IO) {
+            try {
+                val now = LocalDateTime.now().format(dateTimeFormatter)
+                // 1. Update Room immediately (source of truth)
+                recipeRulesDao.updateRuleActive(ruleId, isActive, now)
+                recipeRulesDao.updateRuleSyncStatus(ruleId, SyncStatus.PENDING, now)
+                Timber.d("Toggled rule $ruleId active: $isActive")
 
-            // Try to sync to backend if online
-            if (networkMonitor.isOnline.first()) {
-                try {
-                    val request = com.rasoiai.data.remote.dto.RecipeRuleUpdateRequest(isActive = isActive)
-                    apiService.updateRecipeRule(ruleId, request)
-                    recipeRulesDao.updateRuleSyncStatus(ruleId, SyncStatus.SYNCED, now)
-                    Timber.i("Synced toggle to backend: $ruleId")
-                } catch (e: IOException) {
-                    Timber.w(e, "Network error syncing rule toggle to backend")
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to sync toggle to backend")
+                // 2. Queue offline action for reliability
+                val queueId = UUID.randomUUID().toString()
+                val payload = """{"rule_id":"$ruleId","is_active":$isActive}"""
+                offlineQueueDao.insertAction(
+                    OfflineQueueEntity(
+                        id = queueId,
+                        actionType = OfflineActionType.TOGGLE_RECIPE_RULE.value,
+                        payload = payload,
+                        createdAt = System.currentTimeMillis()
+                    )
+                )
+
+                // 3. Fast path: try immediate sync if online
+                val isOnline = withTimeoutOrNull(500L) { networkMonitor.isOnline.first() } ?: false
+                if (isOnline) {
+                    try {
+                        val request = com.rasoiai.data.remote.dto.RecipeRuleUpdateRequest(isActive = isActive)
+                        apiService.updateRecipeRule(ruleId, request)
+                        recipeRulesDao.updateRuleSyncStatus(ruleId, SyncStatus.SYNCED, now)
+                        offlineQueueDao.deleteAction(queueId)
+                        Timber.i("Synced toggle to backend: $ruleId")
+                    } catch (e: IOException) {
+                        Timber.w(e, "Network error syncing rule toggle, queued for WorkManager")
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to sync toggle, queued for WorkManager")
+                    }
                 }
-            }
 
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to toggle rule active state")
-            Result.failure(e)
+                // 4. Trigger WorkManager for reliability (best-effort)
+                try {
+                    SyncWorker.triggerImmediateSync(context)
+                } catch (e: Exception) {
+                    Timber.w(e, "Could not trigger immediate sync, queued action will be processed later")
+                }
+
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to toggle rule active state")
+                Result.failure(e)
+            }
         }
     }
 
@@ -403,30 +438,54 @@ class RecipeRulesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun toggleNutritionGoalActive(goalId: String, isActive: Boolean): Result<Unit> {
-        return try {
-            val now = LocalDateTime.now().format(dateTimeFormatter)
-            recipeRulesDao.updateNutritionGoalActive(goalId, isActive, now)
-            recipeRulesDao.updateNutritionGoalSyncStatus(goalId, SyncStatus.PENDING, now)
-            Timber.d("Toggled nutrition goal $goalId active: $isActive")
+        return withContext(Dispatchers.IO) {
+            try {
+                val now = LocalDateTime.now().format(dateTimeFormatter)
+                // 1. Update Room immediately (source of truth)
+                recipeRulesDao.updateNutritionGoalActive(goalId, isActive, now)
+                recipeRulesDao.updateNutritionGoalSyncStatus(goalId, SyncStatus.PENDING, now)
+                Timber.d("Toggled nutrition goal $goalId active: $isActive")
 
-            // Try to sync to backend if online
-            if (networkMonitor.isOnline.first()) {
-                try {
-                    val request = com.rasoiai.data.remote.dto.NutritionGoalUpdateRequest(isActive = isActive)
-                    apiService.updateNutritionGoal(goalId, request)
-                    recipeRulesDao.updateNutritionGoalSyncStatus(goalId, SyncStatus.SYNCED, now)
-                    Timber.i("Synced toggle to backend: $goalId")
-                } catch (e: IOException) {
-                    Timber.w(e, "Network error syncing nutrition goal toggle to backend")
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to sync toggle to backend")
+                // 2. Queue offline action for reliability
+                val queueId = UUID.randomUUID().toString()
+                val payload = """{"goal_id":"$goalId","is_active":$isActive}"""
+                offlineQueueDao.insertAction(
+                    OfflineQueueEntity(
+                        id = queueId,
+                        actionType = OfflineActionType.TOGGLE_NUTRITION_GOAL.value,
+                        payload = payload,
+                        createdAt = System.currentTimeMillis()
+                    )
+                )
+
+                // 3. Fast path: try immediate sync if online
+                val isOnline = withTimeoutOrNull(500L) { networkMonitor.isOnline.first() } ?: false
+                if (isOnline) {
+                    try {
+                        val request = com.rasoiai.data.remote.dto.NutritionGoalUpdateRequest(isActive = isActive)
+                        apiService.updateNutritionGoal(goalId, request)
+                        recipeRulesDao.updateNutritionGoalSyncStatus(goalId, SyncStatus.SYNCED, now)
+                        offlineQueueDao.deleteAction(queueId)
+                        Timber.i("Synced toggle to backend: $goalId")
+                    } catch (e: IOException) {
+                        Timber.w(e, "Network error syncing nutrition goal toggle, queued for WorkManager")
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to sync toggle, queued for WorkManager")
+                    }
                 }
-            }
 
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to toggle nutrition goal active state")
-            Result.failure(e)
+                // 4. Trigger WorkManager for reliability (best-effort)
+                try {
+                    SyncWorker.triggerImmediateSync(context)
+                } catch (e: Exception) {
+                    Timber.w(e, "Could not trigger immediate sync, queued action will be processed later")
+                }
+
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to toggle nutrition goal active state")
+                Result.failure(e)
+            }
         }
     }
 

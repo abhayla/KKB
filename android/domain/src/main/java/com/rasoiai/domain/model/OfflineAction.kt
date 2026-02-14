@@ -52,7 +52,13 @@ enum class OfflineActionType(val value: String) {
     REGISTER_FCM_TOKEN("register_fcm_token"),
 
     /** Unregister FCM token */
-    UNREGISTER_FCM_TOKEN("unregister_fcm_token");
+    UNREGISTER_FCM_TOKEN("unregister_fcm_token"),
+
+    /** Toggle recipe rule active/inactive state */
+    TOGGLE_RECIPE_RULE("toggle_recipe_rule"),
+
+    /** Toggle nutrition goal active/inactive state */
+    TOGGLE_NUTRITION_GOAL("toggle_nutrition_goal");
 
     companion object {
         fun fromValue(value: String): OfflineActionType {
