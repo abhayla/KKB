@@ -69,7 +69,11 @@ data class HomeUiState(
     // Offline state
     val isOffline: Boolean = false,
     // Notification badge
-    val notificationBadgeCount: Int = 0
+    val notificationBadgeCount: Int = 0,
+    // Week navigation
+    val selectedWeekStart: LocalDate = LocalDate.now().with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY)),
+    val isCurrentWeek: Boolean = true,
+    val hasNoMealPlanForWeek: Boolean = false
 ) {
     /** Check if the selected day is locked */
     val isSelectedDayLocked: Boolean
@@ -327,6 +331,83 @@ class HomeViewModel @Inject constructor(
                 selectedDayMeals = selectedDayMeals,
                 weekDates = weekDates
             )
+        }
+    }
+
+    // endregion
+
+    // region Week Navigation
+
+    fun navigateToPreviousWeek() {
+        val currentWeekStart = _uiState.value.selectedWeekStart
+        val previousWeekStart = currentWeekStart.minusWeeks(1)
+        loadMealPlanForWeek(previousWeekStart)
+    }
+
+    fun navigateToNextWeek() {
+        val currentWeekStart = _uiState.value.selectedWeekStart
+        val nextWeekStart = currentWeekStart.plusWeeks(1)
+        loadMealPlanForWeek(nextWeekStart)
+    }
+
+    fun navigateToCurrentWeek() {
+        val today = LocalDate.now()
+        val currentWeekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        loadMealPlanForWeek(currentWeekStart)
+    }
+
+    private fun loadMealPlanForWeek(weekStart: LocalDate) {
+        val today = LocalDate.now()
+        val currentWeekMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        val isCurrentWeek = weekStart == currentWeekMonday
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                    selectedWeekStart = weekStart,
+                    isCurrentWeek = isCurrentWeek,
+                    hasNoMealPlanForWeek = false
+                )
+            }
+
+            try {
+                // Try to load meal plan for the target week from local DB
+                val targetDate = if (isCurrentWeek) today else weekStart
+                val existingPlan = mealPlanRepository.getMealPlanForDate(targetDate).first()
+
+                if (existingPlan != null) {
+                    updateStateWithMealPlan(existingPlan)
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            selectedDate = targetDate,
+                            hasNoMealPlanForWeek = false
+                        )
+                    }
+                } else {
+                    // No local plan - show empty state
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            mealPlan = null,
+                            selectedDayMeals = null,
+                            weekDates = generateWeekDates(weekStart, targetDate),
+                            selectedDate = targetDate,
+                            hasNoMealPlanForWeek = true
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error loading meal plan for week $weekStart")
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = "Failed to load meal plan for this week."
+                    )
+                }
+            }
         }
     }
 

@@ -287,16 +287,16 @@ Four GitHub Actions workflows in `.github/workflows/`:
 
 | Platform | Tests (approx.) | Framework |
 |----------|-----------------|-----------|
-| Backend | ~351 | pytest |
+| Backend | ~398 | pytest |
 | Android Unit | ~330 | JUnit + MockK |
 | Android UI | ~750+ | Compose UI Testing |
 | Android E2E | ~67+ | Compose UI Testing + Hilt + Real API |
 
 *Counts as of Feb 2026. Run `PYTHONPATH=. pytest --collect-only -q` (backend) or `./gradlew test` (Android) for current totals.*
 
-### Backend Tests (~351 total)
+### Backend Tests (~398 total)
 
-All in `backend/tests/`, named `test_{feature}.py` (25 test files). Run `PYTHONPATH=. pytest --collect-only` to list all. Tests use SQLite in-memory via conftest fixtures (see Backend Test Fixtures below). Some files use class-based test organization (e.g., `test_ai_meal_service.py`, `test_chat_api.py`, `test_preference_service.py`).
+All in `backend/tests/`, named `test_{feature}.py` (32 test files). Run `PYTHONPATH=. pytest --collect-only` to list all. Tests use SQLite in-memory via conftest fixtures (see Backend Test Fixtures below). Some files use class-based test organization (e.g., `test_ai_meal_service.py`, `test_chat_api.py`, `test_preference_service.py`).
 
 ### Android UI Tests
 
@@ -412,11 +412,11 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
 ## Backend API
 
-39 endpoints across 11 routers: Auth, Users, Meal Plans, Recipes, Grocery, Chat, Recipe Rules (includes Nutrition Goals), Family Members, Festivals, Stats, Notifications. Run `PYTHONPATH=. pytest --collect-only -q` or visit `http://localhost:8000/docs` for current counts.
+46 endpoints across 13 routers: Auth, Users, Meal Plans, Recipes, Grocery, Chat, Recipe Rules, Nutrition Goals, Family Members, Festivals, Stats, Notifications, Photos. Run `PYTHONPATH=. pytest --collect-only -q` or visit `http://localhost:8000/docs` for current counts.
 
 **Full interactive docs:** `http://localhost:8000/docs` (Swagger UI)
 
-**Routers:** `app/api/v1/endpoints/` — one file per group (auth, chat, festivals, grocery, meal_plans, notifications, recipe_rules, recipes, stats, users, family_members). Note: nutrition_goals endpoints are in `recipe_rules.py`.
+**Routers:** `app/api/v1/endpoints/` — one file per group (auth, chat, family_members, festivals, grocery, meal_plans, notifications, photos, recipe_rules, recipes, stats, users). Note: nutrition_goals endpoints are in `recipe_rules.py` (separate router).
 
 **Key backend files with gotchas:**
 
@@ -426,6 +426,7 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 | `app/db/database.py` | `get_db()` dependency — imports from postgres.py |
 | `app/config.py` | Pydantic Settings — env vars, CORS (`["*"]`), JWT config |
 | `app/ai/chat_assistant.py` | Tool calling orchestration — ties Claude API to preference/rule services |
+| `app/repositories/` | Data access layer (one per model); called by services, wraps SQLAlchemy queries |
 | `app/services/` | One service per domain area; all follow same async pattern with `db: AsyncSession` param |
 
 ## Database Schema
@@ -440,7 +441,7 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
 Migrations in `backend/alembic/versions/`. Run `alembic upgrade head` to apply.
 
-11 model files in `backend/app/models/` (note: `FamilyMember` is defined in `user.py`, not a separate file). All 3 `postgres.py` import blocks and `conftest.py` now import all 11 models. When adding new models, update all 4 locations.
+11 model files in `backend/app/models/` (note: `FamilyMember` is defined in `user.py`, not a separate file; `AiRecipeCatalog` in `ai_recipe_catalog.py`). All 3 `postgres.py` import blocks and `conftest.py` must import all models. When adding new models, update all 4 locations.
 
 ## Meal Generation
 
@@ -792,6 +793,7 @@ The 7-step workflow (Rule #7) is enforced by shell hooks in `.claude/hooks/`. Al
 | `verify-test-rerun.sh` | PostToolUse (Bash) | Re-runs same test independently; **blocks** if claimed PASS but re-run FAIL |
 | `log-workflow.sh` | PostToolUse (Bash/Skill/Write/Edit) | Logs events; **tracks Skill invocations**; **clears fixLoopInvestigating on fix-loop completion** |
 | `post-screenshot-resize.sh` | PostToolUse (Bash/Playwright) | Auto-resize screenshots >1800px |
+| `auto-fix-pattern-scan.sh` | PostToolUse | Scans for common fix patterns after tool use |
 
 Workflow state is tracked in `.claude/workflow-state.json` (extended schema with `testFailuresPending`, `fixLoopInvestigating`, `skillInvocations`, `evidence`, `agentDelegations`). The full hook system and enforcement logic is documented in `docs/rules/Claude Code Enforced Workflow Rules.md`.
 
@@ -817,7 +819,7 @@ The `.claude/` directory contains Claude Code customization:
 │   ├── post-fix-pipeline.md  # /post-fix-pipeline — post-fix verification (regression → test suite → docs → commit)
 │   ├── reflect.md        # /reflect — learning system analysis & self-modification
 │   └── run-e2e.md        # /run-e2e — run Android E2E tests by feature group
-├── hooks/            # Workflow enforcement hooks (9 hooks + 1 shared library)
+├── hooks/            # Workflow enforcement hooks (10 hooks + 1 shared library)
 │   ├── hook-utils.sh               # Shared library sourced by all hooks (stdin parsing, state mgmt)
 │   ├── validate-workflow-step.sh   # PreToolUse: block actions if workflow steps incomplete + testFailuresPending gate
 │   ├── pre-skill-fixloop-unblock.sh # PreToolUse: set fixLoopInvestigating=true when fix-loop invoked
@@ -827,6 +829,7 @@ The `.claude/` directory contains Claude Code customization:
 │   ├── log-workflow.sh             # PostToolUse: log events + track Skill invocations
 │   ├── post-skill-learning.sh      # PostToolUse: learning system capture after skill execution
 │   ├── post-screenshot-resize.sh   # PostToolUse: auto-resize screenshots >1800px after capture
+│   ├── auto-fix-pattern-scan.sh    # PostToolUse: scan for common fix patterns
 │   └── resize_screenshot.py        # Screenshot resize utility (batch mode: --all)
 ├── logs/             # Workflow session logs
 ├── settings.json
@@ -852,6 +855,6 @@ The `.claude/` directory contains Claude Code customization:
 | Functional Requirement Traceability | `docs/testing/Functional-Requirement-Rule.md` |
 | Recipe Rule Test Plan | `docs/testing/Recipe-Rule-Test-Plan.md` |
 | ADB Test Definitions | `docs/testing/adb-test-definitions.md` |
-| ADB Flow Definitions | `docs/testing/flows/` (10 flow files) |
+| ADB Flow Definitions | `docs/testing/flows/` (11 flow files) |
 | Meal Plan Validator | `scripts/validate_meal_plan.py` |
 | Session Context | `docs/CONTINUE_PROMPT.md` |

@@ -1,9 +1,9 @@
 """Recipe service for recipe operations."""
 
 import uuid
-from typing import Optional
+from typing import Any, Optional
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -340,3 +340,83 @@ async def rate_recipe(
             created_at=new_rating.created_at,
             updated_at=new_rating.updated_at,
         )
+
+
+async def suggest_from_pantry(
+    db: AsyncSession,
+    ingredients: list[str],
+    limit: int = 10,
+) -> list[dict[str, Any]]:
+    """Suggest recipes based on available pantry ingredients.
+
+    Matches pantry ingredients against recipe ingredient lists,
+    scoring by match percentage. Returns top recipes sorted by match.
+
+    Args:
+        db: Database session
+        ingredients: List of pantry ingredient names
+        limit: Maximum number of suggestions to return
+
+    Returns:
+        List of dicts with recipe, match_percentage, and missing_ingredients
+    """
+    if not ingredients:
+        return []
+
+    # Normalize ingredient names for matching
+    normalized = [ing.strip().lower() for ing in ingredients if ing.strip()]
+    if not normalized:
+        return []
+
+    # Get all active recipes with ingredients
+    result = await db.execute(
+        select(Recipe)
+        .options(
+            selectinload(Recipe.ingredients),
+            selectinload(Recipe.instructions),
+            selectinload(Recipe.nutrition),
+        )
+        .where(Recipe.is_active == True)
+    )
+    recipes = result.scalars().all()
+
+    suggestions = []
+    for recipe in recipes:
+        if not recipe.ingredients:
+            continue
+
+        recipe_ingredient_names = [
+            ing.name.strip().lower() for ing in recipe.ingredients
+        ]
+        total_ingredients = len(recipe_ingredient_names)
+
+        # Count matches (partial matching - pantry item contained in recipe ingredient or vice versa)
+        matched = 0
+        missing = []
+        for recipe_ing in recipe_ingredient_names:
+            found = any(
+                pantry_ing in recipe_ing or recipe_ing in pantry_ing
+                for pantry_ing in normalized
+            )
+            if found:
+                matched += 1
+            else:
+                missing.append(recipe_ing)
+
+        if matched == 0:
+            continue
+
+        match_pct = round((matched / total_ingredients) * 100, 1)
+
+        suggestions.append({
+            "recipe": build_recipe_response(recipe),
+            "match_percentage": match_pct,
+            "matched_count": matched,
+            "total_ingredients": total_ingredients,
+            "missing_ingredients": missing,
+        })
+
+    # Sort by match percentage descending, then by fewer missing ingredients
+    suggestions.sort(key=lambda x: (-x["match_percentage"], len(x["missing_ingredients"])))
+
+    return suggestions[:limit]

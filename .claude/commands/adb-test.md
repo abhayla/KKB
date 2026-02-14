@@ -8,14 +8,14 @@ If `$ARGUMENTS` is empty, test ALL 12 screens sequentially. If a screen name is 
 
 **Valid screen names:** `auth-flow`, `home`, `grocery`, `chat`, `favorites`, `stats`, `settings`, `notifications`, `recipe-detail`, `cooking-mode`, `pantry`, `recipe-rules`
 
-**Valid flow names:** `new-user-journey`, `existing-user`, `recipe-interaction`, `chat-ai`, `grocery-management`, `offline-mode`, `edge-cases`, `dark-mode`, `pantry-rules-crud`, `stats-tracking`, `settings-deep-dive`
+**Valid flow names:** `new-user-journey`, `existing-user`, `recipe-interaction`, `chat-ai`, `grocery-management`, `offline-mode`, `edge-cases`, `dark-mode`, `pantry-rules-crud`, `stats-tracking`, `settings-deep-dive`, `multi-family-medical`, `festival-meals`, `nutrition-goals`, `notifications-lifecycle`, `achievement-earning`, `pantry-suggestions`, `photo-analysis`, `multi-week-history`, `recipe-scaling`
 
-**Special arguments:** `all-flows` (run all 11 flows sequentially), `all-flows-from <name>` (run from specified flow onwards)
+**Special arguments:** `all-flows` (run all 20 flows sequentially), `all-flows-from <name>` (run from specified flow onwards)
 
 **Argument detection:**
 1. If `$ARGUMENTS` matches a valid screen name → run screen test protocol (Sections E-F)
 2. If `$ARGUMENTS` matches a valid flow name → run flow execution protocol (Section G)
-3. If `$ARGUMENTS` is `all-flows` → run all 11 flows sequentially (flow01 → flow11)
+3. If `$ARGUMENTS` is `all-flows` → run all 20 flows sequentially (flow01 → flow20)
 4. If `$ARGUMENTS` is `all-flows-from <name>` → run flows from the specified flow onwards
 5. If `$ARGUMENTS` is empty → run all 12 screen tests
 
@@ -817,6 +817,15 @@ FLOW_DIR=docs/testing/flows
 | `pantry-rules-crud` | `flow09-pantry-rules-crud.md` |
 | `stats-tracking` | `flow10-stats-tracking.md` |
 | `settings-deep-dive` | `flow11-settings-deep-dive.md` |
+| `multi-family-medical` | `flow12-multi-family-medical.md` |
+| `festival-meals` | `flow13-festival-meals.md` |
+| `nutrition-goals` | `flow14-nutrition-goals.md` |
+| `notifications-lifecycle` | `flow15-notifications.md` |
+| `achievement-earning` | `flow16-achievements.md` |
+| `pantry-suggestions` | `flow17-pantry-suggestions.md` |
+| `photo-analysis` | `flow18-photo-analysis.md` |
+| `multi-week-history` | `flow19-multi-week-history.md` |
+| `recipe-scaling` | `flow20-recipe-scaling.md` |
 
 Read the flow definition file: `$FLOW_DIR/{flow-file}.md`
 

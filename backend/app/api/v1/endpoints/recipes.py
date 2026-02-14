@@ -1,6 +1,8 @@
 """Recipe endpoints."""
 
-from fastapi import APIRouter, Query
+from typing import Any
+
+from fastapi import APIRouter, Body, Query
 from sqlalchemy import select
 
 from app.api.deps import CurrentUser, DbSession
@@ -13,7 +15,7 @@ from app.schemas.recipe import (
     RecipeSearchParams,
 )
 from app.services.ai_recipe_catalog_service import search_catalog
-from app.services.recipe_service import get_recipe_by_id, rate_recipe, scale_recipe, search_recipes
+from app.services.recipe_service import get_recipe_by_id, rate_recipe, scale_recipe, search_recipes, suggest_from_pantry
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
 
@@ -85,6 +87,26 @@ async def search(
         limit=limit,
     )
     return await search_recipes(db, params)
+
+
+@router.post("/suggest-from-pantry")
+async def suggest_recipes_from_pantry(
+    db: DbSession,
+    current_user: CurrentUser,
+    ingredients: list[str] = Body(..., description="List of pantry ingredient names"),
+    limit: int = Query(default=10, ge=1, le=50, description="Max suggestions"),
+) -> list[dict[str, Any]]:
+    """Suggest recipes based on available pantry ingredients.
+
+    Matches pantry ingredients against recipe ingredient lists and returns
+    recipes sorted by match percentage (highest first).
+
+    Each result includes:
+    - **recipe**: Full recipe details
+    - **match_percentage**: How many recipe ingredients are in your pantry
+    - **missing_ingredients**: Ingredients you'd need to buy
+    """
+    return await suggest_from_pantry(db, ingredients, limit)
 
 
 @router.get("/{recipe_id}", response_model=RecipeResponse)

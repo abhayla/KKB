@@ -1,6 +1,7 @@
 """Notification service for managing user notifications."""
 
 import json
+import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional
@@ -16,6 +17,8 @@ from app.schemas.notification import (
     NotificationResponse,
     NotificationsListResponse,
 )
+
+logger = logging.getLogger(__name__)
 
 
 async def get_notifications(
@@ -223,6 +226,99 @@ async def cleanup_expired_notifications(
     result = await db.execute(query)
     await db.commit()
     return result.rowcount
+
+
+# region Notification Triggers
+
+
+async def notify_meal_plan_generated(
+    db: AsyncSession,
+    user_id: str,
+    meal_plan_id: str,
+) -> Notification:
+    """Create notification when a meal plan is generated.
+
+    Args:
+        db: Database session
+        user_id: User ID
+        meal_plan_id: Generated meal plan ID
+
+    Returns:
+        Created notification
+    """
+    logger.info(f"Creating meal plan notification for user {user_id}")
+    request = CreateNotificationRequest(
+        user_id=user_id,
+        type="meal_plan_update",
+        title="Your weekly meal plan is ready!",
+        body="A new personalized meal plan has been generated for you. Check it out!",
+        action_type="open_meal_plan",
+        action_data={"meal_plan_id": meal_plan_id},
+    )
+    return await create_notification(db, request)
+
+
+async def notify_achievement_unlocked(
+    db: AsyncSession,
+    user_id: str,
+    achievement_name: str,
+    achievement_icon: str = "",
+) -> Notification:
+    """Create notification when an achievement is unlocked.
+
+    Args:
+        db: Database session
+        user_id: User ID
+        achievement_name: Name of the unlocked achievement
+        achievement_icon: Achievement icon/emoji
+
+    Returns:
+        Created notification
+    """
+    logger.info(f"Creating achievement notification for user {user_id}: {achievement_name}")
+    request = CreateNotificationRequest(
+        user_id=user_id,
+        type="streak_milestone",
+        title=f"Achievement Unlocked: {achievement_name}!",
+        body=f"{achievement_icon} Congratulations! You earned the '{achievement_name}' achievement.",
+        action_type="open_stats",
+    )
+    return await create_notification(db, request)
+
+
+async def notify_cooking_streak_milestone(
+    db: AsyncSession,
+    user_id: str,
+    streak_count: int,
+) -> Optional[Notification]:
+    """Create notification for cooking streak milestones (3, 7, 14, 30 days).
+
+    Args:
+        db: Database session
+        user_id: User ID
+        streak_count: Current streak count
+
+    Returns:
+        Created notification if milestone reached, None otherwise
+    """
+    milestones = {3: "Great start", 7: "One week", 14: "Two weeks", 30: "One month"}
+    if streak_count not in milestones:
+        return None
+
+    label = milestones[streak_count]
+    logger.info(f"Creating streak milestone notification for user {user_id}: {streak_count} days")
+    request = CreateNotificationRequest(
+        user_id=user_id,
+        type="streak_milestone",
+        title=f"Amazing! {streak_count}-day cooking streak!",
+        body=f"{label} of consistent cooking! Keep up the great work.",
+        action_type="open_stats",
+        action_data={"streak_count": streak_count},
+    )
+    return await create_notification(db, request)
+
+
+# endregion
 
 
 # region FCM Token Operations

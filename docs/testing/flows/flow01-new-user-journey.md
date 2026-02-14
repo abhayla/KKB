@@ -253,6 +253,23 @@ Tour all major screens and verify they load properly after plan generation.
 | G35 | Press BACK | Settings screen | — | — |
 | G36 | Press BACK | Home screen | — | — |
 
+### Phase G+ : Connected Data Consistency Tour (Steps G37-G46)
+
+Cross-screen validation to ensure data flows correctly between screens.
+
+| Step | Action | Expected | Validation |
+|------|--------|----------|------------|
+| G37 | On Home, count meal plan days | Exactly 7 days in week selector | HARD |
+| G38 | Verify each meal slot has items | Each day: breakfast, lunch, dinner, snacks all have >= 1 item | HARD |
+| G39 | Check no excluded ingredients in meals | No Karela, Lauki, Capsicum, Peanuts, Shellfish in any recipe name/ingredients | HARD |
+| G40 | Navigate to Grocery → verify items come from meal plan | Grocery categories present, items match recipe ingredients | HARD |
+| G41 | Navigate to Favorites → verify favorited recipe appears | Recipe favorited in Phase D/E is listed | HARD |
+| G42 | Navigate to Stats → verify cooking streak = 0 | No meals cooked yet, streak shows 0 | HARD |
+| G43 | Navigate to Recipe Rules → verify rules from Phase D/E active | INCLUDE/EXCLUDE rules visible and marked active | HARD |
+| G44 | Navigate to Settings → verify preference changes reflected | Diet = Vegetarian, Spice = Mild, Cuisines include East Indian | HARD |
+| G45 | Navigate to Notifications → verify at least 1 notification | "Meal plan is ready" notification present | HARD |
+| G46 | Navigate to Pantry → verify items match what was added | Previously added pantry items still present | HARD |
+
 ### Phase H: Final Verification (Steps 81-83)
 
 | Step | Action | Expected | Screenshot | Validation |

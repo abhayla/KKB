@@ -17,7 +17,7 @@ Reference file for `/adb-test` command. Each screen defines:
 **Navigation:** App launch (fresh install or after sign-out)
 **Last Verified:** 2026-02-09 | **Definition Confidence:** HIGH
 
-**Primary Identifier:** text="Sign in with Google" OR text="Welcome"
+**Primary Identifier:** text="Continue with Google" OR text="Welcome"
 
 ### Required Elements
 
@@ -25,14 +25,14 @@ Reference file for `/adb-test` command. Each screen defines:
 |---------|-----------|----------------|
 | App logo/title | text | "RasoiAI" or app name |
 | Welcome text | text | Contains "Welcome" or "Sign in" |
-| Google sign-in button | text | "Sign in with Google" |
+| Google sign-in button | text | "Continue with Google" |
 | App tagline | text | Contains "meal" or "cooking" or "family" |
 
 ### Interactive Elements
 
 | Action | Target | Expected Result |
 |--------|--------|-----------------|
-| Tap "Sign in with Google" | text="Sign in with Google" | Navigates to Google auth flow (fake auth returns immediately) → Onboarding or Home |
+| Tap "Continue with Google" | text="Continue with Google" | Navigates to Google auth flow (fake auth returns immediately) → Onboarding or Home |
 
 ### Data Validation
 
@@ -156,8 +156,8 @@ curl -s -H "Authorization: Bearer $JWT" http://localhost:8000/api/v1/meal-plans/
 |---------|-----------|----------------|
 | Screen title | text | "Grocery List" or "Grocery" |
 | Week header | text | Date range or "This Week" |
-| Category sections | text | Category names like "Vegetables", "Spices", "Dairy", "Grains" |
-| Grocery items | text | Ingredient names with quantities |
+| Category sections | text | Category names like "OTHER", "Vegetables", "Spices", "Dairy", "Grains" (current impl groups as "OTHER" with recipe-level bundles) |
+| Grocery items | text | "Ingredients for {RecipeName}" with "1 set" quantity (recipe-level bundles, not individual ingredients) |
 | WhatsApp share | content-desc | Contains "WhatsApp" or "Share" |
 | Total items count | text | Contains number + "items" |
 | Bottom navigation | text | "Home", "Grocery", etc. |
@@ -182,6 +182,8 @@ curl -s -H "Authorization: Bearer $JWT" http://localhost:8000/api/v1/meal-plans/
 
 - WhatsApp share may not work if WhatsApp is not installed on emulator
 - Category expansion state may reset on screen rotation
+- Checkbox tap via ADB does not change state (Compose checkbox interaction limitation, similar to dropdown popups)
+- All items currently grouped under single "OTHER" category as recipe-level bundles ("Ingredients for {Recipe}") rather than individual ingredients by category
 
 ### Additional Required Elements
 
@@ -347,9 +349,9 @@ curl -s -H "Authorization: Bearer $JWT" http://localhost:8000/api/v1/chat/histor
 | Element | Search By | Expected Value |
 |---------|-----------|----------------|
 | Screen title | text | "Stats" or "Cooking Stats" |
-| Time period tabs | text | "Week", "Month", "All Time" or similar |
-| Cooking streak | text | Contains "streak" or number + "days" |
-| Cuisine chart | content-desc | Contains "chart" or "cuisine" |
+| Time period tabs | text | No tabs in current impl — uses calendar + "THIS MONTH" section instead |
+| Cooking streak | text | "CURRENT STREAK" + number + "days" |
+| Calendar | text | Month name + year + day numbers (full calendar grid) |
 | Bottom navigation | text | "Home", "Stats", etc. |
 
 ### Interactive Elements
@@ -1408,7 +1410,7 @@ Since Compose `testTag()` values (from `TestTags.kt`) are NOT visible in uiautom
 ### Screen Identifiers
 | Screen | Search Via | Value |
 |--------|-----------|-------|
-| Auth | text | "Sign in with Google" |
+| Auth | text | "Continue with Google" |
 | Onboarding | text | "Tell us about your household" or "Next" |
 | Home | text | "This Week's Menu" or "BREAKFAST" |
 | Grocery | text | "Grocery List" or "Grocery" (title) |

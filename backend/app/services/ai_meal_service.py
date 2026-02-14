@@ -97,6 +97,7 @@ class UserPreferences:
     family_size: int = 4
     spice_level: str = "medium"
     items_per_meal: int = 2
+    family_members: list[dict] = field(default_factory=list)
 
 
 # ==============================================================================
@@ -245,6 +246,15 @@ class AIMealService:
             exclude_rules = [r for r in recipe_rules if r.get("type") == "EXCLUDE" and r.get("is_active", True)]
             logger.info(f"Using legacy recipe_rules JSON field")
 
+        # Load family members
+        family_members = []
+        try:
+            members = await self.user_repo.get_family_members(user_id)
+            family_members = members or []
+            logger.info(f"Loaded {len(family_members)} family members for user {user_id}")
+        except Exception as e:
+            logger.warning(f"Failed to load family members: {e}")
+
         return UserPreferences(
             dietary_tags=prefs_data.get("dietary_tags") or ["vegetarian"],
             cuisine_preferences=prefs_data.get("cuisine_preferences") or ["north"],
@@ -258,6 +268,7 @@ class AIMealService:
             family_size=prefs_data.get("family_size") or 4,
             spice_level=prefs_data.get("spice_level") or "medium",
             items_per_meal=prefs_data.get("items_per_meal") or 2,
+            family_members=family_members,
         )
 
     async def _load_festivals(self, week_start: date) -> dict[date, dict]:
@@ -294,6 +305,25 @@ class AIMealService:
         # Build preferences section
         dietary_str = ", ".join(prefs.dietary_tags) if prefs.dietary_tags else "vegetarian"
         cuisine_str = ", ".join(prefs.cuisine_preferences) if prefs.cuisine_preferences else "north"
+
+        # Family members section
+        family_section = ""
+        if prefs.family_members:
+            family_lines = []
+            for member in prefs.family_members:
+                name = member.get("name", "Member")
+                age_group = member.get("age_group", "adult")
+                health = member.get("health_conditions") or []
+                diet = member.get("dietary_restrictions") or []
+
+                parts = [f"- {name} ({age_group})"]
+                if health:
+                    parts.append(f"Health: {', '.join(health)}")
+                if diet:
+                    parts.append(f"Diet: {', '.join(diet)}")
+                family_lines.append(": ".join(parts) if len(parts) > 1 else parts[0])
+
+            family_section = "\n".join(family_lines)
 
         # Allergies (STRICT - NEVER INCLUDE)
         allergies_str = ""
@@ -405,6 +435,19 @@ class AIMealService:
 ### Cuisines: [{cuisine_str}]
 ### Spice Level: {prefs.spice_level}
 ### Family Size: {prefs.family_size}
+
+## FAMILY MEMBERS (Adapt meals to accommodate ALL members)
+{family_section if family_section else "No individual family members specified."}
+
+### Family Member Meal Guidance:
+- Diabetic members: avoid high sugar/GI foods (sweets, white rice heavy dishes, sugary drinks)
+- Soft food needs: no hard/crunchy items, prefer soft-cooked dishes (khichdi, dal, soft roti)
+- No spicy: use mild preparations, avoid green chilies and hot spices
+- Low salt: reduce salt in recipes, avoid pickles and papad
+- High protein: include paneer, dal, eggs, chicken, sprouts dishes
+- Low oil: prefer steamed, grilled, or dry preparations over deep-fried
+- Jain diet: no root vegetables (potato, onion, garlic, ginger)
+- Ensure meals are safe and appropriate for ALL family members listed above.
 
 ### Allergies (NEVER INCLUDE - STRICT): [{allergies_str if allergies_str else "none"}]
 ### Dislikes (AVOID): [{dislikes_str}]

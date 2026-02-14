@@ -1,5 +1,6 @@
 """Stats and gamification service."""
 
+import logging
 import uuid
 from collections import defaultdict
 from datetime import date, timedelta
@@ -19,6 +20,8 @@ from app.schemas.stats import (
     DailyCookingRecord,
     MonthlyStatsResponse,
 )
+
+logger = logging.getLogger(__name__)
 
 
 async def get_cooking_streak(
@@ -288,4 +291,89 @@ async def log_cooking(
 
     await db.commit()
 
+    # Check and grant achievements after cooking
+    await check_and_grant_achievements(db, user, streak)
+
     return await get_cooking_streak(db, user)
+
+
+async def check_and_grant_achievements(
+    db: AsyncSession,
+    user: User,
+    streak: CookingStreak,
+) -> list[str]:
+    """Check and grant achievements based on current stats.
+
+    Checks total meals cooked, streak milestones, and grants
+    any achievements whose requirements are met.
+
+    Args:
+        db: Database session
+        user: Current user
+        streak: User's cooking streak data
+
+    Returns:
+        List of newly unlocked achievement names
+    """
+    # Get all active achievements
+    result = await db.execute(
+        select(Achievement).where(Achievement.is_active == True)
+    )
+    all_achievements = result.scalars().all()
+
+    # Get already unlocked achievement IDs
+    result = await db.execute(
+        select(UserAchievement.achievement_id).where(
+            UserAchievement.user_id == user.id
+        )
+    )
+    unlocked_ids = set(row[0] for row in result.all())
+
+    newly_unlocked = []
+
+    for achievement in all_achievements:
+        if achievement.id in unlocked_ids:
+            continue
+
+        earned = False
+        req_type = achievement.requirement_type
+        req_value = achievement.requirement_value
+
+        if req_type == "meals_cooked" and streak.total_meals_cooked >= req_value:
+            earned = True
+        elif req_type == "streak_days" and streak.current_streak >= req_value:
+            earned = True
+        elif req_type == "longest_streak" and streak.longest_streak >= req_value:
+            earned = True
+
+        if earned:
+            user_achievement = UserAchievement(
+                id=str(uuid.uuid4()),
+                user_id=user.id,
+                achievement_id=achievement.id,
+                unlocked_at=date.today(),
+            )
+            db.add(user_achievement)
+            newly_unlocked.append(achievement.name)
+            logger.info(f"Achievement unlocked for user {user.id}: {achievement.name}")
+
+            # Create notification for achievement
+            try:
+                from app.services.notification_service import notify_achievement_unlocked
+                await notify_achievement_unlocked(
+                    db, user.id, achievement.name, achievement.icon
+                )
+            except Exception as e:
+                logger.warning(f"Failed to notify achievement: {e}")
+
+    if newly_unlocked:
+        await db.commit()
+
+    # Check streak milestones for notification
+    try:
+        from app.services.notification_service import notify_cooking_streak_milestone
+        await notify_cooking_streak_milestone(db, user.id, streak.current_streak)
+    except Exception as e:
+        logger.warning(f"Failed to notify streak milestone: {e}")
+
+    return newly_unlocked

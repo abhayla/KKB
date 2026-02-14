@@ -30,6 +30,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Lock
@@ -186,6 +188,9 @@ fun HomeScreen(
         onFestivalRecipeClick = viewModel::onFestivalRecipeClick,
         onSelectFestivalMealType = viewModel::selectFestivalMealType,
         onAddFestivalRecipeToMeal = viewModel::addFestivalRecipeToMeal,
+        onPreviousWeek = viewModel::navigateToPreviousWeek,
+        onNextWeek = viewModel::navigateToNextWeek,
+        onCurrentWeek = viewModel::navigateToCurrentWeek,
         onBottomNavItemClick = { screen ->
             when (screen) {
                 Screen.Home -> { /* Already on Home */ }
@@ -233,7 +238,10 @@ private fun HomeScreenContent(
     onFestivalRecipeClick: (Recipe) -> Unit,
     onSelectFestivalMealType: (MealType) -> Unit,
     onAddFestivalRecipeToMeal: (Recipe) -> Unit,
-    onBottomNavItemClick: (Screen) -> Unit
+    onBottomNavItemClick: (Screen) -> Unit,
+    onPreviousWeek: () -> Unit = {},
+    onNextWeek: () -> Unit = {},
+    onCurrentWeek: () -> Unit = {}
 ) {
     Scaffold(
         modifier = Modifier.testTag(TestTags.HOME_SCREEN),
@@ -325,10 +333,14 @@ private fun HomeScreenContent(
                         }
                     }
 
-                    // Week Header
+                    // Week Header with navigation
                     item {
                         WeekHeader(
-                            dateRange = uiState.formattedDateRange
+                            dateRange = uiState.formattedDateRange,
+                            isCurrentWeek = uiState.isCurrentWeek,
+                            onPreviousWeek = onPreviousWeek,
+                            onNextWeek = onNextWeek,
+                            onCurrentWeek = onCurrentWeek
                         )
                     }
 
@@ -350,6 +362,37 @@ private fun HomeScreenContent(
                             onLockClick = onDayLockClick,
                             onRefreshClick = onRefreshClick
                         )
+                    }
+
+                    // Empty state for weeks with no meal plan
+                    if (uiState.hasNoMealPlanForWeek) {
+                        item {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(spacing.xl),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(
+                                    Icons.Outlined.CalendarMonth,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(64.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(spacing.md))
+                                Text(
+                                    text = "No meal plan for this week",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                if (!uiState.isCurrentWeek) {
+                                    Spacer(modifier = Modifier.height(spacing.sm))
+                                    Button(onClick = onCurrentWeek) {
+                                        Text("Back to This Week")
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     // Meal Sections
@@ -547,22 +590,70 @@ private fun FestivalBanner(
 }
 
 @Composable
-private fun WeekHeader(dateRange: String) {
+private fun WeekHeader(
+    dateRange: String,
+    isCurrentWeek: Boolean = true,
+    onPreviousWeek: () -> Unit = {},
+    onNextWeek: () -> Unit = {},
+    onCurrentWeek: () -> Unit = {}
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = spacing.md, vertical = spacing.sm)
     ) {
-        Text(
-            text = "This Week's Menu",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold
-        )
-        Text(
-            text = dateRange,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            IconButton(
+                onClick = onPreviousWeek,
+                modifier = Modifier.testTag("week_nav_previous")
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                    contentDescription = "Previous week"
+                )
+            }
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = if (isCurrentWeek) "This Week's Menu" else "Meal Plan",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = dateRange,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            IconButton(
+                onClick = onNextWeek,
+                modifier = Modifier.testTag("week_nav_next")
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Next week"
+                )
+            }
+        }
+
+        if (!isCurrentWeek) {
+            TextButton(
+                onClick = onCurrentWeek,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .testTag("week_nav_today")
+            ) {
+                Text("Back to This Week")
+            }
+        }
     }
 }
 
