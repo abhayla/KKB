@@ -287,16 +287,16 @@ Four GitHub Actions workflows in `.github/workflows/`:
 
 | Platform | Tests (approx.) | Framework |
 |----------|-----------------|-----------|
-| Backend | ~398 | pytest |
+| Backend | ~447 | pytest |
 | Android Unit | ~330 | JUnit + MockK |
 | Android UI | ~750+ | Compose UI Testing |
 | Android E2E | ~67+ | Compose UI Testing + Hilt + Real API |
 
 *Counts as of Feb 2026. Run `PYTHONPATH=. pytest --collect-only -q` (backend) or `./gradlew test` (Android) for current totals.*
 
-### Backend Tests (~398 total)
+### Backend Tests (~447 total)
 
-All in `backend/tests/`, named `test_{feature}.py` (32 test files). Run `PYTHONPATH=. pytest --collect-only` to list all. Tests use SQLite in-memory via conftest fixtures (see Backend Test Fixtures below). Some files use class-based test organization (e.g., `test_ai_meal_service.py`, `test_chat_api.py`, `test_preference_service.py`).
+All in `backend/tests/`, named `test_{feature}.py` (35 test files). Run `PYTHONPATH=. pytest --collect-only` to list all. Tests use SQLite in-memory via conftest fixtures (see Backend Test Fixtures below). Some files use class-based test organization (e.g., `test_ai_meal_service.py`, `test_chat_api.py`, `test_preference_service.py`).
 
 ### Android UI Tests
 
@@ -412,7 +412,7 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
 ## Backend API
 
-46 endpoints across 13 routers: Auth, Users, Meal Plans, Recipes, Grocery, Chat, Recipe Rules, Nutrition Goals, Family Members, Festivals, Stats, Notifications, Photos. Run `PYTHONPATH=. pytest --collect-only -q` or visit `http://localhost:8000/docs` for current counts.
+41 endpoints across 12 routers: Auth, Users, Meal Plans, Recipes, Grocery, Chat, Recipe Rules, Nutrition Goals, Family Members, Festivals, Stats, Notifications, Photos. Run `PYTHONPATH=. pytest --collect-only -q` or visit `http://localhost:8000/docs` for current counts.
 
 **Full interactive docs:** `http://localhost:8000/docs` (Swagger UI)
 
