@@ -296,7 +296,7 @@ Four GitHub Actions workflows in `.github/workflows/`:
 
 ### Backend Tests (~447 total)
 
-All in `backend/tests/`, named `test_{feature}.py` (35 test files). Run `PYTHONPATH=. pytest --collect-only` to list all. Tests use SQLite in-memory via conftest fixtures (see Backend Test Fixtures below). Some files use class-based test organization (e.g., `test_ai_meal_service.py`, `test_chat_api.py`, `test_preference_service.py`).
+All in `backend/tests/`, named `test_{feature}.py` (37 test files). Run `PYTHONPATH=. pytest --collect-only` to list all. Tests use SQLite in-memory via conftest fixtures (see Backend Test Fixtures below). Some files use class-based test organization (e.g., `test_ai_meal_service.py`, `test_chat_api.py`, `test_preference_service.py`).
 
 ### Android UI Tests
 
@@ -441,7 +441,7 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
 Migrations in `backend/alembic/versions/`. Run `alembic upgrade head` to apply.
 
-11 model files in `backend/app/models/` (note: `FamilyMember` is defined in `user.py`, not a separate file; `AiRecipeCatalog` in `ai_recipe_catalog.py`). All 3 `postgres.py` import blocks and `conftest.py` must import all models. When adding new models, update all 4 locations.
+12 model files in `backend/app/models/` (note: `FamilyMember` is defined in `user.py`, not a separate file; `AiRecipeCatalog` in `ai_recipe_catalog.py`). All 3 `postgres.py` import blocks and `conftest.py` must import all models. When adding new models, update all 4 locations.
 
 ## Meal Generation
 
@@ -812,12 +812,16 @@ The `.claude/` directory contains Claude Code customization:
 │   ├── git-manager.md
 │   ├── planner-researcher.md
 │   └── tester.md
+├── knowledge.db      # SQLite pattern library — known errors, fix strategies, test mappings (used by auto-verify)
 ├── skills/           # Slash commands (user-invocable skills, YAML frontmatter)
 │   ├── adb-test/         # /adb-test [screen|flow] — manual E2E via ADB (12 screens + 21 flows)
 │   │   ├── SKILL.md
 │   │   └── references/
 │   │       ├── screen-definitions.md   # Screen test protocol (E0-E6.5, F1-F5.5b)
 │   │       └── flow-definitions.md     # Flow execution protocol (G1-G7)
+│   ├── auto-verify/      # /auto-verify — post-change verification with KB-driven diagnosis (8-step algorithm)
+│   │   ├── SKILL.md      #   Steps: identify changes → map to tests → KB pre-check → run → diagnose → record
+│   │   └── references/
 │   ├── fix-issue/        # /fix-issue <number> — implement fix for GitHub Issue
 │   │   └── SKILL.md
 │   ├── fix-loop/         # /fix-loop — iterative fix cycle (analyze → fix → review → build → retest)
