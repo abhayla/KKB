@@ -65,6 +65,8 @@ You operate in one of two modes based on the presence of `retest_command`:
 | `current_cascade_depth` | int | `0` | 0+ | Current cascade depth |
 | `auto_file_issue` | bool | `false` | true/false | When true AND outcome is UNRESOLVED, auto-create GitHub issue |
 | `clear_flags` | string[] | `[]` | `["visualIssuesPending"]` | Workflow state flags to clear on RESOLVED |
+| `structured_memory` | bool | `false` | true/false | Write iteration-memory.json alongside markdown logs |
+| `thinking_granularity` | string | `"coarse"` | `"coarse"`, `"fine"` | `"coarse"` = existing 3-level. `"fine"` = 8-level (see below) |
 
 ### Failure Index Context (for auto-delegated invocations)
 
@@ -218,6 +220,27 @@ This is the **single source of truth** for thinking escalation. Callers (adb-tes
 | **ultrathink** | Attempt 4+ (or `force_thinking_level: "ultrathink"`) | Launch debugger Agent (read-only, via Task tool) with maximum thinking depth, complete history, re-examine all assumptions, explore unconventional fixes |
 
 **Override:** The `force_thinking_level` parameter skips the attempt-based auto-escalation table above.
+
+### Fine-Grained Thinking (when `thinking_granularity: "fine"`)
+
+When `thinking_granularity` is set to `"fine"`, the 3-level escalation is expanded to 8 sub-levels:
+
+| Attempt | Level | Sub-Strategy |
+|---------|-------|-------------|
+| 1 | normal | Direct: read error, trace to source, fix |
+| 2 | normal+ | Broader scan: related files, recent git history |
+| 3 | thinkhard | Debugger agent: focused failure analysis |
+| 4 | thinkhard+ | Debugger agent: elimination matrix (ALL causes, eliminate each) |
+| 5 | thinkhard++ | Debugger agent + knowledge.db: check historical strategies |
+| 6 | ultrathink | Debugger agent: max depth, challenge all assumptions |
+| 7 | ultrathink+ | Debugger + code-reviewer: independent parallel analysis |
+| 8+ | ultrathink++ | Reframe: "is the bug in the TEST, not the code?" |
+
+At attempt 5 (thinkhard++), if `.claude/knowledge.db` exists, query it:
+```bash
+python .claude/scripts/knowledge_db.py get-strategies --error "{error_signature}"
+```
+Use top strategy (score >= 0.6) before standard diagnosis.
 
 When launching the debugger Agent (via Task tool), always include:
 - Complete failure output

@@ -82,7 +82,7 @@ backend/
 │   ├── meal_generation.yaml     # Pairing rules, meal structure
 │   └── reference_data/          # Ingredients, dishes, cuisines
 ├── scripts/                     # Utility scripts
-├── tests/                       # Test suite (~351 tests, 26 files)
+├── tests/                       # Test suite (~447 tests, 35 files)
 └── requirements.txt
 ```
 

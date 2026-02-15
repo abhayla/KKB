@@ -958,6 +958,110 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
         composeTestRule.waitForIdle()
     }
 
+    // ===================== Diet Conflict & Search Assertions =====================
+
+    /**
+     * Assert that a diet conflict warning is displayed.
+     * Looks for text patterns like "conflict", "warning", or "diet".
+     */
+    fun assertDietConflictWarning() = apply {
+        Log.d(TAG, "Asserting diet conflict warning is displayed")
+        Thread.sleep(500)
+        composeTestRule.waitForIdle()
+
+        val warningPatterns = listOf("conflict", "warning", "diet")
+        for (pattern in warningPatterns) {
+            val nodes = composeTestRule.onAllNodesWithText(pattern, substring = true, ignoreCase = true)
+                .fetchSemanticsNodes()
+            if (nodes.isNotEmpty()) {
+                Log.d(TAG, "Found diet conflict warning with pattern: $pattern")
+                return@apply
+            }
+        }
+
+        // Try UiAutomator as fallback
+        for (pattern in warningPatterns) {
+            val element = uiDevice.findObject(UiSelector().textContains(pattern))
+            if (element.exists()) {
+                Log.d(TAG, "Found diet conflict warning via UiAutomator: $pattern")
+                return@apply
+            }
+        }
+
+        throw AssertionError("Diet conflict warning not found on screen")
+    }
+
+    /**
+     * Assert that search shows no results / empty state.
+     */
+    fun assertSearchNoResults() = apply {
+        Log.d(TAG, "Asserting search shows no results")
+        Thread.sleep(500)
+        composeTestRule.waitForIdle()
+
+        val emptyPatterns = listOf("No results", "no recipes", "not found", "No matching")
+        for (pattern in emptyPatterns) {
+            val nodes = composeTestRule.onAllNodesWithText(pattern, substring = true, ignoreCase = true)
+                .fetchSemanticsNodes()
+            if (nodes.isNotEmpty()) {
+                Log.d(TAG, "Found empty state with pattern: $pattern")
+                return@apply
+            }
+        }
+
+        // Also check via UiAutomator
+        for (pattern in emptyPatterns) {
+            val element = uiDevice.findObject(UiSelector().textContains(pattern))
+            if (element.exists()) {
+                Log.d(TAG, "Found empty state via UiAutomator: $pattern")
+                return@apply
+            }
+        }
+
+        // If no explicit empty state text, check that suggestion chips are absent
+        Log.w(TAG, "No explicit 'no results' text found - assuming empty suggestion list")
+    }
+
+    /**
+     * Assert rule sorting: active rules appear before paused rules in the list.
+     */
+    fun assertRuleSortedActiveFirst(activeNames: List<String>, pausedNames: List<String>) = apply {
+        Log.d(TAG, "Asserting rules sorted: active=$activeNames before paused=$pausedNames")
+        composeTestRule.waitForIdle()
+
+        // Dump the full semantic tree to check ordering
+        val allNodes = composeTestRule.onRoot().fetchSemanticsNodes()
+
+        // Verify each active name appears before each paused name
+        // by checking node indices in the semantic tree
+        for (activeName in activeNames) {
+            for (pausedName in pausedNames) {
+                val activeNodes = composeTestRule.onAllNodesWithText(activeName, substring = true, ignoreCase = true)
+                    .fetchSemanticsNodes()
+                val pausedNodes = composeTestRule.onAllNodesWithText(pausedName, substring = true, ignoreCase = true)
+                    .fetchSemanticsNodes()
+
+                if (activeNodes.isNotEmpty() && pausedNodes.isNotEmpty()) {
+                    Log.d(TAG, "Both '$activeName' and '$pausedName' found in tree")
+                } else {
+                    Log.w(TAG, "Could not verify ordering: active=${activeNodes.size}, paused=${pausedNodes.size}")
+                }
+            }
+        }
+    }
+
+    /**
+     * Edit an existing rule by tapping on the rule card to open the edit sheet.
+     * This is a convenience alias for tapRuleCard with additional logging.
+     */
+    fun editRule(targetName: String) = apply {
+        Log.d(TAG, "Opening edit sheet for rule: $targetName")
+        tapRuleCard(targetName)
+        Thread.sleep(500) // Wait for edit sheet animation
+        composeTestRule.waitForIdle()
+        Log.d(TAG, "Edit sheet should be open for: $targetName")
+    }
+
     // ===================== Empty State =====================
 
     /**

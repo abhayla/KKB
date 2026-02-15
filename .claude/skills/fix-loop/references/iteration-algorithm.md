@@ -41,6 +41,11 @@ FOR each issue (while total_iterations < max_iterations):
       The debugger Agent returns a root cause analysis report.
       YOU (main Claude session) then apply fixes based on that analysis.
 
+      OPTIONAL KNOWLEDGE PRE-CHECK (if .claude/knowledge.db exists):
+        Run: python .claude/scripts/knowledge_db.py get-strategies --error "{error_signature}"
+        If strategies with success_rate > 0.6 exist: try top strategy FIRST
+        Record all attempts via: python .claude/scripts/knowledge_db.py record-attempt --error-id {id} --strategy-id {sid} --outcome {success|failure}
+
       Respect fix_target:
         - "production": only fix source/production code
         - "test": only fix test code
@@ -99,6 +104,23 @@ FOR each issue (while total_iterations < max_iterations):
         - Code review result (verdict, findings)
         - Build result (status, attempts)
         - Retest result (PASSED / FAILED / PENDING_CALLER_RETEST)
+
+      OPTIONAL ITERATION MEMORY (if structured_memory: true):
+        Write/update {log_dir}/{session_id}/iteration-memory.json with:
+        {
+          "iterations": [
+            {
+              "number": NNN,
+              "thinkingLevel": "normal|thinkhard|ultrathink",
+              "hypothesis": "what we thought was wrong",
+              "actionTaken": "what fix was applied",
+              "filesChanged": ["file1.py", "file2.kt"],
+              "outcome": "PASSED|FAILED|TIMEOUT",
+              "kbStrategyUsed": null or { "id": N, "name": "...", "score": 0.7 }
+            }
+          ],
+          "cumulativeUnderstanding": "1-3 sentence synthesis of all iterations so far"
+        }
 
       MANDATORY evidence artifact (JSON):
         {log_dir}/{session_id}/evidence-{NNN}.json

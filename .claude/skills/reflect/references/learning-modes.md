@@ -25,6 +25,11 @@ Read the following data sources (adjust scope by mode):
 
 4. **Modification history** — Read `.claude/logs/learning/modifications.json`
 
+### Test Map Staleness Check
+If `.claude/test-map.json` exists and is >7 days old:
+  Log warning: "Test map is stale (>7 days). Consider regenerating: `python .claude/scripts/generate_test_map.py`"
+  Offer regeneration as a proposed modification.
+
 ### Deep & Test-Run Modes (additional)
 5. **Skill definitions** — Read all `.claude/skills/*/SKILL.md` files
 6. **Hook definitions** — Read all `.claude/hooks/*.sh` files
@@ -110,6 +115,19 @@ for sid, data in sessions.items():
 - **session**: Log warning + add to `skill-gaps.md` if gaps found
 - **deep**: Propose hook modifications to close the gap
 - **meta**: Track as meta-pattern (system failing to enforce its own rules)
+
+### Knowledge DB Analysis (if .claude/knowledge.db exists)
+```bash
+python .claude/scripts/knowledge_db.py top-errors --limit 10
+```
+Add table to analysis output:
+```
+| Error Pattern | Occurrences | Best Strategy | Success Rate |
+|---|---|---|---|
+| IntegrityError: duplicate key | 5 | add_upsert | 0.72 |
+| ...
+```
+Cross-reference with `fix-patterns.md` to identify patterns tracked in memory but not in KB (and vice versa).
 
 ### Duration Trends
 Average skill execution time trending up or down.

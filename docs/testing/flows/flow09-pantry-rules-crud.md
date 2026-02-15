@@ -4,8 +4,8 @@
 - **Flow Name:** `pantry-rules-crud`
 - **Goal:** Test CRUD operations on Pantry items and Recipe Rules, plus contradictions C22-C27
 - **Preconditions:** User authenticated with access to Pantry and Recipe Rules screens
-- **Estimated Duration:** 8-12 minutes
-- **Screens Covered:** Settings, Pantry, Recipe Rules
+- **Estimated Duration:** 12-18 minutes
+- **Screens Covered:** Settings, Pantry, Recipe Rules, offline-mode
 - **Depends On:** none (needs authenticated user)
 - **State Produced:** New pantry items and recipe rules created/modified
 
@@ -123,6 +123,55 @@ else:
 |------|--------|----------|------------|------------|
 | D1 | Optionally re-add a basic rule for later flows | INCLUDE "Chai" for BREAKFAST | — | — |
 | D2 | Press BACK to Settings, then BACK to Home | Home screen | — | — |
+
+### Phase E: Offline Rule Creation (Steps E1-E8)
+
+| Step | Action | Expected | Screenshot | Validation |
+|------|--------|----------|------------|------------|
+| E1 | Enable airplane mode (ADB: `adb shell settings put global airplane_mode_on 1; adb shell am broadcast -a android.intent.action.AIRPLANE_MODE`) | Device offline | — | — |
+| E2 | Tap Add Rule | Add sheet opens (works offline) | — | — |
+| E3 | Create INCLUDE "Offline Chai" DAILY REQUIRED | Rule form filled | — | — |
+| E4 | Save rule | Rule saves to Room DB (local) | `flow09_offline_rule.png` | — |
+| E5 | Verify rule card displayed | "Offline Chai" visible in list | — | — |
+| E6 | **C59:** Disable airplane mode (`adb shell settings put global airplane_mode_on 0; adb shell am broadcast -a android.intent.action.AIRPLANE_MODE`) | Device online | — | — |
+| E7 | Wait 5 seconds for sync | Background sync triggers | — | — |
+| E8 | Verify backend has rule | curl check shows "Offline Chai" | — | Offline create syncs on reconnect |
+
+### Backend API Cross-Validation: Offline Sync
+
+```bash
+curl -s -H "Authorization: Bearer $JWT" http://localhost:8000/api/v1/recipe-rules | \
+  python -c "
+import sys, json
+d = json.load(sys.stdin)
+rules = d if isinstance(d, list) else d.get('rules', [])
+offline = [r for r in rules if 'offline' in r.get('target_name', '').lower()]
+if offline:
+    print(f'Offline rule synced -> PASS: {offline[0][\"target_name\"]}')
+else:
+    print('WARNING: Offline rule not found on backend')
+"
+```
+
+### Phase F: Offline Rule Update (Steps F1-F6)
+
+| Step | Action | Expected | Screenshot | Validation |
+|------|--------|----------|------------|------------|
+| F1 | Enable airplane mode | Device offline | — | — |
+| F2 | Tap existing rule to edit | Edit sheet opens | — | — |
+| F3 | Change enforcement: REQUIRED → PREFERRED | Enforcement updated locally | — | — |
+| F4 | Save rule | Rule updates in Room DB | — | — |
+| F5 | **C60:** Disable airplane mode | Device online, sync triggers | — | Client timestamp newer = client wins |
+| F6 | Verify backend reflects updated enforcement | curl check shows PREFERRED | — | — |
+
+### Phase G: Offline Rule Deletion (Steps G1-G4)
+
+| Step | Action | Expected | Screenshot | Validation |
+|------|--------|----------|------------|------------|
+| G1 | Enable airplane mode | Device offline | — | — |
+| G2 | Delete a rule via three-dot menu | Rule removed from local list | — | — |
+| G3 | **C61:** Disable airplane mode | Device online, sync triggers | — | Offline delete syncs to backend |
+| G4 | Verify backend no longer has deleted rule | curl check confirms deletion | — | — |
 
 ## Validation Checkpoints
 

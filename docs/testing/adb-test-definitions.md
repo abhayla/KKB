@@ -814,6 +814,10 @@ curl -s -H "Authorization: Bearer $JWT" http://localhost:8000/api/v1/recipes/{re
 - Rules should show INCLUDE/EXCLUDE type, food name, frequency, meal slot
 - If Sharma family data was set up, expect rules like "Include Chai", "Include Paratha"
 - Nutrition goals should show category, target servings, timeframe
+- **All 8 nutrition categories:** Green Leafy, Citrus/Vitamin C, Iron Rich, High Protein, Calcium Rich, Fiber Rich, Omega-3, Antioxidant
+- **Edit rule verification:** After editing a rule, changed fields (enforcement, frequency, meal slot) should persist across screen exits and returns
+- **Diet conflict warning text patterns:** "conflict", "warning", "diet", "non-vegetarian" — appears when vegetarian user adds meat-based INCLUDE rules
+- **Search empty state text:** "No results", "No matching", "not found" — appears when search query has no matches
 
 ### Known Issues
 
@@ -821,6 +825,8 @@ curl -s -H "Authorization: Bearer $JWT" http://localhost:8000/api/v1/recipes/{re
 - Add rule sheet has multiple fields (action type, food search, frequency, meal slot)
 - Duplicate rule prevention returns 409 — snackbar should show error
 - Case normalization: rule names stored as UPPERCASE in backend
+- Diet conflict warning only implemented on client side (not enforced by backend)
+- When all 8 nutrition categories are used, add button behavior varies (disabled, message, or empty dropdown)
 
 ### Additional Required Elements
 

@@ -168,6 +168,37 @@ object TestDataFactory {
             mealSlot = emptyList(),
             enforcement = RuleEnforcement.PREFERRED
         )
+
+        // Nutrition goal test data for comprehensive testing
+        val proteinGoal = NutritionGoalTestData(
+            foodCategory = FoodCategory.HIGH_PROTEIN,
+            weeklyTarget = 7,
+            enforcement = RuleEnforcement.REQUIRED
+        )
+
+        val citrusGoal = NutritionGoalTestData(
+            foodCategory = FoodCategory.CITRUS_VITAMIN_C,
+            weeklyTarget = 4,
+            enforcement = RuleEnforcement.PREFERRED
+        )
+
+        val ironGoal = NutritionGoalTestData(
+            foodCategory = FoodCategory.IRON_RICH,
+            weeklyTarget = 6,
+            enforcement = RuleEnforcement.PREFERRED
+        )
+
+        val fiberGoal = NutritionGoalTestData(
+            foodCategory = FoodCategory.FIBER_RICH,
+            weeklyTarget = 5,
+            enforcement = RuleEnforcement.PREFERRED
+        )
+
+        val omega3Goal = NutritionGoalTestData(
+            foodCategory = FoodCategory.OMEGA_3,
+            weeklyTarget = 3,
+            enforcement = RuleEnforcement.PREFERRED
+        )
     }
 
     /**
