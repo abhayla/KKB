@@ -30,6 +30,12 @@ def base_prefs():
         dietary_tags=["vegetarian"],
         cuisine_preferences=["north"],
         family_size=6,
+        dietary_type="vegetarian",
+        cooking_skill_level="intermediate",
+        allow_recipe_repeat=False,
+        strict_allergen_mode=True,
+        strict_dietary_mode=True,
+        nutrition_goals=[],
     )
 
 
@@ -128,3 +134,68 @@ class TestFamilyAwareMealGeneration:
         """UserPreferences.family_members defaults to empty list."""
         prefs = UserPreferences()
         assert prefs.family_members == []
+
+    def test_prompt_includes_filtered_rules_warning(self, service, base_prefs, week_start):
+        """Filtered rules report appears as warnings in the prompt."""
+        report = [
+            {"rule_target": "Onion Curry", "member_name": "Dadiji", "constraint_keyword": "onion"},
+        ]
+        prompt = service._build_prompt(base_prefs, {}, None, week_start, filtered_rules_report=report)
+        assert "REMOVED 'Onion Curry'" in prompt
+        assert "Dadiji" in prompt
+
+    def test_jain_member_onion_rule_filtered_in_prompt(self, service, base_prefs, week_start):
+        """Jain member causes Onion INCLUDE rule to be filtered pre-prompt."""
+        base_prefs.include_rules = [
+            {"target": "Onion Paratha", "frequency": "WEEKLY", "times_per_week": 2},
+            {"target": "Dal Tadka", "frequency": "WEEKLY", "times_per_week": 3},
+        ]
+        base_prefs.family_members = [
+            {"name": "Dadiji", "age_group": "senior", "health_conditions": [], "dietary_restrictions": ["jain"]},
+        ]
+        filtered, report = service._filter_conflicting_rules(base_prefs)
+        assert len(filtered) == 1
+        assert filtered[0]["target"] == "Dal Tadka"
+        assert report[0]["rule_target"] == "Onion Paratha"
+
+
+class TestMixedDietHousehold:
+    """Test mixed-diet household detection in AI prompt."""
+
+    def test_mixed_diet_section_when_member_differs(self, service, base_prefs, week_start):
+        """Non-veg member + vegetarian household produces mixed-diet section."""
+        base_prefs.dietary_type = "vegetarian"
+        base_prefs.family_members = [
+            {"name": "Papa", "age_group": "adult", "health_conditions": [], "dietary_restrictions": ["non-vegetarian"]},
+            {"name": "Mummy", "age_group": "adult", "health_conditions": [], "dietary_restrictions": ["vegetarian"]},
+        ]
+        prompt = service._build_prompt(base_prefs, {}, None, week_start)
+        assert "MIXED DIET HOUSEHOLD" in prompt
+        assert "Papa" in prompt
+        assert "non-vegetarian" in prompt
+        assert "[ALT: Papa]" in prompt
+
+    def test_no_mixed_section_when_all_same_diet(self, service, base_prefs, week_start):
+        """All vegetarian members + vegetarian household = no mixed section."""
+        base_prefs.dietary_type = "vegetarian"
+        base_prefs.family_members = [
+            {"name": "Mummy", "age_group": "adult", "health_conditions": [], "dietary_restrictions": ["vegetarian"]},
+            {"name": "Chhoti", "age_group": "child", "health_conditions": [], "dietary_restrictions": ["vegetarian"]},
+        ]
+        prompt = service._build_prompt(base_prefs, {}, None, week_start)
+        assert "MIXED DIET HOUSEHOLD" not in prompt
+
+    def test_multiple_different_diets_listed(self, service, base_prefs, week_start):
+        """Two members with different diets both appear in mixed section."""
+        base_prefs.dietary_type = "vegetarian"
+        base_prefs.family_members = [
+            {"name": "Papa", "age_group": "adult", "health_conditions": [], "dietary_restrictions": ["non-vegetarian"]},
+            {"name": "Dadiji", "age_group": "senior", "health_conditions": [], "dietary_restrictions": ["jain"]},
+            {"name": "Mummy", "age_group": "adult", "health_conditions": [], "dietary_restrictions": ["vegetarian"]},
+        ]
+        prompt = service._build_prompt(base_prefs, {}, None, week_start)
+        assert "MIXED DIET HOUSEHOLD" in prompt
+        assert "Papa" in prompt
+        assert "non-vegetarian" in prompt
+        assert "Dadiji" in prompt
+        assert "jain" in prompt

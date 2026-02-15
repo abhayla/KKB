@@ -4,6 +4,8 @@ import android.content.Context
 import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.data.local.datastore.UserPreferencesDataStoreInterface
 import com.rasoiai.data.remote.api.RasoiApiService
+import com.rasoiai.data.remote.dto.toCreateRequest
+import com.rasoiai.data.remote.dto.toUpdateRequest
 import com.rasoiai.domain.model.AppSettings
 import com.rasoiai.domain.model.DarkModePreference
 import com.rasoiai.domain.model.FamilyMember
@@ -148,19 +150,26 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun addFamilyMember(member: FamilyMember): Result<Unit> {
         return try {
-            val currentPrefs = userPreferencesDataStore.userPreferences.first()
-                ?: return Result.failure(Exception("No user preferences found"))
-
-            val updatedMembers = currentPrefs.familyMembers + member.copy(
+            val memberWithId = member.copy(
                 id = if (member.id.isEmpty()) UUID.randomUUID().toString() else member.id
             )
 
+            // Save locally first
+            val currentPrefs = userPreferencesDataStore.userPreferences.first()
+                ?: return Result.failure(Exception("No user preferences found"))
+
+            val updatedMembers = currentPrefs.familyMembers + memberWithId
             val updatedPrefs = currentPrefs.copy(
                 familyMembers = updatedMembers,
                 householdSize = updatedMembers.size
             )
-
             userPreferencesDataStore.saveOnboardingComplete(updatedPrefs)
+
+            // Sync to backend
+            viewModelScopeSafeSync {
+                apiService.createFamilyMember(memberWithId.toCreateRequest())
+            }
+
             Timber.i("Added family member: ${member.name}")
             Result.success(Unit)
         } catch (e: IOException) {
@@ -183,6 +192,11 @@ class SettingsRepositoryImpl @Inject constructor(
 
             val updatedPrefs = currentPrefs.copy(familyMembers = updatedMembers)
             userPreferencesDataStore.saveOnboardingComplete(updatedPrefs)
+
+            // Sync to backend
+            viewModelScopeSafeSync {
+                apiService.updateFamilyMemberApi(member.id, member.toUpdateRequest())
+            }
 
             Timber.i("Updated family member: ${member.name}")
             Result.success(Unit)
@@ -208,6 +222,12 @@ class SettingsRepositoryImpl @Inject constructor(
             )
 
             userPreferencesDataStore.saveOnboardingComplete(updatedPrefs)
+
+            // Sync to backend
+            viewModelScopeSafeSync {
+                apiService.deleteFamilyMember(memberId)
+            }
+
             Timber.i("Removed family member: $memberId")
             Result.success(Unit)
         } catch (e: IOException) {
@@ -216,6 +236,24 @@ class SettingsRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Timber.e(e, "Failed to remove family member")
             Result.failure(e)
+        }
+    }
+
+    /**
+     * Fire-and-forget sync to backend. Catches all errors silently.
+     * Uses Dispatchers.IO to avoid blocking the caller.
+     */
+    @Suppress("OPT_IN_USAGE")
+    private fun viewModelScopeSafeSync(action: suspend () -> Unit) {
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                if (networkMonitor.isOnline.first()) {
+                    action()
+                    Timber.d("Backend sync completed")
+                }
+            } catch (e: Exception) {
+                Timber.w(e, "Backend sync failed, saved locally only")
+            }
         }
     }
 

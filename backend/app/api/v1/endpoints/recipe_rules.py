@@ -4,12 +4,14 @@ import logging
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import delete, func, select
 
 from app.api.deps import CurrentUser, DbSession
 from app.core.exceptions import NotFoundError
 from app.models.recipe_rule import NutritionGoal, RecipeRule
+from app.models.user import FamilyMember
+from app.services.family_constraints import get_family_forbidden_keywords
 from app.schemas.recipe_rule import (
     NutritionGoalCreate,
     NutritionGoalResponse,
@@ -34,6 +36,26 @@ def _ensure_tz_aware(dt: datetime | None) -> datetime | None:
         # Assume naive datetimes are UTC
         return dt.replace(tzinfo=timezone.utc)
     return dt
+
+def _find_constraint_source(
+    member_dicts: list[dict], member_name: str, keyword: str
+) -> str:
+    """Find which constraint (health condition or dietary restriction) contains the keyword."""
+    from app.services.family_constraints import FAMILY_CONSTRAINT_MAP
+
+    for member in member_dicts:
+        if member.get("name") != member_name:
+            continue
+        for condition in member.get("health_conditions", []):
+            if condition.lower() in FAMILY_CONSTRAINT_MAP:
+                if keyword in FAMILY_CONSTRAINT_MAP[condition.lower()]:
+                    return condition
+        for restriction in member.get("dietary_restrictions", []):
+            if restriction.lower() in FAMILY_CONSTRAINT_MAP:
+                if keyword in FAMILY_CONSTRAINT_MAP[restriction.lower()]:
+                    return restriction
+    return "dietary"
+
 
 router = APIRouter(prefix="/recipe-rules", tags=["recipe-rules"])
 
@@ -70,6 +92,7 @@ async def create_recipe_rule(
     db: DbSession,
     current_user: CurrentUser,
     rule: RecipeRuleCreate,
+    force: bool = Query(False, description="Skip family safety conflict check"),
 ) -> RecipeRuleResponse:
     """Create a new recipe rule."""
     user_id = current_user.id
@@ -94,6 +117,35 @@ async def create_recipe_rule(
             detail=f"A {rule.action} rule for '{rule.target_name}' already exists"
             + (f" in {rule.meal_slot}" if rule.meal_slot else ""),
         )
+
+    # Family safety conflict check for INCLUDE rules
+    if rule.action == "INCLUDE" and not force:
+        members_result = await db.execute(
+            select(FamilyMember).where(FamilyMember.user_id == user_id)
+        )
+        members = members_result.scalars().all()
+        if members:
+            member_dicts = [
+                {
+                    "name": m.name,
+                    "health_conditions": m.health_conditions or [],
+                    "dietary_restrictions": m.dietary_restrictions or [],
+                }
+                for m in members
+            ]
+            forbidden_map = get_family_forbidden_keywords(member_dicts)
+            target_lower = rule.target_name.lower()
+            for member_name, keywords in forbidden_map.items():
+                for keyword in keywords:
+                    if keyword in target_lower:
+                        raise HTTPException(
+                            status_code=status.HTTP_409_CONFLICT,
+                            detail=(
+                                f"INCLUDE rule '{rule.target_name}' conflicts with "
+                                f"{member_name}'s {_find_constraint_source(member_dicts, member_name, keyword)} "
+                                f"restriction ({keyword}). Use ?force=true to override."
+                            ),
+                        )
 
     now = datetime.now(timezone.utc)
     new_rule = RecipeRule(

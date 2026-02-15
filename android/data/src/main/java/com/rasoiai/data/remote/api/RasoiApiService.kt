@@ -3,6 +3,10 @@ package com.rasoiai.data.remote.api
 import com.rasoiai.data.remote.dto.AiRecipeCatalogResponse
 import com.rasoiai.data.remote.dto.AuthRequest
 import com.rasoiai.data.remote.dto.AuthResponse
+import com.rasoiai.data.remote.dto.FamilyMemberCreateRequest
+import com.rasoiai.data.remote.dto.FamilyMemberDto
+import com.rasoiai.data.remote.dto.FamilyMemberUpdateRequest
+import com.rasoiai.data.remote.dto.FamilyMembersListResponse
 import com.rasoiai.data.remote.dto.ChatImageRequest
 import com.rasoiai.data.remote.dto.ChatImageResponse
 import com.rasoiai.data.remote.dto.FcmTokenRequest
@@ -159,6 +163,22 @@ interface RasoiApiService {
 
     @DELETE("api/v1/notifications/fcm-token")
     suspend fun unregisterFcmToken(@Query("fcm_token") fcmToken: String): SuccessResponse
+
+    // Family Members
+    @GET("api/v1/family-members")
+    suspend fun getFamilyMembers(): FamilyMembersListResponse
+
+    @POST("api/v1/family-members")
+    suspend fun createFamilyMember(@Body member: FamilyMemberCreateRequest): FamilyMemberDto
+
+    @PUT("api/v1/family-members/{id}")
+    suspend fun updateFamilyMemberApi(
+        @Path("id") id: String,
+        @Body member: FamilyMemberUpdateRequest
+    ): FamilyMemberDto
+
+    @DELETE("api/v1/family-members/{id}")
+    suspend fun deleteFamilyMember(@Path("id") id: String)
 
     // Recipe Rules
     @GET("api/v1/recipe-rules")

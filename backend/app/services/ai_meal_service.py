@@ -28,6 +28,7 @@ from app.db.postgres import async_session_maker
 from app.models.recipe_rule import NutritionGoal, RecipeRule
 from app.repositories.user_repository import UserRepository
 from app.services.config_service import ConfigService
+from app.services.family_constraints import FAMILY_CONSTRAINT_MAP, get_family_forbidden_keywords
 from app.services.festival_service import get_festivals_for_date_range
 
 logger = logging.getLogger(__name__)
@@ -98,6 +99,12 @@ class UserPreferences:
     spice_level: str = "medium"
     items_per_meal: int = 2
     family_members: list[dict] = field(default_factory=list)
+    dietary_type: str = "vegetarian"
+    cooking_skill_level: str = "intermediate"
+    allow_recipe_repeat: bool = False
+    strict_allergen_mode: bool = True
+    strict_dietary_mode: bool = True
+    nutrition_goals: list[dict] = field(default_factory=list)
 
 
 # ==============================================================================
@@ -115,6 +122,55 @@ class AIMealService:
     def __init__(self):
         self.config_service = ConfigService()
         self.user_repo = UserRepository()
+
+    def _filter_conflicting_rules(
+        self, prefs: UserPreferences
+    ) -> tuple[list[dict], list[dict]]:
+        """Filter INCLUDE rules that conflict with family member constraints.
+
+        Args:
+            prefs: User preferences with include_rules and family_members.
+
+        Returns:
+            Tuple of (filtered_include_rules, removed_rules_report).
+            removed_rules_report is a list of dicts with rule_target, member_name,
+            constraint_keyword.
+        """
+        if not prefs.family_members or not prefs.include_rules:
+            return prefs.include_rules, []
+
+        forbidden_map = get_family_forbidden_keywords(prefs.family_members)
+        if not forbidden_map:
+            return prefs.include_rules, []
+
+        filtered = []
+        report = []
+
+        for rule in prefs.include_rules:
+            target = rule.get("target", "").lower()
+            conflict_found = False
+
+            for member_name, forbidden_keywords in forbidden_map.items():
+                for keyword in forbidden_keywords:
+                    if keyword in target:
+                        report.append({
+                            "rule_target": rule.get("target", ""),
+                            "member_name": member_name,
+                            "constraint_keyword": keyword,
+                        })
+                        logger.warning(
+                            f"Filtered INCLUDE rule '{rule.get('target')}': "
+                            f"conflicts with {member_name}'s constraint ({keyword})"
+                        )
+                        conflict_found = True
+                        break
+                if conflict_found:
+                    break
+
+            if not conflict_found:
+                filtered.append(rule)
+
+        return filtered, report
 
     async def generate_meal_plan(
         self,
@@ -138,6 +194,10 @@ class AIMealService:
         # Load user preferences
         prefs = await self._load_user_preferences(user_id)
 
+        # Filter INCLUDE rules that conflict with family member constraints
+        filtered_include_rules, rules_filtered_report = self._filter_conflicting_rules(prefs)
+        prefs.include_rules = filtered_include_rules
+
         # Load festivals for the week
         festivals = await self._load_festivals(week_start_date)
 
@@ -145,7 +205,7 @@ class AIMealService:
         config = await self.config_service.get_config()
 
         # Build prompt
-        prompt = self._build_prompt(prefs, festivals, config, week_start_date)
+        prompt = self._build_prompt(prefs, festivals, config, week_start_date, rules_filtered_report)
 
         logger.debug(f"Prompt length: {len(prompt)} characters")
 
@@ -185,6 +245,7 @@ class AIMealService:
         # Load rules from new recipe_rules table
         include_rules = []
         exclude_rules = []
+        nutrition_goals = []
 
         try:
             async with async_session_maker() as db:
@@ -233,9 +294,27 @@ class AIMealService:
                         "enforcement": rule.enforcement,
                     })
 
+                # Query active nutrition goals
+                goals_result = await db.execute(
+                    select(NutritionGoal).where(
+                        NutritionGoal.user_id == user_id,
+                        NutritionGoal.is_active == True,
+                    )
+                )
+                nutrition_goals_db = goals_result.scalars().all()
+                nutrition_goals = [
+                    {
+                        "food_category": g.food_category,
+                        "weekly_target": g.weekly_target,
+                        "enforcement": g.enforcement,
+                    }
+                    for g in nutrition_goals_db
+                ]
+
                 logger.info(
-                    f"Loaded {len(include_rules)} INCLUDE rules and "
-                    f"{len(exclude_rules)} EXCLUDE rules from recipe_rules table"
+                    f"Loaded {len(include_rules)} INCLUDE rules, "
+                    f"{len(exclude_rules)} EXCLUDE rules, and "
+                    f"{len(nutrition_goals)} nutrition goals from database"
                 )
 
         except Exception as e:
@@ -269,6 +348,12 @@ class AIMealService:
             spice_level=prefs_data.get("spice_level") or "medium",
             items_per_meal=prefs_data.get("items_per_meal") or 2,
             family_members=family_members,
+            dietary_type=prefs_data.get("dietary_type") or "vegetarian",
+            cooking_skill_level=prefs_data.get("cooking_skill_level") or "intermediate",
+            allow_recipe_repeat=prefs_data.get("allow_recipe_repeat", False),
+            strict_allergen_mode=prefs_data.get("strict_allergen_mode", True),
+            strict_dietary_mode=prefs_data.get("strict_dietary_mode", True),
+            nutrition_goals=nutrition_goals,
         )
 
     async def _load_festivals(self, week_start: date) -> dict[date, dict]:
@@ -299,6 +384,7 @@ class AIMealService:
         festivals: dict[date, dict],
         config: Any,
         week_start_date: date,
+        filtered_rules_report: list[dict] = None,
     ) -> str:
         """Build the prompt for Gemini."""
 
@@ -324,6 +410,33 @@ class AIMealService:
                 family_lines.append(": ".join(parts) if len(parts) > 1 else parts[0])
 
             family_section = "\n".join(family_lines)
+
+        # Mixed-diet household detection
+        mixed_diet_section = ""
+        if prefs.family_members:
+            household_diet = prefs.dietary_type.lower()
+            differing_members = []
+            for member in prefs.family_members:
+                member_diets = [d.lower() for d in (member.get("dietary_restrictions") or [])]
+                for d in member_diets:
+                    if d != household_diet and d in (
+                        "vegetarian", "non-vegetarian", "vegan", "eggetarian",
+                        "non_vegetarian", "jain", "sattvic",
+                    ):
+                        differing_members.append((member.get("name", "Member"), d))
+                        break
+            if differing_members:
+                mixed_lines = [
+                    "## MIXED DIET HOUSEHOLD",
+                    f"The household default is {prefs.dietary_type}, but some members have different preferences:",
+                ]
+                for member_name, restriction in differing_members:
+                    mixed_lines.append(
+                        f"- {member_name}: {restriction} — Include 2-3 {restriction} "
+                        f"alternatives per week (mark as \"[ALT: {member_name}]\" "
+                        f"so other members can use the default option)"
+                    )
+                mixed_diet_section = "\n".join(mixed_lines)
 
         # Allergies (STRICT - NEVER INCLUDE)
         allergies_str = ""
@@ -428,12 +541,41 @@ class AIMealService:
 - Biryani/Pulao pairs with: raita, salad
 - Khichdi pairs with: curd, papad, pickle"""
 
+        # Nutrition goals section
+        nutrition_section = ""
+        if prefs.nutrition_goals:
+            goal_lines = []
+            for goal in prefs.nutrition_goals:
+                cat = goal.get("food_category", "unknown")
+                target = goal.get("weekly_target", 3)
+                enf = goal.get("enforcement", "PREFERRED")
+                goal_lines.append(f"- {cat}: {target} servings/week ({enf})")
+            nutrition_section = "\n".join(goal_lines)
+
+        # Conflict warnings section
+        conflict_section = ""
+        if filtered_rules_report:
+            conflict_lines = []
+            for item in filtered_rules_report:
+                conflict_lines.append(
+                    f"- REMOVED '{item['rule_target']}': conflicts with "
+                    f"{item['member_name']}'s constraint ({item['constraint_keyword']})"
+                )
+            conflict_section = "\n".join(conflict_lines)
+
+        # Recipe repeat and strictness rules
+        repeat_text = "Allow repeating favorite recipes across the week" if prefs.allow_recipe_repeat else "Vary recipes across the week - avoid repeating the same dish"
+        allergen_strictness = "ZERO TOLERANCE - absolutely no allergens in any dish, ingredient, or garnish" if prefs.strict_allergen_mode else "Avoid allergens where possible but minor traces acceptable"
+        dietary_strictness = "STRICT enforcement - every dish must comply with dietary type" if prefs.strict_dietary_mode else "Flexible - occasional exceptions to dietary type acceptable"
+
         prompt = f"""You are RasoiAI, an Indian meal planning assistant. Generate a 7-day meal plan.
 
 ## USER PREFERENCES (STRICT - MUST FOLLOW)
+### Primary Diet: {prefs.dietary_type.upper()}
 ### Dietary Tags: [{dietary_str}]
 ### Cuisines: [{cuisine_str}]
 ### Spice Level: {prefs.spice_level}
+### Cooking Skill: {prefs.cooking_skill_level}
 ### Family Size: {prefs.family_size}
 
 ## FAMILY MEMBERS (Adapt meals to accommodate ALL members)
@@ -449,6 +591,8 @@ class AIMealService:
 - Jain diet: no root vegetables (potato, onion, garlic, ginger)
 - Ensure meals are safe and appropriate for ALL family members listed above.
 
+{mixed_diet_section}
+
 ### Allergies (NEVER INCLUDE - STRICT): [{allergies_str if allergies_str else "none"}]
 ### Dislikes (AVOID): [{dislikes_str}]
 
@@ -457,6 +601,9 @@ class AIMealService:
 
 ### EXCLUDE Rules (NEVER INCLUDE):
 {exclude_section if exclude_section else "- None specified"}
+
+### Filtered Rules (removed due to family member conflicts):
+{conflict_section if conflict_section else "- None removed"}
 
 ### Cooking Time Limits:
 - Weekdays: Max {prefs.weekday_cooking_time} minutes
@@ -472,14 +619,18 @@ class AIMealService:
 ## PAIRING GUIDANCE
 {pairing_section}
 
+## NUTRITION GOALS
+{nutrition_section if nutrition_section else "No nutrition goals set."}
+
 ## IMPORTANT RULES
 1. Each meal slot MUST have exactly {prefs.items_per_meal} items (a main dish + accompaniment{'s' if prefs.items_per_meal > 2 else ''})
-2. ALLERGIES are STRICT - NEVER include any dish containing allergen ingredients
-3. INCLUDE rules MUST be satisfied at the specified frequency
-4. EXCLUDE rules MUST be respected - never include on specified days
-5. Prep time for EACH dish must be within the day's cooking time limit
-6. Use authentic Indian dish names (e.g., "Aloo Paratha", "Masala Chai", "Dal Tadka")
-7. Vary recipes across the week - avoid repeating the same dish
+2. ALLERGIES: {allergen_strictness}
+3. DIETARY TYPE: {dietary_strictness}
+4. INCLUDE rules MUST be satisfied at the specified frequency
+5. EXCLUDE rules MUST be respected - never include on specified days
+6. Prep time for EACH dish must be within the day's cooking time limit
+7. Use authentic Indian dish names (e.g., "Aloo Paratha", "Masala Chai", "Dal Tadka")
+8. {repeat_text}
 
 ## OUTPUT FORMAT
 Return ONLY valid JSON (no markdown, no explanation).
@@ -776,5 +927,42 @@ Generate the complete 7-day meal plan now:"""
                     f"INCLUDE rule '{rule.get('target')}' not fully satisfied: "
                     f"found {count}/{times_needed} occurrences"
                 )
+
+        # Family constraint enforcement (post-processing safety net)
+        forbidden_map = get_family_forbidden_keywords(prefs.family_members)
+        if forbidden_map:
+            for day in plan.days:
+                for slot in ["breakfast", "lunch", "dinner", "snacks"]:
+                    items = getattr(day, slot, [])
+                    safe_items = []
+
+                    for item in items:
+                        name_lower = item.recipe_name.lower()
+                        # Also check ingredient names if available
+                        ingredient_text = ""
+                        if item.ingredients:
+                            ingredient_text = " ".join(
+                                ing.get("name", "").lower()
+                                for ing in item.ingredients
+                                if isinstance(ing, dict)
+                            )
+
+                        is_unsafe = False
+                        for member_name, forbidden_keywords in forbidden_map.items():
+                            for keyword in forbidden_keywords:
+                                if keyword in name_lower or keyword in ingredient_text:
+                                    logger.warning(
+                                        f"Removed {item.recipe_name} from {day.date} {slot}: "
+                                        f"unsafe for {member_name} (contains '{keyword}')"
+                                    )
+                                    is_unsafe = True
+                                    break
+                            if is_unsafe:
+                                break
+
+                        if not is_unsafe:
+                            safe_items.append(item)
+
+                    setattr(day, slot, safe_items)
 
         return plan
