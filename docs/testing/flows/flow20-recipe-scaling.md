@@ -25,31 +25,31 @@ Uses existing Sharma family data. Focus is on recipe scaling accuracy, not user 
 
 ### Phase A: Navigate to Recipe Detail (Steps 1-4)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| A1 | Navigate to Home screen | Current week meal plan displayed | — | — |
-| A2 | Tap a BREAKFAST meal card (e.g., Poha) | Action sheet appears | — | — |
-| A3 | Tap "View Recipe" | Recipe Detail screen loads | `flow20_recipe_detail.png` | HARD |
-| A4 | Verify servings selector exists | Servings dropdown/stepper visible (e.g., "Servings: 4") | — | HARD |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| A1 | Navigate to Home screen | Current week meal plan displayed | UI | — | — |
+| A2 | Tap a BREAKFAST meal card (e.g., Poha) | Action sheet appears | UI | — | — |
+| A3 | Tap "View Recipe" | Recipe Detail screen loads | UI | `flow20_recipe_detail.png` | HARD |
+| A4 | Verify servings selector exists | Servings dropdown/stepper visible (e.g., "Servings: 4") | UI | — | HARD |
 
 ### Phase B: Note Default Servings & Ingredients (Steps 5-8)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| B1 | Read default servings | e.g., "4 servings" | — | — |
-| B2 | Scroll to Ingredients section | Ingredients list visible | — | — |
-| B3 | Note first 3 ingredient quantities | e.g., "2 cups Rice", "1 tbsp Oil", "1/2 tsp Salt" | `flow20_default_servings.png` | — |
-| B4 | Record baseline for comparison | Write down: servings=4, Rice=2 cups, Oil=1 tbsp, Salt=0.5 tsp | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| B1 | Read default servings | e.g., "4 servings" | UI | — | — |
+| B2 | Scroll to Ingredients section | Ingredients list visible | UI | — | — |
+| B3 | Note first 3 ingredient quantities | e.g., "2 cups Rice", "1 tbsp Oil", "1/2 tsp Salt" | UI | `flow20_default_servings.png` | — |
+| B4 | Record baseline for comparison | Write down: servings=4, Rice=2 cups, Oil=1 tbsp, Salt=0.5 tsp | UI | — | — |
 
 ### Phase C: Increase Servings (Steps 9-13)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| C1 | Tap servings selector/stepper | Servings picker opens OR stepper +/- visible | — | — |
-| C2 | Change servings from 4 to 8 | Servings value updates to "8 servings" | — | HARD |
-| C3 | Wait for ingredient recalculation (may be instant or require API call) | Loading indicator OR instant update | — | — |
-| C4 | Verify ingredients doubled | Rice=4 cups (was 2), Oil=2 tbsp (was 1), Salt=1 tsp (was 0.5) | `flow20_servings_8.png` | HARD |
-| C5 | Scroll through all ingredients | All quantities scaled correctly (multiplied by 2) | — | HARD |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| C1 | Tap servings selector/stepper | Servings picker opens OR stepper +/- visible | UI | — | — |
+| C2 | Change servings from 4 to 8 | Servings value updates to "8 servings" | UI | — | HARD |
+| C3 | Wait for ingredient recalculation (may be instant or require API call) | Loading indicator OR instant update | UI | — | — |
+| C4 | Verify ingredients doubled | Rice=4 cups (was 2), Oil=2 tbsp (was 1), Salt=1 tsp (was 0.5) | UI | `flow20_servings_8.png` | HARD |
+| C5 | Scroll through all ingredients | All quantities scaled correctly (multiplied by 2) | UI | — | HARD |
 
 ### Backend API Cross-Validation: Scaled Recipe
 
@@ -82,38 +82,38 @@ else:
 
 ### Phase D: Decrease Servings (Steps 14-18)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| D1 | Tap servings selector again | Picker opens | — | — |
-| D2 | Change servings from 8 to 2 | Servings value updates to "2 servings" | — | HARD |
-| D3 | Wait for ingredient recalculation | Loading or instant update | — | — |
-| D4 | Verify ingredients halved from original | Rice=1 cup (was 2), Oil=0.5 tbsp (was 1), Salt=0.25 tsp (was 0.5) | `flow20_servings_2.png` | HARD |
-| D5 | Verify fractional quantities display correctly | "1/2 tbsp" or "0.5 tbsp", "1/4 tsp" or "0.25 tsp" | — | HARD |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| D1 | Tap servings selector again | Picker opens | UI | — | — |
+| D2 | Change servings from 8 to 2 | Servings value updates to "2 servings" | UI | — | HARD |
+| D3 | Wait for ingredient recalculation | Loading or instant update | UI | — | — |
+| D4 | Verify ingredients halved from original | Rice=1 cup (was 2), Oil=0.5 tbsp (was 1), Salt=0.25 tsp (was 0.5) | UI | `flow20_servings_2.png` | HARD |
+| D5 | Verify fractional quantities display correctly | "1/2 tbsp" or "0.5 tbsp", "1/4 tsp" or "0.25 tsp" | UI | — | HARD |
 
 ### Phase E: Grocery Integration with Scaled Quantities (Steps 19-23)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| E1 | With servings still at 2, tap "Add to Grocery" button | Add to grocery confirmation or instant add | — | HARD |
-| E2 | Navigate to Grocery screen (bottom nav) | Grocery screen loads | `flow20_grocery.png` | — |
-| E3 | Find Rice in grocery list | Rice item visible | — | HARD |
-| E4 | Verify Rice quantity is 1 cup (scaled value, not original 2 cups) | Grocery item shows "1 cup" | — | HARD |
-| E5 | Navigate back to Home | Home screen | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| E1 | With servings still at 2, tap "Add to Grocery" button | Add to grocery confirmation or instant add | UI | — | HARD |
+| E2 | Navigate to Grocery screen (bottom nav) | Grocery screen loads | UI | `flow20_grocery.png` | — |
+| E3 | Find Rice in grocery list | Rice item visible | UI | — | HARD |
+| E4 | Verify Rice quantity is 1 cup (scaled value, not original 2 cups) | Grocery item shows "1 cup" | UI | — | HARD |
+| E5 | Navigate back to Home | Home screen | UI | — | — |
 
 ### Phase F: Contradictions C40-C42 (Steps 24-35)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| F1 | Open same recipe again | Recipe Detail loads | — | — |
-| F2 | **C40:** Set servings to 1 (minimum) | Servings selector allows minimum value | — | HARD |
-| F3 | Verify ingredients show fractional values | Rice=0.5 cups ("1/2 cup"), Oil=0.25 tbsp ("1/4 tbsp"), Salt=0.125 tsp ("1/8 tsp") | `flow20_c40_servings_1.png` | HARD |
-| F4 | Verify no "0" quantities or negative values | All ingredients have positive quantities | — | HARD |
-| F5 | **C41:** Set servings to 12 (maximum or very large) | Servings selector allows large value | — | HARD |
-| F6 | Verify ingredients show large quantities | Rice=6 cups (12/4 * 2), Oil=3 tbsp, Salt=1.5 tsp | `flow20_c41_servings_12.png` | HARD |
-| F7 | Verify no integer overflow or display issues | All quantities displayed correctly (not "NaN" or overflow) | — | HARD |
-| F8 | Scroll through entire ingredient list | All ingredients scaled, no missing items | — | HARD |
-| F9 | **C42:** Reset servings to original (4) | Servings value changes to 4 | — | HARD |
-| F10 | Verify ingredients return to baseline | Rice=2 cups, Oil=1 tbsp, Salt=0.5 tsp (matches Phase B) | `flow20_c42_reset.png` | HARD |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| F1 | Open same recipe again | Recipe Detail loads | UI | — | — |
+| F2 | **C40:** Set servings to 1 (minimum) | Servings selector allows minimum value | UI | — | HARD |
+| F3 | Verify ingredients show fractional values | Rice=0.5 cups ("1/2 cup"), Oil=0.25 tbsp ("1/4 tbsp"), Salt=0.125 tsp ("1/8 tsp") | UI | `flow20_c40_servings_1.png` | HARD |
+| F4 | Verify no "0" quantities or negative values | All ingredients have positive quantities | UI | — | HARD |
+| F5 | **C41:** Set servings to 12 (maximum or very large) | Servings selector allows large value | UI | — | HARD |
+| F6 | Verify ingredients show large quantities | Rice=6 cups (12/4 * 2), Oil=3 tbsp, Salt=1.5 tsp | UI | `flow20_c41_servings_12.png` | HARD |
+| F7 | Verify no integer overflow or display issues | All quantities displayed correctly (not "NaN" or overflow) | UI | — | HARD |
+| F8 | Scroll through entire ingredient list | All ingredients scaled, no missing items | UI | — | HARD |
+| F9 | **C42:** Reset servings to original (4) | Servings value changes to 4 | UI | — | HARD |
+| F10 | Verify ingredients return to baseline | Rice=2 cups, Oil=1 tbsp, Salt=0.5 tsp (matches Phase B) | UI | `flow20_c42_reset.png` | HARD |
 
 ### Backend API Cross-Validation: Edge Case Scaling
 
@@ -157,20 +157,20 @@ for ing in ingredients[:3]:
 
 ### Phase G: Additional Edge Cases (Steps 36-40)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| G1 | Set servings to 5 (odd number, not 2^n) | Servings changes to 5 | — | — |
-| G2 | Verify fractional scaling accurate | Rice=2.5 cups (5/4 * 2), Salt=0.625 tsp (5/4 * 0.5) | `flow20_odd_servings.png` | HARD |
-| G3 | Verify decimal display readable | "2.5 cups" or "2 1/2 cups" (not "2.5000000") | — | HARD |
-| G4 | Change servings multiple times rapidly | Tap stepper +/- 5 times quickly | — | — |
-| G5 | Verify UI stable, no crash | Final servings value correct, no ANR | — | HARD |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| G1 | Set servings to 5 (odd number, not 2^n) | Servings changes to 5 | UI | — | — |
+| G2 | Verify fractional scaling accurate | Rice=2.5 cups (5/4 * 2), Salt=0.625 tsp (5/4 * 0.5) | UI | `flow20_odd_servings.png` | HARD |
+| G3 | Verify decimal display readable | "2.5 cups" or "2 1/2 cups" (not "2.5000000") | UI | — | HARD |
+| G4 | Change servings multiple times rapidly | Tap stepper +/- 5 times quickly | UI | — | — |
+| G5 | Verify UI stable, no crash | Final servings value correct, no ANR | UI | — | HARD |
 
 ### Phase H: Cleanup (Steps 41-42)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| H1 | Press BACK to Home | Home screen | `flow20_final.png` | — |
-| H2 | Run crash/ANR detection (Pattern 9) | No crashes during scaling operations | — | HARD |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| H1 | Press BACK to Home | Home screen | UI | `flow20_final.png` | — |
+| H2 | Run crash/ANR detection (Pattern 9) | No crashes during scaling operations | API | — | HARD |
 
 ## Validation Checkpoints
 
@@ -209,8 +209,8 @@ No `validate_meal_plan.py` checkpoints — validation is recipe scaling-focused:
 
 ## Contradictions
 
-| ID | Description | Steps | Expected Outcome |
-|----|-------------|-------|------------------|
-| C40 | Servings = 1 (minimum) | F2-F4 | Fractional quantities handled (e.g., "1/2 cup", "1/4 tsp") |
-| C41 | Servings = 12 (maximum) | F5-F8 | Large quantities display correctly, no overflow |
-| C42 | Reset servings to original | F9-F10 | Ingredients return to baseline values |
+| ID | Description | Steps | Expected Outcome | Type |
+|----|-------------|-------|------------------|------|
+| C40 | Servings = 1 (minimum) | F2-F4 | Fractional quantities handled (e.g., "1/2 cup", "1/4 tsp") | UI |
+| C41 | Servings = 12 (maximum) | F5-F8 | Large quantities display correctly, no overflow | UI |
+| C42 | Reset servings to original | F9-F10 | Ingredients return to baseline values | UI |

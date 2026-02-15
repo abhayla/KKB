@@ -41,76 +41,76 @@
 
 ### Phase A: Navigate to Recipe Rules → Nutrition Tab
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| A1 | Tap Settings from bottom nav | Settings screen displays |
-| A2 | Tap "Recipe Rules" (or navigate via Home → overflow menu) | Recipe Rules screen displays |
-| A3 | Verify 2 tabs visible: "Rules" and "Nutrition" | Both tabs present |
-| A4 | Tap "Nutrition" tab | Nutrition tab content displays |
-| A5 | Verify initial state: empty state or existing goals | "No nutrition goals yet" OR list of goals |
-| A6 | Verify FAB "Add Goal" visible | FAB present |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| A1 | Tap Settings from bottom nav | Settings screen displays | UI |
+| A2 | Tap "Recipe Rules" (or navigate via Home → overflow menu) | Recipe Rules screen displays | UI |
+| A3 | Verify 2 tabs visible: "Rules" and "Nutrition" | Both tabs present | UI |
+| A4 | Tap "Nutrition" tab | Nutrition tab content displays | UI |
+| A5 | Verify initial state: empty state or existing goals | "No nutrition goals yet" OR list of goals | UI |
+| A6 | Verify FAB "Add Goal" visible | FAB present | UI |
 
 ### Phase B: CRUD Nutrition Goals
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| **B1 - Add Protein Goal** | | |
-| B1.1 | Tap FAB "Add Goal" | Add Nutrition Goal dialog appears |
-| B1.2 | Select category: "Protein" (dropdown or chips) | Protein selected |
-| B1.3 | Enter target_servings: 10 | Field populated |
-| B1.4 | Select timeframe: "WEEKLY" (default) | Weekly selected |
-| B1.5 | Verify is_active: true (default toggle ON) | Toggle ON |
-| B1.6 | Tap "Save" | Dialog closes |
-| B1.7 | Verify Protein goal appears in list: "Protein: 10 servings/week" | Goal card displays |
-| **B2 - Add Vegetables Goal** | | |
-| B2.1 | Tap FAB "Add Goal" again | Add dialog appears |
-| B2.2 | Select category: "Vegetables" | Vegetables selected |
-| B2.3 | Enter target_servings: 14 | Field populated |
-| B2.4 | Timeframe: "WEEKLY" | Weekly selected |
-| B2.5 | Tap "Save" | Dialog closes |
-| B2.6 | Verify Vegetables goal in list: "Vegetables: 14 servings/week" | Goal card displays |
-| B2.7 | Verify total goals count: 2 | Two cards visible |
-| **B3 - Edit Protein Goal** | | |
-| B3.1 | Tap on Protein goal card | Edit dialog appears with current values |
-| B3.2 | Change target_servings from 10 to 12 | Field updated |
-| B3.3 | Tap "Save" | Dialog closes |
-| B3.4 | Verify Protein goal now shows: "Protein: 12 servings/week" | Updated value displays |
-| **B4 - Delete Vegetables Goal** | | |
-| B4.1 | Swipe left on Vegetables goal card (or tap delete icon) | Delete confirmation dialog appears |
-| B4.2 | Confirm deletion | Dialog closes |
-| B4.3 | Verify Vegetables goal removed from list | Only Protein goal remains (count = 1) |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| **B1 - Add Protein Goal** | | | |
+| B1.1 | Tap FAB "Add Goal" | Add Nutrition Goal dialog appears | UI |
+| B1.2 | Select category: "Protein" (dropdown or chips) | Protein selected | UI |
+| B1.3 | Enter target_servings: 10 | Field populated | UI |
+| B1.4 | Select timeframe: "WEEKLY" (default) | Weekly selected | UI |
+| B1.5 | Verify is_active: true (default toggle ON) | Toggle ON | UI |
+| B1.6 | Tap "Save" | Dialog closes | UI |
+| B1.7 | Verify Protein goal appears in list: "Protein: 10 servings/week" | Goal card displays | UI |
+| **B2 - Add Vegetables Goal** | | | |
+| B2.1 | Tap FAB "Add Goal" again | Add dialog appears | UI |
+| B2.2 | Select category: "Vegetables" | Vegetables selected | UI |
+| B2.3 | Enter target_servings: 14 | Field populated | UI |
+| B2.4 | Timeframe: "WEEKLY" | Weekly selected | UI |
+| B2.5 | Tap "Save" | Dialog closes | UI |
+| B2.6 | Verify Vegetables goal in list: "Vegetables: 14 servings/week" | Goal card displays | UI |
+| B2.7 | Verify total goals count: 2 | Two cards visible | UI |
+| **B3 - Edit Protein Goal** | | | |
+| B3.1 | Tap on Protein goal card | Edit dialog appears with current values | UI |
+| B3.2 | Change target_servings from 10 to 12 | Field updated | UI |
+| B3.3 | Tap "Save" | Dialog closes | UI |
+| B3.4 | Verify Protein goal now shows: "Protein: 12 servings/week" | Updated value displays | UI |
+| **B4 - Delete Vegetables Goal** | | | |
+| B4.1 | Swipe left on Vegetables goal card (or tap delete icon) | Delete confirmation dialog appears | UI |
+| B4.2 | Confirm deletion | Dialog closes | UI |
+| B4.3 | Verify Vegetables goal removed from list | Only Protein goal remains (count = 1) | UI |
 
 ### Phase C: Verify Backend Persistence
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| C1 | Call `GET /api/v1/nutrition-goals` via Swagger or curl | Returns array with 1 goal (Protein) |
-| C2 | Verify Protein goal JSON: `category: "PROTEIN"`, `target_servings: 12`, `timeframe: "WEEKLY"`, `is_active: true` | Correct |
-| C3 | Verify Vegetables goal NOT present (deleted) | Only 1 goal in response |
-| C4 | Call `POST /api/v1/nutrition-goals` to add Vegetables again (14 servings) | 201 Created |
-| C5 | Call `GET /api/v1/nutrition-goals` again | Returns 2 goals |
-| C6 | Call `DELETE /api/v1/nutrition-goals/{vegetables_goal_id}` | 204 No Content |
-| C7 | Verify backend logs show CRUD operations | Logs confirm all operations |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| C1 | Call `GET /api/v1/nutrition-goals` via Swagger or curl | Returns array with 1 goal (Protein) | API |
+| C2 | Verify Protein goal JSON: `category: "PROTEIN"`, `target_servings: 12`, `timeframe: "WEEKLY"`, `is_active: true` | Correct | API |
+| C3 | Verify Vegetables goal NOT present (deleted) | Only 1 goal in response | API |
+| C4 | Call `POST /api/v1/nutrition-goals` to add Vegetables again (14 servings) | 201 Created | API |
+| C5 | Call `GET /api/v1/nutrition-goals` again | Returns 2 goals | API |
+| C6 | Call `DELETE /api/v1/nutrition-goals/{vegetables_goal_id}` | 204 No Content | API |
+| C7 | Verify backend logs show CRUD operations | Logs confirm all operations | API |
 
 ### Phase D: Generate Meal Plan with Nutrition Goals
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| D1 | Navigate to Home screen | Home screen displays |
-| D2 | Tap "Generate New Plan" (or wait for auto-generation) | Loading indicator appears |
-| D3 | Wait for meal plan generation (4-7 seconds) | Meal plan cards appear for 7 days |
-| D4 | Check backend logs for AI prompt | Prompt includes: "Nutrition goals: Protein 12 servings/week" |
-| D5 | Scan all 21 meals (7 days × 3 meals) | Verify high-protein items present (paneer, dal, legumes, tofu, curd) |
-| D6 | Count protein servings across week | Should total ~12 or close (AI best effort) |
-| D7 | Tap on a high-protein recipe → Recipe Detail | Recipe shows protein-rich ingredients |
-| D8 | Verify recipe tags include "High Protein" (if tagging exists) | Tag present (optional) |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| D1 | Navigate to Home screen | Home screen displays | UI |
+| D2 | Tap "Generate New Plan" (or wait for auto-generation) | Loading indicator appears | UI |
+| D3 | Wait for meal plan generation (4-7 seconds) | Meal plan cards appear for 7 days | UI |
+| D4 | Check backend logs for AI prompt | Prompt includes: "Nutrition goals: Protein 12 servings/week" | API |
+| D5 | Scan all 21 meals (7 days × 3 meals) | Verify high-protein items present (paneer, dal, legumes, tofu, curd) | UI |
+| D6 | Count protein servings across week | Should total ~12 or close (AI best effort) | UI |
+| D7 | Tap on a high-protein recipe → Recipe Detail | Recipe shows protein-rich ingredients | UI |
+| D8 | Verify recipe tags include "High Protein" (if tagging exists) | Tag present (optional) | UI |
 
 ### Phase E: Contradictions C36-C37
 
-| Contradiction | Setup | Action | Expected Behavior |
-|---------------|-------|--------|-------------------|
-| **C36**: Impossible target | User has 1 nutrition goal | Add goal: Protein 50 servings/week (7 days × max 3 meals = 21 servings) | System shows warning: "Target exceeds weekly meal count" OR AI does best effort + explains in chat |
-| **C37**: Duplicate goal category | Protein goal already exists (12/week) | Add another goal: Protein 8/week | System returns 409 Conflict: "Nutrition goal for PROTEIN already exists" |
+| Contradiction | Setup | Action | Expected Behavior | Type |
+|---------------|-------|--------|-------------------|------|
+| **C36**: Impossible target | User has 1 nutrition goal | Add goal: Protein 50 servings/week (7 days × max 3 meals = 21 servings) | System shows warning: "Target exceeds weekly meal count" OR AI does best effort + explains in chat | UI |
+| **C37**: Duplicate goal category | Protein goal already exists (12/week) | Add another goal: Protein 8/week | System returns 409 Conflict: "Nutrition goal for PROTEIN already exists" | UI |
 
 ## Contradictions Summary
 

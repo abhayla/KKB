@@ -24,13 +24,13 @@ Uses existing Sharma family data. Tests visual theme, not functionality.
 
 ### Phase A: Enable Dark Mode (Steps 1-3)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| A1 | Navigate: Profile icon → Settings | Settings screen (light theme) | `flow08_settings_light.png` | — |
-| A2 | Find dark mode / theme toggle | Toggle or setting for "Dark Mode" or "Theme" | — | — |
-| A3 | Tap "Dark Mode" item | Dialog appears with Light / Dark / System options | — | — |
-| A3a | Verify dialog has 3 options | text="Light", text="Dark", text="System" all visible | — | — |
-| A3b | Tap "Dark" option | Dark theme applied, dialog closes | `flow08_settings_dark.png` | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| A1 | Navigate: Profile icon → Settings | Settings screen (light theme) | UI | `flow08_settings_light.png` | — |
+| A2 | Find dark mode / theme toggle | Toggle or setting for "Dark Mode" or "Theme" | UI | — | — |
+| A3 | Tap "Dark Mode" item | Dialog appears with Light / Dark / System options | UI | — | — |
+| A3a | Verify dialog has 3 options | text="Light", text="Dark", text="System" all visible | UI | — | — |
+| A3b | Tap "Dark" option | Dark theme applied, dialog closes | UI | `flow08_settings_dark.png` | — |
 
 **Note:** If dark mode toggle is not directly in Settings, check system settings or the app's appearance section. Some apps follow system theme — in that case:
 ```bash
@@ -40,30 +40,30 @@ $ADB shell cmd uimode night yes
 
 ### Phase B: Screen Tour in Dark Mode (Steps 4-11)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| B1 | Navigate to Home (press BACK or bottom nav) | Home in dark theme | `flow08_home_dark.png` | — |
-| B2 | Visual check: dark background, light text, proper contrast | No white-on-white or black-on-black text | — | — |
-| B3 | Verify meal cards readable | Recipe names visible against dark background | — | — |
-| B4 | Tap bottom nav "Grocery" | Grocery in dark theme | `flow08_grocery_dark.png` | — |
-| B5 | Visual check: categories and items readable | Proper contrast on all elements | — | — |
-| B6 | Tap bottom nav "Chat" | Chat in dark theme | `flow08_chat_dark.png` | — |
-| B7 | Visual check: input field, messages visible | No invisible text | — | — |
-| B8 | Tap bottom nav "Favs" | Favorites in dark theme | `flow08_favorites_dark.png` | — |
-| B9 | Visual check: cards or empty state readable | Proper theming | — | — |
-| B9a | Tap bottom nav "Stats" | Stats in dark theme | `flow08_stats_dark.png` | — |
-| B9b | Visual check: streak, chart, tabs readable | Proper contrast on stats elements | — | — |
-| B10 | Tap bottom nav "Home" → tap meal card → "View Recipe" | Recipe Detail in dark theme | `flow08_recipe_dark.png` | — |
-| B11 | Visual check: ingredients, instructions readable | No contrast issues | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| B1 | Navigate to Home (press BACK or bottom nav) | Home in dark theme | UI | `flow08_home_dark.png` | — |
+| B2 | Visual check: dark background, light text, proper contrast | No white-on-white or black-on-black text | UI | — | — |
+| B3 | Verify meal cards readable | Recipe names visible against dark background | UI | — | — |
+| B4 | Tap bottom nav "Grocery" | Grocery in dark theme | UI | `flow08_grocery_dark.png` | — |
+| B5 | Visual check: categories and items readable | Proper contrast on all elements | UI | — | — |
+| B6 | Tap bottom nav "Chat" | Chat in dark theme | UI | `flow08_chat_dark.png` | — |
+| B7 | Visual check: input field, messages visible | No invisible text | UI | — | — |
+| B8 | Tap bottom nav "Favs" | Favorites in dark theme | UI | `flow08_favorites_dark.png` | — |
+| B9 | Visual check: cards or empty state readable | Proper theming | UI | — | — |
+| B9a | Tap bottom nav "Stats" | Stats in dark theme | UI | `flow08_stats_dark.png` | — |
+| B9b | Visual check: streak, chart, tabs readable | Proper contrast on stats elements | UI | — | — |
+| B10 | Tap bottom nav "Home" → tap meal card → "View Recipe" | Recipe Detail in dark theme | UI | `flow08_recipe_dark.png` | — |
+| B11 | Visual check: ingredients, instructions readable | No contrast issues | UI | — | — |
 
 ### Phase C: Restore Light Mode (Steps 12-14)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| C1 | Navigate to Settings | Settings screen | — | — |
-| C2 | Tap "Dark Mode" item | Dialog appears | — | — |
-| C2a | Tap "Light" option | Light theme restored, dialog closes | — | — |
-| C3 | Verify Home in light mode | Light background restored | `flow08_home_light_restored.png` | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| C1 | Navigate to Settings | Settings screen | UI | — | — |
+| C2 | Tap "Dark Mode" item | Dialog appears | UI | — | — |
+| C2a | Tap "Light" option | Light theme restored, dialog closes | UI | — | — |
+| C3 | Verify Home in light mode | Light background restored | UI | `flow08_home_light_restored.png` | — |
 
 **If system theme was used:**
 ```bash

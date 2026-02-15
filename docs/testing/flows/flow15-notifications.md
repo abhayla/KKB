@@ -45,104 +45,104 @@
 
 ### Phase A: Verify Initial Notification After Meal Plan
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| A1 | Verify precondition: meal plan exists | Home screen shows meal cards for current week |
-| A2 | Navigate to Home screen | Home displays |
-| A3 | Verify notification badge visible on Home app bar | Badge count >= 1 (indicates unread notification) |
-| A4 | Screenshot: `flow15_home_with_badge.png` | Badge present |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| A1 | Verify precondition: meal plan exists | Home screen shows meal cards for current week | UI |
+| A2 | Navigate to Home screen | Home displays | UI |
+| A3 | Verify notification badge visible on Home app bar | Badge count >= 1 (indicates unread notification) | UI |
+| A4 | Screenshot: `flow15_home_with_badge.png` | Badge present | UI |
 
 ### Phase B: Navigate to Notifications Screen
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| B1 | Tap notification bell icon in app bar | Notifications screen displays |
-| B2 | Verify screen title: "Notifications" | Title visible |
-| B3 | Verify filter tabs present: "All" and "Unread" | Both tabs visible |
-| B4 | Verify at least 1 notification present | Notification list has >= 1 item |
-| B5 | Verify notification card has: title, body, timestamp | All 3 fields visible on notification card |
-| B6 | Verify first notification is "Your weekly meal plan is ready!" | Title matches |
-| B7 | Verify notification has visual unread indicator (bold text or colored background) | Unread state visible |
-| B8 | Screenshot: `flow15_notifications_screen.png` | Screen captured |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| B1 | Tap notification bell icon in app bar | Notifications screen displays | UI |
+| B2 | Verify screen title: "Notifications" | Title visible | UI |
+| B3 | Verify filter tabs present: "All" and "Unread" | Both tabs visible | UI |
+| B4 | Verify at least 1 notification present | Notification list has >= 1 item | UI |
+| B5 | Verify notification card has: title, body, timestamp | All 3 fields visible on notification card | UI |
+| B6 | Verify first notification is "Your weekly meal plan is ready!" | Title matches | UI |
+| B7 | Verify notification has visual unread indicator (bold text or colored background) | Unread state visible | UI |
+| B8 | Screenshot: `flow15_notifications_screen.png` | Screen captured | UI |
 
 ### Phase C: Mark Notification as Read
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| C1 | Tap on the "meal plan ready" notification card | Notification detail appears OR notification marked as read |
-| C2 | Verify notification visual state changes (no longer bold/highlighted) | Read state applied |
-| C3 | Tap "Unread" filter tab | Unread list updates (should be empty or have fewer items) |
-| C4 | Verify "meal plan ready" notification NOT present in Unread list | Notification filtered out |
-| C5 | Tap "All" filter tab | All notifications visible again, including the now-read notification |
-| C6 | Verify notification badge count on Home decreased by 1 | Navigate to Home → verify badge count reduced |
-| C7 | Screenshot: `flow15_notification_marked_read.png` | Read state visible |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| C1 | Tap on the "meal plan ready" notification card | Notification detail appears OR notification marked as read | UI |
+| C2 | Verify notification visual state changes (no longer bold/highlighted) | Read state applied | UI |
+| C3 | Tap "Unread" filter tab | Unread list updates (should be empty or have fewer items) | UI |
+| C4 | Verify "meal plan ready" notification NOT present in Unread list | Notification filtered out | UI |
+| C5 | Tap "All" filter tab | All notifications visible again, including the now-read notification | UI |
+| C6 | Verify notification badge count on Home decreased by 1 | Navigate to Home → verify badge count reduced | UI |
+| C7 | Screenshot: `flow15_notification_marked_read.png` | Read state visible | UI |
 
 ### Phase D: Create Additional Notifications via Cooking
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| D1 | Navigate to Home screen | Home displays |
-| D2 | Tap on a breakfast meal card → "View Recipe" | Recipe Detail screen displays |
-| D3 | Tap "Start Cooking" | Cooking Mode screen displays |
-| D4 | Complete all cooking steps (tap Next until "Finish") | All steps completed |
-| D5 | Tap "Finish Cooking" | Cooking completion dialog appears |
-| D6 | Confirm cooking completion | Navigate back to Home |
-| D7 | Wait 2-3 seconds for backend notification trigger | Backend creates streak milestone notification |
-| D8 | Verify notification badge count increased | Badge count >= 1 |
-| D9 | Navigate to Notifications screen | New notification appears: "You've cooked your first meal!" OR "Cooking streak: 1 day" |
-| D10 | Screenshot: `flow15_new_notification_after_cooking.png` | New notification visible |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| D1 | Navigate to Home screen | Home displays | UI |
+| D2 | Tap on a breakfast meal card → "View Recipe" | Recipe Detail screen displays | UI |
+| D3 | Tap "Start Cooking" | Cooking Mode screen displays | UI |
+| D4 | Complete all cooking steps (tap Next until "Finish") | All steps completed | UI |
+| D5 | Tap "Finish Cooking" | Cooking completion dialog appears | UI |
+| D6 | Confirm cooking completion | Navigate back to Home | UI |
+| D7 | Wait 2-3 seconds for backend notification trigger | Backend creates streak milestone notification | UI |
+| D8 | Verify notification badge count increased | Badge count >= 1 | UI |
+| D9 | Navigate to Notifications screen | New notification appears: "You've cooked your first meal!" OR "Cooking streak: 1 day" | UI |
+| D10 | Screenshot: `flow15_new_notification_after_cooking.png` | New notification visible | UI |
 
 ### Phase E: Mark All as Read
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| E1 | Verify multiple unread notifications present (at least 2) | Unread count >= 2 |
-| E2 | Tap "Mark all as read" button (in app bar overflow menu or action button) | All notifications marked as read |
-| E3 | Verify all notification cards show read state (no bold text) | All read |
-| E4 | Tap "Unread" filter tab | Empty state: "No unread notifications" |
-| E5 | Verify notification badge count on Home = 0 | Navigate to Home → verify badge gone or shows 0 |
-| E6 | Screenshot: `flow15_all_marked_read.png` | All read state visible |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| E1 | Verify multiple unread notifications present (at least 2) | Unread count >= 2 | UI |
+| E2 | Tap "Mark all as read" button (in app bar overflow menu or action button) | All notifications marked as read | UI |
+| E3 | Verify all notification cards show read state (no bold text) | All read | UI |
+| E4 | Tap "Unread" filter tab | Empty state: "No unread notifications" | UI |
+| E5 | Verify notification badge count on Home = 0 | Navigate to Home → verify badge gone or shows 0 | UI |
+| E6 | Screenshot: `flow15_all_marked_read.png` | All read state visible | UI |
 
 ### Phase F: Filter All vs Unread
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| F1 | Navigate to Notifications screen | Notifications screen displays |
-| F2 | Verify "All" tab is selected by default | All tab highlighted |
-| F3 | Verify all notifications visible (both read and unread) | List has all notification items |
-| F4 | Tap "Unread" tab | Only unread notifications visible |
-| F5 | Verify read notifications NOT present in Unread list | List filtered correctly |
-| F6 | Create a new notification (cook another recipe OR regenerate meal plan) | New unread notification appears |
-| F7 | Tap "Unread" tab → verify new notification appears | New item visible in Unread |
-| F8 | Tap "All" tab → verify new notification + old read notifications | All items visible |
-| F9 | Screenshot: `flow15_filter_unread.png` | Unread filter active |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| F1 | Navigate to Notifications screen | Notifications screen displays | UI |
+| F2 | Verify "All" tab is selected by default | All tab highlighted | UI |
+| F3 | Verify all notifications visible (both read and unread) | List has all notification items | UI |
+| F4 | Tap "Unread" tab | Only unread notifications visible | UI |
+| F5 | Verify read notifications NOT present in Unread list | List filtered correctly | UI |
+| F6 | Create a new notification (cook another recipe OR regenerate meal plan) | New unread notification appears | UI |
+| F7 | Tap "Unread" tab → verify new notification appears | New item visible in Unread | UI |
+| F8 | Tap "All" tab → verify new notification + old read notifications | All items visible | UI |
+| F9 | Screenshot: `flow15_filter_unread.png` | Unread filter active | UI |
 
 ### Phase G: Delete a Notification
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| G1 | Navigate to Notifications → "All" tab | All notifications visible |
-| G2 | Long-press OR swipe left on a notification card | Delete action appears (trash icon or swipe-to-delete) |
-| G3 | Tap delete icon OR complete swipe | Confirmation dialog appears: "Delete this notification?" |
-| G4 | Confirm deletion | Dialog closes, notification removed from list |
-| G5 | Verify notification no longer present in "All" tab | Item removed |
-| G6 | Verify notification badge count updated (if deleted notification was unread) | Badge count decremented if unread |
-| G7 | Screenshot: `flow15_notification_deleted.png` | Notification removed |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| G1 | Navigate to Notifications → "All" tab | All notifications visible | UI |
+| G2 | Long-press OR swipe left on a notification card | Delete action appears (trash icon or swipe-to-delete) | UI |
+| G3 | Tap delete icon OR complete swipe | Confirmation dialog appears: "Delete this notification?" | UI |
+| G4 | Confirm deletion | Dialog closes, notification removed from list | UI |
+| G5 | Verify notification no longer present in "All" tab | Item removed | UI |
+| G6 | Verify notification badge count updated (if deleted notification was unread) | Badge count decremented if unread | UI |
+| G7 | Screenshot: `flow15_notification_deleted.png` | Notification removed | UI |
 
 ### Phase H: Verify Notification Badge Count Accuracy
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| H1 | Navigate to Home screen | Home displays |
-| H2 | Note current notification badge count (let's say N) | Badge shows N |
-| H3 | Navigate to Notifications → tap "Unread" | Count unread notifications manually (should = N) |
-| H4 | Mark 1 notification as read (tap it) | Notification state changes to read |
-| H5 | Navigate to Home → verify badge count = N-1 | Badge count decreased |
-| H6 | Delete 1 unread notification | Notification removed |
-| H7 | Navigate to Home → verify badge count = N-2 | Badge count decreased again |
-| H8 | Create new notification (regenerate meal plan OR cook recipe) | New notification created |
-| H9 | Navigate to Home → verify badge count = N-1 | Badge count increased |
-| H10 | Screenshot: `flow15_badge_accuracy.png` | Badge count correct |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| H1 | Navigate to Home screen | Home displays | UI |
+| H2 | Note current notification badge count (let's say N) | Badge shows N | UI |
+| H3 | Navigate to Notifications → tap "Unread" | Count unread notifications manually (should = N) | UI |
+| H4 | Mark 1 notification as read (tap it) | Notification state changes to read | UI |
+| H5 | Navigate to Home → verify badge count = N-1 | Badge count decreased | UI |
+| H6 | Delete 1 unread notification | Notification removed | UI |
+| H7 | Navigate to Home → verify badge count = N-2 | Badge count decreased again | UI |
+| H8 | Create new notification (regenerate meal plan OR cook recipe) | New notification created | UI |
+| H9 | Navigate to Home → verify badge count = N-1 | Badge count increased | UI |
+| H10 | Screenshot: `flow15_badge_accuracy.png` | Badge count correct | UI |
 
 ## Backend API Verification
 
@@ -184,11 +184,11 @@ curl -s -X DELETE -H "Authorization: Bearer $JWT" \
 
 This flow tests notification-specific contradictions:
 
-| ID | Contradiction | Setup | Expected Behavior |
-|----|---------------|-------|-------------------|
-| **C40** | Notification already read | User taps same notification twice | Second tap does not re-mark as unread; notification stays in read state |
-| **C41** | Delete only notification | User has 1 notification, deletes it | Empty state appears: "No notifications yet", badge count = 0 |
-| **C42** | Filter with no unread | All notifications marked as read | "Unread" tab shows empty state: "No unread notifications" |
+| ID | Contradiction | Setup | Expected Behavior | Type |
+|----|---------------|-------|-------------------|------|
+| **C40** | Notification already read | User taps same notification twice | Second tap does not re-mark as unread; notification stays in read state | UI |
+| **C41** | Delete only notification | User has 1 notification, deletes it | Empty state appears: "No notifications yet", badge count = 0 | UI |
+| **C42** | Filter with no unread | All notifications marked as read | "Unread" tab shows empty state: "No unread notifications" | UI |
 
 ## Fix Strategy
 

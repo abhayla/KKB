@@ -24,11 +24,11 @@ Uses existing Sharma family data. Tests offline cache, not settings changes.
 
 ### Phase A: Go Offline (Steps 1-3)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| A1 | Disable WiFi and mobile data via ADB | Network disabled | — | — |
-| A2 | Verify offline: `$ADB shell ping -c 1 google.com` should fail | ping fails / network unreachable | — | — |
-| A3 | Wait 2s for app to detect offline state | NetworkMonitor should detect offline | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| A1 | Disable WiFi and mobile data via ADB | Network disabled | API | — | — |
+| A2 | Verify offline: `$ADB shell ping -c 1 google.com` should fail | ping fails / network unreachable | API | — | — |
+| A3 | Wait 2s for app to detect offline state | NetworkMonitor should detect offline | API | — | — |
 
 **ADB commands to go offline:**
 ```bash
@@ -38,52 +38,52 @@ $ADB shell svc data disable
 
 ### Phase B: Verify Room Cache (Steps 4-10)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| B1 | Force-stop and relaunch app | App starts | — | — |
-| B2 | Wait for Home screen | Home loads from Room cache (may show offline indicator) | `flow06_home_offline.png` | — |
-| B3 | Verify meal plan still displays | Recipe names visible from cached plan | — | — |
-| B4 | Tap a day tab (e.g., THU) | Thursday meals displayed from cache | — | — |
-| B5 | Tap bottom nav "Grocery" | Grocery loads from Room cache | `flow06_grocery_offline.png` | — |
-| B6 | Verify grocery items visible | Cached grocery items with categories | — | — |
-| B7 | Tap bottom nav "Favs" | Favorites loads from Room | `flow06_favorites_offline.png` | — |
-| B8 | Tap bottom nav "Home" | Return to Home | — | — |
-| B9 | Tap a meal card → "View Recipe" | Recipe Detail loads from cache | `flow06_recipe_offline.png` | — |
-| B10 | Verify ingredients section | Ingredients visible from cached data | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| B1 | Force-stop and relaunch app | App starts | UI | — | — |
+| B2 | Wait for Home screen | Home loads from Room cache (may show offline indicator) | UI | `flow06_home_offline.png` | — |
+| B3 | Verify meal plan still displays | Recipe names visible from cached plan | UI | — | — |
+| B4 | Tap a day tab (e.g., THU) | Thursday meals displayed from cache | UI | — | — |
+| B5 | Tap bottom nav "Grocery" | Grocery loads from Room cache | UI | `flow06_grocery_offline.png` | — |
+| B6 | Verify grocery items visible | Cached grocery items with categories | UI | — | — |
+| B7 | Tap bottom nav "Favs" | Favorites loads from Room | UI | `flow06_favorites_offline.png` | — |
+| B8 | Tap bottom nav "Home" | Return to Home | UI | — | — |
+| B9 | Tap a meal card → "View Recipe" | Recipe Detail loads from cache | UI | `flow06_recipe_offline.png` | — |
+| B10 | Verify ingredients section | Ingredients visible from cached data | UI | — | — |
 
 ### Phase C: Offline Mutations — C14 & C15 (Steps 11-16)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| C1 | **C14 Setup:** Navigate to Settings | Settings loads from cache/DataStore | — | — |
-| C2 | **C14:** Change a dietary setting (e.g., toggle strict allergen) | Setting changes locally | `flow06_c14_offline_change.png` | — |
-| C3 | Note: change queued for sync (OfflineQueue) | No error/crash despite no network | — | — |
-| C4 | Press BACK to Home | Home screen | — | — |
-| C5 | **C15:** Tap a meal card → "View Recipe" | Recipe Detail | — | — |
-| C6 | **C15:** Tap Favorite button | Heart toggles (saved in Room) | `flow06_c15_offline_fav.png` | — |
-| C7 | Note: favorite saved locally | No error despite offline | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| C1 | **C14 Setup:** Navigate to Settings | Settings loads from cache/DataStore | UI | — | — |
+| C2 | **C14:** Change a dietary setting (e.g., toggle strict allergen) | Setting changes locally | UI | `flow06_c14_offline_change.png` | — |
+| C3 | Note: change queued for sync (OfflineQueue) | No error/crash despite no network | UI | — | — |
+| C4 | Press BACK to Home | Home screen | UI | — | — |
+| C5 | **C15:** Tap a meal card → "View Recipe" | Recipe Detail | UI | — | — |
+| C6 | **C15:** Tap Favorite button | Heart toggles (saved in Room) | UI | `flow06_c15_offline_fav.png` | — |
+| C7 | Note: favorite saved locally | No error despite offline | UI | — | — |
 
 ### Phase D: Attempt Online-Only Action (Steps 17-19)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| D1 | Navigate to Home | Home screen | — | — |
-| D2 | Tap Refresh/Regenerate | Attempt to regenerate meal plan | — | — |
-| D3 | Verify offline handling | Error message, snackbar, or disabled button — NOT a crash | `flow06_regen_offline.png` | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| D1 | Navigate to Home | Home screen | UI | — | — |
+| D2 | Tap Refresh/Regenerate | Attempt to regenerate meal plan | UI | — | — |
+| D3 | Verify offline handling | Error message, snackbar, or disabled button — NOT a crash | UI | `flow06_regen_offline.png` | — |
 
 ### Phase E: Restore Network & Verify Sync (Steps 20-27)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| E1 | Re-enable WiFi and data | Network restored | — | — |
-| E2 | Wait 5s for app to detect online | NetworkMonitor detects reconnection | — | — |
-| E3 | **C14 Verify:** Check if dietary setting synced | Backend should have updated preference | — | — |
-| E4 | **C15 Verify:** Navigate to Favorites | Favorited recipe should appear | `flow06_favorites_online.png` | — |
-| E5 | Verify favorited recipe still in list | Recipe from C6 visible | — | — |
-| E6 | Navigate to Settings | Verify setting from C2 persisted | — | — |
-| E7 | Verify no data corruption | All screens load normally | — | — |
-| E7a | **Backend Cross-Validation:** Verify offline settings synced | Run curl check below | — | — |
-| E8 | Run crash/ANR detection (Pattern 9) | No crashes | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| E1 | Re-enable WiFi and data | Network restored | API | — | — |
+| E2 | Wait 5s for app to detect online | NetworkMonitor detects reconnection | API | — | — |
+| E3 | **C14 Verify:** Check if dietary setting synced | Backend should have updated preference | UI | — | — |
+| E4 | **C15 Verify:** Navigate to Favorites | Favorited recipe should appear | UI | `flow06_favorites_online.png` | — |
+| E5 | Verify favorited recipe still in list | Recipe from C6 visible | UI | — | — |
+| E6 | Navigate to Settings | Verify setting from C2 persisted | UI | — | — |
+| E7 | Verify no data corruption | All screens load normally | UI | — | — |
+| E7a | **Backend Cross-Validation:** Verify offline settings synced | Run curl check below | API | — | — |
+| E8 | Run crash/ANR detection (Pattern 9) | No crashes | API | — | — |
 
 **ADB commands to restore network:**
 ```bash

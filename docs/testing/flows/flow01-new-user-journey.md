@@ -54,37 +54,37 @@ Beyond standard D1-D7 prerequisites:
 
 ### Phase A: Authentication (Steps 1-3)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| A1 | Launch app, verify auth screen | text="Sign in with Google" visible | `flow01_auth_screen.png` | — |
-| A2 | Tap "Sign in with Google" | Fake auth completes, transitions to Onboarding | — | — |
-| A3 | Wait 5s, dump UI | Onboarding Step 1 visible (household size) | `flow01_onboarding_start.png` | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| A1 | Launch app, verify auth screen | text="Sign in with Google" visible | UI | `flow01_auth_screen.png` | — |
+| A2 | Tap "Sign in with Google" | Fake auth completes, transitions to Onboarding | UI | — | — |
+| A3 | Wait 5s, dump UI | Onboarding Step 1 visible (household size) | UI | `flow01_onboarding_start.png` | — |
 
 ### Phase B: Onboarding (Steps 4-15)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| B1 | Set household size to 4 | Size selector shows "4" | — | — |
-| B2 | Tap "Next" | Step 2: Dietary preferences | — | — |
-| B3 | Select "Non-Vegetarian" | Diet option highlighted | — | — |
-| B4 | Enter allergies: Peanuts, Shellfish | Allergy chips visible | — | — |
-| B5 | Tap "Next" | Step 3: Cuisine preferences | — | — |
-| B6 | Select "North Indian" and "South Indian" | Both highlighted | — | — |
-| B7 | Tap "Next" | Step 4: Dislikes & cooking time | — | — |
-| B8 | Enter disliked: Karela, Lauki | Dislike chips visible | — | — |
-| B9 | Set spice level to Medium (use Pattern 14 for dropdown) | Spice selector shows Medium | — | — |
-| B10 | Accept default weekday cooking time (do NOT change dropdown — ADB cannot reach popup items, see Pattern 14) | Default value accepted | — | — |
-| B11 | Accept default weekend cooking time (do NOT change dropdown — ADB cannot reach popup items, see Pattern 14) | Default value accepted | — | — |
-| B12 | Tap "Create My Meal Plan" or "Generate" | Generation begins | `flow01_onboarding_complete.png` | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| B1 | Set household size to 4 | Size selector shows "4" | UI | — | — |
+| B2 | Tap "Next" | Step 2: Dietary preferences | UI | — | — |
+| B3 | Select "Non-Vegetarian" | Diet option highlighted | UI | — | — |
+| B4 | Enter allergies: Peanuts, Shellfish | Allergy chips visible | UI | — | — |
+| B5 | Tap "Next" | Step 3: Cuisine preferences | UI | — | — |
+| B6 | Select "North Indian" and "South Indian" | Both highlighted | UI | — | — |
+| B7 | Tap "Next" | Step 4: Dislikes & cooking time | UI | — | — |
+| B8 | Enter disliked: Karela, Lauki | Dislike chips visible | UI | — | — |
+| B9 | Set spice level to Medium (use Pattern 14 for dropdown) | Spice selector shows Medium | UI | — | — |
+| B10 | Accept default weekday cooking time (do NOT change dropdown — ADB cannot reach popup items, see Pattern 14) | Default value accepted | UI | — | — |
+| B11 | Accept default weekend cooking time (do NOT change dropdown — ADB cannot reach popup items, see Pattern 14) | Default value accepted | UI | — | — |
+| B12 | Tap "Create My Meal Plan" or "Generate" | Generation begins | UI | `flow01_onboarding_complete.png` | — |
 
 ### Phase C: First Meal Plan Generation (Steps 16-20)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| C1 | Wait for meal plan generation (up to 90s) | Loading indicator, then Home screen | — | — |
-| C2 | Verify Home screen loaded | text="This Week's Menu", BREAKFAST visible | `flow01_home_plan1.png` | — |
-| C3 | Verify meal cards have real food names | Recipe names (not placeholders) in XML | — | — |
-| C4 | Run V4a-V4k validation | All HARD checks pass | — | V4a-V4k |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| C1 | Wait for meal plan generation (up to 90s) | Loading indicator, then Home screen | UI | — | — |
+| C2 | Verify Home screen loaded | text="This Week's Menu", BREAKFAST visible | UI | `flow01_home_plan1.png` | — |
+| C3 | Verify meal cards have real food names | Recipe names (not placeholders) in XML | UI | — | — |
+| C4 | Run V4a-V4k validation | All HARD checks pass | API | — | V4a-V4k |
 
 ### Pre-Checkpoint 1: Correct Dropdown Values via Backend API
 
@@ -122,20 +122,20 @@ python scripts/validate_meal_plan.py \
 
 ### Phase D: Settings Changes (Steps 21-30) — MANDATORY, NO SKIP
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| D1 | Navigate: tap Profile icon | Settings screen | `flow01_settings.png` | — |
-| D2 | Find and tap dietary setting | Dietary preference screen/dialog | — | — |
-| D3 | Change diet to Vegetarian | Vegetarian selected | — | — |
-| D4 | Navigate back to Settings | Settings screen | — | — |
-| D5 | Find and tap cuisine setting | Cuisine preference screen | — | — |
-| D6 | Add "East Indian" cuisine | 3 cuisines selected | — | — |
-| D7 | Navigate back to Settings | Settings screen | — | — |
-| D8 | Change spice level to Mild | Mild selected | — | — |
-| D9 | Scroll down, find disliked setting | Disliked ingredients screen | — | — |
-| D10 | Add "Capsicum" to dislikes | Capsicum added | — | — |
-| D11 | Change items per meal to 3 | Items per meal = 3 | — | — |
-| D12 | Navigate back to Home | Home screen | `flow01_settings_changed.png` | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| D1 | Navigate: tap Profile icon | Settings screen | UI | `flow01_settings.png` | — |
+| D2 | Find and tap dietary setting | Dietary preference screen/dialog | UI | — | — |
+| D3 | Change diet to Vegetarian | Vegetarian selected | UI | — | — |
+| D4 | Navigate back to Settings | Settings screen | UI | — | — |
+| D5 | Find and tap cuisine setting | Cuisine preference screen | UI | — | — |
+| D6 | Add "East Indian" cuisine | 3 cuisines selected | UI | — | — |
+| D7 | Navigate back to Settings | Settings screen | UI | — | — |
+| D8 | Change spice level to Mild | Mild selected | UI | — | — |
+| D9 | Scroll down, find disliked setting | Disliked ingredients screen | UI | — | — |
+| D10 | Add "Capsicum" to dislikes | Capsicum added | UI | — | — |
+| D11 | Change items per meal to 3 | Items per meal = 3 | UI | — | — |
+| D12 | Navigate back to Home | Home screen | UI | `flow01_settings_changed.png` | — |
 
 ### Backend Cross-Validation: Settings Persistence
 
@@ -168,22 +168,22 @@ print(f'cuisines_has_east_indian: {has_east} -> {\"PASS\" if has_east else \"FAI
 
 ### Phase E: Contradictions C1-C5 (Inline) — MANDATORY, NO SKIP
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| E1 | **C1:** Diet is now Vegetarian, but check if Eggs/non-veg INCLUDE rules exist from onboarding | If diet changed, INCLUDE non-veg should still be stored | — | HARD |
-| E2 | **C2:** Verify Peanuts in both allergies AND potential disliked (if overlap created) | Both stored, no duplicate error on settings | — | HARD |
-| E3 | **C3:** Note: Dadaji=Jain would conflict with North Indian cuisine if family members added | Deferred to Flow 2 (family member CRUD) | — | HARD |
-| E4 | **C4/C5:** Household size vs member count — attempt add member if settings allows | Verify household size mismatch handling | — | HARD |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| E1 | **C1:** Diet is now Vegetarian, but check if Eggs/non-veg INCLUDE rules exist from onboarding | If diet changed, INCLUDE non-veg should still be stored | API | — | HARD |
+| E2 | **C2:** Verify Peanuts in both allergies AND potential disliked (if overlap created) | Both stored, no duplicate error on settings | API | — | HARD |
+| E3 | **C3:** Note: Dadaji=Jain would conflict with North Indian cuisine if family members added | Deferred to Flow 2 (family member CRUD) | API | — | HARD |
+| E4 | **C4/C5:** Household size vs member count — attempt add member if settings allows | Verify household size mismatch handling | UI | — | HARD |
 
 ### Phase F: Second Meal Plan Generation (Steps 31-35) — MANDATORY, NO SKIP
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| F1 | Tap Refresh/Regenerate on Home | Refresh options appear | — | — |
-| F2 | Select "Entire Week" | Generation starts | — | — |
-| F3 | Wait for generation (up to 90s) | New meal plan loads | `flow01_home_plan2.png` | — |
-| F4 | Verify meal cards updated | Different recipes from Plan #1 | — | — |
-| F5 | Run V4a-V4k validation | Reflects Vegetarian, 3 items/meal, Mild, no Capsicum | — | V4a-V4k |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| F1 | Tap Refresh/Regenerate on Home | Refresh options appear | UI | — | — |
+| F2 | Select "Entire Week" | Generation starts | UI | — | — |
+| F3 | Wait for generation (up to 90s) | New meal plan loads | UI | `flow01_home_plan2.png` | — |
+| F4 | Verify meal cards updated | Different recipes from Plan #1 | UI | — | — |
+| F5 | Run V4a-V4k validation | Reflects Vegetarian, 3 items/meal, Mild, no Capsicum | API | — | V4a-V4k |
 
 ### Checkpoint 2: After Plan #2 Generation
 ```bash
@@ -205,78 +205,78 @@ python scripts/validate_meal_plan.py \
 
 Tour all major screens and verify they load properly after plan generation.
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| G1 | Tap day tab (e.g., TUE) | Different day's meals shown | — | — |
-| G2 | Scroll down to DINNER section | DINNER visible | — | — |
-| G3 | Scroll down to SNACKS section | SNACKS visible | `flow01_home_snacks.png` | — |
-| G4 | Scroll back to top | BREAKFAST visible | — | — |
-| G5 | Tap bottom nav "Grocery" | Grocery screen with categories | `flow01_grocery.png` | HARD |
-| G6 | Verify grocery categories exist | At least 3 categories visible (auto-generated from meal plan) | — | HARD |
-| G6a | Tap a grocery item checkbox | Item marked as purchased (strikethrough) | — | — |
-| G6b | Tap "Add custom item" if visible | Add item dialog appears | — | — |
-| G6c | Press BACK to dismiss dialog | Return to Grocery | — | — |
-| G7 | Tap bottom nav "Chat" | Chat screen with input field | `flow01_chat.png` | — |
-| G8 | Verify chat welcome message | "Hi" or "Hello" or assistant greeting | — | — |
-| G8a | Verify attachment button exists | content-desc "Attach" or "Attachment" visible in XML | — | — |
-| G8b | Verify voice input button exists | content-desc "Voice" visible in XML | — | — |
-| G8c | Verify quick action chips exist | Suggestion chips visible below welcome message | — | — |
-| G9 | Tap bottom nav "Favs" | Favorites screen (empty state expected) | `flow01_favorites.png` | — |
-| G10 | Verify empty state message | "No favorites" or similar | — | — |
-| G11 | Tap bottom nav "Stats" | Stats screen | `flow01_stats.png` | — |
-| G12 | Verify stats sections exist | Streak, time tabs visible | — | — |
-| G13 | Tap bottom nav "Home" | Return to Home | — | — |
-| G14 | Tap Profile icon | Settings screen | — | — |
-| G15 | Verify settings loaded | Email, dietary, cuisine visible | — | — |
-| G16 | Tap Notifications icon (back to Home first) | Notifications screen | `flow01_notifications.png` | — |
-| G17 | Verify notifications (empty state OK) | Screen loads without crash | — | — |
-| G18 | Press BACK to Home | Home screen | — | — |
-| G19 | Tap a BREAKFAST meal card | Action sheet appears | — | — |
-| G19a | Verify action sheet has 4 items | "View Recipe", "Swap Recipe", "Lock Recipe", "Remove from Meal" all in XML | — | HARD |
-| G20 | Tap "View Recipe" | Recipe Detail screen (real recipe data, not "Recipe not found") | `flow01_recipe_detail.png` | HARD |
-| G21 | Verify ingredients section | "Ingredients" heading + items (real ingredient list) | — | HARD |
-| G22 | Scroll to "Start Cooking" button | Button visible | — | HARD |
-| G23 | Tap "Start Cooking" | Cooking Mode screen | `flow01_cooking_mode.png` | HARD |
-| G23a | Verify voice guidance toggle exists | content-desc "Voice" or toggle visible | — | — |
-| G23b | Verify progress indicator exists | Progress bar or step indicator visible | — | — |
-| G24 | Verify step counter | "Step 1 of N" visible (real cooking steps) | — | HARD |
-| G25 | Tap Next step | Step 2 shown | — | HARD |
-| G26 | Press BACK twice | Return to Home | — | — |
-| G27 | Navigate: Profile → Settings → scroll to Pantry | Pantry link visible in MEAL PREFERENCES | — | HARD |
-| G28 | Tap "Pantry" | Pantry screen | `flow01_pantry.png` | HARD |
-| G29 | Verify Pantry loads | Title + Add button visible | — | HARD |
-| G30 | Press BACK | Settings screen | — | HARD |
-| G31 | Scroll to "Recipe Rules" | Recipe Rules link visible | — | — |
-| G32 | Tap "Recipe Rules" | Recipe Rules screen | `flow01_recipe_rules.png` | — |
-| G33 | Verify Rules tab exists | "Rules" tab visible | — | — |
-| G34 | Verify Nutrition tab exists | "Nutrition" tab visible | — | — |
-| G35 | Press BACK | Settings screen | — | — |
-| G36 | Press BACK | Home screen | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| G1 | Tap day tab (e.g., TUE) | Different day's meals shown | UI | — | — |
+| G2 | Scroll down to DINNER section | DINNER visible | UI | — | — |
+| G3 | Scroll down to SNACKS section | SNACKS visible | UI | `flow01_home_snacks.png` | — |
+| G4 | Scroll back to top | BREAKFAST visible | UI | — | — |
+| G5 | Tap bottom nav "Grocery" | Grocery screen with categories | UI | `flow01_grocery.png` | HARD |
+| G6 | Verify grocery categories exist | At least 3 categories visible (auto-generated from meal plan) | UI | — | HARD |
+| G6a | Tap a grocery item checkbox | Item marked as purchased (strikethrough) | UI | — | — |
+| G6b | Tap "Add custom item" if visible | Add item dialog appears | UI | — | — |
+| G6c | Press BACK to dismiss dialog | Return to Grocery | UI | — | — |
+| G7 | Tap bottom nav "Chat" | Chat screen with input field | UI | `flow01_chat.png` | — |
+| G8 | Verify chat welcome message | "Hi" or "Hello" or assistant greeting | UI | — | — |
+| G8a | Verify attachment button exists | content-desc "Attach" or "Attachment" visible in XML | UI | — | — |
+| G8b | Verify voice input button exists | content-desc "Voice" visible in XML | UI | — | — |
+| G8c | Verify quick action chips exist | Suggestion chips visible below welcome message | UI | — | — |
+| G9 | Tap bottom nav "Favs" | Favorites screen (empty state expected) | UI | `flow01_favorites.png` | — |
+| G10 | Verify empty state message | "No favorites" or similar | UI | — | — |
+| G11 | Tap bottom nav "Stats" | Stats screen | UI | `flow01_stats.png` | — |
+| G12 | Verify stats sections exist | Streak, time tabs visible | UI | — | — |
+| G13 | Tap bottom nav "Home" | Return to Home | UI | — | — |
+| G14 | Tap Profile icon | Settings screen | UI | — | — |
+| G15 | Verify settings loaded | Email, dietary, cuisine visible | UI | — | — |
+| G16 | Tap Notifications icon (back to Home first) | Notifications screen | UI | `flow01_notifications.png` | — |
+| G17 | Verify notifications (empty state OK) | Screen loads without crash | UI | — | — |
+| G18 | Press BACK to Home | Home screen | UI | — | — |
+| G19 | Tap a BREAKFAST meal card | Action sheet appears | UI | — | — |
+| G19a | Verify action sheet has 4 items | "View Recipe", "Swap Recipe", "Lock Recipe", "Remove from Meal" all in XML | UI | — | HARD |
+| G20 | Tap "View Recipe" | Recipe Detail screen (real recipe data, not "Recipe not found") | UI | `flow01_recipe_detail.png` | HARD |
+| G21 | Verify ingredients section | "Ingredients" heading + items (real ingredient list) | UI | — | HARD |
+| G22 | Scroll to "Start Cooking" button | Button visible | UI | — | HARD |
+| G23 | Tap "Start Cooking" | Cooking Mode screen | UI | `flow01_cooking_mode.png` | HARD |
+| G23a | Verify voice guidance toggle exists | content-desc "Voice" or toggle visible | UI | — | — |
+| G23b | Verify progress indicator exists | Progress bar or step indicator visible | UI | — | — |
+| G24 | Verify step counter | "Step 1 of N" visible (real cooking steps) | UI | — | HARD |
+| G25 | Tap Next step | Step 2 shown | UI | — | HARD |
+| G26 | Press BACK twice | Return to Home | UI | — | — |
+| G27 | Navigate: Profile → Settings → scroll to Pantry | Pantry link visible in MEAL PREFERENCES | UI | — | HARD |
+| G28 | Tap "Pantry" | Pantry screen | UI | `flow01_pantry.png` | HARD |
+| G29 | Verify Pantry loads | Title + Add button visible | UI | — | HARD |
+| G30 | Press BACK | Settings screen | UI | — | HARD |
+| G31 | Scroll to "Recipe Rules" | Recipe Rules link visible | UI | — | — |
+| G32 | Tap "Recipe Rules" | Recipe Rules screen | UI | `flow01_recipe_rules.png` | — |
+| G33 | Verify Rules tab exists | "Rules" tab visible | UI | — | — |
+| G34 | Verify Nutrition tab exists | "Nutrition" tab visible | UI | — | — |
+| G35 | Press BACK | Settings screen | UI | — | — |
+| G36 | Press BACK | Home screen | UI | — | — |
 
 ### Phase G+ : Connected Data Consistency Tour (Steps G37-G46)
 
 Cross-screen validation to ensure data flows correctly between screens.
 
-| Step | Action | Expected | Validation |
-|------|--------|----------|------------|
-| G37 | On Home, count meal plan days | Exactly 7 days in week selector | HARD |
-| G38 | Verify each meal slot has items | Each day: breakfast, lunch, dinner, snacks all have >= 1 item | HARD |
-| G39 | Check no excluded ingredients in meals | No Karela, Lauki, Capsicum, Peanuts, Shellfish in any recipe name/ingredients | HARD |
-| G40 | Navigate to Grocery → verify items come from meal plan | Grocery categories present, items match recipe ingredients | HARD |
-| G41 | Navigate to Favorites → verify favorited recipe appears | Recipe favorited in Phase D/E is listed | HARD |
-| G42 | Navigate to Stats → verify cooking streak = 0 | No meals cooked yet, streak shows 0 | HARD |
-| G43 | Navigate to Recipe Rules → verify rules from Phase D/E active | INCLUDE/EXCLUDE rules visible and marked active | HARD |
-| G44 | Navigate to Settings → verify preference changes reflected | Diet = Vegetarian, Spice = Mild, Cuisines include East Indian | HARD |
-| G45 | Navigate to Notifications → verify at least 1 notification | "Meal plan is ready" notification present | HARD |
-| G46 | Navigate to Pantry → verify items match what was added | Previously added pantry items still present | HARD |
+| Step | Action | Expected | Type | Validation |
+|------|--------|----------|------|------------|
+| G37 | On Home, count meal plan days | Exactly 7 days in week selector | UI | HARD |
+| G38 | Verify each meal slot has items | Each day: breakfast, lunch, dinner, snacks all have >= 1 item | UI | HARD |
+| G39 | Check no excluded ingredients in meals | No Karela, Lauki, Capsicum, Peanuts, Shellfish in any recipe name/ingredients | UI | HARD |
+| G40 | Navigate to Grocery → verify items come from meal plan | Grocery categories present, items match recipe ingredients | UI | HARD |
+| G41 | Navigate to Favorites → verify favorited recipe appears | Recipe favorited in Phase D/E is listed | UI | HARD |
+| G42 | Navigate to Stats → verify cooking streak = 0 | No meals cooked yet, streak shows 0 | UI | HARD |
+| G43 | Navigate to Recipe Rules → verify rules from Phase D/E active | INCLUDE/EXCLUDE rules visible and marked active | UI | HARD |
+| G44 | Navigate to Settings → verify preference changes reflected | Diet = Vegetarian, Spice = Mild, Cuisines include East Indian | UI | HARD |
+| G45 | Navigate to Notifications → verify at least 1 notification | "Meal plan is ready" notification present | UI | HARD |
+| G46 | Navigate to Pantry → verify items match what was added | Previously added pantry items still present | UI | HARD |
 
 ### Phase H: Final Verification (Steps 81-83)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| H1 | Take final Home screenshot | All sections loaded | `flow01_final.png` | — |
-| H2 | Run crash/ANR detection (Pattern 9) | No crashes detected | — | — |
-| H3 | Capture app logs (Pattern 13) | Logs saved to session dir | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| H1 | Take final Home screenshot | All sections loaded | UI | `flow01_final.png` | — |
+| H2 | Run crash/ANR detection (Pattern 9) | No crashes detected | UI | — | — |
+| H3 | Capture app logs (Pattern 13) | Logs saved to session dir | API | — | — |
 
 ## Validation Checkpoints
 
@@ -284,6 +284,13 @@ Two validation checkpoints using `validate_meal_plan.py`:
 
 1. **Checkpoint 1 (Phase C):** Non-Vegetarian, 2 items/meal, Medium spice
 2. **Checkpoint 2 (Phase F):** Vegetarian, 3 items/meal, Mild spice, +Capsicum disliked
+
+### Prompt Completeness Check
+After each meal plan generation, verify backend logs include:
+- `Primary Diet: NON-VEGETARIAN` (or VEGETARIAN after settings change)
+- `Cooking Skill:` field present
+- Nutrition goals section (if any active goals)
+- Family safety filter report (if family members + conflicting rules)
 
 ## Fix Strategy
 

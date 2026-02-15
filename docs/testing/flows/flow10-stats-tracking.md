@@ -24,32 +24,32 @@ Uses existing Sharma family data. Read-only verification.
 
 ### Phase A: Stats Screen Exploration (Steps 1-7)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| A1 | Tap bottom nav "Stats" | Stats screen loads | `flow10_stats.png` | — |
-| A2 | Verify screen title | "Stats" or "Cooking Stats" visible | — | — |
-| A3 | Verify cooking streak section | Streak counter visible (may be 0) | — | — |
-| A4 | Verify time period tabs | "Week", "Month", "All Time" or similar tabs visible | — | — |
-| A5 | Tap "Month" tab | Stats update for monthly view | `flow10_stats_month.png` | — |
-| A6 | Tap "All Time" tab | Stats update for all-time view | — | — |
-| A7 | Tap "Week" tab (back to default) | Weekly view restored | — | — |
-| A7a | Look for Share button | content-desc "Share" visible | — | — |
-| A7b | Tap Share button (if found) | Share intent launches | — | — |
-| A7c | Press BACK to dismiss share | Return to Stats | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| A1 | Tap bottom nav "Stats" | Stats screen loads | UI | `flow10_stats.png` | — |
+| A2 | Verify screen title | "Stats" or "Cooking Stats" visible | UI | — | — |
+| A3 | Verify cooking streak section | Streak counter visible (may be 0) | UI | — | — |
+| A4 | Verify time period tabs | "Week", "Month", "All Time" or similar tabs visible | UI | — | — |
+| A5 | Tap "Month" tab | Stats update for monthly view | UI | `flow10_stats_month.png` | — |
+| A6 | Tap "All Time" tab | Stats update for all-time view | UI | — | — |
+| A7 | Tap "Week" tab (back to default) | Weekly view restored | UI | — | — |
+| A7a | Look for Share button | content-desc "Share" visible | UI | — | — |
+| A7b | Tap Share button (if found) | Share intent launches | UI | — | — |
+| A7c | Press BACK to dismiss share | Return to Stats | UI | — | — |
 
 ### Phase B: Chart & Achievements (Steps 8-12)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| B1 | Look for cuisine distribution chart | Chart or "No data" placeholder | — | — |
-| B2 | Scroll down for more stats | Additional sections visible below fold | `flow10_stats_scrolled.png` | — |
-| B3 | Look for achievements section | Achievements/badges or placeholder | — | — |
-| B3a | Look for "View All" achievements link | text "View All" near achievements | — | — |
-| B3b | Tap "View All" if found | Achievements screen loads | `flow10_achievements.png` | — |
-| B3c | Press BACK | Return to Stats | — | — |
-| B3d | Look for leaderboard/challenge sections | text "Leaderboard" or "Challenge" | — | — |
-| B4 | Verify data consistency | If streak > 0, cuisine chart should have data | — | — |
-| B5 | Run crash/ANR detection (Pattern 9) | No crashes | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| B1 | Look for cuisine distribution chart | Chart or "No data" placeholder | UI | — | — |
+| B2 | Scroll down for more stats | Additional sections visible below fold | UI | `flow10_stats_scrolled.png` | — |
+| B3 | Look for achievements section | Achievements/badges or placeholder | UI | — | — |
+| B3a | Look for "View All" achievements link | text "View All" near achievements | UI | — | — |
+| B3b | Tap "View All" if found | Achievements screen loads | UI | `flow10_achievements.png` | — |
+| B3c | Press BACK | Return to Stats | UI | — | — |
+| B3d | Look for leaderboard/challenge sections | text "Leaderboard" or "Challenge" | UI | — | — |
+| B4 | Verify data consistency | If streak > 0, cuisine chart should have data | UI | — | — |
+| B5 | Run crash/ANR detection (Pattern 9) | No crashes | API | — | — |
 
 ### Backend API Cross-Validation: Stats Data
 
@@ -69,10 +69,10 @@ for cuisine, count in cuisine_breakdown.items():
 
 ### Phase C: Final State (Steps 13-14)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| C1 | Take final screenshot | Stats in current state | `flow10_stats_final.png` | — |
-| C2 | Tap bottom nav "Home" | Return to Home | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| C1 | Take final screenshot | Stats in current state | UI | `flow10_stats_final.png` | — |
+| C2 | Tap bottom nav "Home" | Return to Home | UI | — | — |
 
 ## Validation Checkpoints
 

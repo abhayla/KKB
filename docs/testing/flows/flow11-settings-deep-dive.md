@@ -42,95 +42,95 @@ Uses existing Sharma family data. Will modify and restore preferences.
 
 ### Phase A: Navigation Tour — Visit All 12 Sub-Screens (Steps 1-28)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| A1 | Navigate: tap Profile icon | Settings screen | `flow11_settings.png` | — |
-| A2 | Tap "Dietary Restrictions" | Dietary Restrictions screen loads | `flow11_dietary.png` | — |
-| A3 | Verify radio buttons: Vegetarian, Non-Vegetarian, Vegan, Eggetarian | At least 4 diet options visible | — | — |
-| A4 | Verify checkboxes: Jain, Sattvic, Halal | Modifier checkboxes visible | — | — |
-| A5 | Press BACK | Return to Settings | — | — |
-| A6 | Tap "Disliked Ingredients" | Disliked Ingredients screen loads | `flow11_disliked.png` | — |
-| A7 | Verify existing dislikes as chips | Current disliked ingredients shown (e.g., Karela, Lauki) | — | — |
-| A8 | Press BACK | Return to Settings | — | — |
-| A9 | Tap "Cuisine Preferences" | Cuisine Preferences screen loads | `flow11_cuisine.png` | — |
-| A10 | Verify 4 cuisine cards | North Indian, South Indian, East Indian, West Indian | — | — |
-| A11 | Press BACK | Return to Settings | — | — |
-| A12 | Tap "Spice Level" | Spice Level screen loads | `flow11_spice.png` | — |
-| A13 | Verify spice options | Mild, Medium, Spicy, Very Spicy visible | — | — |
-| A14 | Press BACK | Return to Settings | — | — |
-| A15 | Tap "Cooking Time" | Cooking Time screen loads | `flow11_cooking_time.png` | — |
-| A16 | Verify weekday/weekend time + busy day chips | Time values and day chips visible | — | — |
-| A17 | Press BACK | Return to Settings | — | — |
-| A18 | Scroll down if needed, tap "Family Members" | Family Members screen loads | `flow11_family.png` | — |
-| A19 | Verify member list or empty state | Members shown or "No members" | — | — |
-| A20 | Press BACK | Return to Settings | — | — |
-| A21 | Tap "Notification Settings" | Notification Settings screen loads | `flow11_notif_settings.png` | — |
-| A22 | Verify toggle switches for notification types | At least 2 toggles visible | — | — |
-| A23 | Press BACK | Return to Settings | — | — |
-| A24 | Tap "Units" | Units screen loads | `flow11_units.png` | — |
-| A25 | Verify Weight and Volume unit options | Metric/US/Indian for both | — | — |
-| A26 | Press BACK | Return to Settings | — | — |
-| A27 | Tap "Edit Profile" | Edit Profile screen loads | `flow11_edit_profile.png` | — |
-| A28 | Verify name and email fields | Current display name and email visible | — | — |
-| A29 | Press BACK | Return to Settings | — | — |
-| A30 | Scroll down, tap "Friends & Leaderboard" | Friends screen loads | `flow11_friends.png` | — |
-| A31 | Verify screen loads (empty state OK) | Title visible, no crash | — | — |
-| A32 | Press BACK | Return to Settings | — | — |
-| A33 | Tap "Connected Accounts" | Connected Accounts screen loads | `flow11_connected.png` | — |
-| A34 | Verify Google account status | Google connection shown | — | — |
-| A35 | Press BACK | Return to Settings | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| A1 | Navigate: tap Profile icon | Settings screen | UI | `flow11_settings.png` | — |
+| A2 | Tap "Dietary Restrictions" | Dietary Restrictions screen loads | UI | `flow11_dietary.png` | — |
+| A3 | Verify radio buttons: Vegetarian, Non-Vegetarian, Vegan, Eggetarian | At least 4 diet options visible | UI | — | — |
+| A4 | Verify checkboxes: Jain, Sattvic, Halal | Modifier checkboxes visible | UI | — | — |
+| A5 | Press BACK | Return to Settings | UI | — | — |
+| A6 | Tap "Disliked Ingredients" | Disliked Ingredients screen loads | UI | `flow11_disliked.png` | — |
+| A7 | Verify existing dislikes as chips | Current disliked ingredients shown (e.g., Karela, Lauki) | UI | — | — |
+| A8 | Press BACK | Return to Settings | UI | — | — |
+| A9 | Tap "Cuisine Preferences" | Cuisine Preferences screen loads | UI | `flow11_cuisine.png` | — |
+| A10 | Verify 4 cuisine cards | North Indian, South Indian, East Indian, West Indian | UI | — | — |
+| A11 | Press BACK | Return to Settings | UI | — | — |
+| A12 | Tap "Spice Level" | Spice Level screen loads | UI | `flow11_spice.png` | — |
+| A13 | Verify spice options | Mild, Medium, Spicy, Very Spicy visible | UI | — | — |
+| A14 | Press BACK | Return to Settings | UI | — | — |
+| A15 | Tap "Cooking Time" | Cooking Time screen loads | UI | `flow11_cooking_time.png` | — |
+| A16 | Verify weekday/weekend time + busy day chips | Time values and day chips visible | UI | — | — |
+| A17 | Press BACK | Return to Settings | UI | — | — |
+| A18 | Scroll down if needed, tap "Family Members" | Family Members screen loads | UI | `flow11_family.png` | — |
+| A19 | Verify member list or empty state | Members shown or "No members" | UI | — | — |
+| A20 | Press BACK | Return to Settings | UI | — | — |
+| A21 | Tap "Notification Settings" | Notification Settings screen loads | UI | `flow11_notif_settings.png` | — |
+| A22 | Verify toggle switches for notification types | At least 2 toggles visible | UI | — | — |
+| A23 | Press BACK | Return to Settings | UI | — | — |
+| A24 | Tap "Units" | Units screen loads | UI | `flow11_units.png` | — |
+| A25 | Verify Weight and Volume unit options | Metric/US/Indian for both | UI | — | — |
+| A26 | Press BACK | Return to Settings | UI | — | — |
+| A27 | Tap "Edit Profile" | Edit Profile screen loads | UI | `flow11_edit_profile.png` | — |
+| A28 | Verify name and email fields | Current display name and email visible | UI | — | — |
+| A29 | Press BACK | Return to Settings | UI | — | — |
+| A30 | Scroll down, tap "Friends & Leaderboard" | Friends screen loads | UI | `flow11_friends.png` | — |
+| A31 | Verify screen loads (empty state OK) | Title visible, no crash | UI | — | — |
+| A32 | Press BACK | Return to Settings | UI | — | — |
+| A33 | Tap "Connected Accounts" | Connected Accounts screen loads | UI | `flow11_connected.png` | — |
+| A34 | Verify Google account status | Google connection shown | UI | — | — |
+| A35 | Press BACK | Return to Settings | UI | — | — |
 
 ### Phase B: Dialog Tests (Steps 29-35)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| B1 | Tap "Dark Mode" item on Settings | Dialog: Light / Dark / System | `flow11_dark_dialog.png` | — |
-| B2 | Verify 3 options in dialog | "Light", "Dark", "System" text visible | — | — |
-| B3 | Tap "Dark" | Dark theme applied, dialog closes | `flow11_dark_applied.png` | — |
-| B4 | Verify Settings is now dark-themed | Dark background on Settings screen | — | — |
-| B5 | Tap "Dark Mode" again | Dialog reappears | — | — |
-| B6 | Tap "Light" | Light theme restored | — | — |
-| B7 | Tap "Items per Meal" (or items count setting) | Number selector or dialog appears | `flow11_items_dialog.png` | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| B1 | Tap "Dark Mode" item on Settings | Dialog: Light / Dark / System | UI | `flow11_dark_dialog.png` | — |
+| B2 | Verify 3 options in dialog | "Light", "Dark", "System" text visible | UI | — | — |
+| B3 | Tap "Dark" | Dark theme applied, dialog closes | UI | `flow11_dark_applied.png` | — |
+| B4 | Verify Settings is now dark-themed | Dark background on Settings screen | UI | — | — |
+| B5 | Tap "Dark Mode" again | Dialog reappears | UI | — | — |
+| B6 | Tap "Light" | Light theme restored | UI | — | — |
+| B7 | Tap "Items per Meal" (or items count setting) | Number selector or dialog appears | UI | `flow11_items_dialog.png` | — |
 
 ### Phase C: CRUD Family Members (Steps 36-44)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| C1 | Tap "Family Members" | Family Members screen | — | — |
-| C2 | Tap Add member button (FAB or "+") | Add member dialog/sheet | `flow11_add_member.png` | — |
-| C3 | Enter name: "Dadaji" | Name field filled | — | — |
-| C4 | Select type: "Senior" | Type selected | — | — |
-| C5 | Enter age: "70" | Age entered | — | — |
-| C6 | Tap Save/Add | Dadaji appears in member list | `flow11_member_added.png` | — |
-| C7 | Tap Edit on Dadaji's card | Edit dialog with current values | — | — |
-| C8 | Change age from 70 to 72 | Age updated | — | — |
-| C9 | Save edit | Dadaji shows age 72 | `flow11_member_edited.png` | — |
-| C10 | Tap Delete on Dadaji's card | Confirmation dialog | — | — |
-| C11 | Confirm delete | Dadaji removed from list | `flow11_member_deleted.png` | — |
-| C12 | Press BACK | Return to Settings | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| C1 | Tap "Family Members" | Family Members screen | UI | — | — |
+| C2 | Tap Add member button (FAB or "+") | Add member dialog/sheet | UI | `flow11_add_member.png` | — |
+| C3 | Enter name: "Dadaji" | Name field filled | UI | — | — |
+| C4 | Select type: "Senior" | Type selected | UI | — | — |
+| C5 | Enter age: "70" | Age entered | UI | — | — |
+| C6 | Tap Save/Add | Dadaji appears in member list | UI | `flow11_member_added.png` | — |
+| C7 | Tap Edit on Dadaji's card | Edit dialog with current values | UI | — | — |
+| C8 | Change age from 70 to 72 | Age updated | UI | — | — |
+| C9 | Save edit | Dadaji shows age 72 | UI | `flow11_member_edited.png` | — |
+| C10 | Tap Delete on Dadaji's card | Confirmation dialog | UI | — | — |
+| C11 | Confirm delete | Dadaji removed from list | UI | `flow11_member_deleted.png` | — |
+| C12 | Press BACK | Return to Settings | UI | — | — |
 
 ### Phase D: Modify Preferences (Steps 45-54)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| D1 | Tap "Dietary Restrictions" | Dietary screen | — | — |
-| D2 | Tap "Vegan" radio button | Vegan selected | — | — |
-| D3 | Tap "Sattvic" checkbox | Sattvic enabled | — | — |
-| D4 | Tap Save (or BACK if auto-save) | Preferences saved | `flow11_diet_vegan.png` | — |
-| D5 | Tap "Disliked Ingredients" | Disliked screen | — | — |
-| D6 | Type "Bhindi" in search field | Bhindi suggestion appears | — | — |
-| D7 | Add Bhindi to dislikes | Bhindi chip added | `flow11_bhindi_added.png` | — |
-| D8 | Tap Save or BACK | Saved | — | — |
-| D9 | Tap "Cuisine Preferences" | Cuisine screen | — | — |
-| D10 | Tap "West Indian" card | West Indian selected (checkmark appears) | `flow11_west_added.png` | — |
-| D11 | Tap Save or BACK | Saved | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| D1 | Tap "Dietary Restrictions" | Dietary screen | UI | — | — |
+| D2 | Tap "Vegan" radio button | Vegan selected | UI | — | — |
+| D3 | Tap "Sattvic" checkbox | Sattvic enabled | UI | — | — |
+| D4 | Tap Save (or BACK if auto-save) | Preferences saved | UI | `flow11_diet_vegan.png` | — |
+| D5 | Tap "Disliked Ingredients" | Disliked screen | UI | — | — |
+| D6 | Type "Bhindi" in search field | Bhindi suggestion appears | UI | — | — |
+| D7 | Add Bhindi to dislikes | Bhindi chip added | UI | `flow11_bhindi_added.png` | — |
+| D8 | Tap Save or BACK | Saved | UI | — | — |
+| D9 | Tap "Cuisine Preferences" | Cuisine screen | UI | — | — |
+| D10 | Tap "West Indian" card | West Indian selected (checkmark appears) | UI | `flow11_west_added.png` | — |
+| D11 | Tap Save or BACK | Saved | UI | — | — |
 
 ### Phase E: Backend Cross-Validation (Steps 55-56)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| E1 | Run preferences API check | All changes reflected | — | HARD |
-| E2 | Run family members API check | CRUD verified | — | HARD |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| E1 | Run preferences API check | All changes reflected | API | — | HARD |
+| E2 | Run family members API check | CRUD verified | API | — | HARD |
 
 ```bash
 # E1: Verify preferences changes
@@ -172,19 +172,19 @@ else:
 
 ### Phase F: Revert & Cleanup (Steps 57-61)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| F1 | Tap "Dietary Restrictions" | Dietary screen | — | — |
-| F2 | Tap "Vegetarian" radio | Restore to Vegetarian | — | — |
-| F3 | Uncheck "Sattvic" if checked | Sattvic removed | — | — |
-| F4 | Save or BACK | Saved | — | — |
-| F5 | Tap "Disliked Ingredients" | Disliked screen | — | — |
-| F6 | Remove "Bhindi" chip | Bhindi removed | — | — |
-| F7 | Save or BACK | Saved | — | — |
-| F8 | Tap "Cuisine Preferences" | Cuisine screen | — | — |
-| F9 | Deselect "West Indian" card | West Indian removed | — | — |
-| F10 | Save or BACK | Saved | — | — |
-| F11 | Press BACK to Settings, then BACK to Home | Home screen | `flow11_final.png` | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| F1 | Tap "Dietary Restrictions" | Dietary screen | UI | — | — |
+| F2 | Tap "Vegetarian" radio | Restore to Vegetarian | UI | — | — |
+| F3 | Uncheck "Sattvic" if checked | Sattvic removed | UI | — | — |
+| F4 | Save or BACK | Saved | UI | — | — |
+| F5 | Tap "Disliked Ingredients" | Disliked screen | UI | — | — |
+| F6 | Remove "Bhindi" chip | Bhindi removed | UI | — | — |
+| F7 | Save or BACK | Saved | UI | — | — |
+| F8 | Tap "Cuisine Preferences" | Cuisine screen | UI | — | — |
+| F9 | Deselect "West Indian" card | West Indian removed | UI | — | — |
+| F10 | Save or BACK | Saved | UI | — | — |
+| F11 | Press BACK to Settings, then BACK to Home | Home screen | UI | `flow11_final.png` | — |
 
 ## Validation Checkpoints
 

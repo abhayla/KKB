@@ -43,23 +43,23 @@ Beyond standard D1-D7 prerequisites:
 
 ### Phase A: App Restart & Persistence Check (Steps 1-7)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| A1 | Force-stop app: `$ADB shell am force-stop $APP_PACKAGE` | App killed | — | — |
-| A2 | Relaunch: `$ADB shell am start -n $APP_PACKAGE/$APP_ACTIVITY` | App starts | — | — |
-| A3 | Wait 5s, dump UI | Home screen (NOT auth/onboarding) — user is remembered | `flow02_restart_home.png` | — |
-| A4 | Verify meal plan still loaded | text="This Week's Menu", BREAKFAST, recipe names present | — | — |
-| A5 | Verify meal data matches plan #2 | Recipe names in cards (compare with Flow 1 plan #2 if possible) | — | — |
-| A6 | Tap a day tab (e.g., WED) | Wednesday meals displayed | — | — |
-| A7 | Verify no onboarding prompt | No "Tell us about your household" text | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| A1 | Force-stop app: `$ADB shell am force-stop $APP_PACKAGE` | App killed | API | — | — |
+| A2 | Relaunch: `$ADB shell am start -n $APP_PACKAGE/$APP_ACTIVITY` | App starts | API | — | — |
+| A3 | Wait 5s, dump UI | Home screen (NOT auth/onboarding) — user is remembered | UI | `flow02_restart_home.png` | — |
+| A4 | Verify meal plan still loaded | text="This Week's Menu", BREAKFAST, recipe names present | UI | — | — |
+| A5 | Verify meal data matches plan #2 | Recipe names in cards (compare with Flow 1 plan #2 if possible) | UI | — | — |
+| A6 | Tap a day tab (e.g., WED) | Wednesday meals displayed | UI | — | — |
+| A7 | Verify no onboarding prompt | No "Tell us about your household" text | UI | — | — |
 
 ### Phase B: Verify Plan #2 Still Valid (Steps 8-10)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| B1 | Run V4a-V4k on current plan | Matches Vegetarian, 3 items, Mild expectations | — | V4a-V4k |
-| B2 | Spot-check: scroll to DINNER | DINNER section has recipe names | — | — |
-| B3 | Scroll to SNACKS | SNACKS section has recipe names | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| B1 | Run V4a-V4k on current plan | Matches Vegetarian, 3 items, Mild expectations | API | — | V4a-V4k |
+| B2 | Spot-check: scroll to DINNER | DINNER section has recipe names | UI | — | — |
+| B3 | Scroll to SNACKS | SNACKS section has recipe names | UI | — | — |
 
 ### Checkpoint 1: Verify Plan #2 Persistence
 ```bash
@@ -92,17 +92,17 @@ for day in days[:2]:
 
 ### Phase C: Settings Changes (Steps 11-17)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| C1 | Navigate: tap Profile icon | Settings screen | `flow02_settings.png` | — |
-| C2 | Verify current settings match Flow 1 changes | Vegetarian, Mild, 3 items/meal visible | — | — |
-| C3 | Find weekday cooking time setting | Current value: 30 minutes | — | — |
-| C4 | Change weekday cooking time to 45 minutes | Updated to 45 | — | — |
-| C5 | Find busy days setting | Currently: Monday, Wednesday | — | — |
-| C6 | Change busy days: remove Monday, add Friday | Now: Wednesday, Friday | — | — |
-| C7 | Find "Allow Recipe Repeat" toggle | Currently OFF | — | — |
-| C8 | Toggle to ON | Allow repeats = ON | `flow02_settings_updated.png` | — |
-| C9 | Navigate back to Home | Home screen | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| C1 | Navigate: tap Profile icon | Settings screen | UI | `flow02_settings.png` | — |
+| C2 | Verify current settings match Flow 1 changes | Vegetarian, Mild, 3 items/meal visible | UI | — | — |
+| C3 | Find weekday cooking time setting | Current value: 30 minutes | UI | — | — |
+| C4 | Change weekday cooking time to 45 minutes | Updated to 45 | UI | — | — |
+| C5 | Find busy days setting | Currently: Monday, Wednesday | UI | — | — |
+| C6 | Change busy days: remove Monday, add Friday | Now: Wednesday, Friday | UI | — | — |
+| C7 | Find "Allow Recipe Repeat" toggle | Currently OFF | UI | — | — |
+| C8 | Toggle to ON | Allow repeats = ON | UI | `flow02_settings_updated.png` | — |
+| C9 | Navigate back to Home | Home screen | UI | — | — |
 
 ### Backend API Cross-Validation: Settings Update
 
@@ -119,14 +119,14 @@ print(f'allow_repeats: {d.get(\"allow_repeats\")} (expected: True)')
 
 ### Phase D: Third Meal Plan Generation (Steps 18-23)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| D1 | Tap Refresh/Regenerate | Refresh options appear | — | — |
-| D2 | Select "Entire Week" | Generation starts | — | — |
-| D3 | Wait for generation (up to 90s) | New meal plan loads | `flow02_home_plan3.png` | — |
-| D4 | Verify meal cards updated | Different recipes from Plan #2 | — | — |
-| D5 | Run V4a-V4k validation | Reflects 45min weekday, new busy days, repeats allowed | — | V4a-V4k |
-| D6 | Spot-check a Recipe Detail | Tap a meal card → View Recipe → verify ingredients | `flow02_recipe_spot.png` | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| D1 | Tap Refresh/Regenerate | Refresh options appear | UI | — | — |
+| D2 | Select "Entire Week" | Generation starts | UI | — | — |
+| D3 | Wait for generation (up to 90s) | New meal plan loads | UI | `flow02_home_plan3.png` | — |
+| D4 | Verify meal cards updated | Different recipes from Plan #2 | UI | — | — |
+| D5 | Run V4a-V4k validation | Reflects 45min weekday, new busy days, repeats allowed | API | — | V4a-V4k |
+| D6 | Spot-check a Recipe Detail | Tap a meal card → View Recipe → verify ingredients | UI | `flow02_recipe_spot.png` | — |
 
 ### Checkpoint 2: After Plan #3 Generation
 ```bash

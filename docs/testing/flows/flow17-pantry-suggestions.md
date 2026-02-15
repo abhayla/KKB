@@ -51,28 +51,28 @@
 
 ### Phase A: Navigate to Pantry Screen
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| A1 | Launch app, ensure user authenticated | Home screen displays |
-| A2 | Navigate: Settings → Pantry (or Home → overflow menu → Pantry) | Pantry screen displays |
-| A3 | Verify screen title: "Pantry" OR "My Pantry" | Title visible |
-| A4 | Verify initial state: empty pantry OR existing items from prior session | List visible (may be empty) |
-| A5 | Verify "Add Item" button/FAB visible | Button present |
-| A6 | Verify "Find Recipes" button visible (may be disabled if pantry empty) | Button present |
-| A7 | Screenshot: `flow17_pantry_initial.png` | Screen captured |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| A1 | Launch app, ensure user authenticated | Home screen displays | UI |
+| A2 | Navigate: Settings → Pantry (or Home → overflow menu → Pantry) | Pantry screen displays | UI |
+| A3 | Verify screen title: "Pantry" OR "My Pantry" | Title visible | UI |
+| A4 | Verify initial state: empty pantry OR existing items from prior session | List visible (may be empty) | UI |
+| A5 | Verify "Add Item" button/FAB visible | Button present | UI |
+| A6 | Verify "Find Recipes" button visible (may be disabled if pantry empty) | Button present | UI |
+| A7 | Screenshot: `flow17_pantry_initial.png` | Screen captured | UI |
 
 ### Phase B: Add Pantry Items (State 1 — Basic)
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| B1 | Tap "Add Item" button | Add pantry item dialog appears |
-| B2 | Enter ingredient: "Rice" | Text field populated |
-| B3 | Tap "Add" OR "Save" | Dialog closes, "Rice" appears in pantry list |
-| B4 | Verify "Rice" card shows: Name, quantity (optional), delete button | Card visible |
-| B5 | Repeat B1-B3 for: Dal, Tomatoes, Onions, Turmeric | 5 items total in pantry list |
-| B6 | Verify pantry item count: 5 | List has 5 cards |
-| B7 | Verify "Find Recipes" button enabled (no longer grayed out) | Button enabled |
-| B8 | Screenshot: `flow17_pantry_5_items.png` | 5 items visible |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| B1 | Tap "Add Item" button | Add pantry item dialog appears | UI |
+| B2 | Enter ingredient: "Rice" | Text field populated | UI |
+| B3 | Tap "Add" OR "Save" | Dialog closes, "Rice" appears in pantry list | UI |
+| B4 | Verify "Rice" card shows: Name, quantity (optional), delete button | Card visible | UI |
+| B5 | Repeat B1-B3 for: Dal, Tomatoes, Onions, Turmeric | 5 items total in pantry list | UI |
+| B6 | Verify pantry item count: 5 | List has 5 cards | UI |
+| B7 | Verify "Find Recipes" button enabled (no longer grayed out) | Button enabled | UI |
+| B8 | Screenshot: `flow17_pantry_5_items.png` | 5 items visible | UI |
 
 **Alternative: Backend API Shortcut (for speed):**
 
@@ -99,49 +99,49 @@ Then refresh pantry screen in app to see items.
 
 ### Phase C: Find Recipe Suggestions
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| C1 | Tap "Find Recipes" button | Loading indicator appears |
-| C2 | Wait 2-3 seconds for backend to process | Loading completes |
-| C3 | Verify recipe suggestion screen/bottom sheet appears | Recipe suggestions list displays |
-| C4 | Verify title: "Recipes You Can Make" OR "Suggested Recipes" | Title visible |
-| C5 | Verify at least 1 recipe suggestion visible | List has >= 1 recipe card |
-| C6 | Verify recipe card shows: Recipe name, Match percentage, Missing ingredients count | All fields present |
-| C7 | Verify recipes sorted by match percentage (highest first) | First recipe has highest % |
-| C8 | Screenshot: `flow17_suggestions_basic.png` | Suggestions list |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| C1 | Tap "Find Recipes" button | Loading indicator appears | UI |
+| C2 | Wait 2-3 seconds for backend to process | Loading completes | UI |
+| C3 | Verify recipe suggestion screen/bottom sheet appears | Recipe suggestions list displays | UI |
+| C4 | Verify title: "Recipes You Can Make" OR "Suggested Recipes" | Title visible | UI |
+| C5 | Verify at least 1 recipe suggestion visible | List has >= 1 recipe card | UI |
+| C6 | Verify recipe card shows: Recipe name, Match percentage, Missing ingredients count | All fields present | UI |
+| C7 | Verify recipes sorted by match percentage (highest first) | First recipe has highest % | UI |
+| C8 | Screenshot: `flow17_suggestions_basic.png` | Suggestions list | UI |
 
 ### Phase D: Validate Recipe Match Details
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| D1 | Tap on first recipe suggestion (highest match) | Recipe Detail screen OR detail sheet appears |
-| D2 | Verify recipe name visible (e.g., "Dal Tadka") | Recipe name displayed |
-| D3 | Verify ingredients section shows: Available ingredients (green/checkmark), Missing ingredients (red/cross) | Ingredients categorized |
-| D4 | Verify match percentage displayed (e.g., "80% match — 4/5 ingredients available") | Percentage + fraction shown |
-| D5 | Verify missing ingredients listed (e.g., "Missing: Green Chilies") | Missing list visible |
-| D6 | Press BACK to return to suggestions list | Suggestions list displays |
-| D7 | Screenshot: `flow17_recipe_match_detail.png` | Match details visible |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| D1 | Tap on first recipe suggestion (highest match) | Recipe Detail screen OR detail sheet appears | UI |
+| D2 | Verify recipe name visible (e.g., "Dal Tadka") | Recipe name displayed | UI |
+| D3 | Verify ingredients section shows: Available ingredients (green/checkmark), Missing ingredients (red/cross) | Ingredients categorized | UI |
+| D4 | Verify match percentage displayed (e.g., "80% match — 4/5 ingredients available") | Percentage + fraction shown | UI |
+| D5 | Verify missing ingredients listed (e.g., "Missing: Green Chilies") | Missing list visible | UI |
+| D6 | Press BACK to return to suggestions list | Suggestions list displays | UI |
+| D7 | Screenshot: `flow17_recipe_match_detail.png` | Match details visible | UI |
 
 ### Phase E: Tap Suggested Recipe → Opens Recipe Detail
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| E1 | From suggestions list, tap second recipe card | Navigation to Recipe Detail screen |
-| E2 | Verify Recipe Detail screen loads with full recipe data | Recipe name, image, ingredients, instructions visible |
-| E3 | Verify "Start Cooking" button present (recipe is actionable) | Button visible |
-| E4 | Verify recipe tags include cuisine and dietary tags | Tags displayed |
-| E5 | Press BACK twice to return to Pantry screen | Pantry screen displays |
-| E6 | Screenshot: `flow17_recipe_detail_from_suggestion.png` | Recipe detail screen |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| E1 | From suggestions list, tap second recipe card | Navigation to Recipe Detail screen | UI |
+| E2 | Verify Recipe Detail screen loads with full recipe data | Recipe name, image, ingredients, instructions visible | UI |
+| E3 | Verify "Start Cooking" button present (recipe is actionable) | Button visible | UI |
+| E4 | Verify recipe tags include cuisine and dietary tags | Tags displayed | UI |
+| E5 | Press BACK twice to return to Pantry screen | Pantry screen displays | UI |
+| E6 | Screenshot: `flow17_recipe_detail_from_suggestion.png` | Recipe detail screen | UI |
 
 ### Phase F: Contradiction C38 — Empty Pantry
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| F1 | Delete all pantry items (tap delete on each card OR use "Clear All" button) | Pantry list empty |
-| F2 | Verify pantry empty state: "Your pantry is empty" OR "Add ingredients to get started" | Empty state message visible |
-| F3 | Verify "Find Recipes" button disabled OR shows error on tap | Button disabled or shows error dialog |
-| F4 | Tap "Find Recipes" (if enabled) | Error dialog: "Add at least 1 ingredient to find recipes" OR no action |
-| F5 | Screenshot: `flow17_pantry_empty_error.png` | Empty state/error |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| F1 | Delete all pantry items (tap delete on each card OR use "Clear All" button) | Pantry list empty | UI |
+| F2 | Verify pantry empty state: "Your pantry is empty" OR "Add ingredients to get started" | Empty state message visible | UI |
+| F3 | Verify "Find Recipes" button disabled OR shows error on tap | Button disabled or shows error dialog | UI |
+| F4 | Tap "Find Recipes" (if enabled) | Error dialog: "Add at least 1 ingredient to find recipes" OR no action | UI |
+| F5 | Screenshot: `flow17_pantry_empty_error.png` | Empty state/error | UI |
 
 **Backend API Shortcut to Clear Pantry:**
 
@@ -160,14 +160,14 @@ done
 
 ### Phase G: Contradiction C39 — No Recipe Matches
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| G1 | Add unusual ingredients that won't match any recipe: "Dragon Fruit", "Quinoa", "Kale" | 3 items in pantry |
-| G2 | Tap "Find Recipes" | Loading indicator appears |
-| G3 | Wait for backend to process | Loading completes |
-| G4 | Verify graceful empty state: "No recipes found with these ingredients" OR "Try adding more common ingredients" | Empty state message visible |
-| G5 | Verify suggestion to add more items OR browse all recipes | Helpful message/action present |
-| G6 | Screenshot: `flow17_no_matches.png` | Empty state with helpful message |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| G1 | Add unusual ingredients that won't match any recipe: "Dragon Fruit", "Quinoa", "Kale" | 3 items in pantry | UI |
+| G2 | Tap "Find Recipes" | Loading indicator appears | UI |
+| G3 | Wait for backend to process | Loading completes | UI |
+| G4 | Verify graceful empty state: "No recipes found with these ingredients" OR "Try adding more common ingredients" | Empty state message visible | UI |
+| G5 | Verify suggestion to add more items OR browse all recipes | Helpful message/action present | UI |
+| G6 | Screenshot: `flow17_no_matches.png` | Empty state with helpful message | UI |
 
 **Backend API to Test C39:**
 
@@ -189,17 +189,17 @@ Expected response: `[]` (empty array) OR `{"recipes": [], "message": "No matchin
 
 ### Phase H: Test Different Pantry States
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| H1 | Clear pantry, add State 2 ingredients: Rice, Urad Dal, Curry Leaves, Mustard Seeds, Coconut | 5 items added |
-| H2 | Tap "Find Recipes" | Suggestions appear: Idli, Sambar, Coconut Chutney |
-| H3 | Verify South Indian recipes dominate suggestions (match cuisine) | Recipes match regional cuisine |
-| H4 | Screenshot: `flow17_suggestions_south_indian.png` | South Indian recipes |
-| H5 | Clear pantry, add State 3 ingredients: Potatoes, Salt (minimal) | 2 items added |
-| H6 | Tap "Find Recipes" | Suggestions appear with low match % (e.g., 20-30%) |
-| H7 | Verify suggestions include: Aloo Paratha (partial match), Boiled Potatoes | Partial match recipes shown |
-| H8 | Verify missing ingredients clearly listed for each suggestion | Missing ingredients visible |
-| H9 | Screenshot: `flow17_suggestions_minimal.png` | Partial match recipes |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| H1 | Clear pantry, add State 2 ingredients: Rice, Urad Dal, Curry Leaves, Mustard Seeds, Coconut | 5 items added | UI |
+| H2 | Tap "Find Recipes" | Suggestions appear: Idli, Sambar, Coconut Chutney | UI |
+| H3 | Verify South Indian recipes dominate suggestions (match cuisine) | Recipes match regional cuisine | UI |
+| H4 | Screenshot: `flow17_suggestions_south_indian.png` | South Indian recipes | UI |
+| H5 | Clear pantry, add State 3 ingredients: Potatoes, Salt (minimal) | 2 items added | UI |
+| H6 | Tap "Find Recipes" | Suggestions appear with low match % (e.g., 20-30%) | UI |
+| H7 | Verify suggestions include: Aloo Paratha (partial match), Boiled Potatoes | Partial match recipes shown | UI |
+| H8 | Verify missing ingredients clearly listed for each suggestion | Missing ingredients visible | UI |
+| H9 | Screenshot: `flow17_suggestions_minimal.png` | Partial match recipes | UI |
 
 ### Phase I: Backend API Verification
 
@@ -239,11 +239,11 @@ if suggestions:
 
 This flow tests pantry-specific contradictions:
 
-| ID | Contradiction | Setup | Expected Behavior |
-|----|---------------|-------|-------------------|
-| **C38** | Empty pantry | User deletes all pantry items, taps "Find Recipes" | Error dialog: "Add at least 1 ingredient to find recipes" OR button disabled |
-| **C39** | No recipe matches | User adds unusual ingredients (Dragon Fruit, Quinoa, Kale) | Graceful empty state: "No recipes found. Try adding more common ingredients like rice, dal, or vegetables." |
-| **C46** | Duplicate pantry item | User adds "Rice" twice | Second add shows error: "Rice is already in your pantry" OR increments quantity |
+| ID | Contradiction | Setup | Expected Behavior | Type |
+|----|---------------|-------|-------------------|------|
+| **C38** | Empty pantry | User deletes all pantry items, taps "Find Recipes" | Error dialog: "Add at least 1 ingredient to find recipes" OR button disabled | UI |
+| **C39** | No recipe matches | User adds unusual ingredients (Dragon Fruit, Quinoa, Kale) | Graceful empty state: "No recipes found. Try adding more common ingredients like rice, dal, or vegetables." | UI |
+| **C46** | Duplicate pantry item | User adds "Rice" twice | Second add shows error: "Rice is already in your pantry" OR increments quantity | UI |
 
 ## Fix Strategy
 

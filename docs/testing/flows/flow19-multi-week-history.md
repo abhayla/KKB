@@ -25,21 +25,21 @@ Uses existing Sharma family data. Focus is on multi-week navigation and data con
 
 ### Phase A: Verify Current Week (Steps 1-5)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| A1 | Navigate to Home screen | Home screen with current week meal plan | `flow19_home_current.png` | HARD |
-| A2 | Verify week header shows "This Week's Menu" or current date range | Header text contains week range (e.g., "Feb 10 - Feb 16") | — | HARD |
-| A3 | Verify day selector shows current week days | 7 day tabs visible, current day highlighted | — | HARD |
-| A4 | Verify meal plan data exists | BREAKFAST, LUNCH, DINNER, SNACKS all have items | — | HARD |
-| A5 | Note first meal name | Record name of Monday BREAKFAST item for later comparison | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| A1 | Navigate to Home screen | Home screen with current week meal plan | UI | `flow19_home_current.png` | HARD |
+| A2 | Verify week header shows "This Week's Menu" or current date range | Header text contains week range (e.g., "Feb 10 - Feb 16") | UI | — | HARD |
+| A3 | Verify day selector shows current week days | 7 day tabs visible, current day highlighted | UI | — | HARD |
+| A4 | Verify meal plan data exists | BREAKFAST, LUNCH, DINNER, SNACKS all have items | UI | — | HARD |
+| A5 | Note first meal name | Record name of Monday BREAKFAST item for later comparison | UI | — | — |
 
 ### Phase B: Generate/Seed Previous Week Meal Plan (Steps 6-8)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| B1 | Via backend API, generate meal plan for previous week | See Backend API section below | — | HARD |
-| B2 | Verify API response 200 | Previous week plan created in database | — | HARD |
-| B3 | Note previous week date range | e.g., "Feb 3 - Feb 9" | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| B1 | Via backend API, generate meal plan for previous week | See Backend API section below | API | — | HARD |
+| B2 | Verify API response 200 | Previous week plan created in database | API | — | HARD |
+| B3 | Note previous week date range | e.g., "Feb 3 - Feb 9" | API | — | — |
 
 ### Backend API: Generate Previous Week Meal Plan
 
@@ -70,53 +70,53 @@ except Exception as e:
 
 ### Phase C: Navigate to Previous Week (Steps 9-14)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| C1 | On Home screen, verify Previous Week arrow button exists | content-desc "Previous Week" or left arrow visible | — | HARD |
-| C2 | Tap Previous Week arrow | Loading indicator, then previous week meal plan loads | `flow19_previous_week.png` | HARD |
-| C3 | Verify week header updates | Header shows previous week range (e.g., "Feb 3 - Feb 9") | — | HARD |
-| C4 | Verify day selector updates | Days show dates from previous week | — | HARD |
-| C5 | Verify meal plan data exists | All meal slots have items (different from current week) | — | HARD |
-| C6 | Compare Monday BREAKFAST item | Different recipe name than current week (recorded in A5) | — | HARD |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| C1 | On Home screen, verify Previous Week arrow button exists | content-desc "Previous Week" or left arrow visible | UI | — | HARD |
+| C2 | Tap Previous Week arrow | Loading indicator, then previous week meal plan loads | UI | `flow19_previous_week.png` | HARD |
+| C3 | Verify week header updates | Header shows previous week range (e.g., "Feb 3 - Feb 9") | UI | — | HARD |
+| C4 | Verify day selector updates | Days show dates from previous week | UI | — | HARD |
+| C5 | Verify meal plan data exists | All meal slots have items (different from current week) | UI | — | HARD |
+| C6 | Compare Monday BREAKFAST item | Different recipe name than current week (recorded in A5) | UI | — | HARD |
 
 ### Phase D: Navigate Back to Current Week (Steps 15-19)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| D1 | Tap Next Week arrow | Current week meal plan loads again | — | HARD |
-| D2 | Verify week header shows current week range | Back to "This Week's Menu" or current dates | — | HARD |
-| D3 | Verify Monday BREAKFAST matches original | Same recipe name as noted in A5 | — | HARD |
-| D4 | Verify "Next Week" arrow exists (for future weeks) | Right arrow visible | — | — |
-| D5 | Verify "Back to This Week" button exists (if on non-current week) | Button visible/hidden based on week selected | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| D1 | Tap Next Week arrow | Current week meal plan loads again | UI | — | HARD |
+| D2 | Verify week header shows current week range | Back to "This Week's Menu" or current dates | UI | — | HARD |
+| D3 | Verify Monday BREAKFAST matches original | Same recipe name as noted in A5 | UI | — | HARD |
+| D4 | Verify "Next Week" arrow exists (for future weeks) | Right arrow visible | UI | — | — |
+| D5 | Verify "Back to This Week" button exists (if on non-current week) | Button visible/hidden based on week selected | UI | — | — |
 
 ### Phase E: Navigate to Week with No Plan (Steps 20-24)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| E1 | Tap Next Week arrow (from current week) | Navigate to future week | — | — |
-| E2 | Verify no meal plan data | Empty state or message "No meal plan for this week" | `flow19_empty_week.png` | HARD |
-| E3 | Verify week header shows correct future week range | Header displays future dates | — | HARD |
-| E4 | Verify day selector shows future week days | Days are correct for future week | — | — |
-| E5 | Verify "Generate Meal Plan" button exists | Option to generate plan for this week | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| E1 | Tap Next Week arrow (from current week) | Navigate to future week | UI | — | — |
+| E2 | Verify no meal plan data | Empty state or message "No meal plan for this week" | UI | `flow19_empty_week.png` | HARD |
+| E3 | Verify week header shows correct future week range | Header displays future dates | UI | — | HARD |
+| E4 | Verify day selector shows future week days | Days are correct for future week | UI | — | — |
+| E5 | Verify "Generate Meal Plan" button exists | Option to generate plan for this week | UI | — | — |
 
 ### Phase F: Return to Current Week (Steps 25-27)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| F1 | Tap "Back to This Week" button | Instantly returns to current week (no loading) | — | HARD |
-| F2 | Verify current week meal plan displayed | Same data as Phase A | — | HARD |
-| F3 | Verify week header shows current week | "This Week's Menu" visible | — | HARD |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| F1 | Tap "Back to This Week" button | Instantly returns to current week (no loading) | UI | — | HARD |
+| F2 | Verify current week meal plan displayed | Same data as Phase A | UI | — | HARD |
+| F3 | Verify week header shows current week | "This Week's Menu" visible | UI | — | HARD |
 
 ### Phase G: Grocery List Multi-Week Integration (Steps 28-33)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| G1 | While on current week, navigate to Grocery | Grocery screen loads | `flow19_grocery_current.png` | — |
-| G2 | Verify grocery items from current week meal plan | Items match current week recipes | — | HARD |
-| G3 | Navigate back to Home | Home screen | — | — |
-| G4 | Switch to previous week | Previous week meal plan loads | — | — |
-| G5 | Navigate to Grocery | Grocery screen loads | `flow19_grocery_previous.png` | — |
-| G6 | Verify grocery items updated (optional feature) | Items match previous week recipes OR remain from current week (document behavior) | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| G1 | While on current week, navigate to Grocery | Grocery screen loads | UI | `flow19_grocery_current.png` | — |
+| G2 | Verify grocery items from current week meal plan | Items match current week recipes | UI | — | HARD |
+| G3 | Navigate back to Home | Home screen | UI | — | — |
+| G4 | Switch to previous week | Previous week meal plan loads | UI | — | — |
+| G5 | Navigate to Grocery | Grocery screen loads | UI | `flow19_grocery_previous.png` | — |
+| G6 | Verify grocery items updated (optional feature) | Items match previous week recipes OR remain from current week (document behavior) | UI | — | — |
 
 ### Backend API Cross-Validation: Meal Plan Retrieval
 
@@ -144,24 +144,24 @@ else:
 
 ### Phase H: Contradictions C43-C45 (Steps 34-42)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| H1 | **C43:** Rapidly tap Previous/Next Week arrows 10 times | UI handles rapid navigation without crash | — | HARD |
-| H2 | Verify Home screen still functional | No crashes, correct week displayed | `flow19_c43_rapid.png` | HARD |
-| H3 | **C44:** Navigate to week 4 weeks in the past | Tap Previous Week 4 times | — | — |
-| H4 | Verify very old week loads (if plan exists) | Historical plan loads OR empty state | `flow19_c44_old_week.png` | — |
-| H5 | Tap "Back to This Week" | Returns to current week | — | HARD |
-| H6 | **C45:** Navigate to week 4 weeks in the future | Tap Next Week 4 times | — | — |
-| H7 | Verify very future week shows empty state | "No meal plan" or generate option | `flow19_c45_future_week.png` | HARD |
-| H8 | Tap "Back to This Week" | Returns to current week | — | HARD |
-| H9 | Run crash/ANR detection (Pattern 9) | No crashes during rapid navigation | — | HARD |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| H1 | **C43:** Rapidly tap Previous/Next Week arrows 10 times | UI handles rapid navigation without crash | UI | — | HARD |
+| H2 | Verify Home screen still functional | No crashes, correct week displayed | UI | `flow19_c43_rapid.png` | HARD |
+| H3 | **C44:** Navigate to week 4 weeks in the past | Tap Previous Week 4 times | UI | — | — |
+| H4 | Verify very old week loads (if plan exists) | Historical plan loads OR empty state | UI | `flow19_c44_old_week.png` | — |
+| H5 | Tap "Back to This Week" | Returns to current week | UI | — | HARD |
+| H6 | **C45:** Navigate to week 4 weeks in the future | Tap Next Week 4 times | UI | — | — |
+| H7 | Verify very future week shows empty state | "No meal plan" or generate option | UI | `flow19_c45_future_week.png` | HARD |
+| H8 | Tap "Back to This Week" | Returns to current week | UI | — | HARD |
+| H9 | Run crash/ANR detection (Pattern 9) | No crashes during rapid navigation | API | — | HARD |
 
 ### Phase I: Cleanup (Steps 43-44)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| I1 | Ensure Home screen on current week | Current week displayed | `flow19_final.png` | — |
-| I2 | Verify all data intact | Current week meal plan unchanged | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| I1 | Ensure Home screen on current week | Current week displayed | UI | `flow19_final.png` | — |
+| I2 | Verify all data intact | Current week meal plan unchanged | UI | — | — |
 
 ## Validation Checkpoints
 
@@ -198,8 +198,8 @@ No `validate_meal_plan.py` checkpoints — validation is multi-week navigation-f
 
 ## Contradictions
 
-| ID | Description | Steps | Expected Outcome |
-|----|-------------|-------|------------------|
-| C43 | Rapid week navigation | H1-H2 | No crash, UI stable |
-| C44 | Navigate to very old week (4 weeks past) | H3-H5 | Historical plan loads or empty state |
-| C45 | Navigate to very future week (4 weeks ahead) | H6-H8 | Empty state with generate option |
+| ID | Description | Steps | Expected Outcome | Type |
+|----|-------------|-------|------------------|------|
+| C43 | Rapid week navigation | H1-H2 | No crash, UI stable | UI |
+| C44 | Navigate to very old week (4 weeks past) | H3-H5 | Historical plan loads or empty state | UI |
+| C45 | Navigate to very future week (4 weeks ahead) | H6-H8 | Empty state with generate option | UI |

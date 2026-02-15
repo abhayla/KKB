@@ -23,55 +23,55 @@ Uses existing Sharma family data. This flow tests stability, not functionality.
 
 ### Phase A: Rapid Navigation (Steps 1-5)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| A1 | Rapid-tap bottom nav: Home → Grocery → Chat → Favs → Stats (1s each) | Each screen appears briefly | — | — |
-| A2 | Rapid-tap back: Stats → Home via bottom nav | Returns to Home | — | — |
-| A3 | Run crash/ANR detection (Pattern 9) | No crashes from rapid nav | — | — |
-| A4 | Tap Grocery → immediately tap Home | No navigation crash | — | — |
-| A5 | Tap Chat → type text → immediately tap Home | No crash, keyboard dismissed | `flow07_rapid_nav.png` | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| A1 | Rapid-tap bottom nav: Home → Grocery → Chat → Favs → Stats (1s each) | Each screen appears briefly | UI | — | — |
+| A2 | Rapid-tap back: Stats → Home via bottom nav | Returns to Home | UI | — | — |
+| A3 | Run crash/ANR detection (Pattern 9) | No crashes from rapid nav | API | — | — |
+| A4 | Tap Grocery → immediately tap Home | No navigation crash | UI | — | — |
+| A5 | Tap Chat → type text → immediately tap Home | No crash, keyboard dismissed | UI | `flow07_rapid_nav.png` | — |
 
 ### Phase B: Back Stack Testing (Steps 6-9)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| B1 | Navigate: Home → Settings → Pantry | Pantry screen | — | — |
-| B2 | Press BACK | Returns to Settings | — | — |
-| B3 | Press BACK | Returns to Home | — | — |
-| B4 | Press BACK again | App minimizes or shows "Press back again to exit" | — | — |
-| B5 | Relaunch app if minimized | Home screen restored | — | — |
-| B6 | Navigate: Home → meal card → View Recipe → Start Cooking | Cooking Mode | — | — |
-| B7 | Press BACK | Returns to Recipe Detail | — | — |
-| B8 | Press BACK | Returns to Home | — | — |
-| B9 | Run crash/ANR detection | No crashes | `flow07_back_stack.png` | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| B1 | Navigate: Home → Settings → Pantry | Pantry screen | UI | — | — |
+| B2 | Press BACK | Returns to Settings | UI | — | — |
+| B3 | Press BACK | Returns to Home | UI | — | — |
+| B4 | Press BACK again | App minimizes or shows "Press back again to exit" | UI | — | — |
+| B5 | Relaunch app if minimized | Home screen restored | UI | — | — |
+| B6 | Navigate: Home → meal card → View Recipe → Start Cooking | Cooking Mode | UI | — | — |
+| B7 | Press BACK | Returns to Recipe Detail | UI | — | — |
+| B8 | Press BACK | Returns to Home | UI | — | — |
+| B9 | Run crash/ANR detection | No crashes | API | `flow07_back_stack.png` | — |
 
 ### Phase C: Contradictions C16-C21 (Steps 10-21)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| C1 | **C16:** Navigate to Settings, set ALL 7 days as busy | All days selected (Mon-Sun) | — | — |
-| C2 | Navigate to Home, verify no crash | App handles extreme busy days | `flow07_c16_all_busy.png` | — |
-| C3 | Revert: remove all busy days (or set back to Mon, Wed) | Reverted | — | — |
-| C4 | **C17:** Set weekday cooking time to minimum (15 min if possible) | Minimum time set | — | — |
-| C5 | Verify app doesn't crash with tight constraint | Settings saves | — | — |
-| C6 | Revert cooking time to 30 min | Reverted | — | — |
-| C7 | **C18:** Navigate to Settings → Cuisine preferences | Cuisine screen | — | — |
-| C8 | Deselect ALL cuisines | Empty selection | — | — |
-| C9 | Verify behavior: error message or default fallback | No crash | `flow07_c18_no_cuisine.png` | — |
-| C10 | Reselect North Indian | Restored | — | — |
-| C11 | **C19:** Navigate to Home, tap Refresh/Regenerate | Refresh options | — | — |
-| C12 | Tap "Entire Week" then IMMEDIATELY tap again | Second tap should be ignored/queued | `flow07_c19_double_tap.png` | — |
-| C13 | Wait for generation or verify double-tap blocked | Single generation, not duplicate | — | — |
-| C14 | **C20:** Tap a meal card → "View Recipe" | Recipe Detail loads | — | — |
-| C15 | Press BACK within 0.5 seconds | Clean return to Home, no crash | — | — |
-| C16 | **C21:** Navigate to Settings, scroll to "Sign Out" | Sign Out button visible | — | — |
-| C17 | Tap "Sign Out" | Confirmation dialog | — | — |
-| C18 | Tap "Sign Out" to confirm | App navigates to Auth screen | `flow07_c21_signout.png` | — |
-| C19 | Sign back in (tap "Sign in with Google") | Fake auth completes | — | — |
-| C20 | Wait for Home screen | Home loads with preserved data | `flow07_c21_resignin.png` | — |
-| C21 | Verify data preserved | Meal plan, preferences still intact | — | — |
-| C21a | **Backend verification:** meal plan preserved | curl check below | — | — |
-| C21b | **Backend verification:** preferences intact | curl check below | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| C1 | **C16:** Navigate to Settings, set ALL 7 days as busy | All days selected (Mon-Sun) | UI | — | — |
+| C2 | Navigate to Home, verify no crash | App handles extreme busy days | UI | `flow07_c16_all_busy.png` | — |
+| C3 | Revert: remove all busy days (or set back to Mon, Wed) | Reverted | UI | — | — |
+| C4 | **C17:** Set weekday cooking time to minimum (15 min if possible) | Minimum time set | UI | — | — |
+| C5 | Verify app doesn't crash with tight constraint | Settings saves | UI | — | — |
+| C6 | Revert cooking time to 30 min | Reverted | UI | — | — |
+| C7 | **C18:** Navigate to Settings → Cuisine preferences | Cuisine screen | UI | — | — |
+| C8 | Deselect ALL cuisines | Empty selection | UI | — | — |
+| C9 | Verify behavior: error message or default fallback | No crash | UI | `flow07_c18_no_cuisine.png` | — |
+| C10 | Reselect North Indian | Restored | UI | — | — |
+| C11 | **C19:** Navigate to Home, tap Refresh/Regenerate | Refresh options | UI | — | — |
+| C12 | Tap "Entire Week" then IMMEDIATELY tap again | Second tap should be ignored/queued | UI | `flow07_c19_double_tap.png` | — |
+| C13 | Wait for generation or verify double-tap blocked | Single generation, not duplicate | UI | — | — |
+| C14 | **C20:** Tap a meal card → "View Recipe" | Recipe Detail loads | UI | — | — |
+| C15 | Press BACK within 0.5 seconds | Clean return to Home, no crash | UI | — | — |
+| C16 | **C21:** Navigate to Settings, scroll to "Sign Out" | Sign Out button visible | UI | — | — |
+| C17 | Tap "Sign Out" | Confirmation dialog | UI | — | — |
+| C18 | Tap "Sign Out" to confirm | App navigates to Auth screen | UI | `flow07_c21_signout.png` | — |
+| C19 | Sign back in (tap "Sign in with Google") | Fake auth completes | UI | — | — |
+| C20 | Wait for Home screen | Home loads with preserved data | UI | `flow07_c21_resignin.png` | — |
+| C21 | Verify data preserved | Meal plan, preferences still intact | UI | — | — |
+| C21a | **Backend verification:** meal plan preserved | curl check below | API | — | — |
+| C21b | **Backend verification:** preferences intact | curl check below | API | — | — |
 
 ### Backend API Cross-Validation: Sign-Out/In Data Preservation
 
@@ -103,10 +103,10 @@ print('Preferences intact -> PASS' if d.get('dietary_type') else 'FAIL: preferen
 
 ### Phase D: Final Stability Check (Steps 22-23)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| D1 | Run crash/ANR detection (Pattern 9) | No crashes detected | — | — |
-| D2 | Capture logcat errors (Pattern 13) | Log saved for review | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| D1 | Run crash/ANR detection (Pattern 9) | No crashes detected | API | — | — |
+| D2 | Capture logcat errors (Pattern 13) | Log saved for review | API | — | — |
 
 ## Validation Checkpoints
 

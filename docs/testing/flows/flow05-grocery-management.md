@@ -23,60 +23,60 @@ Uses existing Sharma family data. No settings changes in this flow.
 
 ### Phase A: Grocery List Exploration (Steps 1-4)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| A1 | Tap bottom nav "Grocery" | Grocery screen loads | `flow05_grocery.png` | — |
-| A2 | Verify screen title | "Grocery List" or "Grocery" visible | — | — |
-| A3 | Verify categories exist | At least 3 category headers (Vegetables, Spices, Dairy, Grains, etc.) | — | — |
-| A4 | Verify grocery items | Ingredient names with quantities visible | — | — |
-| A4a | Find More options (3-dot) button | content-desc "More options" or "More" visible | — | — |
-| A4b | Tap More options | Menu with "Clear purchased items" and "Share as text" | — | — |
-| A4c | Press BACK to dismiss menu | Return to Grocery | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| A1 | Tap bottom nav "Grocery" | Grocery screen loads | UI | `flow05_grocery.png` | — |
+| A2 | Verify screen title | "Grocery List" or "Grocery" visible | UI | — | — |
+| A3 | Verify categories exist | At least 3 category headers (Vegetables, Spices, Dairy, Grains, etc.) | UI | — | — |
+| A4 | Verify grocery items | Ingredient names with quantities visible | UI | — | — |
+| A4a | Find More options (3-dot) button | content-desc "More options" or "More" visible | UI | — | — |
+| A4b | Tap More options | Menu with "Clear purchased items" and "Share as text" | UI | — | — |
+| A4c | Press BACK to dismiss menu | Return to Grocery | UI | — | — |
 
 ### Phase B: Category Interaction (Steps 5-7)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| B1 | Tap a category header (e.g., "Vegetables") | Category collapses or expands | — | — |
-| B2 | Tap the same category again | Category toggles back | — | — |
-| B3 | Scroll down to see more categories | Additional categories visible below fold | `flow05_grocery_scrolled.png` | — |
-| B4 | Swipe a grocery item left | Delete action appears (red background) | — | — |
-| B5 | Press BACK or tap to cancel delete | Item restored | — | — |
-| B6 | Swipe a grocery item right | Edit dialog appears (blue background) | — | — |
-| B7 | Press BACK to dismiss edit | Return to Grocery | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| B1 | Tap a category header (e.g., "Vegetables") | Category collapses or expands | UI | — | — |
+| B2 | Tap the same category again | Category toggles back | UI | — | — |
+| B3 | Scroll down to see more categories | Additional categories visible below fold | UI | `flow05_grocery_scrolled.png` | — |
+| B4 | Swipe a grocery item left | Delete action appears (red background) | UI | — | — |
+| B5 | Press BACK or tap to cancel delete | Item restored | UI | — | — |
+| B6 | Swipe a grocery item right | Edit dialog appears (blue background) | UI | — | — |
+| B7 | Press BACK to dismiss edit | Return to Grocery | UI | — | — |
 
 ### Phase C: Checkbox Interaction (Steps 8-11)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| C1 | Find a grocery item checkbox | Checkbox visible next to ingredient | — | — |
-| C2 | Tap checkbox to mark purchased | Item marked (strikethrough or checked) | `flow05_item_checked.png` | — |
-| C3 | Tap a second item checkbox | Second item marked | — | — |
-| C4 | Tap first checkbox again to uncheck | Item unchecked (strikethrough removed) | — | — |
-| C5 | Find "Add custom item" button | Button visible (text or content-desc) | — | — |
-| C6 | Tap "Add custom item" | Add item dialog: name, quantity, unit, category | `flow05_add_custom.png` | — |
-| C7 | Type "Ghee" in name field | "Ghee" entered | — | — |
-| C8 | Tap Save/Add in dialog | Ghee appears in grocery list | — | — |
-| C9 | Verify Ghee in list | "Ghee" text visible in grocery items | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| C1 | Find a grocery item checkbox | Checkbox visible next to ingredient | UI | — | — |
+| C2 | Tap checkbox to mark purchased | Item marked (strikethrough or checked) | UI | `flow05_item_checked.png` | — |
+| C3 | Tap a second item checkbox | Second item marked | UI | — | — |
+| C4 | Tap first checkbox again to uncheck | Item unchecked (strikethrough removed) | UI | — | — |
+| C5 | Find "Add custom item" button | Button visible (text or content-desc) | UI | — | — |
+| C6 | Tap "Add custom item" | Add item dialog: name, quantity, unit, category | UI | `flow05_add_custom.png` | — |
+| C7 | Type "Ghee" in name field | "Ghee" entered | UI | — | — |
+| C8 | Tap Save/Add in dialog | Ghee appears in grocery list | UI | — | — |
+| C9 | Verify Ghee in list | "Ghee" text visible in grocery items | UI | — | — |
 
 ### Phase D: WhatsApp Share (Steps 12-13)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| D1 | Find Share/WhatsApp button | Button visible (content-desc "Share" or "WhatsApp") | — | — |
-| D2 | Tap Share button | Share intent opens (WhatsApp or system share sheet) | `flow05_share.png` | — |
-| D3 | Press BACK to dismiss share sheet | Return to Grocery screen | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| D1 | Find Share/WhatsApp button | Button visible (content-desc "Share" or "WhatsApp") | UI | — | — |
+| D2 | Tap Share button | Share intent opens (WhatsApp or system share sheet) | UI | `flow05_share.png` | — |
+| D3 | Press BACK to dismiss share sheet | Return to Grocery screen | UI | — | — |
 
 ### Phase E: Contradiction C13 — Stale Grocery (Steps 14-17)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| E1 | **C13 Setup:** Check ALL visible items as purchased | All items show checked/strikethrough | — | — |
-| E2 | Navigate to Home (bottom nav "Home") | Home screen | — | — |
-| E3 | Regenerate meal plan (Refresh → "Entire Week") | New plan generates | — | — |
-| E4 | Wait for generation (up to 90s) | New plan loaded | — | — |
-| E5 | Navigate to Grocery | Grocery screen | `flow05_grocery_after_regen.png` | — |
-| E6 | **C13 Verify:** Check if grocery list reset for new plan | Items should be unchecked for new recipes, list reflects new plan | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| E1 | **C13 Setup:** Check ALL visible items as purchased | All items show checked/strikethrough | UI | — | — |
+| E2 | Navigate to Home (bottom nav "Home") | Home screen | UI | — | — |
+| E3 | Regenerate meal plan (Refresh → "Entire Week") | New plan generates | UI | — | — |
+| E4 | Wait for generation (up to 90s) | New plan loaded | UI | — | — |
+| E5 | Navigate to Grocery | Grocery screen | UI | `flow05_grocery_after_regen.png` | — |
+| E6 | **C13 Verify:** Check if grocery list reset for new plan | Items should be unchecked for new recipes, list reflects new plan | UI | — | — |
 
 ### Backend API Cross-Validation: Grocery List
 

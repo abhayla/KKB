@@ -52,57 +52,57 @@
 
 ### Phase A: Verify Initial Achievements State (0 Unlocked)
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| A1 | Navigate to Stats screen from bottom nav | Stats screen displays |
-| A2 | Tap "Achievements" tab (if tab-based UI) | Achievements tab content displays |
-| A3 | Verify section title: "Achievements" | Title visible |
-| A4 | Verify all achievements shown in locked state (grayed out icons, locked badge) | All achievements locked |
-| A5 | Verify achievement count: "0/5 Unlocked" OR similar progress indicator | Shows 0 unlocked |
-| A6 | Screenshot: `flow16_achievements_initial.png` | All locked state |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| A1 | Navigate to Stats screen from bottom nav | Stats screen displays | UI |
+| A2 | Tap "Achievements" tab (if tab-based UI) | Achievements tab content displays | UI |
+| A3 | Verify section title: "Achievements" | Title visible | UI |
+| A4 | Verify all achievements shown in locked state (grayed out icons, locked badge) | All achievements locked | UI |
+| A5 | Verify achievement count: "0/5 Unlocked" OR similar progress indicator | Shows 0 unlocked | UI |
+| A6 | Screenshot: `flow16_achievements_initial.png` | All locked state | UI |
 
 ### Phase B: Cook First Recipe → Unlock "First Meal"
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| B1 | Navigate to Home screen | Home displays with meal plan |
-| B2 | Tap a breakfast meal card → "View Recipe" | Recipe Detail screen displays |
-| B3 | Note recipe name (e.g., "Masala Dosa") | Recipe name captured |
-| B4 | Tap "Start Cooking" | Cooking Mode screen displays |
-| B5 | Complete all cooking steps (tap "Next" until last step) | All steps traversed |
-| B6 | Tap "Finish Cooking" OR "Mark as Cooked" | Cooking completion dialog appears |
-| B7 | Confirm completion | Dialog closes, return to Home OR Recipe Detail |
-| B8 | Wait 2-3 seconds for backend to process achievement | Backend checks cooking count, awards "First Meal" |
-| B9 | Verify notification appears: "Achievement Unlocked: First Meal!" | Notification badge on Home increases |
-| B10 | Screenshot: `flow16_first_meal_notification.png` | Notification visible |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| B1 | Navigate to Home screen | Home displays with meal plan | UI |
+| B2 | Tap a breakfast meal card → "View Recipe" | Recipe Detail screen displays | UI |
+| B3 | Note recipe name (e.g., "Masala Dosa") | Recipe name captured | UI |
+| B4 | Tap "Start Cooking" | Cooking Mode screen displays | UI |
+| B5 | Complete all cooking steps (tap "Next" until last step) | All steps traversed | UI |
+| B6 | Tap "Finish Cooking" OR "Mark as Cooked" | Cooking completion dialog appears | UI |
+| B7 | Confirm completion | Dialog closes, return to Home OR Recipe Detail | UI |
+| B8 | Wait 2-3 seconds for backend to process achievement | Backend checks cooking count, awards "First Meal" | UI |
+| B9 | Verify notification appears: "Achievement Unlocked: First Meal!" | Notification badge on Home increases | UI |
+| B10 | Screenshot: `flow16_first_meal_notification.png` | Notification visible | UI |
 
 ### Phase C: Verify "First Meal" Achievement Unlocked
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| C1 | Navigate to Stats → Achievements | Achievements screen displays |
-| C2 | Verify "First Meal" achievement now unlocked (colored icon, no lock badge) | Achievement unlocked state visible |
-| C3 | Verify achievement card shows: Name, Icon, Description, Unlock Date/Time | All fields present |
-| C4 | Verify unlock date is today's date | Date matches current date |
-| C5 | Verify achievement count: "1/5 Unlocked" OR similar | Progress updated |
-| C6 | Tap on "First Meal" achievement card | Achievement detail sheet appears with full description |
-| C7 | Screenshot: `flow16_first_meal_unlocked.png` | Unlocked state visible |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| C1 | Navigate to Stats → Achievements | Achievements screen displays | UI |
+| C2 | Verify "First Meal" achievement now unlocked (colored icon, no lock badge) | Achievement unlocked state visible | UI |
+| C3 | Verify achievement card shows: Name, Icon, Description, Unlock Date/Time | All fields present | UI |
+| C4 | Verify unlock date is today's date | Date matches current date | UI |
+| C5 | Verify achievement count: "1/5 Unlocked" OR similar | Progress updated | UI |
+| C6 | Tap on "First Meal" achievement card | Achievement detail sheet appears with full description | UI |
+| C7 | Screenshot: `flow16_first_meal_unlocked.png` | Unlocked state visible | UI |
 
 ### Phase D: Cook 4 More Recipes → Unlock "5 Meals"
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| D1 | Return to Home screen | Home displays |
-| D2 | **Recipe 2:** Tap lunch meal card → View Recipe → Start Cooking → Finish | Cooking logged |
-| D3 | Wait 2s | Backend processes, no new achievement yet (count = 2) |
-| D4 | **Recipe 3:** Tap dinner meal card → View Recipe → Start Cooking → Finish | Cooking logged |
-| D5 | Wait 2s | Backend processes, no new achievement yet (count = 3) |
-| D6 | **Recipe 4:** Tap snacks meal card → View Recipe → Start Cooking → Finish | Cooking logged |
-| D7 | Wait 2s | Backend processes, no new achievement yet (count = 4) |
-| D8 | **Recipe 5:** Navigate to next day, tap breakfast → View Recipe → Start Cooking → Finish | Cooking logged |
-| D9 | Wait 3s for backend to process 5th cooking | Backend checks, awards "5 Meals" achievement |
-| D10 | Verify notification: "Achievement Unlocked: 5 Meals!" | Notification appears |
-| D11 | Screenshot: `flow16_five_meals_notification.png` | Notification visible |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| D1 | Return to Home screen | Home displays | UI |
+| D2 | **Recipe 2:** Tap lunch meal card → View Recipe → Start Cooking → Finish | Cooking logged | UI |
+| D3 | Wait 2s | Backend processes, no new achievement yet (count = 2) | UI |
+| D4 | **Recipe 3:** Tap dinner meal card → View Recipe → Start Cooking → Finish | Cooking logged | UI |
+| D5 | Wait 2s | Backend processes, no new achievement yet (count = 3) | UI |
+| D6 | **Recipe 4:** Tap snacks meal card → View Recipe → Start Cooking → Finish | Cooking logged | UI |
+| D7 | Wait 2s | Backend processes, no new achievement yet (count = 4) | UI |
+| D8 | **Recipe 5:** Navigate to next day, tap breakfast → View Recipe → Start Cooking → Finish | Cooking logged | UI |
+| D9 | Wait 3s for backend to process 5th cooking | Backend checks, awards "5 Meals" achievement | UI |
+| D10 | Verify notification: "Achievement Unlocked: 5 Meals!" | Notification appears | UI |
+| D11 | Screenshot: `flow16_five_meals_notification.png` | Notification visible | UI |
 
 **Alternative: Backend API Shortcut (for speed):**
 
@@ -143,35 +143,35 @@ done
 
 ### Phase E: Verify "5 Meals" Achievement Unlocked
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| E1 | Navigate to Stats → Achievements | Achievements screen displays |
-| E2 | Verify "5 Meals" achievement unlocked (colored icon) | Unlocked state visible |
-| E3 | Verify achievement count: "2/5 Unlocked" OR similar | Progress shows 2 |
-| E4 | Verify "10 Meals" and "3-Day Streak" still locked (grayed out) | Remaining achievements locked |
-| E5 | Screenshot: `flow16_five_meals_unlocked.png` | Unlocked achievements visible |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| E1 | Navigate to Stats → Achievements | Achievements screen displays | UI |
+| E2 | Verify "5 Meals" achievement unlocked (colored icon) | Unlocked state visible | UI |
+| E3 | Verify achievement count: "2/5 Unlocked" OR similar | Progress shows 2 | UI |
+| E4 | Verify "10 Meals" and "3-Day Streak" still locked (grayed out) | Remaining achievements locked | UI |
+| E5 | Screenshot: `flow16_five_meals_unlocked.png` | Unlocked achievements visible | UI |
 
 ### Phase F: Verify Notifications for Each Achievement
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| F1 | Navigate to Notifications screen | Notifications screen displays |
-| F2 | Verify 2 achievement unlock notifications present: "First Meal" and "5 Meals" | Both notifications visible |
-| F3 | Verify notification title format: "Achievement Unlocked: {name}!" | Title matches pattern |
-| F4 | Verify notification body includes achievement description | Description present |
-| F5 | Tap on "First Meal" notification | Navigates to Stats → Achievements OR shows achievement detail |
-| F6 | Screenshot: `flow16_achievement_notifications.png` | Notifications list |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| F1 | Navigate to Notifications screen | Notifications screen displays | UI |
+| F2 | Verify 2 achievement unlock notifications present: "First Meal" and "5 Meals" | Both notifications visible | UI |
+| F3 | Verify notification title format: "Achievement Unlocked: {name}!" | Title matches pattern | UI |
+| F4 | Verify notification body includes achievement description | Description present | UI |
+| F5 | Tap on "First Meal" notification | Navigates to Stats → Achievements OR shows achievement detail | UI |
+| F6 | Screenshot: `flow16_achievement_notifications.png` | Notifications list | UI |
 
 ### Phase G: View All Achievements Screen (Locked vs Unlocked)
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| G1 | Navigate to Stats → Achievements | Achievements screen displays |
-| G2 | Verify locked achievements have: Grayed-out icon, Lock badge, "???" OR hidden description | Locked state styling |
-| G3 | Verify unlocked achievements have: Colored icon, No lock badge, Full description, Unlock date | Unlocked state styling |
-| G4 | Verify achievement cards ordered: Unlocked first, then locked | Order correct |
-| G5 | Tap "View All" OR scroll down to see all achievements | All 5+ achievements visible |
-| G6 | Screenshot: `flow16_all_achievements.png` | Locked vs unlocked display |
+| Step | Action | Verification | Type |
+|------|--------|--------------|------|
+| G1 | Navigate to Stats → Achievements | Achievements screen displays | UI |
+| G2 | Verify locked achievements have: Grayed-out icon, Lock badge, "???" OR hidden description | Locked state styling | UI |
+| G3 | Verify unlocked achievements have: Colored icon, No lock badge, Full description, Unlock date | Unlocked state styling | UI |
+| G4 | Verify achievement cards ordered: Unlocked first, then locked | Order correct | UI |
+| G5 | Tap "View All" OR scroll down to see all achievements | All 5+ achievements visible | UI |
+| G6 | Screenshot: `flow16_all_achievements.png` | Locked vs unlocked display | UI |
 
 ### Phase H: Backend API Verification
 
@@ -218,11 +218,11 @@ print('Expected: >= 5 for \"5 Meals\" achievement')
 
 This flow tests achievement-specific contradictions:
 
-| ID | Contradiction | Setup | Expected Behavior |
-|----|---------------|-------|-------------------|
-| **C43** | Achievement already unlocked | User cooks 1st recipe (unlocks "First Meal"), then cooks 1st recipe again | No duplicate notification, achievement stays unlocked, unlock_date unchanged |
-| **C44** | Achievement requirements not met | User has cooked 4 recipes (not 5) | "5 Meals" achievement remains locked, no notification, no premature unlock |
-| **C45** | Cooking same recipe multiple times | User cooks "Masala Dosa" 5 times | Only counts as 1 unique recipe (achievements track unique recipes, not total cooking instances) |
+| ID | Contradiction | Setup | Expected Behavior | Type |
+|----|---------------|-------|-------------------|------|
+| **C43** | Achievement already unlocked | User cooks 1st recipe (unlocks "First Meal"), then cooks 1st recipe again | No duplicate notification, achievement stays unlocked, unlock_date unchanged | UI |
+| **C44** | Achievement requirements not met | User has cooked 4 recipes (not 5) | "5 Meals" achievement remains locked, no notification, no premature unlock | UI |
+| **C45** | Cooking same recipe multiple times | User cooks "Masala Dosa" 5 times | Only counts as 1 unique recipe (achievements track unique recipes, not total cooking instances) | UI |
 
 ## Fix Strategy
 

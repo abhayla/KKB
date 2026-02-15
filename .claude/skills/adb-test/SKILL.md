@@ -203,9 +203,10 @@ if os.path.exists(state_file):
 "
 ```
 
-Create session log directory:
+Create session log directory and reports directory:
 ```bash
 mkdir -p .claude/logs/adb-test/$(date +%Y%m%d_%H%M%S)
+mkdir -p docs/testing/reports/evidence
 ```
 
 This marks the session as an `adb-test` workflow. Hooks will:
@@ -351,6 +352,33 @@ blank_screenshots = 0; visual_verified_screens = {}
 regression_screens_tested = 0; regression_passes = 0; regressions_found = 0
 pipeline_status = "NOT_RUN"; test_suite_gate = "NOT_RUN"; commit_hash = ""; commit_message = ""
 start_time = now(); per_screen_times = {}
+
+// Flow report tracking (used by G3/G5/G6 protocol)
+step_results = []         // per-step array, each entry has 13 fields:
+                          //   test_id, test_name, test_scenario, pass_fail,
+                          //   screenshot, screenshot_verified, verification_result,
+                          //   skill_should_trigger, skill_actually_triggered,
+                          //   step_type, verification_method, duration_s, retry_count
+api_evidence = []         // { step_id, method, endpoint, request_summary, response_status, response_summary }
+validation_checkpoints = []  // { checkpoint_id, args, exit_code, output_summary }
+contradictions_tested = []   // { contradiction_id, description, result (PASS/FAIL) }
+unresolved_issues = []       // { step_id, description, last_error, attempts }
+
+// Flow halt tracking
+flow_halted = false       // true if flow stopped due to UNRESOLVED step
+halt_step_id = ""         // step ID where flow halted
+not_run_count = 0         // count of steps marked NOT_RUN after halt
+
+// Screenshot verification counters
+verify_screenshot_invocations = 0
+verify_screenshot_passes = 0
+verify_screenshot_failures = 0
+
+// Report output paths
+flow_number = 0; flow_name = ""; flow_timestamp = ""
+report_file_path = ""     // e.g., docs/testing/reports/flow12-multi-family-medical-20260215_181500.md
+evidence_dir_path = ""    // e.g., docs/testing/reports/evidence/flow12-20260215_181500/
+flow_start_time = now()
 ```
 
 ---
@@ -359,10 +387,25 @@ start_time = now(); per_screen_times = {}
 
 | Skill | Trigger | Purpose |
 |-------|---------|---------|
-| `/fix-loop` | Step F2, for each issue (Single Fix mode) | Analyze root cause, apply fix, code review gate, rebuild |
+| `/fix-loop` | Step F2 (screens) or G5 (flows): on FIRST failure — flow STOPS until resolved | Analyze root cause, apply fix, code review gate, rebuild. Max 3 retries per step |
+| `/verify-screenshots` | G3: BLOCKING per-UI-step — must complete before next step | Validate each step screenshot via multimodal analysis. API steps skip |
 | `/post-fix-pipeline` | Post-run, if any fixes were applied | Test suite verification + documentation + git commit |
 
 **How Skills are invoked:** Via the **Skill tool** — NOT by reading the .md file. See screen-definitions.md Step F2 and Post-Run Pipeline below.
+
+## ENFORCEMENT RULES (BLOCKING GATES)
+
+| Gate | Rule | Consequence |
+|------|------|-------------|
+| Gate 1: Screenshot Verification | Cannot proceed to next UI step until `/verify-screenshots` returns | Blocks flow progression |
+| Gate 2: Fix-Loop Invocation | Cannot proceed past any FAIL without `/fix-loop` | Blocks flow progression |
+| Gate 3: Flow Halt | UNRESOLVED after 3 retries = STOP flow entirely | Remaining steps = NOT_RUN |
+| Gate 4: Report Completeness | Report cannot be saved if any of (a)-(c) are violated | Report blocked |
+
+**Gate 4 conditions (report CANNOT be saved if):**
+- (a) Any UI step has `screenshot_verified = "No"` (except NOT_RUN steps)
+- (b) Any step has `skill_should_trigger ≠ skill_actually_triggered` (except NOT_RUN steps)
+- (c) `step_results[]` has fewer entries than total steps in flow definition
 
 ### Post-Run Pipeline
 
@@ -400,6 +443,8 @@ Collect pipeline output for the final report: `test_suite_gate`, commit hash/mes
 ---
 
 ## FINAL REPORT
+
+### Screen Test Report (console only)
 
 ```
 ====================================================================
@@ -444,6 +489,14 @@ Skill Activity (from /fix-loop + /post-fix-pipeline):
 Session logs: .claude/logs/adb-test/{session}/
 Duration: X minutes Y seconds
 ```
+
+### Flow Test Report (saved markdown file)
+
+**Flow runs produce a structured markdown report** saved to `docs/testing/reports/flow{N}-{name}-{timestamp}.md`. See `references/flow-definitions.md` section G6 for the full report format with 13-column step table, phase summaries, API evidence, and skill activity.
+
+The report file is the **primary audit artifact** for flow test runs. The console summary (G6e) is for quick reference only.
+
+**Evidence files** (API request/response JSON) are saved to `docs/testing/reports/evidence/flow{N}-{timestamp}/`. Screenshots remain in `docs/testing/screenshots/` (gitignored).
 
 ---
 

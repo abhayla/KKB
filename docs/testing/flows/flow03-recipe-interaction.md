@@ -23,26 +23,26 @@ Uses existing Sharma family data. No settings changes in this flow.
 
 ### Phase A: Recipe Detail Exploration (Steps 1-4)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| A1 | On Home, tap a BREAKFAST meal card | Action sheet: "View Recipe", "Swap", "Lock", "Remove" | — | — |
-| A2 | Tap "View Recipe" | Recipe Detail screen loads | `flow03_recipe_detail.png` | — |
-| A3 | Verify recipe content | Recipe name, cuisine, prep time, Ingredients section | — | — |
-| A4 | Verify servings selector | Servings count visible (should match household size ~4) | — | — |
-| A4a | Verify action sheet had all 4 items | "View Recipe", "Swap Recipe", "Lock Recipe", "Remove from Meal" seen in A1 dump | — | HARD |
-| A5 | Tap "Ingredients" tab (if tabbed layout) | Ingredients list shown | — | — |
-| A6 | Tap "Instructions" tab | Instructions/steps shown | — | — |
-| A7 | Tap an ingredient checkbox | Ingredient text struck through | — | — |
-| A8 | Scroll down to "Add all to Grocery" | Button visible | — | — |
-| A9 | Verify "Modify with AI" button | Button visible below fold | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| A1 | On Home, tap a BREAKFAST meal card | Action sheet: "View Recipe", "Swap", "Lock", "Remove" | UI | — | — |
+| A2 | Tap "View Recipe" | Recipe Detail screen loads | UI | `flow03_recipe_detail.png` | — |
+| A3 | Verify recipe content | Recipe name, cuisine, prep time, Ingredients section | UI | — | — |
+| A4 | Verify servings selector | Servings count visible (should match household size ~4) | UI | — | — |
+| A4a | Verify action sheet had all 4 items | "View Recipe", "Swap Recipe", "Lock Recipe", "Remove from Meal" seen in A1 dump | UI | — | HARD |
+| A5 | Tap "Ingredients" tab (if tabbed layout) | Ingredients list shown | UI | — | — |
+| A6 | Tap "Instructions" tab | Instructions/steps shown | UI | — | — |
+| A7 | Tap an ingredient checkbox | Ingredient text struck through | UI | — | — |
+| A8 | Scroll down to "Add all to Grocery" | Button visible | UI | — | — |
+| A9 | Verify "Modify with AI" button | Button visible below fold | UI | — | — |
 
 ### Phase B: Favorite Toggle (Steps 5-7)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| B1 | Tap Favorite button (heart icon) | Heart fills/toggles, snackbar "Added to favorites" | `flow03_favorited.png` | — |
-| B2 | Note the recipe name | Record name for later verification in Favorites screen | — | — |
-| B3 | Verify favorite state persisted in UI | Heart icon remains filled after scroll up/down | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| B1 | Tap Favorite button (heart icon) | Heart fills/toggles, snackbar "Added to favorites" | UI | `flow03_favorited.png` | — |
+| B2 | Note the recipe name | Record name for later verification in Favorites screen | UI | — | — |
+| B3 | Verify favorite state persisted in UI | Heart icon remains filled after scroll up/down | UI | — | — |
 
 ### Backend Cross-Validation: Recipe Data
 
@@ -68,34 +68,34 @@ else:
 
 ### Phase C: Cooking Mode (Steps 8-12)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| C1 | Scroll down to "Start Cooking" button | Button visible | — | — |
-| C2 | Tap "Start Cooking" | Cooking Mode screen loads | `flow03_cooking_mode.png` | — |
-| C3 | Verify step 1 | "Step 1 of N" visible, instruction text | — | — |
-| C4 | Tap Next until last step | Each step advances, counter increments | — | — |
-| C5 | Tap "Complete" / "Finish Cooking" on last step | Completion dialog or return to Recipe Detail | `flow03_cooking_complete.png` | — |
-| C5a | Verify voice guidance toggle was available | Toggle visible in cooking mode XML dumps | — | — |
-| C5b | Verify progress bar/indicator was visible | Progress element found in XML | — | — |
-| C6 | If rating dialog appears, tap 4 stars | 4 stars selected | `flow03_rating.png` | — |
-| C7 | Tap "Submit" or "Skip" on rating | Dialog dismissed, returns to Recipe Detail | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| C1 | Scroll down to "Start Cooking" button | Button visible | UI | — | — |
+| C2 | Tap "Start Cooking" | Cooking Mode screen loads | UI | `flow03_cooking_mode.png` | — |
+| C3 | Verify step 1 | "Step 1 of N" visible, instruction text | UI | — | — |
+| C4 | Tap Next until last step | Each step advances, counter increments | UI | — | — |
+| C5 | Tap "Complete" / "Finish Cooking" on last step | Completion dialog or return to Recipe Detail | UI | `flow03_cooking_complete.png` | — |
+| C5a | Verify voice guidance toggle was available | Toggle visible in cooking mode XML dumps | UI | — | — |
+| C5b | Verify progress bar/indicator was visible | Progress element found in XML | UI | — | — |
+| C6 | If rating dialog appears, tap 4 stars | 4 stars selected | UI | `flow03_rating.png` | — |
+| C7 | Tap "Submit" or "Skip" on rating | Dialog dismissed, returns to Recipe Detail | UI | — | — |
 
 ### Phase D: Verify Favorites (Steps 13-16)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| D1 | Navigate to Home (press BACK if needed) | Home screen | — | — |
-| D2 | Tap bottom nav "Favs" | Favorites screen | `flow03_favorites.png` | — |
-| D3 | Verify the favorited recipe appears | Recipe name from B2 visible in list | — | — |
-| D4 | Tap the favorited recipe card | Recipe Detail loads for that recipe | — | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| D1 | Navigate to Home (press BACK if needed) | Home screen | UI | — | — |
+| D2 | Tap bottom nav "Favs" | Favorites screen | UI | `flow03_favorites.png` | — |
+| D3 | Verify the favorited recipe appears | Recipe name from B2 visible in list | UI | — | — |
+| D4 | Tap the favorited recipe card | Recipe Detail loads for that recipe | UI | — | — |
 
 ### Phase E: Unfavorite (Steps 17-19)
 
-| Step | Action | Expected | Screenshot | Validation |
-|------|--------|----------|------------|------------|
-| E1 | On Recipe Detail, tap Favorite button again | Heart unfills, snackbar "Removed from favorites" | — | — |
-| E2 | Press BACK to Favorites | Favorites screen | — | — |
-| E3 | Verify recipe removed from favorites | Empty state OR recipe no longer in list | `flow03_unfavorited.png` | — |
+| Step | Action | Expected | Type | Screenshot | Validation |
+|------|--------|----------|------|------------|------------|
+| E1 | On Recipe Detail, tap Favorite button again | Heart unfills, snackbar "Removed from favorites" | UI | — | — |
+| E2 | Press BACK to Favorites | Favorites screen | UI | — | — |
+| E3 | Verify recipe removed from favorites | Empty state OR recipe no longer in list | UI | `flow03_unfavorited.png` | — |
 
 ## Validation Checkpoints
 
