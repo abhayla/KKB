@@ -812,15 +812,30 @@ The `.claude/` directory contains Claude Code customization:
 │   ├── git-manager.md
 │   ├── planner-researcher.md
 │   └── tester.md
-├── commands/         # Slash commands (user-invocable skills)
-│   ├── adb-test.md       # /adb-test [screen|flow] — manual E2E via ADB (12 screens + 10 flows)
-│   ├── fix-issue.md      # /fix-issue <number> — implement fix for GitHub Issue
-│   ├── fix-loop.md       # /fix-loop — iterative fix cycle (analyze → fix → review → build → retest)
-│   ├── implement.md      # /implement — implement feature with workflow
-│   ├── post-fix-pipeline.md  # /post-fix-pipeline — post-fix verification (regression → test suite → docs → commit)
-│   ├── reflect.md        # /reflect — learning system analysis & self-modification
-│   ├── run-e2e.md        # /run-e2e — run Android E2E tests by feature group
-│   └── verify-screenshots.md  # /verify-screenshots — deep screenshot + backend verification
+├── skills/           # Slash commands (user-invocable skills, YAML frontmatter)
+│   ├── adb-test/         # /adb-test [screen|flow] — manual E2E via ADB (12 screens + 21 flows)
+│   │   ├── SKILL.md
+│   │   └── references/
+│   │       ├── screen-definitions.md   # Screen test protocol (E0-E6.5, F1-F5.5b)
+│   │       └── flow-definitions.md     # Flow execution protocol (G1-G7)
+│   ├── fix-issue/        # /fix-issue <number> — implement fix for GitHub Issue
+│   │   └── SKILL.md
+│   ├── fix-loop/         # /fix-loop — iterative fix cycle (analyze → fix → review → build → retest)
+│   │   ├── SKILL.md
+│   │   └── references/
+│   │       └── iteration-algorithm.md  # Full Loop / Single Fix pseudocode
+│   ├── implement/        # /implement — implement feature with workflow
+│   │   └── SKILL.md
+│   ├── post-fix-pipeline/  # /post-fix-pipeline — post-fix verification (regression → test suite → docs → commit)
+│   │   └── SKILL.md
+│   ├── reflect/          # /reflect — learning system analysis & self-modification
+│   │   ├── SKILL.md
+│   │   └── references/
+│   │       └── learning-modes.md      # Detailed mode instructions (Steps 1-7)
+│   ├── run-e2e/          # /run-e2e — run Android E2E tests by feature group
+│   │   └── SKILL.md
+│   └── verify-screenshots/  # /verify-screenshots — deep screenshot + backend verification
+│       └── SKILL.md
 ├── hooks/            # Workflow enforcement hooks (11 hooks + 1 shared library)
 │   ├── hook-utils.sh               # Shared library sourced by all hooks (stdin parsing, state mgmt)
 │   ├── validate-workflow-step.sh   # PreToolUse: block actions if workflow steps incomplete + testFailuresPending gate

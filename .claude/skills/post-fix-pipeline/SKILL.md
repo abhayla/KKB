@@ -1,3 +1,14 @@
+---
+name: post-fix-pipeline
+description: >
+  Post-fix verification pipeline: regression tests, full test suite with auto-fix,
+  documentation updates (docs-manager agent), git commit (git-manager agent), evidence
+  finalization. Use after fix-loop succeeds to verify no regressions before committing.
+  Typically invoked by fix-issue or implement skills.
+disable-model-invocation: true
+allowed-tools: "Bash Read Grep Write Edit Task"
+---
+
 # Post-Fix Pipeline
 
 Post-fix verification and commit process. Runs regression tests, test suite verification with auto-fix, documentation updates via docs-manager Agent, and git commit via git-manager Agent. Uses gate logic to block commits when test suites fail. Fully project-agnostic.
@@ -17,7 +28,7 @@ test_suite_commands: [
   { name: "android-unit", command: "cd android && ./gradlew test --console=plain", timeout: 600 }
 ]
 ```
-If `test_suite_commands` is empty AND no code files changed, log: `⚠️ No test suite commands and no code changes. Skipping test suite gate.`
+If `test_suite_commands` is empty AND no code files changed, log: `Warning: No test suite commands and no code changes. Skipping test suite gate.`
 
 ---
 
@@ -86,12 +97,12 @@ STEP 2: REGRESSION TESTING (if regression_commands is non-empty)
     Record: { name, status: PASSED|FAILED, output }
 
   Gate decision:
-    ALL regressions pass → proceed to Step 3
+    ALL regressions pass -> proceed to Step 3
     Any regression fails:
       Enter fix-loop for the regression (max {regression_max_fix_attempts} iterations)
-      After fix-loop → re-run ALL regression commands
-      If still failing after max attempts → HARD BLOCK — skip Steps 3-5
-      If all fixed → proceed to Step 3
+      After fix-loop -> re-run ALL regression commands
+      If still failing after max attempts -> HARD BLOCK — skip Steps 3-5
+      If all fixed -> proceed to Step 3
 
   Write regression evidence:
     .claude/logs/post-fix-pipeline/evidence-regression-{timestamp}.json
@@ -104,7 +115,7 @@ STEP 3: TEST SUITE VERIFICATION (if test_suite_commands is non-empty)
     Record: { name, passed_count, failed_count, failed_tests, output }
 
   Gate decision:
-    ALL suites pass → gate = PASSED → proceed to Step 4
+    ALL suites pass -> gate = PASSED -> proceed to Step 4
     Any suite fails:
       Launch tester Agent (read-only, via Task tool) with:
         - Failed test names and output
@@ -117,9 +128,9 @@ STEP 3: TEST SUITE VERIFICATION (if test_suite_commands is non-empty)
       Re-run the test suite after each fix attempt.
 
       If all failures fixed:
-        gate = PASSED_AFTER_FIX → proceed to Step 4
+        gate = PASSED_AFTER_FIX -> proceed to Step 4
       If still failing after max attempts:
-        gate = FAILED → HARD BLOCK — skip Steps 4 and 5
+        gate = FAILED -> HARD BLOCK — skip Steps 4 and 5
 
   Write test-suite evidence:
     .claude/logs/post-fix-pipeline/evidence-testsuite-{timestamp}.json

@@ -1,3 +1,14 @@
+---
+name: fix-issue
+description: >
+  Analyze and implement a fix for a specific GitHub Issue following the 7-step workflow.
+  Fetches issue details, explores codebase, plans implementation, defines backend checks,
+  implements fix, verifies with tests, delegates to fix-loop on failure, captures screenshots,
+  and runs post-fix-pipeline. Use when user says "fix issue #N" or references a GitHub issue.
+allowed-tools: "Bash Read Grep Glob Write Edit Skill Task"
+argument-hint: "<issue-number>"
+---
+
 # Fix GitHub Issue
 
 Analyze and implement a fix for GitHub issue: $ARGUMENTS
@@ -122,7 +133,7 @@ This marks the session as a `fix-issue` workflow. Hooks will track Skill invocat
 
    Update workflow state `step6_screenshots` with before/after paths.
 
-   **If ADB/Playwright is unavailable:** Log `⚠️ Screenshot capture unavailable — {reason}`. Proceed to Step 7 but note the gap.
+   **If ADB/Playwright is unavailable:** Log `Warning: Screenshot capture unavailable — {reason}`. Proceed to Step 7 but note the gap.
 
 7. **Verify Screenshots, Backend, and Post-Fix Pipeline**
 
@@ -133,7 +144,7 @@ This marks the session as a `fix-issue` workflow. Hooks will track Skill invocat
    Skill("verify-screenshots")
    ```
 
-   **7b. If ISSUES_FOUND** → invoke `/fix-loop` with visual flag clearing:
+   **7b. If ISSUES_FOUND** — invoke `/fix-loop` with visual flag clearing:
    ```
    Skill("fix-loop", args="clear_flags: [\"visualIssuesPending\"]
    failure_output: {description of visual issues}
@@ -142,9 +153,9 @@ This marks the session as a `fix-issue` workflow. Hooks will track Skill invocat
    retest_command: null
    max_iterations: 3")
    ```
-   After fix-loop → re-capture screenshots → re-invoke `/verify-screenshots`. Repeat until PASSED.
+   After fix-loop — re-capture screenshots — re-invoke `/verify-screenshots`. Repeat until PASSED.
 
-   **7c. Once PASSED** → invoke `/post-fix-pipeline`. Do NOT commit manually.
+   **7c. Once PASSED** — invoke `/post-fix-pipeline`. Do NOT commit manually.
 
    Invoke: `skill: "post-fix-pipeline"` with arguments:
    ```

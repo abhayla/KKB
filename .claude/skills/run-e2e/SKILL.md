@@ -1,3 +1,16 @@
+---
+name: run-e2e
+description: >
+  Run Android E2E tests sequentially by feature group with auto-fix. 14 groups:
+  ui-screens, database, validation, auth, onboarding, meal-generation, home, grocery,
+  chat, favorites, recipe-rules, cooking-stats-settings, cross-cutting, full-journey.
+  Auto-delegates to fix-loop on failure with 10-restart budget per group.
+  Use when running E2E regression tests or validating features after changes.
+disable-model-invocation: true
+allowed-tools: "Bash Read Grep Skill"
+argument-hint: "[feature-group|all]"
+---
+
 # Run Android E2E Tests by Feature Group
 
 Run Android E2E tests sequentially by feature group with automatic failure investigation and fixing.
@@ -95,7 +108,7 @@ This marks the session as a `run-e2e` workflow. Hooks will:
 C:/Users/itsab/AppData/Local/Android/Sdk/platform-tools/adb.exe devices
 ```
 
-- If a device is listed as `device` → emulator is ready, continue.
+- If a device is listed as `device` — emulator is ready, continue.
 - If no device or only `offline` entries:
   1. Start the emulator:
      ```bash
@@ -114,8 +127,8 @@ C:/Users/itsab/AppData/Local/Android/Sdk/platform-tools/adb.exe devices
 curl -s http://localhost:8000/health
 ```
 
-- If healthy response → continue.
-- If connection refused or error → **auto-start the backend**:
+- If healthy response — continue.
+- If connection refused or error — **auto-start the backend**:
   1. Start in background:
      ```bash
      cd D:/Abhay/VibeCoding/KKB/backend && source venv/bin/activate && uvicorn app.main:app --reload &
@@ -124,8 +137,8 @@ curl -s http://localhost:8000/health
      ```bash
      for i in {1..10}; do curl -sf http://localhost:8000/health && break || sleep 3; done
      ```
-  3. If healthy after polling → log `✅ Backend auto-started` and continue.
-  4. If still unhealthy after 30 seconds → log `⚠️ Backend failed to start after 30s. Continuing without backend — groups requiring backend will likely fail.` Continue execution (do not stop).
+  3. If healthy after polling — log `Backend auto-started` and continue.
+  4. If still unhealthy after 30 seconds — log `Warning: Backend failed to start after 30s. Continuing without backend — groups requiring backend will likely fail.` Continue execution (do not stop).
 
 ### 3. Quick Build Check
 
@@ -139,7 +152,7 @@ If build fails, fix compilation errors before proceeding.
 
 ## FEATURE GROUPS
 
-There are **14 feature groups**. When `$ARGUMENTS` is empty, run them in this order (1→14). When a group name is given, run only that group.
+There are **14 feature groups**. When `$ARGUMENTS` is empty, run them in this order (1-14). When a group name is given, run only that group.
 
 ### Group 1: `ui-screens` — Presentation UI Tests (no backend needed)
 
@@ -255,7 +268,7 @@ com.rasoiai.app.e2e.flows.MealTypeFilterTest,
 com.rasoiai.app.e2e.performance.PerformanceTest
 ```
 
-### Group 14: `full-journey` — Full User Journey (Auth → Rules → Regeneration)
+### Group 14: `full-journey` — Full User Journey (Auth -> Rules -> Regeneration)
 
 ```
 com.rasoiai.app.e2e.flows.FullJourneyFlowTest
@@ -272,7 +285,7 @@ For each group, run test classes **one at a time**. On failure, fix and restart 
 ```
 test_classes = [list of classes in group, in order]
 test_index = 0
-fail_counts = {}   // map of class_name → failure count
+fail_counts = {}   // map of class_name -> failure count
 group_restarts = 0
 skipped_tests = [] // tests that hit 10-failure limit and were skipped
 ```
@@ -290,9 +303,9 @@ Use a 10-minute timeout for groups with AI calls (meal-generation, home, chat, r
 
 ### Step 3: If PASSED
 
-- Log: `✅ test_classes[test_index] passed`
+- Log: `test_classes[test_index] passed`
 - Increment `test_index`
-- If `test_index == len(test_classes)`: **GROUP COMPLETE** → move to next group
+- If `test_index == len(test_classes)`: **GROUP COMPLETE** — move to next group
 - Else: go to **Step 2**
 
 ### Step 4: If FAILED — Fix and Restart Group
@@ -300,7 +313,7 @@ Use a 10-minute timeout for groups with AI calls (meal-generation, home, chat, r
 - Increment `fail_counts[current_class]`
 - Increment `group_restarts`
 - If `fail_counts[current_class] >= 10`:
-    Log: `❌ Test [class_name] has failed 10 times — skipping remaining tests in this group.`
+    Log: `Test [class_name] has failed 10 times — skipping remaining tests in this group.`
     Record all 10 attempted fixes in `skipped_tests[]`.
     **Skip the rest of this group** and move to the next group. Do NOT stop execution.
 
@@ -336,7 +349,7 @@ Use a 10-minute timeout for groups with AI calls (meal-generation, home, chat, r
   max_attempts_per_issue: 1
   prohibited_actions:     ["@Ignore", "delete test", "weaken assertion", "Thread.sleep()", "skip group", "fix-later issue"]
   fix_target:             "either"
-  force_thinking_level:   {computed from fail_counts: 1→"normal", 2-3→"thinkhard", 4-5→"thinkhard", 6+→"ultrathink"}
+  force_thinking_level:   {computed from fail_counts: 1->"normal", 2-3->"thinkhard", 4-5->"thinkhard", 6+->"ultrathink"}
   log_dir:                ".claude/logs/fix-loop/"
   ```
   Budget rationale: `max_iterations: 1` because the group restart loop is the outer retry — each fix-loop invocation gets one attempt, but the group restarts up to 10 times total.
@@ -357,7 +370,7 @@ Use a 10-minute timeout for groups with AI calls (meal-generation, home, chat, r
        - `previous_attempts_summary`: all prior attempts from failure-index
        - `failure_context`: "AUTO-DELEGATED: run-e2e recurring #{count}"
      - Log: `"Auto-delegating to /fix-loop (occurrence #{count})"`
-  3. If still UNRESOLVED after auto-delegation → continue to 4b (restart group)
+  3. If still UNRESOLVED after auto-delegation — continue to 4b (restart group)
 
   #### 4b. Restart group
 
@@ -456,7 +469,7 @@ all_screenshots = [
 ]
 ```
 
-**If ADB is unavailable:** Log `⚠️ Screenshot capture unavailable — ADB not connected`. Proceed to summary but note the gap.
+**If ADB is unavailable:** Log `Warning: Screenshot capture unavailable — ADB not connected`. Proceed to summary but note the gap.
 
 ---
 
@@ -465,27 +478,27 @@ all_screenshots = [
 After all groups complete (or after the single requested group), produce this report:
 
 ```
-══════════════════════════════════════════════════════
+==================================================
   E2E TEST REPORT
-══════════════════════════════════════════════════════
+==================================================
 
-Group  1: ui-screens              → 17/17 passed (0 fixes)
-Group  2: database                →  1/1  passed (0 fixes)
-Group  3: validation              →  1/1  passed (0 fixes)
-Group  4: auth                    →  1/1  passed (0 fixes)
-Group  5: onboarding              →  3/3  passed (1 fix: OnboardingFlowTest fixed 1x — group restarted 1 time)
-Group  6: meal-generation         →  1/1  passed (0 fixes)
-Group  7: home                    →  6/6  passed (2 fixes: HomeScreenTest fixed 2x, HomeScreenActionsTest fixed 1x — group restarted 3 times)
-Group  8: grocery                 →  1/1  passed (0 fixes)
-Group  9: chat                    →  1/1  passed (0 fixes)
-Group 10: favorites               →  2/2  passed (0 fixes)
-Group 11: recipe-rules            →  3/3  passed (0 fixes)
-Group 12: cooking-stats-settings  →  5/5  passed (0 fixes)
-Group 13: cross-cutting           →  6/6  passed (1 fix: OfflineFlowTest fixed 1x — group restarted 1 time)
+Group  1: ui-screens              -> 17/17 passed (0 fixes)
+Group  2: database                ->  1/1  passed (0 fixes)
+Group  3: validation              ->  1/1  passed (0 fixes)
+Group  4: auth                    ->  1/1  passed (0 fixes)
+Group  5: onboarding              ->  3/3  passed (1 fix: OnboardingFlowTest fixed 1x — group restarted 1 time)
+Group  6: meal-generation         ->  1/1  passed (0 fixes)
+Group  7: home                    ->  6/6  passed (2 fixes: HomeScreenTest fixed 2x, HomeScreenActionsTest fixed 1x — group restarted 3 times)
+Group  8: grocery                 ->  1/1  passed (0 fixes)
+Group  9: chat                    ->  1/1  passed (0 fixes)
+Group 10: favorites               ->  2/2  passed (0 fixes)
+Group 11: recipe-rules            ->  3/3  passed (0 fixes)
+Group 12: cooking-stats-settings  ->  5/5  passed (0 fixes)
+Group 13: cross-cutting           ->  6/6  passed (1 fix: OfflineFlowTest fixed 1x — group restarted 1 time)
 
-──────────────────────────────────────────────────────
+--------------------------------------------------
 TOTAL: XXX/XXX passed | X root causes fixed | X group restarts | X skipped (10x limit)
-══════════════════════════════════════════════════════
+==================================================
 
 Skipped Tests (10x failure limit):
   - [class_name] — 10 attempts exhausted. Fix attempts: [brief list]

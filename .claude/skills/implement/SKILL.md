@@ -1,3 +1,14 @@
+---
+name: implement
+description: >
+  Implement a feature or fix following the mandatory 7-step workflow: requirements docs,
+  test creation, implementation, test execution, fix-loop delegation, screenshot capture,
+  and verification. Enforces gates at each step. Use when user requests new functionality,
+  feature implementation, or structured bug fixes.
+allowed-tools: "Bash Read Grep Glob Write Edit Skill Task"
+argument-hint: "<feature-description>"
+---
+
 # Implement Feature/Fix
 
 Implement the requested feature or fix following the **mandatory 7-step workflow**.
@@ -106,7 +117,7 @@ You MUST follow these 7 steps in order. Do NOT skip any step.
 
 **Output Required:**
 ```
-✅ Step 1 Complete:
+Step 1 Complete:
 - GitHub Issue: #XX (created/existing)
 - Requirement ID: SCREEN-XXX
 - Traceability: Added to Functional-Requirement-Rule.md
@@ -134,7 +145,7 @@ Based on the acceptance criteria:
 
 **Output Required:**
 ```
-✅ Step 2 Complete:
+Step 2 Complete:
 - Test file: [Name]FlowTest.kt
 - Test methods: [list of methods]
 ```
@@ -152,7 +163,7 @@ Follow patterns from CLAUDE.md:
 
 **Output Required:**
 ```
-✅ Step 3 Complete:
+Step 3 Complete:
 - Files modified: [list]
 - Key changes: [brief description]
 ```
@@ -176,7 +187,7 @@ PYTHONPATH=. pytest tests/test_[feature].py -v
 
 **Output Required:**
 ```
-✅ Step 4 Complete:
+Step 4 Complete:
 - Tests run: X
 - Tests passed: X
 - Tests failed: X
@@ -218,11 +229,11 @@ If it returns UNRESOLVED or MAX_ITERATIONS_EXCEEDED:
      - `previous_attempts_summary`: all prior attempts from failure-index
      - `failure_context`: "AUTO-DELEGATED: implement recurring #{count}"
    - Log: `"Auto-delegating to /fix-loop (occurrence #{count})"`
-3. If still UNRESOLVED after auto-delegation → report the failure and STOP.
+3. If still UNRESOLVED after auto-delegation — report the failure and STOP.
 
 **Output Required:**
 ```
-✅ Step 5 Complete:
+Step 5 Complete:
 - Fix-loop status: RESOLVED
 - Iterations: X
 - Issues fixed: X
@@ -254,7 +265,7 @@ await browser_take_screenshot({
 
 **Output Required:**
 ```
-✅ Step 6 Complete:
+Step 6 Complete:
 - Before: docs/testing/screenshots/XX_before.png
 - After: docs/testing/screenshots/XX_after.png
 ```
@@ -270,7 +281,7 @@ await browser_take_screenshot({
    Skill("verify-screenshots")
    ```
 
-2. **If ISSUES_FOUND** → invoke `/fix-loop` with visual flag clearing:
+2. **If ISSUES_FOUND** — invoke `/fix-loop` with visual flag clearing:
    ```
    Skill("fix-loop", args="clear_flags: [\"visualIssuesPending\"]
    failure_output: {description of visual issues from verify-screenshots}
@@ -279,10 +290,10 @@ await browser_take_screenshot({
    retest_command: null
    max_iterations: 3")
    ```
-   After fix-loop → re-capture screenshots → re-invoke `/verify-screenshots`
+   After fix-loop — re-capture screenshots — re-invoke `/verify-screenshots`
    Repeat until PASSED.
 
-3. **Once PASSED** → invoke `/post-fix-pipeline`. Do NOT commit manually.
+3. **Once PASSED** — invoke `/post-fix-pipeline`. Do NOT commit manually.
 
 Invoke: `skill: "post-fix-pipeline"` with arguments:
 ```
@@ -304,7 +315,7 @@ The /post-fix-pipeline Skill handles: test suite verification gate, documentatio
 
 **Final Output Required:**
 ```
-✅ WORKFLOW COMPLETE:
+WORKFLOW COMPLETE:
 - GitHub Issue: #XX
 - Requirement: SCREEN-XXX
 - Tests: X/X passed
@@ -326,20 +337,20 @@ Before proceeding past each major phase, answer these questions:
 
 **Pre-Implementation Gate (Before Step 3):**
 ```
-□ Step 1 complete (Requirements)? → [YES / NO - STOP]
-□ Step 2 complete (Tests created)? → [YES / NO - STOP]
-□ BEFORE screenshot captured? → [YES: path / NO - capture now]
-□ Issue number noted? → [YES: #___ / NO - STOP]
+Step 1 complete (Requirements)? -> [YES / NO - STOP]
+Step 2 complete (Tests created)? -> [YES / NO - STOP]
+BEFORE screenshot captured? -> [YES: path / NO - capture now]
+Issue number noted? -> [YES: #___ / NO - STOP]
 ```
 
 **Pre-Commit Gate (Before Step 7 commit):**
 ```
-□ ALL tests passing? → [YES: X/X passed / NO - STOP]
-□ AFTER screenshot captured? → [YES: path / NO - STOP]
-□ /verify-screenshots invoked? → [YES: result / NO - STOP]
-□ visualIssuesPending cleared? → [YES / NO - STOP]
-□ Backend checks passed? → [YES: N/N / SKIPPED / NO - STOP]
-□ Before/after compared? → [YES: difference is ___ / NO - STOP]
+ALL tests passing? -> [YES: X/X passed / NO - STOP]
+AFTER screenshot captured? -> [YES: path / NO - STOP]
+/verify-screenshots invoked? -> [YES: result / NO - STOP]
+visualIssuesPending cleared? -> [YES / NO - STOP]
+Backend checks passed? -> [YES: N/N / SKIPPED / NO - STOP]
+Before/after compared? -> [YES: difference is ___ / NO - STOP]
 ```
 
 ---

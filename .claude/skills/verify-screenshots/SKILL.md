@@ -1,3 +1,13 @@
+---
+name: verify-screenshots
+description: >
+  Deep screenshot and backend API verification. Validates file integrity, analyzes
+  visual content (multimodal Read), compares before/after screenshots, performs ADB
+  structural checks (uiautomator dump), verifies backend state via API calls.
+  Use after capturing screenshots to confirm visual changes and backend consistency.
+allowed-tools: "Bash Read Grep"
+---
+
 # Verify Screenshots
 
 Deep screenshot validation and backend API verification for the current workflow session.
@@ -27,7 +37,7 @@ for s in sc:
     print(f'  - {s[\"path\"]} (type={s[\"type\"]}, valid={s[\"validated\"]}, size={s[\"fileSize\"]})')
 print(f'Backend checks: {len(bc)}')
 for b in bc:
-    print(f'  - {b[\"method\"]} {b[\"endpoint\"]} → expect: {b[\"expect\"]}')
+    print(f'  - {b[\"method\"]} {b[\"endpoint\"]} -> expect: {b[\"expect\"]}')
 print(f'Before: {s6.get(\"before\", \"not set\")}')
 print(f'After: {s6.get(\"after\", \"not set\")}')
 "
@@ -51,7 +61,7 @@ Record findings:
 - PASS: File exists, valid size, correct format
 - FAIL: File missing, too small, or wrong format
 
-If ANY file validation fails → flag as **critical** issue.
+If ANY file validation fails — flag as **critical** issue.
 
 ---
 
@@ -84,10 +94,10 @@ Record each finding with:
 If both `before` and `after` screenshots exist:
 1. Read both screenshots using the Read tool
 2. Compare them visually:
-   - **Identical?** → Flag as **warning** ("Feature change may not be visible in UI")
-   - **Different?** → Describe the visible differences
-   - **Regression?** → Check if the "after" screenshot shows degraded UI compared to "before"
-   - **Expected change visible?** → Does the difference match what the feature should look like?
+   - **Identical?** — Flag as **warning** ("Feature change may not be visible in UI")
+   - **Different?** — Describe the visible differences
+   - **Regression?** — Check if the "after" screenshot shows degraded UI compared to "before"
+   - **Expected change visible?** — Does the difference match what the feature should look like?
 
 If only one screenshot exists:
 - Flag as **warning** ("Missing before/after pair — cannot compare")
