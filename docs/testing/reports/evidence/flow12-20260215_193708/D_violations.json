@@ -1,0 +1,14 @@
+{
+  "total_items": 56,
+  "violations": [
+    {"id": "D2-JAIN-1", "day": "Monday", "slot": "breakfast", "item": "Aloo Paratha", "trigger": "aloo", "constraint": "Dadiji Jain (no root vegetables)"},
+    {"id": "D2-JAIN-2", "day": "Thursday", "slot": "breakfast", "item": "Aloo ki Sabzi", "trigger": "aloo", "constraint": "Dadiji Jain (no root vegetables)"},
+    {"id": "D2-JAIN-3", "day": "Saturday", "slot": "breakfast", "item": "Onion Rings", "trigger": "onion", "constraint": "Dadiji Jain (no onion)"},
+    {"id": "D2-JAIN-4", "day": "Saturday", "slot": "dinner", "item": "Garlic Naan", "trigger": "garlic", "constraint": "Dadiji Jain (no garlic)"},
+    {"id": "D2-JAIN-5", "day": "Sunday", "slot": "dinner", "item": "Dum Aloo", "trigger": "aloo", "constraint": "Dadiji Jain (no root vegetables)"}
+  ],
+  "non_veg_violations": 0,
+  "diabetic_violations": 0,
+  "spicy_violations": 0,
+  "overall": "FAIL - 5 Jain constraint violations"
+}
