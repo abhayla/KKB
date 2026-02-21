@@ -157,7 +157,7 @@ navController.navigate(Screen.RecipeDetail.createRoute(recipeId, isLocked = true
 | Group | Screens |
 |-------|---------|
 | Auth flow | Splash, Auth, Onboarding |
-| Main (bottom nav) | Home, Grocery, Chat, Favorites, Stats |
+| Main (bottom nav) | Home, Grocery, Chat (`?context`), Favorites, Stats |
 | Main (other) | Settings, Notifications |
 | Detail | RecipeDetail (`{recipeId}`), CookingMode (`{recipeId}`) |
 | Feature | Pantry, RecipeRules, Achievements |
@@ -397,22 +397,27 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 | `MealPlan` | id, weekStartDate, weekEndDate, days |
 | `MealPlanDay` | date, breakfast, lunch, dinner, snacks, festival |
 | `RecipeRule` | id, type, action, targetId, frequency, enforcement, mealSlot |
-| `NutritionGoal` | id, category (FoodCategory enum), targetServings, timeframe, isActive |
-| `FamilyMember` | id, name, type (MemberType enum), dietaryPreferences |
+| `NutritionGoal` | id, foodCategory (FoodCategory enum), weeklyTarget, currentProgress, enforcement (RuleEnforcement), isActive |
+| `FamilyMember` | id, name, type (MemberType enum), age, specialNeeds (List\<SpecialDietaryNeed\>) |
 | `AiRecipeCatalog` | id, display_name, normalized_name, dietary_tags, cuisine, usage_count |
 
 **Key Enums:**
-- `DietaryTag`: VEGETARIAN, NON_VEGETARIAN, VEGAN, JAIN, SATTVIC, HALAL, EGGETARIAN
+- `DietaryTag` (Recipe): VEGETARIAN, NON_VEGETARIAN, VEGAN, JAIN, SATTVIC, HALAL, EGGETARIAN
+- `PrimaryDiet` (User): VEGETARIAN, EGGETARIAN, NON_VEGETARIAN
 - `CuisineType`: NORTH, SOUTH, EAST, WEST
 - `MealType`: BREAKFAST, LUNCH, SNACKS, DINNER
 - `RuleAction`: INCLUDE, EXCLUDE
+- `RuleEnforcement`: REQUIRED, PREFERRED
+- `MemberType`: ADULT, CHILD, SENIOR
+- `SpecialDietaryNeed`: DIABETIC, LOW_OIL, NO_SPICY, SOFT_FOOD, LOW_SALT, HIGH_PROTEIN, LOW_CARB
+- `FoodCategory`: GREEN_LEAFY, CITRUS_VITAMIN_C, IRON_RICH, HIGH_PROTEIN, CALCIUM_RICH, FIBER_RICH, OMEGA_3, ANTIOXIDANT
 
 **Room-only entities** (no domain model counterpart):
 `KnownIngredientEntity`, `OfflineQueueEntity`, `CookedRecipeEntity`, `RecentlyViewedEntity`
 
 ## Backend API
 
-41 endpoints across 12 routers: Auth, Users, Meal Plans, Recipes, Grocery, Chat, Recipe Rules, Nutrition Goals, Family Members, Festivals, Stats, Notifications, Photos. Run `PYTHONPATH=. pytest --collect-only -q` or visit `http://localhost:8000/docs` for current counts.
+41 endpoints across 13 routers: Auth, Users, Meal Plans, Recipes, Grocery, Chat, Recipe Rules, Nutrition Goals, Family Members, Festivals, Stats, Notifications, Photos. Run `PYTHONPATH=. pytest --collect-only -q` or visit `http://localhost:8000/docs` for current counts.
 
 **Full interactive docs:** `http://localhost:8000/docs` (Swagger UI)
 
@@ -439,9 +444,9 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
 ### PostgreSQL (Backend) — Alembic Migrations
 
-Migrations in `backend/alembic/versions/`. Run `alembic upgrade head` to apply.
+7 migrations in `backend/alembic/versions/` (initial schema → meal generation settings → notifications/FCM → recipe rules → AI recipe catalog → recipe rules dedup → email uniqueness). Run `alembic upgrade head` to apply.
 
-12 model files in `backend/app/models/` (note: `FamilyMember` is defined in `user.py`, not a separate file; `AiRecipeCatalog` in `ai_recipe_catalog.py`). All 3 `postgres.py` import blocks and `conftest.py` must import all models. When adding new models, update all 4 locations.
+11 model files in `backend/app/models/` (plus `__init__.py` re-exporting all models). Note: `FamilyMember` is defined in `user.py`, not a separate file; `AiRecipeCatalog` in `ai_recipe_catalog.py`; `NutritionGoal` in `recipe_rule.py`. All 3 `postgres.py` import blocks, `conftest.py`, and `models/__init__.py` must import all models. When adding new models, update all 5 locations.
 
 ## Meal Generation
 
@@ -514,9 +519,11 @@ AI-powered meal planning using Google Gemini (`gemini-2.5-flash` via `google-gen
 | Test flakiness | Use `waitUntil {}` in E2E tests; check `RetryUtils.kt` for patterns |
 | Screenshot "Could not process image" | Use PNG format, avoid fullPage on long pages, limit to 1280x720, verify file saved before reading. See Screenshots rule above. |
 | Screenshot "image dimensions exceed max" (API 400) | Auto-resized by PostToolUse hook (`.claude/hooks/post-screenshot-resize.sh`). Max 1800px per dimension. To batch-resize existing files: `python .claude/hooks/resize_screenshot.py --all`. Manual fallback: `browser_resize(1280, 720)` before Playwright screenshots. |
+| ADB screenshot corrupted (text in PNG) | When emulator has multiple displays, `adb exec-out screencap -p` prepends `[Warning] Multiple displays were found...` text before PNG data. Auto-fixed by `resize_screenshot.py` (strips ADB warnings). Manual fix: `python .claude/hooks/resize_screenshot.py --all`. Prevention: use `adb exec-out screencap -d <display-id> -p` to specify display. |
 | 4 auth tests fail | Pre-existing: `conftest.py` globally overrides auth dependency, causing 4 failures in `test_auth.py`. Not a regression. |
 | OnboardingViewModelTest won't compile | Pre-existing: missing `generateMealPlanUseCase` constructor param. Not a regression. |
 | Festivals/Stats tests | `test_festivals_api.py` (9 tests) and `test_stats_api.py` (10 tests) now exist. |
+| Enum case in Room tests | Room stores MealType as uppercase (`BREAKFAST`, `LUNCH`, `DINNER`, `SNACKS`). DtoMappers/EntityMappers tests must match. |
 
 ## Rules for Claude
 
@@ -566,11 +573,12 @@ AI-powered meal planning using Google Gemini (`gemini-2.5-flash` via `google-gen
 
    **ADB Screenshot Pattern:**
    ```bash
-   # Capture to designated folder
-   adb exec-out screencap -p > docs/testing/screenshots/screen_name.png
+   # Capture to designated folder (use -d 0 to avoid multi-display warning corruption)
+   adb exec-out screencap -d 0 -p > docs/testing/screenshots/screen_name.png
 
-   # Verify file was captured successfully
+   # Verify file was captured successfully (check it's valid PNG, not text)
    ls -la docs/testing/screenshots/screen_name.png
+   xxd docs/testing/screenshots/screen_name.png | head -1  # Should start with 8950 4e47 (PNG magic)
    ```
 
 4. **Offline-First**: All features must use Room as source of truth with offline support.
@@ -694,8 +702,8 @@ AI-powered meal planning using Google Gemini (`gemini-2.5-flash` via `google-gen
    Platform-specific capture to `docs/testing/screenshots/`:
    ```bash
    # Android (ADB)
-   adb exec-out screencap -p > docs/testing/screenshots/{issue}_{feature}_before.png
-   adb exec-out screencap -p > docs/testing/screenshots/{issue}_{feature}_after.png
+   adb exec-out screencap -d 0 -p > docs/testing/screenshots/{issue}_{feature}_before.png
+   adb exec-out screencap -d 0 -p > docs/testing/screenshots/{issue}_{feature}_after.png
    ```
    ```javascript
    // Web (Playwright)
@@ -792,6 +800,7 @@ The 7-step workflow (Rule #7) is enforced by shell hooks in `.claude/hooks/`. Al
 | `post-test-update.sh` | PostToolUse (Bash) | Records test results in workflow state and evidence files; **sets/clears testFailuresPending flag** |
 | `verify-test-rerun.sh` | PostToolUse (Bash) | Re-runs same test independently; **blocks** if claimed PASS but re-run FAIL |
 | `log-workflow.sh` | PostToolUse (Bash/Skill/Write/Edit) | Logs events; **tracks Skill invocations**; **clears fixLoopInvestigating on fix-loop completion** |
+| `post-anr-detection.sh` | PostToolUse (Bash) | Detects ANR patterns in Bash output; sets `testFailuresPending=true` and logs to `adb-test/anr-events.log` |
 | `post-screenshot-resize.sh` | PostToolUse (Bash/Playwright) | Auto-resize screenshots >1800px |
 | `post-screenshot-validate.sh` | PostToolUse (Bash/Playwright) | Records screenshot metadata; validates file exists and non-zero; updates `screenshotsCaptured[]` in workflow state |
 | `auto-fix-pattern-scan.sh` | PostToolUse | Scans for common fix patterns after tool use |
@@ -840,7 +849,7 @@ The `.claude/` directory contains Claude Code customization:
 │   │   └── SKILL.md
 │   └── verify-screenshots/  # /verify-screenshots — deep screenshot + backend verification
 │       └── SKILL.md
-├── hooks/            # Workflow enforcement hooks (11 hooks + 1 shared library)
+├── hooks/            # Workflow enforcement hooks (12 hooks + 1 shared library)
 │   ├── hook-utils.sh               # Shared library sourced by all hooks (stdin parsing, state mgmt)
 │   ├── validate-workflow-step.sh   # PreToolUse: block actions if workflow steps incomplete + testFailuresPending gate
 │   ├── pre-skill-fixloop-unblock.sh # PreToolUse: set fixLoopInvestigating=true when fix-loop invoked
@@ -848,6 +857,7 @@ The `.claude/` directory contains Claude Code customization:
 │   ├── post-test-update.sh         # PostToolUse: record test results in workflow state
 │   ├── verify-test-rerun.sh        # PostToolUse: re-run tests independently, block on inconsistency
 │   ├── log-workflow.sh             # PostToolUse: log events + track Skill invocations
+│   ├── post-anr-detection.sh       # PostToolUse: detect ANR patterns, set testFailuresPending
 │   ├── post-skill-learning.sh      # PostToolUse: learning system capture after skill execution
 │   ├── post-screenshot-resize.sh   # PostToolUse: auto-resize screenshots >1800px after capture
 │   ├── post-screenshot-validate.sh # PostToolUse: record screenshot metadata, validate file integrity

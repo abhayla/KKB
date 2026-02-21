@@ -453,13 +453,13 @@ After all groups complete (or the single requested group), capture emulator stat
 
 ```bash
 # Capture final emulator state
-C:/Users/itsab/AppData/Local/Android/Sdk/platform-tools/adb.exe exec-out screencap -p > docs/testing/screenshots/e2e_final_state.png
+C:/Users/itsab/AppData/Local/Android/Sdk/platform-tools/adb.exe exec-out screencap -d 0 -p > docs/testing/screenshots/e2e_final_state.png
 ```
 
 For groups with fixes applied, capture group-specific screenshots:
 ```bash
 # Per-group screenshot (if fixes were applied in that group)
-C:/Users/itsab/AppData/Local/Android/Sdk/platform-tools/adb.exe exec-out screencap -p > docs/testing/screenshots/e2e_{group_name}_after_fix.png
+C:/Users/itsab/AppData/Local/Android/Sdk/platform-tools/adb.exe exec-out screencap -d 0 -p > docs/testing/screenshots/e2e_{group_name}_after_fix.png
 ```
 
 Add screenshot paths to the evidence tracking:

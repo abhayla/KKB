@@ -1512,7 +1512,7 @@ class FullUserJourneyTest : BaseE2ETest() {
 ```
 FOR each screen in [Auth, Onboarding, Generation, Home, RecipeDetail, Grocery]:
     1. Run automated test step (Compose UI Testing with TestTags)
-    2. Take screenshot: adb shell screencap -p /data/local/tmp/step_N.png
+    2. Take screenshot: adb shell screencap -d 0 -p /data/local/tmp/step_N.png
     3. Pull screenshot: adb pull /data/local/tmp/step_N.png
     4. Analyze screenshot visually to verify test passed
     5. IF PASS: Move to next screen
@@ -1529,7 +1529,7 @@ FOR each screen in [Auth, Onboarding, Generation, Home, RecipeDetail, Grocery]:
 ADB="/c/Users/itsab/AppData/Local/Android/Sdk/platform-tools/adb.exe"
 
 # Take screenshot after each screen test
-"$ADB" shell screencap -p /data/local/tmp/screen_name.png
+"$ADB" shell screencap -d 0 -p /data/local/tmp/screen_name.png
 MSYS_NO_PATHCONV=1 "$ADB" pull /data/local/tmp/screen_name.png ./docs/testing/screenshots/e2e-flow/
 
 # Clear app data for retest

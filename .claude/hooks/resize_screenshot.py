@@ -20,8 +20,42 @@ MAX_DIM = 1800
 SCREENSHOTS_DIR = "docs/testing/screenshots"
 
 
+def strip_adb_warnings(path):
+    """Strip ADB warning text prepended to PNG data.
+
+    When multiple displays exist, `adb exec-out screencap -p` prepends
+    warning text like '[Warning] Multiple displays were found...' before
+    the actual PNG binary. This corrupts the file. Fix by finding the
+    PNG magic bytes (\\x89PNG) and stripping everything before them.
+    """
+    try:
+        with open(path, "rb") as f:
+            data = f.read(512)  # Read header to check
+        png_magic = b"\x89PNG"
+        if data.startswith(png_magic):
+            return False  # Already valid PNG
+        idx = data.find(png_magic)
+        if idx <= 0:
+            return False  # Not a PNG at all, skip
+        # Re-read full file and strip prefix
+        with open(path, "rb") as f:
+            full_data = f.read()
+        idx = full_data.find(png_magic)
+        with open(path, "wb") as f:
+            f.write(full_data[idx:])
+        return True
+    except Exception:
+        return False
+
+
 def resize_if_needed(path):
-    """Resize image at path if either dimension exceeds MAX_DIM."""
+    """Resize image at path if either dimension exceeds MAX_DIM.
+
+    Also repairs files corrupted by ADB warning text prepended to PNG data.
+    """
+    # First, fix ADB warning corruption if present
+    strip_adb_warnings(path)
+
     try:
         from PIL import Image
 

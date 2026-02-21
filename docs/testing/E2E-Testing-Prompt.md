@@ -2142,7 +2142,7 @@ When Claude Code captures screenshots for analysis, follow these guidelines to a
 **ADB Screenshot Pattern:**
 ```bash
 # Capture to designated folder
-adb exec-out screencap -p > docs/testing/screenshots/screenshot_$(date +%H%M%S).png
+adb exec-out screencap -d 0 -p > docs/testing/screenshots/screenshot_$(date +%H%M%S).png
 
 # IMPORTANT: Verify file was captured successfully before reading
 ls -la docs/testing/screenshots/screenshot_$(date +%H%M%S).png
@@ -2351,7 +2351,7 @@ After each screen test, take a screenshot to verify pass/fail.
 ```
 FOR each screen in [Auth, Onboarding, Generation, Home, RecipeDetail, Grocery]:
     1. Run automated test step
-    2. Take screenshot: adb exec-out screencap -p > docs/testing/screenshots/{step}_{screen}.png
+    2. Take screenshot: adb exec-out screencap -d 0 -p > docs/testing/screenshots/{step}_{screen}.png
     3. Verify file saved: ls -la docs/testing/screenshots/{step}_{screen}.png
     4. Analyze screenshot to verify pass
     5. IF IMAGE PROCESSING ERROR:

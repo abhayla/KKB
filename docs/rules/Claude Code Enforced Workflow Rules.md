@@ -206,7 +206,7 @@ Platform-specific capture to `docs/testing/screenshots/`:
 
 **Android (ADB):**
 ```bash
-adb exec-out screencap -p > docs/testing/screenshots/{issue}_{feature}_{state}.png
+adb exec-out screencap -d 0 -p > docs/testing/screenshots/{issue}_{feature}_{state}.png
 ```
 
 **Web (Playwright):**

@@ -249,10 +249,10 @@ Capture before and after screenshots to `docs/testing/screenshots/`:
 **Android:**
 ```bash
 # Before (should have been captured in Step 1)
-adb exec-out screencap -p > docs/testing/screenshots/[issue]_[feature]_before.png
+adb exec-out screencap -d 0 -p > docs/testing/screenshots/[issue]_[feature]_before.png
 
 # After
-adb exec-out screencap -p > docs/testing/screenshots/[issue]_[feature]_after.png
+adb exec-out screencap -d 0 -p > docs/testing/screenshots/[issue]_[feature]_after.png
 ```
 
 **Web:**
