@@ -1,0 +1,119 @@
+Add this condition to Passing criteria - take screenshot after each testing, analyze the screenshot to verify it matches with the expected output. Do not pass the test until this is done. Check if you have Claude Chrome access or use it?
+
+
+
+
+Then plan to fix the issue as per this rule & 'd:\Abhay\VibeCoding\KKB\docs\rules\Claude Code Enforced Workflow Rules.md'     
+If any issue or error found then fix it and retest it. Do this in loop until the issue is fixed and test passes. Instead of shortcuts, Focus on the roor cause of the problem
+
+
+Do not proceed until you have 100% confidence of what I want. Ask me questions until you reach that confidence. 
+Ask one question at a time. Tell me the approximate number of questions you are going to ask.
+For each question, always give your recommendation. Your recommendation should be based on best practices and standards for similar scenario.
+After each response and before asking next question, Check industry standards, check the related codebase and docs and then add your knowlegebase to proceed. 
+Run through your final plan with me for my review iteratively for each section. Create the final plan only after my approval.
+
+***
+## Approach
+
+Do not proceed until you have 100% confidence of what I want. Ask me questions until you reach that confidence. Tell me the approximate number of questions you are going to ask.
+
+For each question:
+- State your recommendation based on best practices
+- Show evidence from the codebase supporting your analysis
+
+After each response, before the next question:
+- Check industry standards for Claude Code workflow automation
+- Cross-reference with the existing codebase and docs
+
+Run through your final plan with me section by section for approval before implementing.
+
+***
+
+  Test Summary Requirements:                                                                                                                                 
+  1. Test all 5 data flows as documented in flow-7-complete-data-flow.md
+  2. Test method: Both backend API (curl) AND Flutter app UI                                                                                 3. Test data: largeFamily (8 members, 3 allergies: dairy/peanuts/gluten)
+  4. Pantry test: Use a sample photo from the internet to test Vision AI
+  5. Meal plan: Generate only once, reuse for subsequent flow tests
+  6. Fix and retest loop: If any issue found, fix it and retest until pass
+
+Run HomeScreenTest E2E tests
+
+Search internet for Kotlin android App development best practices to implement it in this App. Ask me questions to help me select best practices, Architecture & Design. Use the same stylesheet in the new Kotlin UI                                         
+
+Create a prompt to Save the current context state and start from here in the next context from here referring the required docs. Save this prompt in 
+\docs\CONTINUE_PROMPT.md
+
+Update .gitignore, commit all files in the changes and sync
+
+Read this doc to undertand the last of last context and wait for my instructions:
+\docs\CONTINUE_PROMPT.md
+
+Test Passing Criteria:
+Take screenshot after each test and analyze screenshot to verify if the test passed or not. If failed, Fix the issue and then retest again using the same above process. Do this in loop until all tests pass 
+
+Run the E2E tests against the backend and Android app. Scope of this test if fakeAuth, onboarding screens and data, mealplan generation API, saving it in database, verification of all generated meals, population of generated meals on Home screen, generate meal plan using API only once and try using the same data for other tests. I want to avoid using API too many times
+
+
+Take the issue fix loop out from the command and make it a sepearte modular process which can be called from different places. 
+
+I want you to perform manual test of the complete App in such a way that a normal user uses it in multiple flows
+
+Flow1-Login as new user - complete onboarding - generate meal plan - check home screen - update all setting - generate meal plan again and verify meal - check other screens like stats
+Flow2-Login as existing user - onboarding screen shouls not be shown - show generated meal plan or already existing meal plan -   - update all setting - generate meal plan again and verify meal - check other screens like stats
+
+Test Findings:
+Onboarding screens - ask DOB not age. 
+
+Meal Test Data
+backend\test_meal_api_tabular.py
+
+  app/services/meal_generation_service.py                                                                                                               
+  - Rule-based pairing logic (Dal + Rice, Sabzi + Roti)
+  - No AI - just algorithms
+  - Uses PostgreSQL for: user preferences, recipes, pairing config
+  app/ai/meal_planner.py
+  - Uses Claude API to generate meal suggestions
+  - Then matches AI suggestions to recipes in PostgreSQL
+  - Uses PostgreSQL for: user preferences, recipes, festivals
+
+split this plan into 3 phases                                                                                                        
+  Use my gmail id abhayinfosys@gmail.com for all below phases                                                                                    Phase1 - Enter Family Test Profiles from UI and save the Data. Check the database to confirm that the family profile details are saved.      
+  Phase2 - Enter Rules data from UI in Recipe Rule and save the Data. Check the database to confirm that the family profile details are          saved.                                                                                                                                         Phase3 - Use both these data (from Family Test Profile and from Recipe Rule) to generate AI meal plan and verify the Home UI screen.           How how would you verify the completeness of the earlier phase before starting on next phase. What is Anthropic best practice for this and     how popular claude code user achieve this requirement.  
+
+  
+Search                │ Text input + FilterChips
+Rule Type             │ Radio buttons              │ INCLUDE, EXCLUDE
+Frequency             │ Radio buttons + sub-fields │ Daily, X times/week (dropdown 1-7), Specific days (Mon-Sun checkboxes), Never
+Meal Slot             │ Dropdown                   │ BREAKFAST, LUNCH, SNACKS, DINNER, ANY  
+Enforcement           │ Radio buttons              │ Required, Preferred                                                        
+Diet Conflict Warning │ Error container            │ Shows when INCLUDE conflicts
+
+Food Category │ Dropdown         │ 8 categories: Green Leafy 🥬, Citrus/Vitamin C 🍋, Iron-Rich 🥜, High Protein 🥩, Calcium-Rich 🥛, Fiber-Rich 🌾, Omega-3 🐟, Antioxidant 🫐 │
+
+1. What is setUpAuthenticatedStateWithoutMealPlan()? 2. YOu did not explain how 
+    new recipe names or ingradients will auto get added to the POPULAR_INGREDIENTS. 3. I also want suggestions based on ingredient name, plan 
+    to achieve this also. For example - when I type Paneer then it should suggest all recipe names which include Paneer in the recipe name 
+    and/or as ingredient.                                
+
+Claude.md
+[IMPORTANT] Do not just simulate the implementation or mocking them, always implement the real code.
+
+● Read 1 file (ctrl+o to expand)                                                                                                               
+  ⎿ API Error: 400 {"type":"error","error":{"type":"invalid_request_error","message":"messages.27.content.37.image.source.base64.data: At least     one of the image dimensions exceed max allowed size for many-image requests: 2000 pixels"},"request_id":"req_011CXxgEf4wiUeGZtXz1PmVq"}
+
+Gap Analysis file name
+  │  #  │                          File                          │        Modified         │
+  ├─────┼────────────────────────────────────────────────────────┼─────────────────────────┤                                                                          │ 1   │ C:\Users\itsab.claude\plans\crispy-scribbling-kahn.md  │ Feb 10, 18:28 (current) │                                                                        
+  ├─────┼────────────────────────────────────────────────────────┼─────────────────────────┤                                                                        
+  │ 2   │ C:\Users\itsab.claude\plans\velvety-skipping-wreath.md │ Feb 10, 08:37           │
+  ├─────┼────────────────────────────────────────────────────────┼─────────────────────────┤
+  │ 3   │ C:\Users\itsab.claude\plans\smooth-floating-ladybug.md │ Feb 9, 23:39            │
+  ├─────┼────────────────────────────────────────────────────────┼─────────────────────────┤
+  │ 4   │ C:\Users\itsab.claude\plans\lucky-scribbling-moler.md  │ Feb 9, 23:05            │
+  ├─────┼────────────────────────────────────────────────────────┼─────────────────────────┤
+  │ 5   │ C:\Users\itsab.claude\plans\clever-toasting-spark.md   │ Feb 9, 21:13            │
+  ├─────┼────────────────────────────────────────────────────────┼─────────────────────────┤
+  │ 6   │ C:\Users\itsab.claude\plans\cryptic-swimming-spark.md  │ Feb 9, 20:25            │
+  ├─────┼────────────────────────────────────────────────────────┼─────────────────────────┤
+  │ 7   │ C:\Users\itsab.claude\plans\swift-booping-moonbeam.md  │ Feb 9, 19:02

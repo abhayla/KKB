@@ -128,7 +128,6 @@ logcat*.txt
 CLAUDE_MD_GAPS_ANALYSIS.txt
 
 # Misc
-Notes
 nul
 *.tmp
 *.temp
