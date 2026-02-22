@@ -125,6 +125,11 @@
             "type": "command",
             "command": "bash .claude/hooks/log-workflow.sh",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/auto-format.sh",
+            "timeout": 15
           }
         ]
       },
@@ -135,6 +140,21 @@
             "type": "command",
             "command": "bash .claude/hooks/log-workflow.sh",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/auto-format.sh",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Review the conversation. Did Claude fully complete what the user asked? Check: (1) all requested changes were made, (2) no partial implementations left, (3) no unanswered questions from the user. Respond with {\"decision\": \"block\", \"reason\": \"Not yet done: <what remains>\"} if incomplete, or do not block if complete."
           }
         ]
       }

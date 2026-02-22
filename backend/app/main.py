@@ -3,6 +3,7 @@
 import logging
 from contextlib import asynccontextmanager
 
+import sentry_sdk
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -10,6 +11,15 @@ from fastapi.responses import JSONResponse
 from app.api.v1.router import api_router
 from app.cache import warm_recipe_cache
 from app.config import settings
+
+# Initialize Sentry (before app creation)
+if settings.sentry_dsn:
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        send_default_pii=True,
+        traces_sample_rate=0.2,
+        environment="production" if not settings.debug else "development",
+    )
 from app.core.exceptions import (
     AuthenticationError,
     BadRequestError,

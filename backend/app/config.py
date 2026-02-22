@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     # Google AI (Gemini)
     google_ai_api_key: Optional[str] = None
 
+    # Sentry
+    sentry_dsn: Optional[str] = None
+
     # Server
     api_v1_prefix: str = "/api/v1"
     debug: bool = True
