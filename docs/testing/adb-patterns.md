@@ -39,7 +39,7 @@ for node in tree.iter('node'):
 ## Pattern 2: Screenshot — Capture current screen
 
 ```bash
-$ADB exec-out screencap -d 0 -p > $SCREENSHOT_DIR/{name}.png
+$ADB exec-out screencap -p > $SCREENSHOT_DIR/{name}.png
 ```
 
 Screenshots are auto-resized by the existing PostToolUse hook (`.claude/hooks/post-screenshot-resize.sh`).

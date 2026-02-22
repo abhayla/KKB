@@ -425,7 +425,7 @@ AI-powered meal planning using Google Gemini (`gemini-2.5-flash` via `google-gen
 | Test flakiness | Use `waitUntil {}` in E2E tests; check `RetryUtils.kt` for patterns |
 | Screenshot "Could not process image" | Use PNG format, avoid fullPage on long pages, limit to 1280x720, verify file saved before reading. See Screenshots rule above. |
 | Screenshot "image dimensions exceed max" (API 400) | Auto-resized by PostToolUse hook (`.claude/hooks/post-screenshot-resize.sh`). Max 1800px per dimension. To batch-resize existing files: `python .claude/hooks/resize_screenshot.py --all`. Manual fallback: `browser_resize(1280, 720)` before Playwright screenshots. |
-| ADB screenshot corrupted (text in PNG) | When emulator has multiple displays, `adb exec-out screencap -p` prepends `[Warning] Multiple displays were found...` text before PNG data. Auto-fixed by `resize_screenshot.py` (strips ADB warnings). Manual fix: `python .claude/hooks/resize_screenshot.py --all`. Prevention: use `adb exec-out screencap -d <display-id> -p` to specify display. |
+| ADB screenshot corrupted (text in PNG) | When emulator has multiple displays, `adb exec-out screencap -p` prepends `[Warning] Multiple displays were found...` text before PNG data. Auto-fixed by `post-screenshot-resize.sh` hook (strips ADB warnings via `resize_screenshot.py`, auto-retries without `-d` flag on failure). Do NOT use `-d 0` — it fails with "Display Id '0' is not valid" on some emulators. Manual fix: `python .claude/hooks/resize_screenshot.py --all`. |
 | 4 auth tests fail | Pre-existing: `conftest.py` globally overrides auth dependency, causing 4 failures in `test_auth.py`. Not a regression. |
 | OnboardingViewModelTest won't compile | Pre-existing: missing `generateMealPlanUseCase` constructor param. Not a regression. |
 | Festivals/Stats tests | `test_festivals_api.py` (9 tests) and `test_stats_api.py` (10 tests) now exist. |
@@ -481,8 +481,8 @@ AI-powered meal planning using Google Gemini (`gemini-2.5-flash` via `google-gen
 
    **ADB Screenshot Pattern:**
    ```bash
-   # Capture to designated folder (use -d 0 to avoid multi-display warning corruption)
-   adb exec-out screencap -d 0 -p > docs/testing/screenshots/screen_name.png
+   # Capture to designated folder (hook auto-strips ADB warnings and auto-retries on failure)
+   adb exec-out screencap -p > docs/testing/screenshots/screen_name.png
 
    # Verify file was captured successfully (check it's valid PNG, not text)
    ls -la docs/testing/screenshots/screen_name.png
@@ -610,8 +610,8 @@ AI-powered meal planning using Google Gemini (`gemini-2.5-flash` via `google-gen
    Platform-specific capture to `docs/testing/screenshots/`:
    ```bash
    # Android (ADB)
-   adb exec-out screencap -d 0 -p > docs/testing/screenshots/{issue}_{feature}_before.png
-   adb exec-out screencap -d 0 -p > docs/testing/screenshots/{issue}_{feature}_after.png
+   adb exec-out screencap -p > docs/testing/screenshots/{issue}_{feature}_before.png
+   adb exec-out screencap -p > docs/testing/screenshots/{issue}_{feature}_after.png
    ```
    ```javascript
    // Web (Playwright)

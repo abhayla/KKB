@@ -36,7 +36,24 @@ case "$TOOL_NAME" in
     # Bash command - check if it's a screenshot command
     COMMAND=$(echo "$TOOL_INPUT" | python -c "import sys,json; print(json.load(sys.stdin).get('command',''))" 2>/dev/null)
     if echo "$COMMAND" | grep -qE "screencap|screenshot"; then
-      python "$SCRIPT_DIR/resize_screenshot.py" --recent
+      # Extract actual output file path from redirect (> path.png)
+      OUTPUT_FILE=$(echo "$COMMAND" | grep -oE '>\s*[^ ]+\.png' | sed 's/^>\s*//')
+      if [ -n "$OUTPUT_FILE" ] && [ -f "$OUTPUT_FILE" ]; then
+        # Process the specific file
+        python "$SCRIPT_DIR/resize_screenshot.py" "$OUTPUT_FILE"
+        # Check if file is still invalid (< 1KB = failed capture)
+        FILE_SIZE=$(wc -c < "$OUTPUT_FILE" 2>/dev/null | tr -d ' ')
+        if [ "${FILE_SIZE:-0}" -lt 1000 ]; then
+          # Extract ADB path from command, re-capture without -d flag
+          ADB_PATH=$(echo "$COMMAND" | grep -oE '[^ ]*adb[^ ]*' | head -1)
+          if [ -n "$ADB_PATH" ]; then
+            "$ADB_PATH" exec-out screencap -p > "$OUTPUT_FILE" 2>/dev/null
+            python "$SCRIPT_DIR/resize_screenshot.py" "$OUTPUT_FILE"
+          fi
+        fi
+      else
+        python "$SCRIPT_DIR/resize_screenshot.py" --recent
+      fi
     fi
     ;;
 esac

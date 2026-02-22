@@ -113,9 +113,9 @@ This marks the session as a `fix-issue` workflow. Hooks will track Skill invocat
    **Android changes:**
    ```bash
    # Before screenshot (capture current state before fix is visible)
-   adb exec-out screencap -d 0 -p > docs/testing/screenshots/$ARGUMENTS_before.png
+   adb exec-out screencap -p > docs/testing/screenshots/$ARGUMENTS_before.png
    # After screenshot (capture state with fix applied)
-   adb exec-out screencap -d 0 -p > docs/testing/screenshots/$ARGUMENTS_after.png
+   adb exec-out screencap -p > docs/testing/screenshots/$ARGUMENTS_after.png
    ```
 
    **Backend changes (Swagger UI via Playwright):**

@@ -27,6 +27,9 @@ def strip_adb_warnings(path):
     warning text like '[Warning] Multiple displays were found...' before
     the actual PNG binary. This corrupts the file. Fix by finding the
     PNG magic bytes (\\x89PNG) and stripping everything before them.
+
+    Also detects screencap failures (e.g., 'Display Id not valid') where
+    the file contains only error text with no PNG data at all.
     """
     try:
         with open(path, "rb") as f:
@@ -34,6 +37,17 @@ def strip_adb_warnings(path):
         png_magic = b"\x89PNG"
         if data.startswith(png_magic):
             return False  # Already valid PNG
+
+        # Check for screencap failure (error text only, no PNG data)
+        if len(data) < 1000 and png_magic not in data:
+            try:
+                text = data.decode("utf-8", errors="replace").strip()
+                if any(k in text for k in ("Failed to take", "Display Id", "Capturing failed")):
+                    print(f"SCREENCAP_FAILED: {text}", file=sys.stderr)
+                    return False
+            except Exception:
+                pass
+
         idx = data.find(png_magic)
         if idx <= 0:
             return False  # Not a PNG at all, skip

@@ -308,7 +308,7 @@ adb shell am force-stop com.rasoiai.app.debug     # Force stop
 adb shell am start -n com.rasoiai.app.debug/com.rasoiai.app.MainActivity  # Launch
 
 # Screenshots (MUST save to docs/testing/screenshots/)
-adb exec-out screencap -d 0 -p > docs/testing/screenshots/screen_name.png
+adb exec-out screencap -p > docs/testing/screenshots/screen_name.png
 
 # UI hierarchy
 adb shell uiautomator dump /data/local/tmp/ui.xml && adb pull /data/local/tmp/ui.xml

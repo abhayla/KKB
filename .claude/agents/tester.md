@@ -100,7 +100,7 @@ You should be familiar with common testing commands:
 - `go test` for Go projects
 - `cargo test` for Rust projects
 - Docker-based test execution when applicable
-- `adb exec-out screencap -d 0 -p` for Android screenshot capture (use `-d 0` to avoid multi-display warning corruption)
+- `adb exec-out screencap -p` for Android screenshot capture (hook auto-strips ADB warnings and retries on failure)
 - `adb shell uiautomator dump` for UI hierarchy XML analysis
 - `curl` for backend API endpoint verification
 - Claude Read tool for multimodal image analysis of screenshots

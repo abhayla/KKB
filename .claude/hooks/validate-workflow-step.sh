@@ -17,7 +17,13 @@ get_step_status() {
         if command -v jq &>/dev/null; then
             jq -r ".steps.${step_name}.completed" "$WORKFLOW_STATE_FILE" 2>/dev/null || echo "false"
         else
-            grep -o "\"${step_name}\".*\"completed\":[^,}]*" "$WORKFLOW_STATE_FILE" 2>/dev/null | grep -o "true\|false" | head -1 || echo "false"
+            python -c "
+import json
+with open('$WORKFLOW_STATE_FILE') as f:
+    d = json.load(f)
+v = d.get('steps',{}).get('$step_name',{}).get('completed', False)
+print(str(v).lower())
+" 2>/dev/null || echo "false"
         fi
     else
         echo "false"
@@ -56,12 +62,14 @@ if [ "$TFP" = "true" -o "$TFP" = "True" ] && [ "$FLI" != "true" ] && [ "$FLI" !=
         "Write"|"Edit")
             TFP_FILE=$(extract_input_field "file_path")
             if [ -n "$TFP_FILE" ]; then
+                # Normalize Windows backslashes to forward slashes
+                TFP_FILE_NORM=$(echo "$TFP_FILE" | sed 's|\\|/|g')
                 # Allow: .claude/, docs/, .github/, CLAUDE.md, any .md file
-                if echo "$TFP_FILE" | grep -qE "(\.claude/|docs/|\.github/|CLAUDE\.md|\.md$)"; then
+                if echo "$TFP_FILE_NORM" | grep -qE "(\.claude/|docs/|\.github/|CLAUDE\.md|\.md$)"; then
                     : # Allowed — documentation and config files
                 else
                     # Block: all code files (.kt, .py, .java, .xml, etc.)
-                    if echo "$TFP_FILE" | grep -qE "\.(kt|py|java|xml|kts|gradle|json|yaml|yml|toml|properties)$"; then
+                    if echo "$TFP_FILE_NORM" | grep -qE "\.(kt|py|java|xml|kts|gradle|json|yaml|yml|toml|properties)$"; then
                         TFP_DETAILS=$(get_state_field ".testFailurePendingDetails")
                         echo ""
                         echo "BLOCKED: Test failures are pending. Write/Edit to code files is blocked."
@@ -101,12 +109,14 @@ if [ "$VIP" = "true" -o "$VIP" = "True" ] && [ "$FLI" != "true" ] && [ "$FLI" !=
         "Write"|"Edit")
             VIP_FILE=$(extract_input_field "file_path")
             if [ -n "$VIP_FILE" ]; then
+                # Normalize Windows backslashes to forward slashes
+                VIP_FILE_NORM=$(echo "$VIP_FILE" | sed 's|\\|/|g')
                 # Allow: .claude/, docs/, .github/, CLAUDE.md, any .md file
-                if echo "$VIP_FILE" | grep -qE "(\.claude/|docs/|\.github/|CLAUDE\.md|\.md$)"; then
+                if echo "$VIP_FILE_NORM" | grep -qE "(\.claude/|docs/|\.github/|CLAUDE\.md|\.md$)"; then
                     : # Allowed — documentation and config files
                 else
                     # Block: all code files (.kt, .py, .java, .xml, etc.)
-                    if echo "$VIP_FILE" | grep -qE "\.(kt|py|java|xml|kts|gradle|json|yaml|yml|toml|properties)$"; then
+                    if echo "$VIP_FILE_NORM" | grep -qE "\.(kt|py|java|xml|kts|gradle|json|yaml|yml|toml|properties)$"; then
                         VIP_DETAILS=$(get_state_field ".visualIssuePendingDetails")
                         echo ""
                         echo "BLOCKED: Visual issues are pending. Write/Edit to code files is blocked."
@@ -137,9 +147,11 @@ case "$HOOK_TOOL_NAME" in
     "Write"|"Edit")
         FILE_PATH=$(extract_input_field "file_path")
         if [ -z "$FILE_PATH" ]; then exit 0; fi
-        if is_requirement_file "$FILE_PATH"; then log_event "STEP_1_PROGRESS" "file=$FILE_PATH"; exit 0; fi
-        if echo "$FILE_PATH" | grep -qE "(\.claude/|\.github/|docs/rules|docs/design|CLAUDE\.md)"; then exit 0; fi
-        if is_test_file "$FILE_PATH"; then
+        # Normalize Windows backslashes to forward slashes for pattern matching
+        FILE_PATH_NORM=$(echo "$FILE_PATH" | sed 's|\\|/|g')
+        if is_requirement_file "$FILE_PATH_NORM"; then log_event "STEP_1_PROGRESS" "file=$FILE_PATH"; exit 0; fi
+        if echo "$FILE_PATH_NORM" | grep -qE "(\.claude/|\.github/|docs/rules|docs/design|CLAUDE\.md)"; then exit 0; fi
+        if is_test_file "$FILE_PATH_NORM"; then
             if [ "$(get_step_status step1_requirements)" != "true" ]; then
                 echo ""; echo "WORKFLOW BLOCKED: Cannot create tests before Step 1 (requirements)."
                 echo "Run: gh issue list --search \"keyword\""; echo ""
@@ -147,7 +159,7 @@ case "$HOOK_TOOL_NAME" in
             fi
             exit 0
         fi
-        if is_code_file "$FILE_PATH"; then
+        if is_code_file "$FILE_PATH_NORM"; then
             if [ "$(get_step_status step2_tests)" != "true" ]; then
                 echo ""; echo "WORKFLOW BLOCKED: Cannot implement code before Step 2 (tests)."
                 echo "Create test file first."; echo ""

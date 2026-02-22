@@ -72,7 +72,7 @@ For each step in the flow definition:
 3. **Read step's Action column** and execute using appropriate ADB pattern (UI) or curl/script (API)
 4. **Dump UI and verify Expected column** — determine PASS/FAIL
 5. **Capture evidence:**
-   - **UI steps (Type=UI):** `$ADB exec-out screencap -d 0 -p > $SCREENSHOT_DIR/flow{N}_{step_id}.png`
+   - **UI steps (Type=UI):** `$ADB exec-out screencap -p > $SCREENSHOT_DIR/flow{N}_{step_id}.png`
      - Every UI step gets a unique screenshot — no reuse, no skipping
    - **API steps (Type=API):** Save request JSON + response JSON to `$EVIDENCE_DIR/{step_id}_request.json` and `{step_id}_response.json`
 6. **BLOCKING: Invoke `/verify-screenshots`** for each UI screenshot:

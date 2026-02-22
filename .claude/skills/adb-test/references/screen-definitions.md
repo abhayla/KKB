@@ -52,7 +52,7 @@ Follow navigation path from `adb-test-definitions.md`. Use ADB taps. Wait 1-2s a
 
 **E4. Screenshot + AI Visual Analysis**
 
-Capture: `$ADB exec-out screencap -d 0 -p > $SCREENSHOT_DIR/adb-test_{screen}_{timestamp}.png`
+Capture: `$ADB exec-out screencap -p > $SCREENSHOT_DIR/adb-test_{screen}_{timestamp}.png`
 
 Validate with Pattern 12. If BLANK_SUSPECT: wake device, retry (max 2 retries). If still blank -> `visual_verified=false`.
 
