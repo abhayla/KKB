@@ -173,3 +173,17 @@ Gap Analysis file name
 
   ---
   Want me to walk you through any of these remaining 5?
+
+I have acess to VPS server also and I can run a session of Claude code on the VPS where you can      
+  setup everything needed to be setup on VPS.                                                         
+                                                                                                         Therefore seperate the above list in 2 parts,                                                        
+  one - VPS only actions                                                                                 generic - anywhere actions                                                                           
+                                                                                                       
+  after this list seperation, we will work on 'generic - anywhere actions' and complete everything     
+   before moving to 'VPS only actions'.                                                                
+                                                                                                       
+  for 'VPS only actions', try working on a automated production deployment process. Search for         
+  best pre and post deployment best practices from internet and add to the above list.                 
+                                                                                                       
+  save 'VPS only actions' and 'anywhere actions' in 2 seperate docs and place them in                  
+  d:\Abhay\VibeCoding\cric\docs\pre-prod 
