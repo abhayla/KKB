@@ -131,9 +131,11 @@ async def generate(
     - Cooking time limits (weekday vs weekend, busy days)
     - Pairing rules from config (by cuisine and meal type)
     """
+    import time
     import traceback
 
     try:
+        t_start = time.monotonic()
         user_id = current_user.id
         logger.info(f"Generating meal plan for user {user_id}")
 
@@ -161,6 +163,7 @@ async def generate(
                 status_code=504,
                 detail="Meal generation timed out. Please try again.",
             )
+        t_ai_done = time.monotonic()
 
         # Reuse preferences cached by AIMealService (avoids duplicate DB call)
         from app.db.postgres import async_session_maker
@@ -205,6 +208,8 @@ async def generate(
                         "GENERIC",
                     ):
                         real_ids += 1
+        t_recipes_done = time.monotonic()
+
         if not recipe_creation_success:
             logger.error(
                 f"Recipe creation FAILED after 2 attempts. "
@@ -243,6 +248,7 @@ async def generate(
         }
 
         created_plan = await meal_plan_repo.create_and_deactivate_old(plan_data)
+        t_save_done = time.monotonic()
         logger.info(f"Created meal plan {created_plan.get('id')} for user {user_id}")
 
         # Catalog AI-generated recipes in background (fire-and-forget)
@@ -264,6 +270,16 @@ async def generate(
                 logger.warning(f"Background catalog failed: {e}")
 
         asyncio.create_task(_background_catalog())
+
+        t_end = time.monotonic()
+        logger.info(
+            f"PERF meal-gen user={user_id}: "
+            f"total={t_end - t_start:.1f}s, "
+            f"ai={t_ai_done - t_start:.1f}s, "
+            f"recipes={t_recipes_done - t_ai_done:.1f}s, "
+            f"save={t_save_done - t_recipes_done:.1f}s, "
+            f"post-ai={t_end - t_ai_done:.1f}s"
+        )
 
         return _build_response_from_firestore(created_plan)
     except Exception as e:

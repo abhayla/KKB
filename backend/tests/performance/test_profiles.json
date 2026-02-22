@@ -1,0 +1,116 @@
+[
+  {
+    "name": "Sharma Family (Vegetarian)",
+    "firebase_token": "fake-firebase-token",
+    "preferences": {
+      "primary_diet": "vegetarian",
+      "dietary_restrictions": ["sattvic"],
+      "cuisine_preferences": ["north", "south"],
+      "spice_level": "medium",
+      "allergies": [
+        {"ingredient": "Peanuts", "severity": "SEVERE"},
+        {"ingredient": "Cashews", "severity": "MILD"}
+      ],
+      "dislikes": ["Karela", "Baingan", "Mushroom"],
+      "weekday_cooking_time": 30,
+      "weekend_cooking_time": 60,
+      "busy_days": ["MONDAY", "WEDNESDAY", "FRIDAY"],
+      "household_size": 3,
+      "family_members": [
+        {"name": "Ramesh", "age": 45, "type": "ADULT", "special_needs": ["DIABETIC", "LOW_OIL"]},
+        {"name": "Sunita", "age": 42, "type": "ADULT", "special_needs": ["LOW_SALT"]},
+        {"name": "Aarav", "age": 12, "type": "CHILD", "special_needs": ["NO_SPICY"]}
+      ]
+    }
+  },
+  {
+    "name": "Gupta Family (Eggetarian)",
+    "firebase_token": "fake-firebase-token",
+    "preferences": {
+      "primary_diet": "eggetarian",
+      "dietary_restrictions": [],
+      "cuisine_preferences": ["north", "west"],
+      "spice_level": "hot",
+      "allergies": [
+        {"ingredient": "Shellfish", "severity": "SEVERE"}
+      ],
+      "dislikes": ["Lauki", "Turai"],
+      "weekday_cooking_time": 45,
+      "weekend_cooking_time": 90,
+      "busy_days": ["TUESDAY", "THURSDAY"],
+      "household_size": 4,
+      "family_members": [
+        {"name": "Rajesh", "age": 50, "type": "ADULT", "special_needs": []},
+        {"name": "Priya", "age": 47, "type": "ADULT", "special_needs": ["HIGH_PROTEIN"]},
+        {"name": "Rohit", "age": 22, "type": "ADULT", "special_needs": ["HIGH_PROTEIN"]},
+        {"name": "Neha", "age": 18, "type": "ADULT", "special_needs": []}
+      ]
+    }
+  },
+  {
+    "name": "Reddy Family (South Indian)",
+    "firebase_token": "fake-firebase-token",
+    "preferences": {
+      "primary_diet": "vegetarian",
+      "dietary_restrictions": [],
+      "cuisine_preferences": ["south"],
+      "spice_level": "very_hot",
+      "allergies": [],
+      "dislikes": ["Capsicum"],
+      "weekday_cooking_time": 30,
+      "weekend_cooking_time": 45,
+      "busy_days": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
+      "household_size": 2,
+      "family_members": [
+        {"name": "Venkat", "age": 35, "type": "ADULT", "special_needs": []},
+        {"name": "Lakshmi", "age": 33, "type": "ADULT", "special_needs": []}
+      ]
+    }
+  },
+  {
+    "name": "Khan Family (Non-Veg)",
+    "firebase_token": "fake-firebase-token",
+    "preferences": {
+      "primary_diet": "non_vegetarian",
+      "dietary_restrictions": ["halal"],
+      "cuisine_preferences": ["north", "west"],
+      "spice_level": "medium",
+      "allergies": [
+        {"ingredient": "Soy", "severity": "MODERATE"}
+      ],
+      "dislikes": ["Bhindi", "Arbi"],
+      "weekday_cooking_time": 40,
+      "weekend_cooking_time": 120,
+      "busy_days": ["WEDNESDAY"],
+      "household_size": 5,
+      "family_members": [
+        {"name": "Irfan", "age": 55, "type": "ADULT", "special_needs": ["DIABETIC"]},
+        {"name": "Fatima", "age": 52, "type": "ADULT", "special_needs": []},
+        {"name": "Ahmed", "age": 28, "type": "ADULT", "special_needs": []},
+        {"name": "Zara", "age": 25, "type": "ADULT", "special_needs": []},
+        {"name": "Dadi", "age": 78, "type": "SENIOR", "special_needs": ["SOFT_FOOD", "LOW_SALT"]}
+      ]
+    }
+  },
+  {
+    "name": "Jain Family (Strict Jain)",
+    "firebase_token": "fake-firebase-token",
+    "preferences": {
+      "primary_diet": "vegetarian",
+      "dietary_restrictions": ["jain"],
+      "cuisine_preferences": ["west", "north"],
+      "spice_level": "mild",
+      "allergies": [],
+      "dislikes": [],
+      "weekday_cooking_time": 30,
+      "weekend_cooking_time": 60,
+      "busy_days": [],
+      "household_size": 3,
+      "family_members": [
+        {"name": "Hemant", "age": 40, "type": "ADULT", "special_needs": []},
+        {"name": "Meena", "age": 38, "type": "ADULT", "special_needs": []},
+        {"name": "Tanvi", "age": 8, "type": "CHILD", "special_needs": ["NO_SPICY"]}
+      ]
+    }
+  }
+]
