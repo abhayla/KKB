@@ -10,7 +10,7 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import cast, func, or_, select, String, update
+from sqlalchemy import or_, select, String
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.ai_recipe_catalog import AiRecipeCatalog
@@ -34,9 +34,11 @@ async def catalog_recipes(
 ) -> int:
     """Catalog AI-generated recipes from a meal plan into the shared catalog.
 
-    For each recipe in the plan:
-    - If the normalized name already exists, increment usage_count
-    - If new, insert with all available metadata
+    Uses bulk operations for performance:
+    1. Collect all unique recipe names from the plan
+    2. Single SELECT to find existing entries
+    3. Bulk UPDATE usage_count for existing entries
+    4. Bulk INSERT for new entries
 
     Args:
         db: Database session
@@ -47,9 +49,10 @@ async def catalog_recipes(
     Returns:
         Number of recipes cataloged (new + updated)
     """
-    count = 0
     days = generated_plan.get("days", [])
 
+    # --- Pass 1: Collect unique recipes by normalized name ---
+    unique_recipes: dict[str, dict] = {}  # normalized_name -> first item data
     for day_data in days:
         for slot in ["breakfast", "lunch", "dinner", "snacks"]:
             items = day_data.get(slot, [])
@@ -60,58 +63,87 @@ async def catalog_recipes(
                 recipe_name = item.get("recipe_name", "")
                 if not recipe_name:
                     continue
-
                 normalized = normalize_recipe_name(recipe_name)
-
-                # Check if already exists
-                result = await db.execute(
-                    select(AiRecipeCatalog).where(
-                        AiRecipeCatalog.normalized_name == normalized
-                    )
-                )
-                existing = result.scalar_one_or_none()
-
-                if existing:
-                    # Increment usage_count
-                    existing.usage_count += 1
-                    existing.updated_at = datetime.now(timezone.utc)
+                if normalized not in unique_recipes:
+                    unique_recipes[normalized] = {
+                        "item": item,
+                        "slot": slot,
+                        "count": 1,
+                    }
                 else:
-                    # Build metadata
-                    dietary_tags = item.get("dietary_tags", [])
-                    ingredients_data = item.get("ingredients")
-                    nutrition_data = item.get("nutrition")
+                    unique_recipes[normalized]["count"] += 1
 
-                    new_entry = AiRecipeCatalog(
-                        id=str(uuid.uuid4()),
-                        display_name=recipe_name.strip(),
-                        normalized_name=normalized,
-                        dietary_tags=json.dumps(dietary_tags) if dietary_tags else None,
-                        cuisine_type=cuisine_type,
-                        meal_types=json.dumps([slot]),
-                        category=item.get("category"),
-                        prep_time_minutes=item.get("prep_time_minutes"),
-                        calories=item.get("calories"),
-                        ingredients=json.dumps(ingredients_data) if ingredients_data else None,
-                        nutrition=json.dumps(nutrition_data) if nutrition_data else None,
-                        usage_count=1,
-                        first_generated_by=user_id,
-                        created_at=datetime.now(timezone.utc),
-                        updated_at=datetime.now(timezone.utc),
-                    )
-                    db.add(new_entry)
+    if not unique_recipes:
+        return 0
 
-                count += 1
+    # --- Pass 2: Bulk lookup existing entries (1 SELECT instead of ~28) ---
+    result = await db.execute(
+        select(AiRecipeCatalog).where(
+            AiRecipeCatalog.normalized_name.in_(unique_recipes.keys())
+        )
+    )
+    existing_entries = {
+        entry.normalized_name: entry for entry in result.scalars().all()
+    }
+
+    # --- Pass 3: Update existing entries and collect new ones ---
+    now = datetime.now(timezone.utc)
+    new_entries = []
+
+    for normalized, data in unique_recipes.items():
+        if normalized in existing_entries:
+            # Bulk update: increment usage_count
+            existing = existing_entries[normalized]
+            existing.usage_count += data["count"]
+            existing.updated_at = now
+        else:
+            # Prepare new entry for bulk insert
+            item = data["item"]
+            dietary_tags = item.get("dietary_tags", [])
+            ingredients_data = item.get("ingredients")
+            nutrition_data = item.get("nutrition")
+
+            new_entries.append(
+                AiRecipeCatalog(
+                    id=str(uuid.uuid4()),
+                    display_name=item.get("recipe_name", "").strip(),
+                    normalized_name=normalized,
+                    dietary_tags=json.dumps(dietary_tags) if dietary_tags else None,
+                    cuisine_type=cuisine_type,
+                    meal_types=json.dumps([data["slot"]]),
+                    category=item.get("category"),
+                    prep_time_minutes=item.get("prep_time_minutes"),
+                    calories=item.get("calories"),
+                    ingredients=(
+                        json.dumps(ingredients_data) if ingredients_data else None
+                    ),
+                    nutrition=json.dumps(nutrition_data) if nutrition_data else None,
+                    usage_count=data["count"],
+                    first_generated_by=user_id,
+                    created_at=now,
+                    updated_at=now,
+                )
+            )
+
+    # --- Pass 4: Bulk add new entries ---
+    for entry in new_entries:
+        db.add(entry)
 
     await db.commit()
-    logger.info(f"Cataloged {count} recipe items for user {user_id}")
-    return count
+
+    total = len(unique_recipes)
+    logger.info(
+        f"Cataloged {total} unique recipes for user {user_id}: "
+        f"{len(existing_entries)} updated, {len(new_entries)} new"
+    )
+    return total
 
 
 # Dietary filtering: which tags conflict with each diet type
 DIETARY_EXCLUSIONS = {
     "vegetarian": {"non_vegetarian"},
     "vegan": {"non_vegetarian"},  # Also require "vegan" tag, handled in filter
-    "jain": {"non_vegetarian"},   # Also require "jain" tag, handled in filter
+    "jain": {"non_vegetarian"},  # Also require "jain" tag, handled in filter
     "sattvic": {"non_vegetarian"},  # Also require "sattvic" tag, handled in filter
     "eggetarian": {"non_vegetarian"},  # Unless also has "eggetarian"
     "non_vegetarian": set(),  # No exclusions
@@ -146,7 +178,9 @@ def _passes_dietary_filter(
         for tag in recipe_dietary_tags:
             if tag.lower() in excluded_tags:
                 # Special case: eggetarian can eat eggetarian-tagged non_veg
-                if user_diet_lower == "eggetarian" and "eggetarian" in [t.lower() for t in recipe_dietary_tags]:
+                if user_diet_lower == "eggetarian" and "eggetarian" in [
+                    t.lower() for t in recipe_dietary_tags
+                ]:
                     continue
                 return False
 
@@ -216,19 +250,25 @@ async def search_catalog(
     # Convert to dicts and limit
     results = []
     for entry in filtered[:limit]:
-        results.append({
-            "id": entry.id,
-            "display_name": entry.display_name,
-            "normalized_name": entry.normalized_name,
-            "dietary_tags": json.loads(entry.dietary_tags) if entry.dietary_tags else [],
-            "cuisine_type": entry.cuisine_type,
-            "meal_types": json.loads(entry.meal_types) if entry.meal_types else [],
-            "category": entry.category,
-            "prep_time_minutes": entry.prep_time_minutes,
-            "calories": entry.calories,
-            "ingredients": json.loads(entry.ingredients) if entry.ingredients else None,
-            "nutrition": json.loads(entry.nutrition) if entry.nutrition else None,
-            "usage_count": entry.usage_count,
-        })
+        results.append(
+            {
+                "id": entry.id,
+                "display_name": entry.display_name,
+                "normalized_name": entry.normalized_name,
+                "dietary_tags": (
+                    json.loads(entry.dietary_tags) if entry.dietary_tags else []
+                ),
+                "cuisine_type": entry.cuisine_type,
+                "meal_types": json.loads(entry.meal_types) if entry.meal_types else [],
+                "category": entry.category,
+                "prep_time_minutes": entry.prep_time_minutes,
+                "calories": entry.calories,
+                "ingredients": (
+                    json.loads(entry.ingredients) if entry.ingredients else None
+                ),
+                "nutrition": json.loads(entry.nutrition) if entry.nutrition else None,
+                "usage_count": entry.usage_count,
+            }
+        )
 
     return results

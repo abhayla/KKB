@@ -4,8 +4,8 @@ import asyncio
 import logging
 import random
 import uuid
-from datetime import date, datetime, timedelta, timezone
-from typing import Any, Optional
+from datetime import date, datetime, timedelta
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
@@ -13,7 +13,6 @@ from app.api.deps import CurrentUser
 from app.core.exceptions import NotFoundError
 from app.repositories.meal_plan_repository import MealPlanRepository
 from app.repositories.recipe_repository import RecipeRepository
-from app.repositories.user_repository import UserRepository
 from app.schemas.meal_plan import (
     GenerateMealPlanRequest,
     MealPlanResponse,
@@ -34,6 +33,7 @@ router = APIRouter(prefix="/meal-plans", tags=["meal-plans"])
 # RESPONSE BUILDING HELPERS
 # ==============================================================================
 
+
 def _build_response_from_firestore(plan: dict[str, Any]) -> MealPlanResponse:
     """Build MealPlanResponse from Firestore document."""
     days = []
@@ -43,17 +43,19 @@ def _build_response_from_firestore(plan: dict[str, Any]) -> MealPlanResponse:
         def _build_meal_items(meal_list: list) -> list[MealItemDto]:
             items = []
             for i, m in enumerate(meal_list or []):
-                items.append(MealItemDto(
-                    id=m.get("id", str(uuid.uuid4())),
-                    recipe_id=m.get("recipe_id", ""),
-                    recipe_name=m.get("recipe_name", ""),
-                    recipe_image_url=m.get("recipe_image_url"),
-                    prep_time_minutes=m.get("prep_time_minutes", 30),
-                    calories=m.get("calories", 0),
-                    is_locked=m.get("is_locked", False),
-                    order=i,
-                    dietary_tags=m.get("dietary_tags", []),
-                ))
+                items.append(
+                    MealItemDto(
+                        id=m.get("id", str(uuid.uuid4())),
+                        recipe_id=m.get("recipe_id", ""),
+                        recipe_name=m.get("recipe_name", ""),
+                        recipe_image_url=m.get("recipe_image_url"),
+                        prep_time_minutes=m.get("prep_time_minutes", 30),
+                        calories=m.get("calories", 0),
+                        is_locked=m.get("is_locked", False),
+                        order=i,
+                        dietary_tags=m.get("dietary_tags", []),
+                    )
+                )
             return items
 
         festival = None
@@ -66,17 +68,19 @@ def _build_response_from_firestore(plan: dict[str, Any]) -> MealPlanResponse:
                 suggested_dishes=f.get("suggested_dishes"),
             )
 
-        days.append(MealPlanDayDto(
-            date=day_data.get("date", ""),
-            day_name=day_data.get("day_name", ""),
-            meals=MealsByTypeDto(
-                breakfast=_build_meal_items(meals.get("breakfast", [])),
-                lunch=_build_meal_items(meals.get("lunch", [])),
-                dinner=_build_meal_items(meals.get("dinner", [])),
-                snacks=_build_meal_items(meals.get("snacks", [])),
-            ),
-            festival=festival,
-        ))
+        days.append(
+            MealPlanDayDto(
+                date=day_data.get("date", ""),
+                day_name=day_data.get("day_name", ""),
+                meals=MealsByTypeDto(
+                    breakfast=_build_meal_items(meals.get("breakfast", [])),
+                    lunch=_build_meal_items(meals.get("lunch", [])),
+                    dinner=_build_meal_items(meals.get("dinner", [])),
+                    snacks=_build_meal_items(meals.get("snacks", [])),
+                ),
+                festival=festival,
+            )
+        )
 
     created_at = plan.get("created_at")
     updated_at = plan.get("updated_at")
@@ -94,8 +98,16 @@ def _build_response_from_firestore(plan: dict[str, Any]) -> MealPlanResponse:
         week_start_date=week_start,
         week_end_date=week_end,
         days=days,
-        created_at=created_at.isoformat() if isinstance(created_at, datetime) else str(created_at),
-        updated_at=updated_at.isoformat() if isinstance(updated_at, datetime) else str(updated_at),
+        created_at=(
+            created_at.isoformat()
+            if isinstance(created_at, datetime)
+            else str(created_at)
+        ),
+        updated_at=(
+            updated_at.isoformat()
+            if isinstance(updated_at, datetime)
+            else str(updated_at)
+        ),
     )
 
 
@@ -120,6 +132,7 @@ async def generate(
     - Pairing rules from config (by cuisine and meal type)
     """
     import traceback
+
     try:
         user_id = current_user.id
         logger.info(f"Generating meal plan for user {user_id}")
@@ -149,16 +162,15 @@ async def generate(
                 detail="Meal generation timed out. Please try again.",
             )
 
-        # Get user cuisine preference (reused for recipe creation + catalog)
+        # Reuse preferences cached by AIMealService (avoids duplicate DB call)
         from app.db.postgres import async_session_maker
         from app.services.recipe_creation_service import create_recipes_for_meal_plan
 
-        user_repo = UserRepository()
-        prefs_data = await user_repo.get_preferences(user_id)
+        cached_prefs = ai_service.last_preferences
         cuisine_type = "north"
-        if prefs_data and prefs_data.get("cuisine_preferences"):
-            cuisine_type = prefs_data["cuisine_preferences"][0]
-        family_size = prefs_data.get("family_size", 4) if prefs_data else 4
+        if cached_prefs and cached_prefs.cuisine_preferences:
+            cuisine_type = cached_prefs.cuisine_preferences[0]
+        family_size = cached_prefs.family_size if cached_prefs else 4
 
         # Create real Recipe records for all AI-generated items
         # This replaces "AI_GENERATED" recipe_ids with real UUIDs
@@ -188,7 +200,10 @@ async def generate(
             for slot in ["breakfast", "lunch", "dinner", "snacks"]:
                 for item in getattr(day, slot, []):
                     total_items += 1
-                    if item.recipe_id and item.recipe_id not in ("AI_GENERATED", "GENERIC"):
+                    if item.recipe_id and item.recipe_id not in (
+                        "AI_GENERATED",
+                        "GENERIC",
+                    ):
                         real_ids += 1
         if not recipe_creation_success:
             logger.error(
@@ -196,25 +211,28 @@ async def generate(
                 f"{real_ids}/{total_items} items have real recipe IDs"
             )
         else:
-            logger.info(f"Recipe creation OK: {real_ids}/{total_items} items have real recipe IDs")
+            logger.info(
+                f"Recipe creation OK: {real_ids}/{total_items} items have real recipe IDs"
+            )
 
         # Convert to repository format
         # Repository expects lists of items per meal type
         days = []
         for day in generated_plan.days:
-            days.append({
-                "date": day.date,
-                "day_name": day.day_name,
-                "festival": day.festival,
-                "breakfast": [_meal_item_to_dict(item) for item in day.breakfast],
-                "lunch": [_meal_item_to_dict(item) for item in day.lunch],
-                "dinner": [_meal_item_to_dict(item) for item in day.dinner],
-                "snacks": [_meal_item_to_dict(item) for item in day.snacks],
-            })
+            days.append(
+                {
+                    "date": day.date,
+                    "day_name": day.day_name,
+                    "festival": day.festival,
+                    "breakfast": [_meal_item_to_dict(item) for item in day.breakfast],
+                    "lunch": [_meal_item_to_dict(item) for item in day.lunch],
+                    "dinner": [_meal_item_to_dict(item) for item in day.dinner],
+                    "snacks": [_meal_item_to_dict(item) for item in day.snacks],
+                }
+            )
 
-        # Save to PostgreSQL
+        # Save to PostgreSQL (deactivate old + create new in single session)
         meal_plan_repo = MealPlanRepository()
-        await meal_plan_repo.deactivate_old_plans(user_id, "")
 
         plan_data = {
             "user_id": user_id,
@@ -224,23 +242,28 @@ async def generate(
             "rules_applied": generated_plan.rules_applied,
         }
 
-        created_plan = await meal_plan_repo.create(plan_data)
+        created_plan = await meal_plan_repo.create_and_deactivate_old(plan_data)
         logger.info(f"Created meal plan {created_plan.get('id')} for user {user_id}")
 
-        # Catalog AI-generated recipes into the shared catalog
-        try:
-            from app.services.ai_recipe_catalog_service import catalog_recipes as catalog_recipes_fn
-
-            async with async_session_maker() as catalog_db:
-                await catalog_recipes_fn(
-                    db=catalog_db,
-                    user_id=user_id,
-                    generated_plan={"days": days},
-                    cuisine_type=cuisine_type,
+        # Catalog AI-generated recipes in background (fire-and-forget)
+        # This is non-critical — failures are logged but don't affect the response
+        async def _background_catalog():
+            try:
+                from app.services.ai_recipe_catalog_service import (
+                    catalog_recipes as catalog_recipes_fn,
                 )
-        except Exception as e:
-            # Non-critical: don't fail meal plan creation if cataloging fails
-            logger.warning(f"Failed to catalog recipes: {e}")
+
+                async with async_session_maker() as catalog_db:
+                    await catalog_recipes_fn(
+                        db=catalog_db,
+                        user_id=user_id,
+                        generated_plan={"days": days},
+                        cuisine_type=cuisine_type,
+                    )
+            except Exception as e:
+                logger.warning(f"Background catalog failed: {e}")
+
+        asyncio.create_task(_background_catalog())
 
         return _build_response_from_firestore(created_plan)
     except Exception as e:
@@ -341,9 +364,13 @@ async def swap_item(
                     # Get new recipe
                     recipe_repo = RecipeRepository()
                     if request.specific_recipe_id:
-                        new_recipe = await recipe_repo.get_by_id(request.specific_recipe_id)
+                        new_recipe = await recipe_repo.get_by_id(
+                            request.specific_recipe_id
+                        )
                     else:
-                        recipes = await recipe_repo.search(meal_type=meal_type, limit=20)
+                        recipes = await recipe_repo.search(
+                            meal_type=meal_type, limit=20
+                        )
                         exclude_ids = set(request.exclude_recipe_ids or [])
                         exclude_ids.add(meal.get("recipe_id", ""))
                         recipes = [r for r in recipes if r.get("id") not in exclude_ids]
@@ -359,7 +386,11 @@ async def swap_item(
                         "recipe_name": new_recipe.get("name", ""),
                         "recipe_image_url": new_recipe.get("image_url"),
                         "prep_time_minutes": new_recipe.get("prep_time_minutes", 30),
-                        "calories": new_recipe.get("nutrition", {}).get("calories", 0) if new_recipe.get("nutrition") else 0,
+                        "calories": (
+                            new_recipe.get("nutrition", {}).get("calories", 0)
+                            if new_recipe.get("nutrition")
+                            else 0
+                        ),
                         "is_locked": False,
                         "dietary_tags": new_recipe.get("dietary_tags", []),
                     }
@@ -404,7 +435,9 @@ async def toggle_lock(
             meals = day.get("meals", {}).get(meal_type, [])
             for meal_idx, meal in enumerate(meals):
                 if meal.get("id") == item_id:
-                    days[day_idx]["meals"][meal_type][meal_idx]["is_locked"] = not meal.get("is_locked", False)
+                    days[day_idx]["meals"][meal_type][meal_idx]["is_locked"] = (
+                        not meal.get("is_locked", False)
+                    )
                     found = True
                     break
             if found:

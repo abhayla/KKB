@@ -11,10 +11,15 @@ import logging
 import uuid
 from typing import Optional
 
-from sqlalchemy import func, select
+from sqlalchemy import func, insert, select  # noqa: F401 - insert used in bulk ops
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.recipe import Recipe, RecipeIngredient, RecipeInstruction, RecipeNutrition
+from app.models.recipe import (
+    Recipe,
+    RecipeIngredient,
+    RecipeInstruction,
+    RecipeNutrition,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -106,51 +111,87 @@ async def find_or_create_recipe(
     # Create ingredients
     if ingredients:
         for idx, ing in enumerate(ingredients):
-            db.add(RecipeIngredient(
-                id=str(uuid.uuid4()),
-                recipe_id=recipe_id,
-                name=ing.get("name", "Ingredient"),
-                quantity=float(ing.get("quantity", 1)),
-                unit=ing.get("unit", "piece"),
-                category=ing.get("category", "other"),
-                order=idx,
-            ))
+            db.add(
+                RecipeIngredient(
+                    id=str(uuid.uuid4()),
+                    recipe_id=recipe_id,
+                    name=ing.get("name", "Ingredient"),
+                    quantity=float(ing.get("quantity", 1)),
+                    unit=ing.get("unit", "piece"),
+                    category=ing.get("category", "other"),
+                    order=idx,
+                )
+            )
 
     # Create instructions
-    instruction_data = instructions or _generate_placeholder_instructions(recipe_name, prep_time)
+    instruction_data = instructions or _generate_placeholder_instructions(
+        recipe_name, prep_time
+    )
     for step in instruction_data:
-        db.add(RecipeInstruction(
-            id=str(uuid.uuid4()),
-            recipe_id=recipe_id,
-            step_number=step.get("step_number", 1),
-            instruction=step.get("instruction", ""),
-            duration_minutes=step.get("duration_minutes"),
-            tips=step.get("tips"),
-        ))
+        db.add(
+            RecipeInstruction(
+                id=str(uuid.uuid4()),
+                recipe_id=recipe_id,
+                step_number=step.get("step_number", 1),
+                instruction=step.get("instruction", ""),
+                duration_minutes=step.get("duration_minutes"),
+                tips=step.get("tips"),
+            )
+        )
 
     # Create nutrition
     if nutrition:
-        db.add(RecipeNutrition(
-            id=str(uuid.uuid4()),
-            recipe_id=recipe_id,
-            calories=calories or nutrition.get("calories", 0),
-            protein_grams=float(nutrition.get("protein_g", 0)),
-            carbohydrates_grams=float(nutrition.get("carbs_g", 0)),
-            fat_grams=float(nutrition.get("fat_g", 0)),
-            fiber_grams=float(nutrition.get("fiber_g", 0)),
-        ))
+        db.add(
+            RecipeNutrition(
+                id=str(uuid.uuid4()),
+                recipe_id=recipe_id,
+                calories=calories or nutrition.get("calories", 0),
+                protein_grams=float(nutrition.get("protein_g", 0)),
+                carbohydrates_grams=float(nutrition.get("carbs_g", 0)),
+                fat_grams=float(nutrition.get("fat_g", 0)),
+                fiber_grams=float(nutrition.get("fiber_g", 0)),
+            )
+        )
     elif calories > 0:
-        db.add(RecipeNutrition(
-            id=str(uuid.uuid4()),
-            recipe_id=recipe_id,
-            calories=calories,
-            protein_grams=0.0,
-            carbohydrates_grams=0.0,
-            fat_grams=0.0,
-            fiber_grams=0.0,
-        ))
+        db.add(
+            RecipeNutrition(
+                id=str(uuid.uuid4()),
+                recipe_id=recipe_id,
+                calories=calories,
+                protein_grams=0.0,
+                carbohydrates_grams=0.0,
+                fat_grams=0.0,
+                fiber_grams=0.0,
+            )
+        )
 
     return recipe_id
+
+
+async def _bulk_find_existing_recipes(
+    db: AsyncSession,
+    normalized_names: set[str],
+) -> dict[str, str]:
+    """Find existing recipes by normalized names in a single query.
+
+    Args:
+        db: Async database session
+        normalized_names: Set of normalized (lowercase, stripped) recipe names
+
+    Returns:
+        Dict mapping normalized_name -> recipe_id for all found recipes
+    """
+    if not normalized_names:
+        return {}
+
+    result = await db.execute(
+        select(Recipe.id, func.lower(func.trim(Recipe.name))).where(
+            func.lower(func.trim(Recipe.name)).in_(normalized_names),
+            Recipe.is_active == True,
+        )
+    )
+    rows = result.all()
+    return {row[1]: row[0] for row in rows}
 
 
 async def create_recipes_for_meal_plan(
@@ -161,8 +202,12 @@ async def create_recipes_for_meal_plan(
 ) -> dict[str, str]:
     """Create Recipe records for all items in a generated meal plan.
 
-    Iterates all days/slots/items, calls find_or_create_recipe for each,
-    and mutates item.recipe_id in place with the real UUID.
+    Uses bulk operations for performance:
+    1. Collects all unique recipe names from the plan
+    2. Single SELECT to find existing recipes
+    3. Bulk INSERT for new recipes, ingredients, instructions, nutrition
+
+    Mutates item.recipe_id in place with the real UUID.
 
     Args:
         db: Async database session
@@ -171,55 +216,150 @@ async def create_recipes_for_meal_plan(
         family_size: Number of family members
 
     Returns:
-        Dict mapping recipe_name -> recipe_id for all created/found recipes
+        Dict mapping normalized_name -> recipe_id for all created/found recipes
     """
-    recipe_map: dict[str, str] = {}
-    created_count = 0
-    reused_count = 0
+    # --- Pass 1: Collect all unique items by normalized name ---
+    unique_items: dict[str, tuple] = {}  # normalized_name -> (item, slot_name)
+    all_items: list[tuple] = []  # (normalized_name, item)
 
     for day in generated_plan.days:
         for slot_name in ["breakfast", "lunch", "dinner", "snacks"]:
             items = getattr(day, slot_name, [])
             for item in items:
-                try:
-                    normalized = _normalize_name(item.recipe_name)
+                normalized = _normalize_name(item.recipe_name)
+                all_items.append((normalized, item))
+                if normalized not in unique_items:
+                    unique_items[normalized] = (item, slot_name)
 
-                    # Check in-memory cache first (same name in multiple slots)
-                    if normalized in recipe_map:
-                        item.recipe_id = recipe_map[normalized]
-                        reused_count += 1
-                        continue
+    if not unique_items:
+        return {}
 
-                    recipe_id = await find_or_create_recipe(
-                        db=db,
-                        recipe_name=item.recipe_name,
-                        prep_time=item.prep_time_minutes,
-                        dietary_tags=item.dietary_tags,
-                        category=getattr(item, "category", "other"),
-                        calories=item.calories,
-                        cuisine_type=cuisine_type,
-                        meal_type=slot_name,
-                        ingredients=item.ingredients,
-                        nutrition=item.nutrition,
-                        instructions=getattr(item, "instructions", None),
-                        family_size=family_size,
-                    )
+    # --- Pass 2: Bulk lookup existing recipes (1 SELECT instead of ~28) ---
+    recipe_map: dict[str, str] = await _bulk_find_existing_recipes(
+        db, set(unique_items.keys())
+    )
+    existing_count = len(recipe_map)
 
-                    item.recipe_id = recipe_id
-                    recipe_map[normalized] = recipe_id
-                    created_count += 1
+    # --- Pass 3: Prepare bulk insert data for new recipes ---
+    all_recipes: list[dict] = []
+    all_ingredients: list[dict] = []
+    all_instructions: list[dict] = []
+    all_nutrition: list[dict] = []
 
-                except Exception as e:
-                    logger.error(
-                        f"Failed to create recipe for '{item.recipe_name}': {e}",
-                        exc_info=True,
-                    )
-                    # Non-critical: item keeps its original recipe_id
+    for normalized, (item, slot_name) in unique_items.items():
+        if normalized in recipe_map:
+            continue  # Already exists in DB
+
+        recipe_id = str(uuid.uuid4())
+        recipe_map[normalized] = recipe_id
+        prep_time = item.prep_time_minutes
+        dietary_tags = item.dietary_tags or ["vegetarian"]
+        calories = item.calories
+
+        # Recipe record
+        all_recipes.append(
+            {
+                "id": recipe_id,
+                "name": item.recipe_name.strip(),
+                "cuisine_type": cuisine_type,
+                "meal_types": dietary_tags,  # JSONList column — will be serialized
+                "dietary_tags": dietary_tags,
+                "category": getattr(item, "category", "other"),
+                "prep_time_minutes": prep_time,
+                "cook_time_minutes": prep_time,
+                "total_time_minutes": prep_time,
+                "servings": family_size,
+                "difficulty_level": "medium" if prep_time > 30 else "easy",
+                "is_quick_meal": prep_time <= 20,
+            }
+        )
+
+        # Fix meal_types to actual meal type (not dietary tags)
+        all_recipes[-1]["meal_types"] = [slot_name]
+
+        # Ingredients
+        ingredients = item.ingredients
+        if ingredients:
+            for idx, ing in enumerate(ingredients):
+                all_ingredients.append(
+                    {
+                        "id": str(uuid.uuid4()),
+                        "recipe_id": recipe_id,
+                        "name": ing.get("name", "Ingredient"),
+                        "quantity": float(ing.get("quantity", 1)),
+                        "unit": ing.get("unit", "piece"),
+                        "category": ing.get("category", "other"),
+                        "order": idx,
+                    }
+                )
+
+        # Instructions
+        instruction_data = getattr(
+            item, "instructions", None
+        ) or _generate_placeholder_instructions(item.recipe_name, prep_time)
+        for step in instruction_data:
+            all_instructions.append(
+                {
+                    "id": str(uuid.uuid4()),
+                    "recipe_id": recipe_id,
+                    "step_number": step.get("step_number", 1),
+                    "instruction": step.get("instruction", ""),
+                    "duration_minutes": step.get("duration_minutes"),
+                    "tips": step.get("tips"),
+                }
+            )
+
+        # Nutrition
+        nutrition = item.nutrition
+        if nutrition:
+            all_nutrition.append(
+                {
+                    "id": str(uuid.uuid4()),
+                    "recipe_id": recipe_id,
+                    "calories": calories or nutrition.get("calories", 0),
+                    "protein_grams": float(nutrition.get("protein_g", 0)),
+                    "carbohydrates_grams": float(nutrition.get("carbs_g", 0)),
+                    "fat_grams": float(nutrition.get("fat_g", 0)),
+                    "fiber_grams": float(nutrition.get("fiber_g", 0)),
+                }
+            )
+        elif calories > 0:
+            all_nutrition.append(
+                {
+                    "id": str(uuid.uuid4()),
+                    "recipe_id": recipe_id,
+                    "calories": calories,
+                    "protein_grams": 0.0,
+                    "carbohydrates_grams": 0.0,
+                    "fat_grams": 0.0,
+                    "fiber_grams": 0.0,
+                }
+            )
+
+    # --- Pass 4: Execute bulk inserts (4 statements instead of ~450 db.add) ---
+    new_count = len(all_recipes)
+    if all_recipes:
+        await db.execute(insert(Recipe), all_recipes)
+    if all_ingredients:
+        await db.execute(insert(RecipeIngredient), all_ingredients)
+    if all_instructions:
+        await db.execute(insert(RecipeInstruction), all_instructions)
+    if all_nutrition:
+        await db.execute(insert(RecipeNutrition), all_nutrition)
 
     await db.commit()
 
+    # --- Pass 5: Assign recipe_ids to all items ---
+    reused_count = 0
+    for normalized, item in all_items:
+        rid = recipe_map.get(normalized)
+        if rid:
+            if item.recipe_id == rid:
+                reused_count += 1
+            item.recipe_id = rid
+
     logger.info(
-        f"Recipe creation complete: {created_count} created/found, "
-        f"{reused_count} reused from cache"
+        f"Recipe creation complete: {new_count} new, {existing_count} existing, "
+        f"{len(all_items) - len(unique_items)} reused from in-plan dedup"
     )
     return recipe_map

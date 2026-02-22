@@ -28,7 +28,7 @@ from app.db.postgres import async_session_maker
 from app.models.recipe_rule import NutritionGoal, RecipeRule
 from app.repositories.user_repository import UserRepository
 from app.services.config_service import ConfigService
-from app.services.family_constraints import FAMILY_CONSTRAINT_MAP, get_family_forbidden_keywords
+from app.services.family_constraints import get_family_forbidden_keywords
 from app.services.festival_service import get_festivals_for_date_range
 
 logger = logging.getLogger(__name__)
@@ -122,6 +122,9 @@ class AIMealService:
     def __init__(self):
         self.config_service = ConfigService()
         self.user_repo = UserRepository()
+        # Cached after generation so the endpoint can reuse without a second DB call
+        self.last_preferences: UserPreferences | None = None
+        self.last_prefs_raw: dict | None = None
 
     def _filter_conflicting_rules(
         self, prefs: UserPreferences
@@ -153,11 +156,13 @@ class AIMealService:
             for member_name, forbidden_keywords in forbidden_map.items():
                 for keyword in forbidden_keywords:
                     if keyword in target:
-                        report.append({
-                            "rule_target": rule.get("target", ""),
-                            "member_name": member_name,
-                            "constraint_keyword": keyword,
-                        })
+                        report.append(
+                            {
+                                "rule_target": rule.get("target", ""),
+                                "member_name": member_name,
+                                "constraint_keyword": keyword,
+                            }
+                        )
                         logger.warning(
                             f"Filtered INCLUDE rule '{rule.get('target')}': "
                             f"conflicts with {member_name}'s constraint ({keyword})"
@@ -191,11 +196,14 @@ class AIMealService:
         """
         logger.info(f"Generating AI meal plan for user {user_id}")
 
-        # Load user preferences
+        # Load user preferences (cached for reuse by endpoint)
         prefs = await self._load_user_preferences(user_id)
+        self.last_preferences = prefs
 
         # Filter INCLUDE rules that conflict with family member constraints
-        filtered_include_rules, rules_filtered_report = self._filter_conflicting_rules(prefs)
+        filtered_include_rules, rules_filtered_report = self._filter_conflicting_rules(
+            prefs
+        )
         prefs.include_rules = filtered_include_rules
 
         # Load festivals for the week
@@ -205,7 +213,9 @@ class AIMealService:
         config = await self.config_service.get_config()
 
         # Build prompt
-        prompt = self._build_prompt(prefs, festivals, config, week_start_date, rules_filtered_report)
+        prompt = self._build_prompt(
+            prefs, festivals, config, week_start_date, rules_filtered_report
+        )
 
         logger.debug(f"Prompt length: {len(prompt)} characters")
 
@@ -271,28 +281,48 @@ class AIMealService:
 
                 # Convert to dict format expected by the prompt builder
                 for rule in include_db_rules:
-                    include_rules.append({
-                        "id": rule.id,
-                        "type": rule.action,
-                        "target": rule.target_name,
-                        "frequency": rule.frequency_type,
-                        "times_per_week": rule.frequency_count,
-                        "specific_days": rule.frequency_days.split(",") if rule.frequency_days else [],
-                        "meal_slot": [rule.meal_slot] if rule.meal_slot else ["breakfast", "lunch", "dinner", "snacks"],
-                        "enforcement": rule.enforcement,
-                    })
+                    include_rules.append(
+                        {
+                            "id": rule.id,
+                            "type": rule.action,
+                            "target": rule.target_name,
+                            "frequency": rule.frequency_type,
+                            "times_per_week": rule.frequency_count,
+                            "specific_days": (
+                                rule.frequency_days.split(",")
+                                if rule.frequency_days
+                                else []
+                            ),
+                            "meal_slot": (
+                                [rule.meal_slot]
+                                if rule.meal_slot
+                                else ["breakfast", "lunch", "dinner", "snacks"]
+                            ),
+                            "enforcement": rule.enforcement,
+                        }
+                    )
 
                 for rule in exclude_db_rules:
-                    exclude_rules.append({
-                        "id": rule.id,
-                        "type": rule.action,
-                        "target": rule.target_name,
-                        "frequency": rule.frequency_type,
-                        "times_per_week": rule.frequency_count,
-                        "specific_days": rule.frequency_days.split(",") if rule.frequency_days else [],
-                        "meal_slot": [rule.meal_slot] if rule.meal_slot else ["breakfast", "lunch", "dinner", "snacks"],
-                        "enforcement": rule.enforcement,
-                    })
+                    exclude_rules.append(
+                        {
+                            "id": rule.id,
+                            "type": rule.action,
+                            "target": rule.target_name,
+                            "frequency": rule.frequency_type,
+                            "times_per_week": rule.frequency_count,
+                            "specific_days": (
+                                rule.frequency_days.split(",")
+                                if rule.frequency_days
+                                else []
+                            ),
+                            "meal_slot": (
+                                [rule.meal_slot]
+                                if rule.meal_slot
+                                else ["breakfast", "lunch", "dinner", "snacks"]
+                            ),
+                            "enforcement": rule.enforcement,
+                        }
+                    )
 
                 # Query active nutrition goals
                 goals_result = await db.execute(
@@ -321,16 +351,26 @@ class AIMealService:
             logger.warning(f"Failed to load rules from recipe_rules table: {e}")
             # Fallback to legacy JSON field
             recipe_rules = prefs_data.get("recipe_rules") or []
-            include_rules = [r for r in recipe_rules if r.get("type") == "INCLUDE" and r.get("is_active", True)]
-            exclude_rules = [r for r in recipe_rules if r.get("type") == "EXCLUDE" and r.get("is_active", True)]
-            logger.info(f"Using legacy recipe_rules JSON field")
+            include_rules = [
+                r
+                for r in recipe_rules
+                if r.get("type") == "INCLUDE" and r.get("is_active", True)
+            ]
+            exclude_rules = [
+                r
+                for r in recipe_rules
+                if r.get("type") == "EXCLUDE" and r.get("is_active", True)
+            ]
+            logger.info("Using legacy recipe_rules JSON field")
 
         # Load family members
         family_members = []
         try:
             members = await self.user_repo.get_family_members(user_id)
             family_members = members or []
-            logger.info(f"Loaded {len(family_members)} family members for user {user_id}")
+            logger.info(
+                f"Loaded {len(family_members)} family members for user {user_id}"
+            )
         except Exception as e:
             logger.warning(f"Failed to load family members: {e}")
 
@@ -362,7 +402,9 @@ class AIMealService:
 
         try:
             async with async_session_maker() as db:
-                festivals_map = await get_festivals_for_date_range(db, week_start, week_end)
+                festivals_map = await get_festivals_for_date_range(
+                    db, week_start, week_end
+                )
 
                 # Convert Festival models to dicts
                 result = {}
@@ -389,8 +431,14 @@ class AIMealService:
         """Build the prompt for Gemini."""
 
         # Build preferences section
-        dietary_str = ", ".join(prefs.dietary_tags) if prefs.dietary_tags else "vegetarian"
-        cuisine_str = ", ".join(prefs.cuisine_preferences) if prefs.cuisine_preferences else "north"
+        dietary_str = (
+            ", ".join(prefs.dietary_tags) if prefs.dietary_tags else "vegetarian"
+        )
+        cuisine_str = (
+            ", ".join(prefs.cuisine_preferences)
+            if prefs.cuisine_preferences
+            else "north"
+        )
 
         # Family members section
         family_section = ""
@@ -417,11 +465,18 @@ class AIMealService:
             household_diet = prefs.dietary_type.lower()
             differing_members = []
             for member in prefs.family_members:
-                member_diets = [d.lower() for d in (member.get("dietary_restrictions") or [])]
+                member_diets = [
+                    d.lower() for d in (member.get("dietary_restrictions") or [])
+                ]
                 for d in member_diets:
                     if d != household_diet and d in (
-                        "vegetarian", "non-vegetarian", "vegan", "eggetarian",
-                        "non_vegetarian", "jain", "sattvic",
+                        "vegetarian",
+                        "non-vegetarian",
+                        "vegan",
+                        "eggetarian",
+                        "non_vegetarian",
+                        "jain",
+                        "sattvic",
                     ):
                         differing_members.append((member.get("name", "Member"), d))
                         break
@@ -433,7 +488,7 @@ class AIMealService:
                 for member_name, restriction in differing_members:
                     mixed_lines.append(
                         f"- {member_name}: {restriction} — Include 2-3 {restriction} "
-                        f"alternatives per week (mark as \"[ALT: {member_name}]\" "
+                        f'alternatives per week (mark as "[ALT: {member_name}]" '
                         f"so other members can use the default option)"
                     )
                 mixed_diet_section = "\n".join(mixed_lines)
@@ -462,7 +517,9 @@ class AIMealService:
                 target = rule.get("target", "")
                 freq = rule.get("frequency", "WEEKLY")
                 times = rule.get("times_per_week", 1)
-                slots = rule.get("meal_slot", ["breakfast", "lunch", "dinner", "snacks"])
+                slots = rule.get(
+                    "meal_slot", ["breakfast", "lunch", "dinner", "snacks"]
+                )
                 slots_str = ", ".join(slots)
 
                 if freq == "DAILY":
@@ -528,7 +585,9 @@ class AIMealService:
             if is_busy:
                 max_time = min(max_time, prefs.weekday_cooking_time)
 
-            dates_section.append(f"- {current.isoformat()} ({day_name}): max {max_time} min")
+            dates_section.append(
+                f"- {current.isoformat()} ({day_name}): max {max_time} min"
+            )
             current += timedelta(days=1)
 
         # Get pairing guidance from config
@@ -564,9 +623,21 @@ class AIMealService:
             conflict_section = "\n".join(conflict_lines)
 
         # Recipe repeat and strictness rules
-        repeat_text = "Allow repeating favorite recipes across the week" if prefs.allow_recipe_repeat else "Vary recipes across the week - avoid repeating the same dish"
-        allergen_strictness = "ZERO TOLERANCE - absolutely no allergens in any dish, ingredient, or garnish" if prefs.strict_allergen_mode else "Avoid allergens where possible but minor traces acceptable"
-        dietary_strictness = "STRICT enforcement - every dish must comply with dietary type" if prefs.strict_dietary_mode else "Flexible - occasional exceptions to dietary type acceptable"
+        repeat_text = (
+            "Allow repeating favorite recipes across the week"
+            if prefs.allow_recipe_repeat
+            else "Vary recipes across the week - avoid repeating the same dish"
+        )
+        allergen_strictness = (
+            "ZERO TOLERANCE - absolutely no allergens in any dish, ingredient, or garnish"
+            if prefs.strict_allergen_mode
+            else "Avoid allergens where possible but minor traces acceptable"
+        )
+        dietary_strictness = (
+            "STRICT enforcement - every dish must comply with dietary type"
+            if prefs.strict_dietary_mode
+            else "Flexible - occasional exceptions to dietary type acceptable"
+        )
 
         prompt = f"""You are RasoiAI, an Indian meal planning assistant. Generate a 7-day meal plan.
 
@@ -722,7 +793,9 @@ Generate the complete 7-day meal plan now:"""
 
         days = data["days"]
         if not isinstance(days, list) or len(days) != 7:
-            raise ValueError(f"Expected 7 days, got {len(days) if isinstance(days, list) else 'not a list'}")
+            raise ValueError(
+                f"Expected 7 days, got {len(days) if isinstance(days, list) else 'not a list'}"
+            )
 
         for i, day in enumerate(days):
             for slot in ["breakfast", "lunch", "dinner", "snacks"]:
@@ -730,7 +803,9 @@ Generate the complete 7-day meal plan now:"""
                     raise ValueError(f"Day {i} missing '{slot}' field")
                 items = day[slot]
                 if not isinstance(items, list) or len(items) < 2:
-                    raise ValueError(f"Day {i} {slot} should have 2 items, got {len(items) if isinstance(items, list) else 'not a list'}")
+                    raise ValueError(
+                        f"Day {i} {slot} should have 2 items, got {len(items) if isinstance(items, list) else 'not a list'}"
+                    )
 
     def _parse_response(
         self,
@@ -838,7 +913,16 @@ Generate the complete 7-day meal plan now:"""
         allergen_variants = {
             "peanut": ["peanuts", "groundnut", "groundnuts", "moongphali"],
             "peanuts": ["peanut", "groundnut", "groundnuts", "moongphali"],
-            "dairy": ["milk", "cheese", "paneer", "curd", "yogurt", "cream", "butter", "ghee"],
+            "dairy": [
+                "milk",
+                "cheese",
+                "paneer",
+                "curd",
+                "yogurt",
+                "cream",
+                "butter",
+                "ghee",
+            ],
             "gluten": ["wheat", "maida", "atta", "bread", "roti", "naan"],
             "shellfish": ["shrimp", "prawn", "crab", "lobster"],
             "tree nuts": ["almond", "cashew", "walnut", "pistachio", "kaju", "badam"],
@@ -911,7 +995,12 @@ Generate the complete 7-day meal plan now:"""
             target = rule.get("target", "").lower()
             freq = rule.get("frequency", "WEEKLY")
             times_needed = rule.get("times_per_week", 1) if freq != "DAILY" else 7
-            slots = [s.lower() for s in rule.get("meal_slot", ["breakfast", "lunch", "dinner", "snacks"])]
+            slots = [
+                s.lower()
+                for s in rule.get(
+                    "meal_slot", ["breakfast", "lunch", "dinner", "snacks"]
+                )
+            ]
 
             # Count occurrences
             count = 0

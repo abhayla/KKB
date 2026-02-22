@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timezone, date
 from typing import Any, Optional
 
-from sqlalchemy import select, and_
+from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.db.postgres import async_session_maker
@@ -70,11 +70,106 @@ class MealPlanRepository:
             plans = result.scalars().all()
             return [self._plan_to_dict(p) for p in plans]
 
+    def _build_items_from_days(
+        self, plan_id: str, days: list[dict], session=None
+    ) -> list[MealPlanItem]:
+        """Build MealPlanItem objects from days array.
+
+        Shared by create() and create_and_deactivate_old() to avoid duplication.
+        """
+        items = []
+        for day in days:
+            day_date_raw = day.get("date")
+            if isinstance(day_date_raw, str):
+                day_date = date.fromisoformat(day_date_raw)
+            else:
+                day_date = day_date_raw
+
+            for meal_type in ["breakfast", "lunch", "dinner", "snacks"]:
+                meal_data = day.get(meal_type)
+                if meal_data:
+                    items_list = (
+                        meal_data if isinstance(meal_data, list) else [meal_data]
+                    )
+                    for meal_item in items_list:
+                        recipe_id = meal_item.get("recipe_id")
+                        if recipe_id in ("GENERIC", "AI_GENERATED"):
+                            logger.warning(
+                                f"Item '{meal_item.get('recipe_name')}' has placeholder "
+                                f"recipe_id='{recipe_id}' — setting to None"
+                            )
+                            recipe_id = None
+
+                        item = MealPlanItem(
+                            id=str(uuid.uuid4()),
+                            meal_plan_id=plan_id,
+                            recipe_id=recipe_id,
+                            date=day_date,
+                            meal_type=meal_type,
+                            servings=meal_item.get("servings", 2),
+                            is_locked=meal_item.get("is_locked", False),
+                            is_swapped=meal_item.get("is_swapped", False),
+                            recipe_name=meal_item.get("recipe_name"),
+                            festival_name=day.get("festival"),
+                        )
+                        items.append(item)
+                        if session:
+                            session.add(item)
+        return items
+
+    def _plan_to_dict_from_objects(
+        self,
+        plan: MealPlan,
+        items: list[MealPlanItem],
+    ) -> dict[str, Any]:
+        """Build response dict from in-memory plan + items (no DB re-read)."""
+        days_map: dict[str, dict] = {}
+        for item in items:
+            day_key = item.date.isoformat() if item.date else "unknown"
+            if day_key not in days_map:
+                days_map[day_key] = {
+                    "date": item.date.isoformat() if item.date else "",
+                    "day_name": item.date.strftime("%A") if item.date else "",
+                    "festival": item.festival_name,
+                    "meals": {
+                        "breakfast": [],
+                        "lunch": [],
+                        "dinner": [],
+                        "snacks": [],
+                    },
+                }
+
+            days_map[day_key]["meals"][item.meal_type].append(
+                {
+                    "id": item.id,
+                    "recipe_id": item.recipe_id or "",
+                    "recipe_name": item.recipe_name,
+                    "servings": item.servings,
+                    "is_locked": item.is_locked,
+                    "is_swapped": item.is_swapped,
+                    "prep_time_minutes": 30,
+                    "calories": 0,
+                    "dietary_tags": [],
+                }
+            )
+
+        sorted_days = sorted(days_map.values(), key=lambda d: d.get("date") or "")
+
+        return {
+            "id": plan.id,
+            "user_id": plan.user_id,
+            "week_start_date": plan.week_start_date,
+            "week_end_date": plan.week_end_date,
+            "is_active": plan.is_active,
+            "days": sorted_days,
+            "created_at": plan.created_at,
+            "updated_at": plan.updated_at,
+        }
+
     async def create(self, plan_data: dict[str, Any]) -> dict[str, Any]:
         """Create a new meal plan."""
         async with async_session_maker() as session:
             plan_id = plan_data.get("id") or str(uuid.uuid4())
-            now = datetime.now(timezone.utc)
 
             plan = MealPlan(
                 id=plan_id,
@@ -85,53 +180,66 @@ class MealPlanRepository:
             )
             session.add(plan)
 
-            # Create meal plan items from days array
-            days = plan_data.get("days", [])
-            for day_index, day in enumerate(days):
-                day_date_raw = day.get("date")
-                # Convert string date to date object if needed
-                if isinstance(day_date_raw, str):
-                    day_date = date.fromisoformat(day_date_raw)
-                else:
-                    day_date = day_date_raw
-
-                # Create items for each meal type (handles both single dict and list of dicts)
-                for meal_type in ["breakfast", "lunch", "dinner", "snacks"]:
-                    meal_data = day.get(meal_type)
-                    if meal_data:
-                        # Handle list of items or single item
-                        items_list = meal_data if isinstance(meal_data, list) else [meal_data]
-                        for meal_item in items_list:
-                            # Convert placeholder recipe_ids to None for AI-generated meals
-                            recipe_id = meal_item.get("recipe_id")
-                            if recipe_id in ("GENERIC", "AI_GENERATED"):
-                                logger.warning(
-                                    f"Item '{meal_item.get('recipe_name')}' has placeholder "
-                                    f"recipe_id='{recipe_id}' — setting to None"
-                                )
-                                recipe_id = None
-
-                            item = MealPlanItem(
-                                id=str(uuid.uuid4()),
-                                meal_plan_id=plan_id,
-                                recipe_id=recipe_id,
-                                date=day_date,
-                                meal_type=meal_type,
-                                servings=meal_item.get("servings", 2),
-                                is_locked=meal_item.get("is_locked", False),
-                                is_swapped=meal_item.get("is_swapped", False),
-                                recipe_name=meal_item.get("recipe_name"),
-                                festival_name=day.get("festival"),
-                            )
-                            session.add(item)
+            items = self._build_items_from_days(
+                plan_id, plan_data.get("days", []), session=session
+            )
 
             await session.commit()
-            await session.refresh(plan)
 
             logger.info(f"Created meal plan: {plan_id} for user {plan.user_id}")
-            return await self.get_by_id(plan_id)
+            return self._plan_to_dict_from_objects(plan, items)
 
-    async def update(self, plan_id: str, data: dict[str, Any]) -> Optional[dict[str, Any]]:
+    async def create_and_deactivate_old(
+        self, plan_data: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Deactivate old plans and create new plan in a single session.
+
+        Combines deactivate_old_plans() + create() into one session/commit
+        to reduce round-trips to the database.
+        """
+        user_id = plan_data.get("user_id")
+        async with async_session_maker() as session:
+            # Deactivate old active plans
+            now = datetime.now(timezone.utc)
+            result = await session.execute(
+                select(MealPlan).where(
+                    MealPlan.user_id == user_id,
+                    MealPlan.is_active == True,
+                )
+            )
+            old_plans = result.scalars().all()
+            deactivated = 0
+            for old_plan in old_plans:
+                old_plan.is_active = False
+                old_plan.updated_at = now
+                deactivated += 1
+
+            # Create new plan
+            plan_id = plan_data.get("id") or str(uuid.uuid4())
+            plan = MealPlan(
+                id=plan_id,
+                user_id=user_id,
+                week_start_date=plan_data.get("week_start_date"),
+                week_end_date=plan_data.get("week_end_date"),
+                is_active=True,
+            )
+            session.add(plan)
+
+            items = self._build_items_from_days(
+                plan_id, plan_data.get("days", []), session=session
+            )
+
+            await session.commit()
+
+            logger.info(
+                f"Created meal plan {plan_id} for user {user_id}, "
+                f"deactivated {deactivated} old plans"
+            )
+            return self._plan_to_dict_from_objects(plan, items)
+
+    async def update(
+        self, plan_id: str, data: dict[str, Any]
+    ) -> Optional[dict[str, Any]]:
         """Update meal plan data."""
         async with async_session_maker() as session:
             result = await session.execute(
@@ -167,10 +275,16 @@ class MealPlanRepository:
                     for meal_type in ["breakfast", "lunch", "dinner", "snacks"]:
                         # Handle both flat structure (from generate) and
                         # nested "meals" structure (from _plan_to_dict)
-                        meal_data = day.get(meal_type) or (day.get("meals") or {}).get(meal_type)
+                        meal_data = day.get(meal_type) or (day.get("meals") or {}).get(
+                            meal_type
+                        )
                         if meal_data:
                             # Handle list of items or single item
-                            items_list = meal_data if isinstance(meal_data, list) else [meal_data]
+                            items_list = (
+                                meal_data
+                                if isinstance(meal_data, list)
+                                else [meal_data]
+                            )
                             for meal_item in items_list:
                                 # Convert placeholder recipe_ids to None
                                 recipe_id = meal_item.get("recipe_id")
@@ -297,17 +411,19 @@ class MealPlanRepository:
                 }
 
             # Append to list for this meal type
-            days_map[day_key]["meals"][item.meal_type].append({
-                "id": item.id,
-                "recipe_id": item.recipe_id or "",
-                "recipe_name": item.recipe_name,
-                "servings": item.servings,
-                "is_locked": item.is_locked,
-                "is_swapped": item.is_swapped,
-                "prep_time_minutes": 30,  # Default value
-                "calories": 0,  # Default value
-                "dietary_tags": [],
-            })
+            days_map[day_key]["meals"][item.meal_type].append(
+                {
+                    "id": item.id,
+                    "recipe_id": item.recipe_id or "",
+                    "recipe_name": item.recipe_name,
+                    "servings": item.servings,
+                    "is_locked": item.is_locked,
+                    "is_swapped": item.is_swapped,
+                    "prep_time_minutes": 30,  # Default value
+                    "calories": 0,  # Default value
+                    "dietary_tags": [],
+                }
+            )
 
         # Sort days by date
         days = sorted(days_map.values(), key=lambda d: d.get("date") or date.min)

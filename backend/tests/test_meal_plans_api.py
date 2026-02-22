@@ -162,6 +162,10 @@ async def test_generate_meal_plan_success(mp_client: AsyncClient, mp_user: User)
     mock_generated.week_end_date = (date.today() + timedelta(days=6)).isoformat()
     mock_generated.rules_applied = []
 
+    mock_prefs = MagicMock()
+    mock_prefs.cuisine_preferences = ["north"]
+    mock_prefs.family_size = 4
+
     with (
         patch(
             "app.api.v1.endpoints.meal_plans.AIMealService"
@@ -169,20 +173,19 @@ async def test_generate_meal_plan_success(mp_client: AsyncClient, mp_user: User)
         patch(
             "app.api.v1.endpoints.meal_plans.MealPlanRepository"
         ) as MockRepo,
+        patch("app.db.postgres.async_session_maker", return_value=AsyncMock()),
         patch(
-            "app.api.v1.endpoints.meal_plans.UserRepository"
-        ) as MockUserRepo,
+            "app.services.recipe_creation_service.create_recipes_for_meal_plan",
+            new_callable=AsyncMock,
+        ),
     ):
         mock_ai_instance = MockAI.return_value
         mock_ai_instance.generate_meal_plan = AsyncMock(return_value=mock_generated)
+        mock_ai_instance.last_preferences = mock_prefs
 
         mock_repo_instance = MockRepo.return_value
-        mock_repo_instance.deactivate_old_plans = AsyncMock(return_value=0)
-        mock_repo_instance.create = AsyncMock(return_value=mock_plan)
-
-        mock_user_repo_instance = MockUserRepo.return_value
-        mock_user_repo_instance.get_preferences = AsyncMock(
-            return_value={"cuisine_preferences": ["north"]}
+        mock_repo_instance.create_and_deactivate_old = AsyncMock(
+            return_value=mock_plan
         )
 
         response = await mp_client.post(
@@ -198,7 +201,7 @@ async def test_generate_meal_plan_success(mp_client: AsyncClient, mp_user: User)
 
 @pytest.mark.asyncio
 async def test_generate_deactivates_old_plans(mp_client: AsyncClient, mp_user: User):
-    """POST /generate deactivates previous plans."""
+    """POST /generate deactivates previous plans via create_and_deactivate_old."""
     mock_plan = _make_plan(user_id=mp_user.id)
 
     mock_generated = MagicMock()
@@ -207,6 +210,10 @@ async def test_generate_deactivates_old_plans(mp_client: AsyncClient, mp_user: U
     mock_generated.week_end_date = (date.today() + timedelta(days=6)).isoformat()
     mock_generated.rules_applied = []
 
+    mock_prefs = MagicMock()
+    mock_prefs.cuisine_preferences = ["north"]
+    mock_prefs.family_size = 4
+
     with (
         patch(
             "app.api.v1.endpoints.meal_plans.AIMealService"
@@ -214,26 +221,27 @@ async def test_generate_deactivates_old_plans(mp_client: AsyncClient, mp_user: U
         patch(
             "app.api.v1.endpoints.meal_plans.MealPlanRepository"
         ) as MockRepo,
+        patch("app.db.postgres.async_session_maker", return_value=AsyncMock()),
         patch(
-            "app.api.v1.endpoints.meal_plans.UserRepository"
-        ) as MockUserRepo,
+            "app.services.recipe_creation_service.create_recipes_for_meal_plan",
+            new_callable=AsyncMock,
+        ),
     ):
         mock_ai_instance = MockAI.return_value
         mock_ai_instance.generate_meal_plan = AsyncMock(return_value=mock_generated)
+        mock_ai_instance.last_preferences = mock_prefs
 
         mock_repo_instance = MockRepo.return_value
-        mock_repo_instance.deactivate_old_plans = AsyncMock(return_value=2)
-        mock_repo_instance.create = AsyncMock(return_value=mock_plan)
-
-        mock_user_repo_instance = MockUserRepo.return_value
-        mock_user_repo_instance.get_preferences = AsyncMock(return_value=None)
+        mock_repo_instance.create_and_deactivate_old = AsyncMock(
+            return_value=mock_plan
+        )
 
         await mp_client.post(
             "/api/v1/meal-plans/generate",
             json={"week_start_date": date.today().isoformat()},
         )
 
-        mock_repo_instance.deactivate_old_plans.assert_called_once()
+        mock_repo_instance.create_and_deactivate_old.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -247,6 +255,10 @@ async def test_generate_invalid_date_fallback(mp_client: AsyncClient, mp_user: U
     mock_generated.week_end_date = (date.today() + timedelta(days=6)).isoformat()
     mock_generated.rules_applied = []
 
+    mock_prefs = MagicMock()
+    mock_prefs.cuisine_preferences = None
+    mock_prefs.family_size = 4
+
     with (
         patch(
             "app.api.v1.endpoints.meal_plans.AIMealService"
@@ -254,19 +266,20 @@ async def test_generate_invalid_date_fallback(mp_client: AsyncClient, mp_user: U
         patch(
             "app.api.v1.endpoints.meal_plans.MealPlanRepository"
         ) as MockRepo,
+        patch("app.db.postgres.async_session_maker", return_value=AsyncMock()),
         patch(
-            "app.api.v1.endpoints.meal_plans.UserRepository"
-        ) as MockUserRepo,
+            "app.services.recipe_creation_service.create_recipes_for_meal_plan",
+            new_callable=AsyncMock,
+        ),
     ):
         mock_ai_instance = MockAI.return_value
         mock_ai_instance.generate_meal_plan = AsyncMock(return_value=mock_generated)
+        mock_ai_instance.last_preferences = mock_prefs
 
         mock_repo_instance = MockRepo.return_value
-        mock_repo_instance.deactivate_old_plans = AsyncMock(return_value=0)
-        mock_repo_instance.create = AsyncMock(return_value=mock_plan)
-
-        mock_user_repo_instance = MockUserRepo.return_value
-        mock_user_repo_instance.get_preferences = AsyncMock(return_value=None)
+        mock_repo_instance.create_and_deactivate_old = AsyncMock(
+            return_value=mock_plan
+        )
 
         # Pass an invalid date string
         response = await mp_client.post(
@@ -285,17 +298,11 @@ async def test_generate_timeout_returns_504(mp_client: AsyncClient, mp_user: Use
         patch(
             "app.api.v1.endpoints.meal_plans.AIMealService"
         ) as MockAI,
-        patch(
-            "app.api.v1.endpoints.meal_plans.UserRepository"
-        ) as MockUserRepo,
     ):
         mock_ai_instance = MockAI.return_value
         mock_ai_instance.generate_meal_plan = AsyncMock(
             side_effect=asyncio.TimeoutError()
         )
-
-        mock_user_repo_instance = MockUserRepo.return_value
-        mock_user_repo_instance.get_preferences = AsyncMock(return_value=None)
 
         response = await mp_client.post(
             "/api/v1/meal-plans/generate",
@@ -320,6 +327,10 @@ async def test_generate_succeeds_when_recipe_creation_fails(
     mock_generated.week_end_date = (date.today() + timedelta(days=6)).isoformat()
     mock_generated.rules_applied = []
 
+    mock_prefs = MagicMock()
+    mock_prefs.cuisine_preferences = ["south"]
+    mock_prefs.family_size = 4
+
     with (
         patch(
             "app.api.v1.endpoints.meal_plans.AIMealService"
@@ -327,9 +338,7 @@ async def test_generate_succeeds_when_recipe_creation_fails(
         patch(
             "app.api.v1.endpoints.meal_plans.MealPlanRepository"
         ) as MockRepo,
-        patch(
-            "app.api.v1.endpoints.meal_plans.UserRepository"
-        ) as MockUserRepo,
+        patch("app.db.postgres.async_session_maker", return_value=AsyncMock()),
         patch(
             "app.services.recipe_creation_service.create_recipes_for_meal_plan",
             new_callable=AsyncMock,
@@ -338,14 +347,11 @@ async def test_generate_succeeds_when_recipe_creation_fails(
     ):
         mock_ai_instance = MockAI.return_value
         mock_ai_instance.generate_meal_plan = AsyncMock(return_value=mock_generated)
+        mock_ai_instance.last_preferences = mock_prefs
 
         mock_repo_instance = MockRepo.return_value
-        mock_repo_instance.deactivate_old_plans = AsyncMock(return_value=0)
-        mock_repo_instance.create = AsyncMock(return_value=mock_plan)
-
-        mock_user_repo_instance = MockUserRepo.return_value
-        mock_user_repo_instance.get_preferences = AsyncMock(
-            return_value={"cuisine_preferences": ["south"]}
+        mock_repo_instance.create_and_deactivate_old = AsyncMock(
+            return_value=mock_plan
         )
 
         response = await mp_client.post(
