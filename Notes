@@ -1,6 +1,7 @@
 Add this condition to Passing criteria - take screenshot after each testing, analyze the screenshot to verify it matches with the expected output. Do not pass the test until this is done. Check if you have Claude Chrome access or use it?
 
 
+claude --dangerously-skip-permissions
 
 
 Then plan to fix the issue as per this rule & 'd:\Abhay\VibeCoding\KKB\docs\rules\Claude Code Enforced Workflow Rules.md'     
@@ -117,3 +118,58 @@ Gap Analysis file name
   │ 6   │ C:\Users\itsab.claude\plans\cryptic-swimming-spark.md  │ Feb 9, 20:25            │
   ├─────┼────────────────────────────────────────────────────────┼─────────────────────────┤
   │ 7   │ C:\Users\itsab.claude\plans\swift-booping-moonbeam.md  │ Feb 9, 19:02
+
+
+    Completed (11/16)                                                                                                                  
+  ┌─────┬─────────────────────────────────┬────────┬──────────────────────────┐                                                   
+  │  #  │              Item               │  Type  │          Status          │
+  ├─────┼─────────────────────────────────┼────────┼──────────────────────────┤
+  │ 1   │ /db-migrate skill               │ Skill  │ Done                     │
+  ├─────┼─────────────────────────────────┼────────┼──────────────────────────┤
+  │ 2   │ /deploy skill                   │ Skill  │ Done                     │
+  ├─────┼─────────────────────────────────┼────────┼──────────────────────────┤
+  │ 3   │ /sync-check skill               │ Skill  │ Done                     │
+  ├─────┼─────────────────────────────────┼────────┼──────────────────────────┤
+  │ 4   │ api-tester agent                │ Agent  │ Done                     │
+  ├─────┼─────────────────────────────────┼────────┼──────────────────────────┤
+  │ 5   │ performance-profiler agent      │ Agent  │ Done                     │
+  ├─────┼─────────────────────────────────┼────────┼──────────────────────────┤
+  │ 6   │ Auto-format hook (black + ruff) │ Hook   │ Done                     │
+  ├─────┼─────────────────────────────────┼────────┼──────────────────────────┤
+  │ 7   │ Stop verification hook          │ Hook   │ Done                     │
+  ├─────┼─────────────────────────────────┼────────┼──────────────────────────┤
+  │ 8   │ Playwright MCP (.mcp.json)      │ MCP    │ Done                     │
+  ├─────┼─────────────────────────────────┼────────┼──────────────────────────┤
+  │ 9   │ Python LSP (pyright)            │ Plugin │ Done                     │
+  ├─────┼─────────────────────────────────┼────────┼──────────────────────────┤
+  │ 10  │ Kotlin LSP plugin               │ Plugin │ Installed (needs binary) │
+  ├─────┼─────────────────────────────────┼────────┼──────────────────────────┤
+  │ 11  │ GitHub plugin                   │ Plugin │ Installed (needs auth)   │
+  └─────┴─────────────────────────────────┴────────┴──────────────────────────┘
+
+  Remaining (5 items)
+
+  Quick actions (you run a command):
+
+  ┌─────┬────────────────────┬───────────────────────────────────────────────────────────────┐
+  │  #  │        Item        │                          What to do                           │
+  ├─────┼────────────────────┼───────────────────────────────────────────────────────────────┤
+  │ 12  │ Kotlin LSP binary  │ Run: npm install -g kotlin-language-server                    │
+  ├─────┼────────────────────┼───────────────────────────────────────────────────────────────┤
+  │ 13  │ GitHub plugin auth │ After restart, type /mcp in Claude Code and follow OAuth flow │
+  └─────┴────────────────────┴───────────────────────────────────────────────────────────────┘
+
+  Needs account/credentials:
+
+  ┌─────┬────────────────────┬───────────────────────────────────────┬──────────┐
+  │  #  │        Item        │             What's needed             │ Priority │
+  ├─────┼────────────────────┼───────────────────────────────────────┼──────────┤
+  │ 14  │ GitHub MCP Server  │ GitHub Personal Access Token          │ HIGH     │
+  ├─────┼────────────────────┼───────────────────────────────────────┼──────────┤
+  │ 15  │ Sentry MCP Server  │ Sentry account + project + auth token │ MEDIUM   │
+  ├─────┼────────────────────┼───────────────────────────────────────┼──────────┤
+  │ 16  │ Android MCP Server │ ADB on PATH + npm install             │ MEDIUM   │
+  └─────┴────────────────────┴───────────────────────────────────────┴──────────┘
+
+  ---
+  Want me to walk you through any of these remaining 5?

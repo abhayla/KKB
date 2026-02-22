@@ -2,7 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Session context:** Check `docs/CONTINUE_PROMPT.md` for active work between sessions.
+**Session context:** Check @docs/CONTINUE_PROMPT.md for active work between sessions.
+
+**Imported references** (loaded on demand via `@` syntax):
+- Technical design: @docs/design/RasoiAI Technical Design.md
+- Data flow: @docs/design/Data-Flow-Diagram.md
+- Meal generation: @docs/design/Meal-Generation-Algorithm.md
+- Workflow rules: @docs/rules/Claude Code Enforced Workflow Rules.md
+- E2E testing guide: @docs/testing/E2E-Testing-Prompt.md
+- Functional requirements: @docs/testing/Functional-Requirement-Rule.md
+
+**Context compaction:** When compacting, always preserve: the 5-location model update rule, test fixture choices (client vs unauthenticated_client vs authenticated_client), all file paths that were modified, any test commands that were run, the current workflow step number, and any GitHub Issue numbers being worked on.
 
 ## Project Overview
 
@@ -71,38 +81,45 @@ UI → ViewModel → UseCase → Repository
 
 ### ViewModel Pattern
 
-All ViewModels follow this structure:
+ViewModels extend `BaseViewModel<T : BaseUiState>` (in `presentation/common/BaseViewModel.kt`), which provides `updateState`/`setState` helpers and standard error dismissal:
 
 ```kotlin
-// 1. UiState data class - all screen state in one place
-data class FeatureUiState(
-    val isLoading: Boolean = true,
-    val errorMessage: String? = null,
-    // ... computed properties via get() for derived state
-)
+// 1. BaseUiState interface - ALL UiState classes must implement this
+interface BaseUiState {
+    val isLoading: Boolean
+    val error: String?
+}
 
-// 2. NavigationEvent sealed class - one-time navigation events
+// 2. UiState data class implementing BaseUiState
+data class FeatureUiState(
+    override val isLoading: Boolean = true,
+    override val error: String? = null,
+    // ... computed properties via get() for derived state
+) : BaseUiState
+
+// 3. NavigationEvent sealed class - one-time navigation events
 sealed class FeatureNavigationEvent {
     data class NavigateToDetail(val id: String) : FeatureNavigationEvent()
 }
 
-// 3. ViewModel with Hilt injection
+// 4. ViewModel extending BaseViewModel with Hilt injection
 @HiltViewModel
 class FeatureViewModel @Inject constructor(
     private val repository: Repository
-) : ViewModel() {
-    private val _uiState = MutableStateFlow(FeatureUiState())
-    val uiState: StateFlow<FeatureUiState> = _uiState.asStateFlow()
+) : BaseViewModel<FeatureUiState>(FeatureUiState()) {
 
+    // uiState: StateFlow<T> is provided by BaseViewModel
     // Use Channel for one-time navigation events
     private val _navigationEvent = Channel<FeatureNavigationEvent>()
     val navigationEvent: Flow<FeatureNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     fun doSomething() {
-        _uiState.update { it.copy(isLoading = true) }
+        updateState { it.copy(isLoading = true) }
     }
 }
 ```
+
+There is also a `Resource<T>` sealed class (`Success`, `Error`, `Loading`) in `presentation/common/UiState.kt` used throughout for async operation results.
 
 ### Repository Pattern (Offline-First)
 
@@ -257,6 +274,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 GOOGLE_AI_API_KEY=your-gemini-api-key
 JWT_SECRET_KEY=your-secret-key
 DEBUG=true
+SENTRY_DSN=https://...@sentry.io/...   # optional, enables error monitoring
 ```
 
 **Android `local.properties`** (required — see `local.properties.example`):
@@ -264,7 +282,7 @@ DEBUG=true
 sdk.dir=/path/to/Android/sdk
 WEB_CLIENT_ID=your-web-client-id.apps.googleusercontent.com
 ```
-The build will fail with `GradleException` if `WEB_CLIENT_ID` is missing. Also requires `google-services.json` in `android/app/` (from Firebase Console).
+The build will fail with `GradleException` if `WEB_CLIENT_ID` is missing. The build also checks `System.getenv("WEB_CLIENT_ID")` as fallback, enabling CI builds without `local.properties`. Also requires `google-services.json` in `android/app/` (from Firebase Console).
 
 **PostgreSQL:**
 ```sql
@@ -287,20 +305,20 @@ Four GitHub Actions workflows in `.github/workflows/`:
 
 | Platform | Tests (approx.) | Framework |
 |----------|-----------------|-----------|
-| Backend | ~447 | pytest |
+| Backend | ~450+ | pytest |
 | Android Unit | ~330 | JUnit + MockK |
 | Android UI | ~750+ | Compose UI Testing |
 | Android E2E | ~67+ | Compose UI Testing + Hilt + Real API |
 
-*Counts as of Feb 2026. Run `PYTHONPATH=. pytest --collect-only -q` (backend) or `./gradlew test` (Android) for current totals.*
+*Counts grow frequently. Run `PYTHONPATH=. pytest --collect-only -q` (backend) or `./gradlew test` (Android) for current totals.*
 
-### Backend Tests (~447 total)
+### Backend Tests
 
-All in `backend/tests/`, named `test_{feature}.py` (37 test files). Run `PYTHONPATH=. pytest --collect-only` to list all. Tests use SQLite in-memory via conftest fixtures (see Backend Test Fixtures below). Some files use class-based test organization (e.g., `test_ai_meal_service.py`, `test_chat_api.py`, `test_preference_service.py`).
+All in `backend/tests/`, named `test_{feature}.py` (38+ test files). Run `PYTHONPATH=. pytest --collect-only` to list all. Tests use SQLite in-memory via conftest fixtures (see Backend Test Fixtures below). Some files use class-based test organization (e.g., `test_ai_meal_service.py`, `test_chat_api.py`, `test_preference_service.py`).
 
 ### Android UI Tests
 
-Tests use **Compose UI Testing** (not Espresso). Located in `app/src/androidTest/`.
+Tests use **Compose UI Testing** (not Espresso). Located in `app/src/androidTest/`. Uses custom `com.rasoiai.app.HiltTestRunner` (not default test runner).
 
 | Test Type | Pattern | Purpose |
 |-----------|---------|---------|
@@ -356,19 +374,29 @@ class FeatureViewModelTest {
 | File | Purpose |
 |------|---------|
 | `base/BaseE2ETest.kt` | Base class with Hilt setup, meal plan generation |
+| `base/ComposeTestExtensions.kt` | Compose test extension functions |
+| `base/TestDataFactory.kt` | Test data creation helpers |
 | `util/BackendTestHelper.kt` | Backend API calls with retry |
 | `di/FakeGoogleAuthClient.kt` | Fake auth (returns `fake-firebase-token`) |
 | `robots/` | Robot pattern classes (HomeRobot, GroceryRobot, etc.) |
+| `rules/RetryRule.kt` | JUnit rule for retrying flaky tests |
+| `E2ETestSuite.kt` | Test suite runner (runs CoreDataFlowTest first) |
 | `presentation/common/TestTags.kt` | All semantic test tags |
+
+**E2E backend URL:** Tests use `http://10.0.2.2:8000` (Android emulator maps `10.0.2.2` → host `localhost`).
+
+**E2E debug auth bypass:** `FakeGoogleAuthClient` sends `"fake-firebase-token"` to the backend. This only works when the backend runs with `DEBUG=true` — the backend's `firebase.py` accepts this fake token in debug mode and returns a test user. **E2E tests will fail against a non-debug backend.**
 
 **E2E Test Flow:**
 1. FakeGoogleAuthClient returns fake-firebase-token
-2. AuthViewModel calls `/api/v1/auth/firebase` (real API)
-3. Backend returns JWT, saved to DataStore
+2. AuthViewModel calls `/api/v1/auth/firebase` (real API at `10.0.2.2:8000`)
+3. Backend (DEBUG=true) accepts fake token, returns JWT, saved to DataStore
 4. User completes 5-step onboarding
 5. BackendTestHelper.generateMealPlan() calls AI (4-7 seconds)
 6. Home screen displays meal cards
 7. Room DB caches meal plan for offline access
+
+**E2E test execution order:** `E2ETestSuite.kt` runs `CoreDataFlowTest` first — it clears state, does full auth/onboarding, and persists state to DataStore. Subsequent tests inherit this persisted state. Tests needing Home screen must call `setUpAuthenticatedState()` in `@Before` after `super.setUp()`.
 
 ### Backend Test Fixtures
 
@@ -417,11 +445,9 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
 ## Backend API
 
-41 endpoints across 13 routers: Auth, Users, Meal Plans, Recipes, Grocery, Chat, Recipe Rules, Nutrition Goals, Family Members, Festivals, Stats, Notifications, Photos. Run `PYTHONPATH=. pytest --collect-only -q` or visit `http://localhost:8000/docs` for current counts.
+12 router files in `app/api/v1/endpoints/`: auth, chat, family_members, festivals, grocery, meal_plans, notifications, photos, recipe_rules, recipes, stats, users. Note: nutrition_goals endpoints are in `recipe_rules.py` (separate router). Run `PYTHONPATH=. pytest --collect-only -q` or visit `http://localhost:8000/docs` for current counts.
 
 **Full interactive docs:** `http://localhost:8000/docs` (Swagger UI)
-
-**Routers:** `app/api/v1/endpoints/` — one file per group (auth, chat, family_members, festivals, grocery, meal_plans, notifications, photos, recipe_rules, recipes, stats, users). Note: nutrition_goals endpoints are in `recipe_rules.py` (separate router).
 
 **Key backend files with gotchas:**
 
@@ -429,8 +455,13 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 |------|----------------|
 | `app/db/postgres.py` | Has 3 model import blocks (init_db, create_tables, drop_tables) — must update all 3 when adding models |
 | `app/db/database.py` | `get_db()` dependency — imports from postgres.py |
-| `app/config.py` | Pydantic Settings — env vars, CORS (`["*"]`), JWT config |
+| `app/config.py` | Pydantic Settings — env vars, CORS (`["*"]`), JWT config, Sentry DSN |
 | `app/ai/chat_assistant.py` | Tool calling orchestration — ties Claude API to preference/rule services |
+| `app/ai/claude_client.py` | Anthropic Claude client wrapper |
+| `app/ai/gemini_client.py` | Google Gemini client wrapper (google-genai SDK) |
+| `app/ai/prompts/` | Prompt templates (`chat_prompt.py`, `meal_plan_prompt.py`) |
+| `app/ai/tools/` | Chat tool definitions (`preference_tools.py`) |
+| `app/cache/recipe_cache.py` | In-memory recipe cache, warmed on startup via `warm_recipe_cache()` |
 | `app/repositories/` | Data access layer (one per model); called by services, wraps SQLAlchemy queries |
 | `app/services/` | One service per domain area; all follow same async pattern with `db: AsyncSession` param |
 
@@ -524,6 +555,8 @@ AI-powered meal planning using Google Gemini (`gemini-2.5-flash` via `google-gen
 | OnboardingViewModelTest won't compile | Pre-existing: missing `generateMealPlanUseCase` constructor param. Not a regression. |
 | Festivals/Stats tests | `test_festivals_api.py` (9 tests) and `test_stats_api.py` (10 tests) now exist. |
 | Enum case in Room tests | Room stores MealType as uppercase (`BREAKFAST`, `LUNCH`, `DINNER`, `SNACKS`). DtoMappers/EntityMappers tests must match. |
+| Backend changes not reflected | Stale `.pyc` cache: `find backend -name "*.pyc" -delete && find backend -name "__pycache__" -type d -exec rm -rf {} +` |
+| Recipe ID 500 errors in PostgreSQL | Always compare recipe IDs as strings in queries — `uuid.UUID` vs `String(36)` column type mismatch causes silent 500s |
 
 ## Rules for Claude
 

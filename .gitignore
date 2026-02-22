@@ -123,6 +123,7 @@ logcat*.txt
 .claude/.fix_loop_iterations
 .claude/.*_completed
 .claude/settings.local.json
+CLAUDE.local.md
 
 # Analysis artifacts
 CLAUDE_MD_GAPS_ANALYSIS.txt
