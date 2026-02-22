@@ -11,7 +11,7 @@ I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 
 ## Current State: Production-Ready (All Major Features Complete)
 
-Backend running on PostgreSQL with SQLAlchemy async ORM (44 endpoints, 11 routers). Android app with Compose UI, Hilt DI, Room DB v11. Full E2E tests passing with real API calls. All 18 Settings sub-screens implemented. Gap analysis complete with Phase 1-3 fixes applied.
+Backend running on PostgreSQL with SQLAlchemy async ORM (~41 endpoints, 13 routers). Android app with Compose UI, Hilt DI, Room DB v11. Full E2E tests passing with real API calls. All 18 Settings sub-screens implemented. Gap analysis complete with Phase 1-3 fixes applied.
 
 **Recent Work Highlights:**
 - **FR-010 through FR-014:** AI Recipe Catalog, Sharma Recipe Rules, Dedup, Family Members CRUD, Onboarding E2E
@@ -49,7 +49,7 @@ docs/requirements/
 **Test Results Summary:**
 | Platform | Tests | Status |
 |----------|-------|--------|
-| Backend | ~351 (26 files) | PASS |
+| Backend | ~498 (37 files) | PASS |
 | Android Unit | ~330 | PASS |
 | Android UI | 750+ | PASS |
 | Android E2E | 67+ | PASS |
@@ -100,7 +100,7 @@ Each requirement in the documentation follows this BDD-style format:
 - Then: [outcome]
 - And: [additional outcomes]
 
-### Backend API Endpoints (44 total across 11 routers)
+### Backend API Endpoints (~41 total across 13 routers)
 
 | Router | Endpoints | Purpose |
 |--------|-----------|---------|
@@ -196,7 +196,7 @@ Each requirement in the documentation follows this BDD-style format:
 
 ## TEST SUMMARY
 
-### Backend Tests (351 total, 26 files)
+### Backend Tests (~498 total, 37 files)
 
 | Test File | Tests | Purpose |
 |-----------|-------|---------|
@@ -213,10 +213,10 @@ Each requirement in the documentation follows this BDD-style format:
 | `test_notification_service.py` | 19 | Notification service |
 | `test_notification_api.py` | 11 | Notification API |
 | `test_migrate_legacy_rules.py` | 11 | Legacy rule migration |
-| `test_ai_recipe_catalog.py` | 16 | AI recipe catalog (FR-010) |
+| `test_ai_recipe_catalog.py` | 17 | AI recipe catalog (FR-010) |
 | `test_sharma_recipe_rules.py` | 13 | Sharma family rules (FR-011/FR-014) |
-| `test_recipe_rules_dedup.py` | 5 | Recipe rules dedup (FR-012) |
-| `test_family_members_api.py` | 8 | Family members CRUD (FR-013) |
+| `test_recipe_rules_dedup.py` | 6 | Recipe rules dedup (FR-012) |
+| `test_family_members_api.py` | 9 | Family members CRUD (FR-013) |
 | `test_email_uniqueness.py` | 7 | Email uniqueness enforcement |
 | `test_recipe_rating.py` | 11 | Recipe rating endpoint |
 | `test_recipe_creation_service.py` | 7 | Recipe creation service |
@@ -226,6 +226,17 @@ Each requirement in the documentation follows this BDD-style format:
 | `test_grocery_api.py` | 9 | Grocery API |
 | `test_festivals_api.py` | 9 | Festivals API |
 | `test_stats_api.py` | 10 | Stats API |
+| `test_achievement_earning.py` | 8 | Achievement earning logic |
+| `test_family_aware_meal_generation.py` | 14 | Family-aware meal generation |
+| `test_items_per_meal.py` | 13 | Items per meal settings |
+| `test_meal_gen_completeness.py` | 31 | Meal generation completeness |
+| `test_notification_triggers.py` | 6 | Notification trigger logic |
+| `test_nutrition_goals_api.py` | 20 | Nutrition goals API |
+| `test_pantry_suggestions.py` | 6 | Pantry smart suggestions |
+| `test_photo_analysis.py` | 5 | Photo analysis (Gemini Vision) |
+| `test_recipe_rule_family_conflict.py` | 7 | Recipe rule family conflicts |
+| `test_recipe_rules_lifecycle.py` | 17 | Recipe rules lifecycle |
+| `test_recipe_rules_sync.py` | 16 | Recipe rules sync |
 
 ### Android Tests
 
@@ -290,7 +301,7 @@ DEBUG=true
 
 ### Sessions 1-37: Core Implementation
 - Android Compose UI with 18+ screens
-- PostgreSQL backend with FastAPI (44 endpoints, 11 routers)
+- PostgreSQL backend with FastAPI (~41 endpoints, 13 routers)
 - E2E test infrastructure
 - 3,580 recipes imported
 
@@ -343,5 +354,5 @@ DEBUG=true
 - **Next Steps:** All data module tests passing. Ready for next feature work.
 
 *Last Updated: February 13, 2026*
-*All major features complete. 364 backend tests (26 files). ~330 Android unit tests. 67+ E2E tests. 750+ UI tests.*
-*44 API endpoints across 11 routers. 3,580 recipes. ~525 requirements across 12 screen files. Room DB v11.*
+*All major features complete. ~498 backend tests (37 files). ~330 Android unit tests. 67+ E2E tests. 750+ UI tests.*
+*~41 API endpoints across 13 routers. 3,580 recipes. ~525 requirements across 12 screen files. Room DB v11.*

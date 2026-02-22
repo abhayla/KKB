@@ -81,95 +81,20 @@ UI → ViewModel → UseCase → Repository
 
 ### ViewModel Pattern
 
-ViewModels extend `BaseViewModel<T : BaseUiState>` (in `presentation/common/BaseViewModel.kt`), which provides `updateState`/`setState` helpers and standard error dismissal:
-
-```kotlin
-// 1. BaseUiState interface - ALL UiState classes must implement this
-interface BaseUiState {
-    val isLoading: Boolean
-    val error: String?
-}
-
-// 2. UiState data class implementing BaseUiState
-data class FeatureUiState(
-    override val isLoading: Boolean = true,
-    override val error: String? = null,
-    // ... computed properties via get() for derived state
-) : BaseUiState
-
-// 3. NavigationEvent sealed class - one-time navigation events
-sealed class FeatureNavigationEvent {
-    data class NavigateToDetail(val id: String) : FeatureNavigationEvent()
-}
-
-// 4. ViewModel extending BaseViewModel with Hilt injection
-@HiltViewModel
-class FeatureViewModel @Inject constructor(
-    private val repository: Repository
-) : BaseViewModel<FeatureUiState>(FeatureUiState()) {
-
-    // uiState: StateFlow<T> is provided by BaseViewModel
-    // Use Channel for one-time navigation events
-    private val _navigationEvent = Channel<FeatureNavigationEvent>()
-    val navigationEvent: Flow<FeatureNavigationEvent> = _navigationEvent.receiveAsFlow()
-
-    fun doSomething() {
-        updateState { it.copy(isLoading = true) }
-    }
-}
-```
-
-There is also a `Resource<T>` sealed class (`Success`, `Error`, `Loading`) in `presentation/common/UiState.kt` used throughout for async operation results.
+ViewModels extend `BaseViewModel<T : BaseUiState>` (`presentation/common/BaseViewModel.kt`), providing `updateState`/`setState` helpers. Key elements:
+- `BaseUiState` interface: requires `isLoading: Boolean` and `error: String?`
+- UiState data class implements `BaseUiState`, uses `copy()` for updates
+- One-time events via `Channel` + `receiveAsFlow()`
+- `@HiltViewModel` with `@Inject constructor`
+- `Resource<T>` sealed class (`Success`/`Error`/`Loading`) in `presentation/common/UiState.kt`
 
 ### Repository Pattern (Offline-First)
 
-```kotlin
-@Singleton
-class FeatureRepositoryImpl @Inject constructor(
-    private val apiService: RasoiApiService,
-    private val featureDao: FeatureDao,
-    private val networkMonitor: NetworkMonitor
-) : FeatureRepository {
-
-    // Always return from local DB (single source of truth)
-    override fun getData(): Flow<Data?> {
-        return featureDao.getData().map { entity ->
-            entity?.toDomain() ?: run {
-                if (networkMonitor.isOnline.first()) fetchAndCache()
-                null
-            }
-        }
-    }
-
-    // Mutations: update local immediately, sync to server when online
-    override suspend fun updateData(data: Data): Result<Unit> {
-        featureDao.update(data.toEntity())
-        if (networkMonitor.isOnline.first()) {
-            apiService.update(data.toDto())
-        } else {
-            featureDao.markUnsynced(data.id)
-        }
-        return Result.success(Unit)
-    }
-}
-```
+Repositories read from Room (source of truth), fetch from API when online. Mutations update local DB first, then sync to server if online, or mark as unsynced for later.
 
 ### Navigation Routes
 
-Routes with arguments use `createRoute()` helper pattern:
-
-```kotlin
-data object RecipeDetail : Screen("recipe/{recipeId}?isLocked={isLocked}&fromMealPlan={fromMealPlan}") {
-    fun createRoute(recipeId: String, isLocked: Boolean = false, fromMealPlan: Boolean = false) =
-        "recipe/$recipeId?isLocked=$isLocked&fromMealPlan=$fromMealPlan"
-    const val ARG_RECIPE_ID = "recipeId"
-}
-
-// Usage
-navController.navigate(Screen.RecipeDetail.createRoute(recipeId, isLocked = true, fromMealPlan = true))
-```
-
-**All screens** (in `presentation/navigation/Screen.kt`):
+Routes with arguments use `createRoute()` helper in `presentation/navigation/Screen.kt`:
 
 | Group | Screens |
 |-------|---------|
@@ -182,20 +107,7 @@ navController.navigate(Screen.RecipeDetail.createRoute(recipeId, isLocked = true
 
 ### Bottom Navigation
 
-Screens with bottom navigation use `RasoiBottomNavigation` from `home/components/`:
-
-```kotlin
-Scaffold(
-    bottomBar = {
-        RasoiBottomNavigation(
-            selectedItem = NavigationItem.GROCERY,
-            onItemSelected = { /* handle navigation */ }
-        )
-    }
-) { /* content */ }
-```
-
-**Bottom nav items:** HOME, GROCERY, CHAT, FAVORITES, STATS
+Use `RasoiBottomNavigation` from `home/components/` in `Scaffold(bottomBar = ...)`. Items: HOME, GROCERY, CHAT, FAVORITES, STATS.
 
 ## Development Commands
 
@@ -305,7 +217,7 @@ Four GitHub Actions workflows in `.github/workflows/`:
 
 | Platform | Tests (approx.) | Framework |
 |----------|-----------------|-----------|
-| Backend | ~450+ | pytest |
+| Backend | ~500 | pytest |
 | Android Unit | ~330 | JUnit + MockK |
 | Android UI | ~750+ | Compose UI Testing |
 | Android E2E | ~67+ | Compose UI Testing + Hilt + Real API |
@@ -314,11 +226,11 @@ Four GitHub Actions workflows in `.github/workflows/`:
 
 ### Backend Tests
 
-All in `backend/tests/`, named `test_{feature}.py` (38+ test files). Run `PYTHONPATH=. pytest --collect-only` to list all. Tests use SQLite in-memory via conftest fixtures (see Backend Test Fixtures below). Some files use class-based test organization (e.g., `test_ai_meal_service.py`, `test_chat_api.py`, `test_preference_service.py`).
+All in `backend/tests/`, named `test_{feature}.py` (37 test files). Run `PYTHONPATH=. pytest --collect-only` to list all. Tests use SQLite in-memory via conftest fixtures (see Backend Test Fixtures below). Some files use class-based test organization (e.g., `test_ai_meal_service.py`, `test_chat_api.py`, `test_preference_service.py`).
 
 ### Android UI Tests
 
-Tests use **Compose UI Testing** (not Espresso). Located in `app/src/androidTest/`. Uses custom `com.rasoiai.app.HiltTestRunner` (not default test runner).
+Tests use **Compose UI Testing** (not Espresso). Located in `app/src/androidTest/`. Uses custom `com.rasoiai.app.HiltTestRunner`.
 
 | Test Type | Pattern | Purpose |
 |-----------|---------|---------|
@@ -326,46 +238,9 @@ Tests use **Compose UI Testing** (not Espresso). Located in `app/src/androidTest
 | Integration Tests | `*IntegrationTest.kt` | Full app with Hilt DI |
 | E2E Tests | `*FlowTest.kt` | Complete user flows |
 
-```kotlin
-// UI Test pattern
-class FeatureScreenTest {
-    @get:Rule val composeTestRule = createComposeRule()
-
-    @Test fun screen_displaysElement_whenCondition() {
-        composeTestRule.setContent { FeatureTestContent(uiState = testState) }
-        composeTestRule.onNodeWithTag(TestTags.FEATURE_ELEMENT).assertIsDisplayed()
-    }
-}
-```
-
 ### ViewModel Unit Tests
 
-Located in `app/src/test/java/com/rasoiai/app/presentation/`:
-
-```kotlin
-@OptIn(ExperimentalCoroutinesApi::class)
-class FeatureViewModelTest {
-    @get:Rule val testDispatcherRule = TestDispatcherRule()
-
-    private lateinit var repository: FakeFeatureRepository
-    private lateinit var viewModel: FeatureViewModel
-
-    @Before
-    fun setup() {
-        repository = FakeFeatureRepository()
-        viewModel = FeatureViewModel(repository)
-    }
-
-    @Test
-    fun `initial state is loading`() = runTest {
-        assertEquals(true, viewModel.uiState.value.isLoading)
-    }
-}
-```
-
-**Test utilities:**
-- `TestDispatcherRule` - Replaces Dispatchers.Main for coroutine tests
-- `Fake*Repository` classes - In-memory implementations for testing
+Located in `app/src/test/java/com/rasoiai/app/presentation/`. Use `TestDispatcherRule` (replaces Dispatchers.Main) and `Fake*Repository` classes (in-memory implementations).
 
 ### E2E Test Infrastructure
 
@@ -445,7 +320,7 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
 ## Backend API
 
-12 router files in `app/api/v1/endpoints/`: auth, chat, family_members, festivals, grocery, meal_plans, notifications, photos, recipe_rules, recipes, stats, users. Note: nutrition_goals endpoints are in `recipe_rules.py` (separate router). Run `PYTHONPATH=. pytest --collect-only -q` or visit `http://localhost:8000/docs` for current counts.
+12 router files in `app/api/v1/endpoints/`: auth, chat, family_members, festivals, grocery, meal_plans, notifications, photos, recipe_rules, recipes, stats, users. Note: nutrition_goals endpoints are in `recipe_rules.py` (separate router, registered separately in `router.py` — 13 routers total). Run `PYTHONPATH=. pytest --collect-only -q` or visit `http://localhost:8000/docs` for current counts (~41 endpoints).
 
 **Full interactive docs:** `http://localhost:8000/docs` (Swagger UI)
 
@@ -463,7 +338,7 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 | `app/ai/tools/` | Chat tool definitions (`preference_tools.py`) |
 | `app/cache/recipe_cache.py` | In-memory recipe cache, warmed on startup via `warm_recipe_cache()` |
 | `app/repositories/` | Data access layer (one per model); called by services, wraps SQLAlchemy queries |
-| `app/services/` | One service per domain area; all follow same async pattern with `db: AsyncSession` param |
+| `app/services/` | 17 service files, one per domain area; all follow same async pattern with `db: AsyncSession` param |
 
 ## Database Schema
 
@@ -844,62 +719,31 @@ Workflow state is tracked in `.claude/workflow-state.json` (extended schema with
 
 The `.claude/` directory contains Claude Code customization:
 
-```
-.claude/
-├── agents/           # 7 agent definitions (read-only / non-code-editing)
-│   ├── code-reviewer.md
-│   ├── database-admin.md
-│   ├── debugger.md
-│   ├── docs-manager.md
-│   ├── git-manager.md
-│   ├── planner-researcher.md
-│   └── tester.md
-├── knowledge.db      # SQLite pattern library — known errors, fix strategies, test mappings (used by auto-verify)
-├── skills/           # Slash commands (user-invocable skills, YAML frontmatter)
-│   ├── adb-test/         # /adb-test [screen|flow] — manual E2E via ADB (12 screens + 21 flows)
-│   │   ├── SKILL.md
-│   │   └── references/
-│   │       ├── screen-definitions.md   # Screen test protocol (E0-E6.5, F1-F5.5b)
-│   │       └── flow-definitions.md     # Flow execution protocol (G1-G7)
-│   ├── auto-verify/      # /auto-verify — post-change verification with KB-driven diagnosis (8-step algorithm)
-│   │   ├── SKILL.md      #   Steps: identify changes → map to tests → KB pre-check → run → diagnose → record
-│   │   └── references/
-│   ├── fix-issue/        # /fix-issue <number> — implement fix for GitHub Issue
-│   │   └── SKILL.md
-│   ├── fix-loop/         # /fix-loop — iterative fix cycle (analyze → fix → review → build → retest)
-│   │   ├── SKILL.md
-│   │   └── references/
-│   │       └── iteration-algorithm.md  # Full Loop / Single Fix pseudocode
-│   ├── implement/        # /implement — implement feature with workflow
-│   │   └── SKILL.md
-│   ├── post-fix-pipeline/  # /post-fix-pipeline — post-fix verification (regression → test suite → docs → commit)
-│   │   └── SKILL.md
-│   ├── reflect/          # /reflect — learning system analysis & self-modification
-│   │   ├── SKILL.md
-│   │   └── references/
-│   │       └── learning-modes.md      # Detailed mode instructions (Steps 1-7)
-│   ├── run-e2e/          # /run-e2e — run Android E2E tests by feature group
-│   │   └── SKILL.md
-│   └── verify-screenshots/  # /verify-screenshots — deep screenshot + backend verification
-│       └── SKILL.md
-├── hooks/            # Workflow enforcement hooks (12 hooks + 1 shared library)
-│   ├── hook-utils.sh               # Shared library sourced by all hooks (stdin parsing, state mgmt)
-│   ├── validate-workflow-step.sh   # PreToolUse: block actions if workflow steps incomplete + testFailuresPending gate
-│   ├── pre-skill-fixloop-unblock.sh # PreToolUse: set fixLoopInvestigating=true when fix-loop invoked
-│   ├── verify-evidence-artifacts.sh # PreToolUse: block git commit if evidence missing
-│   ├── post-test-update.sh         # PostToolUse: record test results in workflow state
-│   ├── verify-test-rerun.sh        # PostToolUse: re-run tests independently, block on inconsistency
-│   ├── log-workflow.sh             # PostToolUse: log events + track Skill invocations
-│   ├── post-anr-detection.sh       # PostToolUse: detect ANR patterns, set testFailuresPending
-│   ├── post-skill-learning.sh      # PostToolUse: learning system capture after skill execution
-│   ├── post-screenshot-resize.sh   # PostToolUse: auto-resize screenshots >1800px after capture
-│   ├── post-screenshot-validate.sh # PostToolUse: record screenshot metadata, validate file integrity
-│   ├── auto-fix-pattern-scan.sh    # PostToolUse: scan for common fix patterns
-│   └── resize_screenshot.py        # Screenshot resize utility (batch mode: --all)
-├── logs/             # Workflow session logs
-├── settings.json
-└── settings.local.json
-```
+| Directory | Contents |
+|-----------|----------|
+| `agents/` | 9 agent definitions: api-tester, code-reviewer, database-admin, debugger, docs-manager, git-manager, performance-profiler, planner-researcher, tester |
+| `knowledge.db` | SQLite pattern library — known errors, fix strategies, test mappings (used by auto-verify) |
+| `skills/` | 12 slash commands (see table below) |
+| `hooks/` | 13 workflow enforcement hooks + `resize_screenshot.py` (see Workflow Enforcement Hooks above) |
+| `rules/` | 5 path-scoped rule files: android.md, backend.md, compose-ui.md, database.md, testing.md |
+| `logs/` | Workflow session logs |
+
+**Skills (slash commands):**
+
+| Skill | Purpose |
+|-------|---------|
+| `/adb-test` | Manual E2E via ADB (12 screens + 21 flows) |
+| `/auto-verify` | Post-change verification with KB-driven diagnosis |
+| `/fix-issue <N>` | Implement fix for GitHub Issue |
+| `/fix-loop` | Iterative fix cycle (analyze → fix → review → retest) |
+| `/implement` | Implement feature with 7-step workflow |
+| `/post-fix-pipeline` | Post-fix verification (regression → test suite → docs → commit) |
+| `/reflect` | Learning system analysis & self-modification |
+| `/run-e2e` | Run Android E2E tests by feature group |
+| `/db-migrate` | Database migration management |
+| `/deploy` | Deployment workflow |
+| `/sync-check` | Verify offline/online sync consistency |
+| `/verify-screenshots` | Deep screenshot + backend verification |
 
 ## Key Documentation
 
@@ -916,10 +760,11 @@ The `.claude/` directory contains Claude Code customization:
 | Design System | `docs/design/RasoiAI Design System.md` |
 | **Workflow Rules** | `docs/rules/Claude Code Enforced Workflow Rules.md` |
 | E2E Testing Guide | `docs/testing/E2E-Testing-Prompt.md` |
+| E2E Phase Details | `docs/testing/E2E-Phase-Details.md` |
 | E2E Test Plan | `docs/testing/E2E-Test-Plan.md` |
 | Functional Requirement Traceability | `docs/testing/Functional-Requirement-Rule.md` |
 | Recipe Rule Test Plan | `docs/testing/Recipe-Rule-Test-Plan.md` |
 | ADB Test Definitions | `docs/testing/adb-test-definitions.md` |
-| ADB Flow Definitions | `docs/testing/flows/` (11 flow files) |
+| ADB Flow Definitions | `docs/testing/flows/` (21 flow files) |
 | Meal Plan Validator | `scripts/validate_meal_plan.py` |
 | Session Context | `docs/CONTINUE_PROMPT.md` |
