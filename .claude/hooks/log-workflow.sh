@@ -15,9 +15,10 @@ if [ -z "$HOOK_TOOL_NAME" ]; then exit 0; fi
 
 # Skill invocation tracking
 if [ "$HOOK_TOOL_NAME" = "Skill" ]; then
-    SKILL_NAME=$(echo "$HOOK_TOOL_INPUT" | python -c "import sys,json;d=json.load(sys.stdin);print(d.get('skill',d.get('name','')))" 2>/dev/null)
+    SKILL_NAME=$(printf '%s' "$HOOK_TOOL_INPUT" | python -c "import sys,json;d=json.load(sys.stdin);print(d.get('skill',d.get('name','')))" 2>/dev/null)
     if [ -n "$SKILL_NAME" ]; then
-        SKILL_SUCCESS=$(detect_skill_success "$HOOK_TOOL_OUTPUT")
+        SKILL_OUTPUT_TEXT=$(get_tool_output)
+        SKILL_SUCCESS=$(detect_skill_success "$SKILL_OUTPUT_TEXT")
         log_event "SKILL_INVOKED" "name=$SKILL_NAME" "success=$SKILL_SUCCESS"
         record_skill_invocation "$SKILL_NAME" "$SKILL_SUCCESS"
 
@@ -26,7 +27,7 @@ if [ "$HOOK_TOOL_NAME" = "Skill" ]; then
         if [ "$SKILL_NAME" = "fix-loop" ]; then
             update_workflow_state '.fixLoopInvestigating = false'
             # Check if fix-loop args contain visual flag clearing request
-            CLEAR_VISUAL=$(echo "$HOOK_TOOL_INPUT" | python -c "import sys,json;d=json.load(sys.stdin);a=d.get('args','');print('true' if 'visualIssuesPending' in str(a) else 'false')" 2>/dev/null)
+            CLEAR_VISUAL=$(printf '%s' "$HOOK_TOOL_INPUT" | python -c "import sys,json;d=json.load(sys.stdin);a=d.get('args','');print('true' if 'visualIssuesPending' in str(a) else 'false')" 2>/dev/null)
             if [ "$CLEAR_VISUAL" = "true" ] && [ "$SKILL_SUCCESS" = "true" ]; then
                 update_workflow_state '.visualIssuesPending = false'
                 update_workflow_state '.visualIssuePendingDetails = null'
@@ -49,7 +50,7 @@ fi
 case "$HOOK_TOOL_NAME" in
     "Bash")
         CMD=$(extract_input_field "command")
-        log_event "BASH_CMD" "cmd=$(echo "$CMD" | head -c 100)"
+        log_event "BASH_CMD" "cmd=$(printf '%s' "$CMD" | head -c 100)"
         ;;
     "Write")
         log_event "FILE_WRITTEN" "path=$(extract_input_field file_path)"
@@ -58,7 +59,7 @@ case "$HOOK_TOOL_NAME" in
         log_event "FILE_MODIFIED" "path=$(extract_input_field file_path)"
         ;;
     "Task")
-        AT=$(echo "$HOOK_TOOL_INPUT" | python -c "import sys,json;print(json.load(sys.stdin).get('subagent_type',''))" 2>/dev/null)
+        AT=$(printf '%s' "$HOOK_TOOL_INPUT" | python -c "import sys,json;print(json.load(sys.stdin).get('subagent_type',''))" 2>/dev/null)
         log_event "AGENT_DELEGATED" "type=$AT"
         ;;
     *)

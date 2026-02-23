@@ -14,17 +14,17 @@ parse_hook_input
 if [ "$HOOK_TOOL_NAME" != "Skill" ]; then exit 0; fi
 
 # Extract skill name from tool_input
-SKILL_NAME=$(echo "$HOOK_TOOL_INPUT" | python -c "import sys,json;print(json.load(sys.stdin).get('skill',''))" 2>/dev/null)
+SKILL_NAME=$(printf '%s' "$HOOK_TOOL_INPUT" | python -c "import sys,json;print(json.load(sys.stdin).get('skill',''))" 2>/dev/null)
 if [ -z "$SKILL_NAME" ]; then exit 0; fi
 
 # Self-skip: ignore /reflect to prevent infinite capture loops
 if [ "$SKILL_NAME" = "reflect" ]; then exit 0; fi
 
 # Extract skill arguments
-SKILL_ARGS=$(echo "$HOOK_TOOL_INPUT" | python -c "import sys,json;print(json.load(sys.stdin).get('args',''))" 2>/dev/null)
+SKILL_ARGS=$(printf '%s' "$HOOK_TOOL_INPUT" | python -c "import sys,json;print(json.load(sys.stdin).get('args',''))" 2>/dev/null)
 
-# Parse the skill output for structured outcome
-TOOL_OUTPUT_TEXT="$HOOK_TOOL_OUTPUT"
+# Parse the skill output for structured outcome (extract from raw input)
+TOOL_OUTPUT_TEXT=$(get_tool_output)
 if [ -z "$TOOL_OUTPUT_TEXT" ] || [ ${#TOOL_OUTPUT_TEXT} -lt 10 ]; then exit 0; fi
 
 parse_skill_outcome "$TOOL_OUTPUT_TEXT"
@@ -72,7 +72,7 @@ case "$SKILL_NAME" in
         append_memory_topic "fix-patterns.md" "$SUMMARY"
         if [ "$SKILL_OUTCOME" = "RESOLVED" ] && [ "$SKILL_ISSUES_RESOLVED" -gt 0 ] 2>/dev/null; then
             # Extract fix pattern details for the catalog
-            FIX_DETAIL=$(echo "$TOOL_OUTPUT_TEXT" | head -c 500 | grep -oE '\[[^\]]+:\d+\].*' | head -3)
+            FIX_DETAIL=$(printf '%s' "$TOOL_OUTPUT_TEXT" | head -c 500 | grep -oE '\[[^\]]+:\d+\].*' | head -3)
             if [ -n "$FIX_DETAIL" ]; then
                 append_memory_topic "fix-patterns.md" "$FIX_DETAIL"
             fi
@@ -85,7 +85,7 @@ esac
 
 # If UNRESOLVED: note in skill-gaps.md
 if [ "$SKILL_OUTCOME" = "UNRESOLVED" ] || [ "$SKILL_OUTCOME" = "PARTIALLY_RESOLVED" ]; then
-    UNRESOLVED_TEXT=$(echo "$SKILL_UNRESOLVED" | python -c "
+    UNRESOLVED_TEXT=$(printf '%s' "$SKILL_UNRESOLVED" | python -c "
 import sys, json
 items = json.loads(sys.stdin.read() or '[]')
 for item in items[:5]:
@@ -98,7 +98,7 @@ fi
 # Update failure index for non-PASSED outcomes
 if [ "$SKILL_OUTCOME" != "PASSED" ] && [ "$SKILL_OUTCOME" != "RESOLVED" ]; then
     # Determine issue type from skill args or output
-    ISSUE_TYPE=$(echo "$SKILL_ARGS" | python -c "
+    ISSUE_TYPE=$(printf '%s' "$SKILL_ARGS" | python -c "
 import sys
 args = sys.stdin.read()
 if 'dropdown' in args.lower(): print('dropdown_interaction')

@@ -39,9 +39,9 @@ check_all_steps_complete() {
     echo "all"; return 0
 }
 
-is_test_file() { echo "$1" | grep -qE "(androidTest|test_|Test\.kt|_test\.py)"; }
-is_code_file() { echo "$1" | grep -qE "\.(kt|py|java|xml)$" && ! is_test_file "$1"; }
-is_requirement_file() { echo "$1" | grep -qE "(docs/requirements|Functional-Requirement)"; }
+is_test_file() { printf '%s' "$1" | grep -qE "(androidTest|test_|Test\.kt|_test\.py)"; }
+is_code_file() { printf '%s' "$1" | grep -qE "\.(kt|py|java|xml)$" && ! is_test_file "$1"; }
+is_requirement_file() { printf '%s' "$1" | grep -qE "(docs/requirements|Functional-Requirement)"; }
 
 # Graceful init: if no state file, create it and allow
 if [ ! -f "$WORKFLOW_STATE_FILE" ]; then
@@ -63,13 +63,13 @@ if [ "$TFP" = "true" -o "$TFP" = "True" ] && [ "$FLI" != "true" ] && [ "$FLI" !=
             TFP_FILE=$(extract_input_field "file_path")
             if [ -n "$TFP_FILE" ]; then
                 # Normalize Windows backslashes to forward slashes
-                TFP_FILE_NORM=$(echo "$TFP_FILE" | sed 's|\\|/|g')
+                TFP_FILE_NORM=$(printf '%s' "$TFP_FILE" | sed 's|\\|/|g')
                 # Allow: .claude/, docs/, .github/, CLAUDE.md, any .md file
-                if echo "$TFP_FILE_NORM" | grep -qE "(\.claude/|docs/|\.github/|CLAUDE\.md|\.md$)"; then
+                if printf '%s' "$TFP_FILE_NORM" | grep -qE "(\.claude/|docs/|\.github/|CLAUDE\.md|\.md$)"; then
                     : # Allowed — documentation and config files
                 else
                     # Block: all code files (.kt, .py, .java, .xml, etc.)
-                    if echo "$TFP_FILE_NORM" | grep -qE "\.(kt|py|java|xml|kts|gradle|json|yaml|yml|toml|properties)$"; then
+                    if printf '%s' "$TFP_FILE_NORM" | grep -qE "\.(kt|py|java|xml|kts|gradle|json|yaml|yml|toml|properties)$"; then
                         TFP_DETAILS=$(get_state_field ".testFailurePendingDetails")
                         echo ""
                         echo "BLOCKED: Test failures are pending. Write/Edit to code files is blocked."
@@ -85,7 +85,7 @@ if [ "$TFP" = "true" -o "$TFP" = "True" ] && [ "$FLI" != "true" ] && [ "$FLI" !=
             ;;
         "Bash")
             TFP_CMD=$(extract_input_field "command")
-            if echo "$TFP_CMD" | grep -qE "git commit"; then
+            if printf '%s' "$TFP_CMD" | grep -qE "git commit"; then
                 echo ""
                 echo "BLOCKED: Test failures are pending. Commits are blocked."
                 echo ">>> You MUST invoke Skill(\"fix-loop\") to investigate ALL test failures. <<<"
@@ -110,13 +110,13 @@ if [ "$VIP" = "true" -o "$VIP" = "True" ] && [ "$FLI" != "true" ] && [ "$FLI" !=
             VIP_FILE=$(extract_input_field "file_path")
             if [ -n "$VIP_FILE" ]; then
                 # Normalize Windows backslashes to forward slashes
-                VIP_FILE_NORM=$(echo "$VIP_FILE" | sed 's|\\|/|g')
+                VIP_FILE_NORM=$(printf '%s' "$VIP_FILE" | sed 's|\\|/|g')
                 # Allow: .claude/, docs/, .github/, CLAUDE.md, any .md file
-                if echo "$VIP_FILE_NORM" | grep -qE "(\.claude/|docs/|\.github/|CLAUDE\.md|\.md$)"; then
+                if printf '%s' "$VIP_FILE_NORM" | grep -qE "(\.claude/|docs/|\.github/|CLAUDE\.md|\.md$)"; then
                     : # Allowed — documentation and config files
                 else
                     # Block: all code files (.kt, .py, .java, .xml, etc.)
-                    if echo "$VIP_FILE_NORM" | grep -qE "\.(kt|py|java|xml|kts|gradle|json|yaml|yml|toml|properties)$"; then
+                    if printf '%s' "$VIP_FILE_NORM" | grep -qE "\.(kt|py|java|xml|kts|gradle|json|yaml|yml|toml|properties)$"; then
                         VIP_DETAILS=$(get_state_field ".visualIssuePendingDetails")
                         echo ""
                         echo "BLOCKED: Visual issues are pending. Write/Edit to code files is blocked."
@@ -131,7 +131,7 @@ if [ "$VIP" = "true" -o "$VIP" = "True" ] && [ "$FLI" != "true" ] && [ "$FLI" !=
             ;;
         "Bash")
             VIP_CMD=$(extract_input_field "command")
-            if echo "$VIP_CMD" | grep -qE "git commit"; then
+            if printf '%s' "$VIP_CMD" | grep -qE "git commit"; then
                 echo ""
                 echo "BLOCKED: Visual issues are pending. Commits are blocked."
                 echo ">>> You MUST invoke Skill(\"fix-loop\") to fix visual issues. <<<"
@@ -148,9 +148,9 @@ case "$HOOK_TOOL_NAME" in
         FILE_PATH=$(extract_input_field "file_path")
         if [ -z "$FILE_PATH" ]; then exit 0; fi
         # Normalize Windows backslashes to forward slashes for pattern matching
-        FILE_PATH_NORM=$(echo "$FILE_PATH" | sed 's|\\|/|g')
+        FILE_PATH_NORM=$(printf '%s' "$FILE_PATH" | sed 's|\\|/|g')
         if is_requirement_file "$FILE_PATH_NORM"; then log_event "STEP_1_PROGRESS" "file=$FILE_PATH"; exit 0; fi
-        if echo "$FILE_PATH_NORM" | grep -qE "(\.claude/|\.github/|docs/rules|docs/design|CLAUDE\.md)"; then exit 0; fi
+        if printf '%s' "$FILE_PATH_NORM" | grep -qE "(\.claude/|\.github/|docs/rules|docs/design|CLAUDE\.md)"; then exit 0; fi
         if is_test_file "$FILE_PATH_NORM"; then
             if [ "$(get_step_status step1_requirements)" != "true" ]; then
                 echo ""; echo "WORKFLOW BLOCKED: Cannot create tests before Step 1 (requirements)."
@@ -172,12 +172,12 @@ case "$HOOK_TOOL_NAME" in
     "Bash")
         CMD=$(extract_input_field "command")
         # Detect bash file-modification commands targeting code files
-        if echo "$CMD" | grep -qE "(sed -i|awk.*>|echo.*>|cat.*>|tee |printf.*>|cp .*(\.kt|\.py|\.java|\.xml)|mv .*(\.kt|\.py|\.java|\.xml))"; then
+        if printf '%s' "$CMD" | grep -qE "(sed -i|awk.*>|echo.*>|cat.*>|tee |printf.*>|cp .*(\.kt|\.py|\.java|\.xml)|mv .*(\.kt|\.py|\.java|\.xml))"; then
             # Extract target file from common patterns
-            BASH_TARGET=$(echo "$CMD" | grep -oE "[^ \"'>|]+\.(kt|py|java|xml)" | tail -1)
+            BASH_TARGET=$(printf '%s' "$CMD" | grep -oE "[^ \"'>|]+\.(kt|py|java|xml)" | tail -1)
             if [ -n "$BASH_TARGET" ]; then
                 # Exclude non-production paths
-                if ! echo "$BASH_TARGET" | grep -qE "(\.claude/|docs/|test_|Test\.kt|androidTest|_test\.py)"; then
+                if ! printf '%s' "$BASH_TARGET" | grep -qE "(\.claude/|docs/|test_|Test\.kt|androidTest|_test\.py)"; then
                     if is_code_file "$BASH_TARGET"; then
                         if [ "$(get_step_status step2_tests)" != "true" ]; then
                             echo ""; echo "WORKFLOW BLOCKED: Bash command modifies code file before Step 2 (tests)."
@@ -188,7 +188,7 @@ case "$HOOK_TOOL_NAME" in
                 fi
             fi
         fi
-        if echo "$CMD" | grep -qE "git commit"; then
+        if printf '%s' "$CMD" | grep -qE "git commit"; then
             INCOMPLETE=$(check_all_steps_complete)
             if [ "$INCOMPLETE" != "all" ]; then
                 echo ""; echo "WORKFLOW BLOCKED: Cannot commit. Incomplete step: $INCOMPLETE"

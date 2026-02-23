@@ -5,8 +5,8 @@
 # Read stdin (hook input JSON)
 INPUT=$(cat)
 
-# Extract the file path from tool input
-FILE_PATH=$(echo "$INPUT" | python -c "
+# Extract the file path from tool input (use printf to avoid echo mangling)
+FILE_PATH=$(printf '%s' "$INPUT" | python -c "
 import sys, json
 try:
     data = json.load(sys.stdin)

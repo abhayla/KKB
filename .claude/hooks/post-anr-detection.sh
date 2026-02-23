@@ -16,15 +16,15 @@ if [ "$HOOK_TOOL_NAME" != "Bash" ]; then
     exit 0
 fi
 
-# Get the tool output
-OUTPUT="$HOOK_TOOL_OUTPUT"
+# Get the tool output (extract from raw input since HOOK_TOOL_OUTPUT is no longer set)
+OUTPUT=$(get_tool_output)
 if [ -z "$OUTPUT" ]; then
     exit 0
 fi
 
 # Check for ANR patterns in tool output
 ANR_DETECTED=false
-if echo "$OUTPUT" | grep -qiE "ANR in|isn't responding|Application Not Responding|Input dispatching timed out"; then
+if printf '%s' "$OUTPUT" | grep -qiE "ANR in|isn't responding|Application Not Responding|Input dispatching timed out"; then
     ANR_DETECTED=true
 fi
 
@@ -33,15 +33,6 @@ if [ "$ANR_DETECTED" = "true" ]; then
     STATE_FILE=".claude/workflow-state.json"
     if [ -f "$STATE_FILE" ]; then
         python -c "
-import json
-with open('$STATE_FILE') as f:
-    d = json.load(f)
-d['testFailuresPending'] = True
-d.setdefault('evidence', {})['anr_detected'] = True
-with open('$STATE_FILE', 'w') as f:
-    json.dump(d, f, indent=2)
-print('ANR DETECTED: testFailuresPending set to true. MUST invoke /fix-loop.')
-" 2>/dev/null || python -c "
 import json
 with open('$STATE_FILE') as f:
     d = json.load(f)

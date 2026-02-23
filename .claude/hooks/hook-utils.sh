@@ -18,14 +18,39 @@ HOOK_RAW_INPUT=""
 parse_hook_input() {
     HOOK_RAW_INPUT=$(cat)
     if [ -z "$HOOK_RAW_INPUT" ]; then return 0; fi
-    HOOK_TOOL_NAME=$(echo "$HOOK_RAW_INPUT" | python -c "import sys,json;print(json.load(sys.stdin).get('tool_name',''))" 2>/dev/null) || HOOK_TOOL_NAME=""
-    HOOK_TOOL_INPUT=$(echo "$HOOK_RAW_INPUT" | python -c "import sys,json;print(json.dumps(json.load(sys.stdin).get('tool_input',{})))" 2>/dev/null) || HOOK_TOOL_INPUT="{}"
-    HOOK_TOOL_OUTPUT=$(echo "$HOOK_RAW_INPUT" | python -c "import sys,json;d=json.load(sys.stdin);o=d.get('tool_output','');print(json.dumps(o) if isinstance(o,dict) else str(o)[:50000])" 2>/dev/null) || HOOK_TOOL_OUTPUT=""
+
+    # Write raw input to temp file (safe for any content — no echo/printf mangling)
+    local tmpfile
+    tmpfile=$(mktemp 2>/dev/null || echo "/tmp/hook_input_$$.json")
+    printf '%s' "$HOOK_RAW_INPUT" > "$tmpfile"
+
+    # Single Python call parses JSON once, outputs shell-safe variable assignments
+    eval "$(python -c "
+import json, sys
+try:
+    with open(sys.argv[1]) as f:
+        d = json.load(f)
+    tn = d.get('tool_name', '')
+    ti = json.dumps(d.get('tool_input', {}))
+    # Use repr() for shell-safe quoting (handles quotes, backslashes, newlines)
+    print('HOOK_TOOL_NAME=' + repr(str(tn)))
+    print('HOOK_TOOL_INPUT=' + repr(str(ti)))
+except Exception:
+    print(\"HOOK_TOOL_NAME=''\")
+    print(\"HOOK_TOOL_INPUT='{}'\")
+" "$tmpfile" 2>/dev/null)" || {
+        HOOK_TOOL_NAME=""
+        HOOK_TOOL_INPUT="{}"
+    }
+
+    # tool_output is too large for eval — hooks that need it read HOOK_RAW_INPUT directly
+    HOOK_TOOL_OUTPUT=""
+    rm -f "$tmpfile" 2>/dev/null
 }
 
 extract_input_field() {
     local field="$1"
-    echo "$HOOK_TOOL_INPUT" | python -c "import sys,json;print(str(json.load(sys.stdin).get('$field','')))" 2>/dev/null
+    printf '%s' "$HOOK_TOOL_INPUT" | python -c "import sys,json;print(str(json.load(sys.stdin).get('$field','')))" 2>/dev/null
 }
 
 get_state_field() {
@@ -137,19 +162,19 @@ with open('.claude/workflow-state.json', 'w') as f:
 
 is_test_command() {
     local cmd="$1"
-    echo "$cmd" | grep -qiE "(pytest|gradlew.*(test|Test)|connectedDebugAndroidTest)"
+    printf '%s' "$cmd" | grep -qiE "(pytest|gradlew.*(test|Test)|connectedDebugAndroidTest)"
 }
 
 extract_test_target() {
     local cmd="$1"
-    if echo "$cmd" | grep -qiE "pytest"; then
-        echo "$cmd" | grep -oE "tests/[^ ]*\.py" | head -1
+    if printf '%s' "$cmd" | grep -qiE "pytest"; then
+        printf '%s' "$cmd" | grep -oE "tests/[^ ]*\.py" | head -1
         return 0
     fi
-    if echo "$cmd" | grep -qiE "gradlew"; then
-        local t; t=$(echo "$cmd" | grep -oE "class=[^ ]*" | sed 's/class=//')
+    if printf '%s' "$cmd" | grep -qiE "gradlew"; then
+        local t; t=$(printf '%s' "$cmd" | grep -oE "class=[^ ]*" | sed 's/class=//')
         if [ -n "$t" ]; then echo "$t"; return 0; fi
-        t=$(echo "$cmd" | grep -oE "\-\-tests[= ]+\"?[^ \"]*" | sed 's/--tests[= ]*//' | tr -d '"')
+        t=$(printf '%s' "$cmd" | grep -oE "\-\-tests[= ]+\"?[^ \"]*" | sed 's/--tests[= ]*//' | tr -d '"')
         if [ -n "$t" ]; then echo "$t"; return 0; fi
     fi
     echo ""
@@ -157,21 +182,49 @@ extract_test_target() {
 
 is_screenshot_command() {
     local cmd="$1"
-    echo "$cmd" | grep -qiE "(screencap|screenshot)"
+    printf '%s' "$cmd" | grep -qiE "(screencap|screenshot)"
 }
 
 extract_screenshot_path() {
     local cmd="$1"
-    echo "$cmd" | grep -oE '>\s*[^ ]+\.png' | sed 's/^>\s*//'
+    printf '%s' "$cmd" | grep -oE '>\s*[^ ]+\.png' | sed 's/^>\s*//'
+}
+
+get_tool_output() {
+    # Safely extract tool_output from HOOK_RAW_INPUT (truncated to 50000 chars).
+    # Uses temp file to avoid echo/printf issues with large/special-char content.
+    if [ -z "$HOOK_RAW_INPUT" ]; then echo ""; return; fi
+    local tmpfile
+    tmpfile=$(mktemp 2>/dev/null || echo "/tmp/hook_output_$$.json")
+    printf '%s' "$HOOK_RAW_INPUT" > "$tmpfile"
+    python -c "
+import json, sys
+try:
+    with open(sys.argv[1]) as f:
+        d = json.load(f)
+    o = d.get('tool_output', '')
+    if isinstance(o, dict):
+        print(json.dumps(o)[:50000])
+    else:
+        print(str(o)[:50000])
+except Exception:
+    print('')
+" "$tmpfile" 2>/dev/null
+    rm -f "$tmpfile" 2>/dev/null
 }
 
 detect_test_result() {
     local output="$1"
-    if echo "$output" | grep -qE "passed.*failed|failed.*passed"; then echo "fail"; return; fi
-    if echo "$output" | grep -qE "[0-9]+ passed" && ! echo "$output" | grep -qE "[0-9]+ failed|[0-9]+ error"; then echo "pass"; return; fi
-    if echo "$output" | grep -qE "[0-9]+ failed|[0-9]+ error|FAILED|FAILURES"; then echo "fail"; return; fi
-    if echo "$output" | grep -qE "BUILD SUCCESSFUL"; then echo "pass"; return; fi
-    if echo "$output" | grep -qE "BUILD FAILED|Tests? failed"; then echo "fail"; return; fi
+    # If output is empty, try extracting from raw hook input
+    if [ -z "$output" ]; then
+        output=$(get_tool_output)
+    fi
+    if [ -z "$output" ]; then echo "unknown"; return; fi
+    if printf '%s' "$output" | grep -qE "passed.*failed|failed.*passed"; then echo "fail"; return; fi
+    if printf '%s' "$output" | grep -qE "[0-9]+ passed" && ! printf '%s' "$output" | grep -qE "[0-9]+ failed|[0-9]+ error"; then echo "pass"; return; fi
+    if printf '%s' "$output" | grep -qE "[0-9]+ failed|[0-9]+ error|FAILED|FAILURES"; then echo "fail"; return; fi
+    if printf '%s' "$output" | grep -qE "BUILD SUCCESSFUL"; then echo "pass"; return; fi
+    if printf '%s' "$output" | grep -qE "BUILD FAILED|Tests? failed"; then echo "fail"; return; fi
     echo "unknown"
 }
 
@@ -195,32 +248,42 @@ append_test_run_evidence() {
     local cmd="$1"; local target="$2"; local result="$3"
     local ts; ts=$(date -Iseconds 2>/dev/null || date +"%Y-%m-%dT%H:%M:%S")
     if [ ! -f "$WORKFLOW_STATE_FILE" ]; then return 1; fi
+    # Write command to temp file to avoid shell expansion issues in Python
+    local cmd_tmp
+    cmd_tmp=$(mktemp 2>/dev/null || echo "/tmp/hook_cmd_$$.txt")
+    printf '%s' "$cmd" | head -c 200 > "$cmd_tmp"
     python -c "
-import json, os, tempfile
+import json, os, tempfile, sys
+cmd_text = ''
+try:
+    with open(sys.argv[1]) as f:
+        cmd_text = f.read()
+except: pass
 with open('$WORKFLOW_STATE_FILE') as f:
     d = json.load(f)
 if 'evidence' not in d:
     d['evidence'] = {'testRuns': [], 'screenshots': [], 'fixLoopLogs': []}
 d['evidence']['testRuns'].append({
-    'timestamp': '$ts', 'command': '$(echo "$cmd" | head -c 200)',
+    'timestamp': '$ts', 'command': cmd_text,
     'target': '$target', 'claimedResult': '$result', 'independentVerification': None
 })
 fd, tmp = tempfile.mkstemp(dir='.claude')
 with os.fdopen(fd, 'w') as f:
     json.dump(d, f, indent=2)
 os.replace(tmp, '$WORKFLOW_STATE_FILE')
-" 2>/dev/null
+" "$cmd_tmp" 2>/dev/null
+    rm -f "$cmd_tmp" 2>/dev/null
 }
 
 detect_skill_success() {
     local output="$1"
-    if echo "$output" | grep -qiE "UNRESOLVED|MAX_ITERATIONS_EXCEEDED|MAX_CASCADE_EXCEEDED"; then
+    if printf '%s' "$output" | grep -qiE "UNRESOLVED|MAX_ITERATIONS_EXCEEDED|MAX_CASCADE_EXCEEDED"; then
         echo "false"; return
     fi
-    if echo "$output" | grep -qiE "Traceback|stacktrace|FATAL|panic:"; then
+    if printf '%s' "$output" | grep -qiE "Traceback|stacktrace|FATAL|panic:"; then
         echo "false"; return
     fi
-    if echo "$output" | grep -qiE "RESOLVED|COMPLETED|PASSED"; then
+    if printf '%s' "$output" | grep -qiE "RESOLVED|COMPLETED|PASSED"; then
         echo "true"; return
     fi
     echo "unknown"

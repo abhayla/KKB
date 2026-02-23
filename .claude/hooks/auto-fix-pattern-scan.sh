@@ -19,7 +19,7 @@ CMD=$(extract_input_field "command")
 if [ -z "$CMD" ]; then exit 0; fi
 
 # Only trigger on test commands or skill-related commands
-if ! echo "$CMD" | grep -qiE "(pytest|gradlew.*(test|Test)|fix-loop|reflect)"; then
+if ! printf '%s' "$CMD" | grep -qiE "(pytest|gradlew.*(test|Test)|fix-loop|reflect)"; then
     exit 0
 fi
 

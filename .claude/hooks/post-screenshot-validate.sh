@@ -36,9 +36,9 @@ if [ -z "$SCREENSHOT_PATH" ]; then exit 0; fi
 
 # Determine screenshot type from filename
 SCREENSHOT_TYPE="unknown"
-if echo "$SCREENSHOT_PATH" | grep -qi "_before"; then
+if printf '%s' "$SCREENSHOT_PATH" | grep -qi "_before"; then
     SCREENSHOT_TYPE="before"
-elif echo "$SCREENSHOT_PATH" | grep -qi "_after"; then
+elif printf '%s' "$SCREENSHOT_PATH" | grep -qi "_after"; then
     SCREENSHOT_TYPE="after"
 fi
 

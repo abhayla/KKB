@@ -23,31 +23,39 @@ TOOL_INPUT="$HOOK_TOOL_INPUT"
 case "$TOOL_NAME" in
   *browser_take_screenshot*)
     # Playwright screenshot - extract filename from tool input
-    FILENAME=$(echo "$TOOL_INPUT" | python -c "import sys,json; print(json.load(sys.stdin).get('filename',''))" 2>/dev/null)
+    FILENAME=$(printf '%s' "$TOOL_INPUT" | python -c "import sys,json; print(json.load(sys.stdin).get('filename',''))" 2>/dev/null)
     if [ -n "$FILENAME" ] && [ -f "$FILENAME" ]; then
       python "$SCRIPT_DIR/resize_screenshot.py" "$FILENAME"
     fi
     ;;
   Bash)
     # Bash command - check if it's a screenshot command
-    COMMAND=$(echo "$TOOL_INPUT" | python -c "import sys,json; print(json.load(sys.stdin).get('command',''))" 2>/dev/null)
-    if echo "$COMMAND" | grep -qE "screencap|screenshot"; then
+    COMMAND=$(printf '%s' "$TOOL_INPUT" | python -c "import sys,json; print(json.load(sys.stdin).get('command',''))" 2>/dev/null)
+    if printf '%s' "$COMMAND" | grep -qE "screencap|screenshot"; then
+      # Ensure screenshots directory exists
+      mkdir -p docs/testing/screenshots 2>/dev/null
+
       # Extract actual output file path from redirect (> path.png)
-      OUTPUT_FILE=$(echo "$COMMAND" | grep -oE '>\s*[^ ]+\.png' | sed 's/^>\s*//')
+      # Handle both literal paths and shell variable paths (e.g., $SSDIR/file.png)
+      OUTPUT_FILE=$(printf '%s' "$COMMAND" | grep -oE '>\s*[^ ]+\.png' | sed 's/^>\s*//')
+
+      # If path contains shell variables ($), try to find recently modified .png
+      if [ -n "$OUTPUT_FILE" ] && printf '%s' "$OUTPUT_FILE" | grep -qF '$'; then
+        OUTPUT_FILE=""
+      fi
+
       if [ -n "$OUTPUT_FILE" ] && [ -f "$OUTPUT_FILE" ]; then
         # Process the specific file
         python "$SCRIPT_DIR/resize_screenshot.py" "$OUTPUT_FILE"
         # Check if file is still invalid (< 1KB = failed capture)
         FILE_SIZE=$(wc -c < "$OUTPUT_FILE" 2>/dev/null | tr -d ' ')
         if [ "${FILE_SIZE:-0}" -lt 1000 ]; then
-          # Extract ADB path from command, re-capture without -d flag
-          ADB_PATH=$(echo "$COMMAND" | grep -oE '[^ ]*adb[^ ]*' | head -1)
-          if [ -n "$ADB_PATH" ]; then
-            "$ADB_PATH" exec-out screencap -p > "$OUTPUT_FILE" 2>/dev/null
-            python "$SCRIPT_DIR/resize_screenshot.py" "$OUTPUT_FILE"
-          fi
+          # Re-capture without -d flag
+          adb exec-out screencap -p > "$OUTPUT_FILE" 2>/dev/null
+          python "$SCRIPT_DIR/resize_screenshot.py" "$OUTPUT_FILE"
         fi
       else
+        # Fallback: process recently modified screenshots
         python "$SCRIPT_DIR/resize_screenshot.py" --recent
       fi
     fi

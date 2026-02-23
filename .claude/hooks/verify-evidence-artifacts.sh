@@ -14,7 +14,7 @@ parse_hook_input
 if [ "$HOOK_TOOL_NAME" != "Bash" ]; then exit 0; fi
 
 CMD=$(extract_input_field "command")
-if ! echo "$CMD" | grep -qE "git commit"; then exit 0; fi
+if ! printf '%s' "$CMD" | grep -qE "git commit"; then exit 0; fi
 if [ ! -f "$WORKFLOW_STATE_FILE" ]; then exit 0; fi
 
 ACTIVE_CMD=$(get_state_field ".activeCommand")

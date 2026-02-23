@@ -67,12 +67,32 @@ def resize_if_needed(path):
 
     Also repairs files corrupted by ADB warning text prepended to PNG data.
     """
+    # Ensure parent directory exists
+    parent = os.path.dirname(path)
+    if parent and not os.path.isdir(parent):
+        os.makedirs(parent, exist_ok=True)
+
     # First, fix ADB warning corruption if present
-    strip_adb_warnings(path)
+    was_stripped = strip_adb_warnings(path)
+
+    # Verify the file starts with PNG magic after stripping
+    if was_stripped:
+        try:
+            with open(path, "rb") as f:
+                header = f.read(4)
+            if header != b"\x89PNG":
+                print(f"WARNING: {path} still not valid PNG after stripping", file=sys.stderr)
+                return False
+        except Exception:
+            return False
 
     try:
         from PIL import Image
+    except ImportError:
+        # PIL not available — skip resize but file may still be valid
+        return False
 
+    try:
         img = Image.open(path)
         w, h = img.size
         if w <= MAX_DIM and h <= MAX_DIM:
@@ -82,14 +102,16 @@ def resize_if_needed(path):
         img = img.resize(new_size, Image.LANCZOS)
         img.save(path)
         return True
-    except Exception:
+    except Exception as e:
+        print(f"WARNING: Could not resize {path}: {e}", file=sys.stderr)
         return False
 
 
 def process_directory(recent_only=False):
     """Resize all (or recently modified) screenshots in the directory."""
     if not os.path.isdir(SCREENSHOTS_DIR):
-        return
+        os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
+        return  # Just created, nothing to process
     now = time.time()
     for fname in os.listdir(SCREENSHOTS_DIR):
         fpath = os.path.join(SCREENSHOTS_DIR, fname)

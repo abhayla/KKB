@@ -14,7 +14,7 @@ parse_hook_input
 if [ "$HOOK_TOOL_NAME" != "Skill" ]; then exit 0; fi
 
 # Extract skill name
-SKILL_NAME=$(echo "$HOOK_TOOL_INPUT" | python -c "import sys,json;d=json.load(sys.stdin);print(d.get('skill',d.get('name','')))" 2>/dev/null)
+SKILL_NAME=$(printf '%s' "$HOOK_TOOL_INPUT" | python -c "import sys,json;d=json.load(sys.stdin);print(d.get('skill',d.get('name','')))" 2>/dev/null)
 
 if [ "$SKILL_NAME" = "fix-loop" ]; then
     if [ ! -f "$WORKFLOW_STATE_FILE" ]; then init_workflow_state "null"; fi
