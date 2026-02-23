@@ -50,11 +50,10 @@ android {
 
     signingConfigs {
         create("release") {
-            // TODO: Configure release signing
-            // storeFile = file("../keystore/release.keystore")
-            // storePassword = System.getenv("KEYSTORE_PASSWORD")
-            // keyAlias = System.getenv("KEY_ALIAS")
-            // keyPassword = System.getenv("KEY_PASSWORD")
+            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "../keystore/release.keystore")
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
+            keyAlias = System.getenv("KEY_ALIAS") ?: "rasoiai"
+            keyPassword = System.getenv("KEY_PASSWORD") ?: ""
         }
     }
 
@@ -66,7 +65,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.getByName("release")
         }
         debug {
             isMinifyEnabled = false

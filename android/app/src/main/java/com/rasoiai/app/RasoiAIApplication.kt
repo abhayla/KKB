@@ -9,6 +9,7 @@ import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import coil.util.DebugLogger
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.rasoiai.app.fcm.NotificationChannelManager
 import com.rasoiai.data.sync.SyncWorker
 import dagger.hilt.android.HiltAndroidApp
@@ -103,10 +104,10 @@ class RasoiAIApplication : Application(), Configuration.Provider, ImageLoaderFac
             }
 
             // Log to Crashlytics
-            // FirebaseCrashlytics.getInstance().log("$tag: $message")
-            // if (t != null) {
-            //     FirebaseCrashlytics.getInstance().recordException(t)
-            // }
+            FirebaseCrashlytics.getInstance().log("$tag: $message")
+            if (t != null) {
+                FirebaseCrashlytics.getInstance().recordException(t)
+            }
         }
     }
 }
