@@ -1,6 +1,6 @@
 # Android Module
 
-Kotlin 2.2.10 + Jetpack Compose BOM 2024.02.00, targeting SDK 34 (min 24).
+Kotlin 2.2.10 + Jetpack Compose BOM 2024.02.00, targeting SDK 34 (min 24). Hilt 2.56.1, Room 2.8.1, KSP 2.3.2.
 
 ## Build Commands
 
@@ -44,7 +44,11 @@ All dependency versions live in `gradle/libs.versions.toml`. Never hardcode vers
 
 - **`WEB_CLIENT_ID`**: Must be in `local.properties` OR set as env variable (`System.getenv` fallback). Build throws `GradleException` if missing.
 - **`google-services.json`**: Required in `android/app/` from Firebase Console.
-- **JUnit 5** for unit tests (`useJUnitPlatform()`), **JUnit 4 rules** for instrumented tests — don't mix.
+- **JUnit 5** for unit tests (`useJUnitPlatform()`), **JUnit 4 rules** for instrumented tests — don't mix. All modules need `testRuntimeOnly(libs.junit.platform.launcher)` for Gradle 9.x.
+- **Release signing** via env vars: `KEYSTORE_PATH`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Without these, release builds use empty strings (will fail to sign).
+- **ProGuard** enabled for `data` module release builds (`isMinifyEnabled = true`). Check `consumer-rules.pro` for Room/Retrofit keep rules.
+- **SecureTokenStorage** (`data/local/datastore/SecureTokenStorage.kt`): EncryptedSharedPreferences for auth tokens with AES256-GCM. Falls back to DataStore on init failure.
+- **Certificate pinning** in `res/xml/network_security_config.xml`: PLACEHOLDER pins for `api.rasoiai.com` — must replace before production. Cleartext allowed only for `10.0.2.2`/`localhost` (emulator).
 - **`animationsDisabled = true`** in test options for UI test stability.
 - **Test Orchestrator is intentionally disabled** — re-enabling breaks Compose test isolation.
 - **`androidx.tracing:tracing:1.2.0`** is pinned explicitly to fix `NoSuchMethodError: forceEnableAppTracing` — do not remove.

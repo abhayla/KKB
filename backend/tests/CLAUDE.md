@@ -24,7 +24,8 @@ PYTHONPATH=. pytest --cov=app                          # With coverage
 
 ## Known Issues
 
-- **4 pre-existing test failures** in `test_auth.py`: `conftest.py` globally overrides `get_current_user`, which breaks the 4 auth tests that need the real dependency. This is a known issue, not a regression. Do not try to fix it by removing the global override (it would break everything else).
+- **1 pre-existing test failure** in `test_auth.py`: `conftest.py` globally overrides `get_current_user`, which breaks auth tests that need the real dependency. Not a regression.
+- **6 test_email_uniqueness.py tests** fail when run with full suite but pass in isolation — test ordering issue with session state. Not a regression.
 
 ## Adding New Models
 
@@ -37,7 +38,9 @@ When you add a new SQLAlchemy model, you MUST import it in `conftest.py` so SQLi
 
 ## Session Patching
 
-`user_repository.async_session_maker` is patched with `mock_session_maker` in all client fixtures. If you add a new repository that calls `async_session_maker` directly (instead of using the `db: AsyncSession` parameter), you must also patch it in the fixtures.
+Both `user_repository.async_session_maker` and `auth_service.async_session_maker` are patched with `mock_session_maker` in all client fixtures. The auth service uses `async_session_maker` directly for token rotation/logout operations.
+
+If you add a new service/repository that calls `async_session_maker` directly (instead of using the `db: AsyncSession` parameter), you must also patch it in the fixtures. Some test files (`test_auth_merge.py`, `test_email_uniqueness.py`) have their own client fixtures that also need both patches.
 
 ## Test Organization
 

@@ -23,7 +23,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **Platform** | Android Native (Kotlin 2.2.10 + Jetpack Compose BOM 2024.02.00) |
 | **Backend** | Python (FastAPI + PostgreSQL + SQLAlchemy async) |
 | **Target SDK** | 34 (Min SDK 24 / Android 7.0) |
-| **Build Tools** | AGP 9.0.1, KSP 2.3.2, Compose Compiler 1.5.10 |
+| **Build Tools** | AGP 9.0.1, KSP 2.3.2, Hilt 2.56.1, Room 2.8.1 |
 | **Target Market** | Pan-India (Tier 1, 2, 3 cities) |
 
 ## Architecture
@@ -196,9 +196,10 @@ DATABASE_URL=postgresql+asyncpg://rasoiai_user:password@localhost:5432/rasoiai
 FIREBASE_CREDENTIALS_PATH=./rasoiai-firebase-service-account.json
 ANTHROPIC_API_KEY=sk-ant-...
 GOOGLE_AI_API_KEY=your-gemini-api-key
-JWT_SECRET_KEY=your-secret-key
-DEBUG=true
+JWT_SECRET_KEY=your-secret-key         # REQUIRED — no default, crashes on startup if missing
+DEBUG=true                             # Default is false — must opt-in for debug mode
 SENTRY_DSN=https://...@sentry.io/...   # optional, enables error monitoring
+CORS_ORIGINS=["http://localhost:3000"] # Default is [] — Android app doesn't need CORS
 ```
 
 **Android `local.properties`** (required — see `local.properties.example`):
@@ -229,8 +230,8 @@ Four GitHub Actions workflows in `.github/workflows/`:
 
 | Platform | Tests (approx.) | Framework |
 |----------|-----------------|-----------|
-| Backend | ~500 | pytest |
-| Android Unit | ~330 | JUnit + MockK |
+| Backend | ~538 | pytest |
+| Android Unit | ~580 | JUnit + MockK |
 | Android UI | ~750+ | Compose UI Testing |
 | Android E2E | ~67+ | Compose UI Testing + Hilt + Real API |
 
@@ -238,7 +239,7 @@ Four GitHub Actions workflows in `.github/workflows/`:
 
 ### Backend Tests
 
-All in `backend/tests/`, named `test_{feature}.py` (37 test files). Run `PYTHONPATH=. pytest --collect-only` to list all. Tests use SQLite in-memory via conftest fixtures (see Backend Test Fixtures below). Some files use class-based test organization (e.g., `test_ai_meal_service.py`, `test_chat_api.py`, `test_preference_service.py`).
+All in `backend/tests/`, named `test_{feature}.py` (43 test files). Run `PYTHONPATH=. pytest --collect-only` to list all. Tests use SQLite in-memory via conftest fixtures (see Backend Test Fixtures below). Some files use class-based test organization (e.g., `test_ai_meal_service.py`, `test_chat_api.py`, `test_preference_service.py`).
 
 ### Android UI Tests
 
@@ -308,7 +309,7 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
 ## Backend API
 
-12 router files in `app/api/v1/endpoints/`: auth, chat, family_members, festivals, grocery, meal_plans, notifications, photos, recipe_rules, recipes, stats, users. Note: nutrition_goals endpoints are in `recipe_rules.py` (separate router, registered separately in `router.py` — 13 routers total). Run `PYTHONPATH=. pytest --collect-only -q` or visit `http://localhost:8000/docs` for current counts (~41 endpoints).
+12 router files in `app/api/v1/endpoints/`: auth, chat, family_members, festivals, grocery, meal_plans, notifications, photos, recipe_rules, recipes, stats, users. Note: nutrition_goals endpoints are in `recipe_rules.py` (separate router, registered separately in `router.py` — 13 routers total). Run `PYTHONPATH=. pytest --collect-only -q` or visit `http://localhost:8000/docs` for current counts (~44 endpoints).
 
 **Full interactive docs:** `http://localhost:8000/docs` (Swagger UI, only available when `DEBUG=true`)
 
@@ -318,7 +319,7 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 |------|----------------|
 | `app/db/postgres.py` | Has 3 model import blocks (init_db, create_tables, drop_tables) — must update all 3 when adding models |
 | `app/db/database.py` | `get_db()` dependency — imports from postgres.py |
-| `app/config.py` | Pydantic Settings — env vars, CORS (`["*"]`), JWT config, Sentry DSN |
+| `app/config.py` | Pydantic Settings — env vars, CORS (default `[]`), JWT secret (no default — required), sql_echo, usage limits, Sentry DSN |
 | `app/ai/chat_assistant.py` | Tool calling orchestration (`MAX_TOOL_ITERATIONS=5`) — ties Claude API to preference/rule services |
 | `app/ai/claude_client.py` | Anthropic Claude client wrapper |
 | `app/ai/gemini_client.py` | Google Gemini client wrapper (google-genai SDK). `MODEL_NAME = "gemini-2.5-flash"` — change it here only |
@@ -326,21 +327,26 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 | `app/ai/tools/` | Chat tool definitions (`preference_tools.py`). `ALL_CHAT_TOOLS` — add new tools here AND in `chat_assistant.py` |
 | `app/cache/recipe_cache.py` | In-memory recipe cache, warmed on startup via `warm_recipe_cache()` (non-fatal) |
 | `app/repositories/` | Data access layer (one per model); called by services, wraps SQLAlchemy queries |
-| `app/services/` | 17 service files, one per domain area; all follow same async pattern with `db: AsyncSession` param |
+| `app/services/` | 21 service files, one per domain area; all follow same async pattern with `db: AsyncSession` param |
+| `app/main.py` | SecurityHeadersMiddleware (X-Content-Type-Options, X-Frame-Options, HSTS, X-API-Version), rate limiting (slowapi) |
 
 **Router gotchas:**
 - `recipe_rules.py` defines **two routers**: one for recipe rules, one for nutrition goals. Don't create a separate `nutrition_goals.py`.
 - `family_members.py` is registered under `/users` prefix — full path is `/api/v1/users/family-members/`.
 
 **Service patterns:**
-- Services take `db: AsyncSession` as parameter (DI from endpoint). They do NOT create their own sessions (except some background tasks using `async_session_maker` directly).
+- Services take `db: AsyncSession` as parameter (DI from endpoint). They do NOT create their own sessions (except `auth_service.py` which uses `async_session_maker` directly for token rotation/logout — must be patched in test fixtures).
 - `family_constraints.py` is a shared module imported by BOTH `ai_meal_service.py` AND the `recipe_rules.py` endpoint — changes affect meal generation AND rule validation simultaneously.
 - `ai_meal_service.py` defines a local `UserPreferences` dataclass that shadows `app.models.user.UserPreferences` — don't confuse them.
 - Chat context is limited to last 6 messages via `ChatRepository.get_context_for_claude(limit=6)`.
 
 **AI SDK note:** Uses `google-genai` SDK (NOT old `google-generativeai`) with native async `client.aio`. Do NOT revert — the old SDK blocked uvicorn's event loop.
 
-**Startup sequence:** `main.py` lifespan handler: Sentry init → `init_db()` → `warm_recipe_cache()` (non-fatal) → app ready.
+**Startup sequence:** `main.py` lifespan handler: Sentry init (`send_default_pii=False`) → `init_db()` → `warm_recipe_cache()` (non-fatal) → app ready.
+
+**Rate limiting:** Uses `slowapi` with per-endpoint decorators. Endpoints accepting rate limiting must have `request: Request` as first parameter. Key limits: auth 10/min, chat 30/min, meal generation 5/hr, photo analysis 10/hr.
+
+**Security headers:** `SecurityHeadersMiddleware` adds `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `Referrer-Policy`, `X-API-Version`, and `Strict-Transport-Security` (non-debug only).
 
 **SQLAlchemy async rules:**
 - Use `selectinload()` for eager loading — `joinedload` and lazy loading raise `MissingGreenlet`.
@@ -356,9 +362,9 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
 ### PostgreSQL (Backend) — Alembic Migrations
 
-7 migrations in `backend/alembic/versions/` (initial schema → meal generation settings → notifications/FCM → recipe rules → AI recipe catalog → recipe rules dedup → email uniqueness). Run `alembic upgrade head` to apply.
+8 migrations in `backend/alembic/versions/` (initial schema → meal generation settings → notifications/FCM → recipe rules → AI recipe catalog → recipe rules dedup → email uniqueness → pre-prod hardening). Run `alembic upgrade head` to apply.
 
-11 model files in `backend/app/models/` (plus `__init__.py` re-exporting all models). Note: `FamilyMember` is defined in `user.py`, not a separate file; `AiRecipeCatalog` in `ai_recipe_catalog.py`; `NutritionGoal` in `recipe_rule.py`. All 3 `postgres.py` import blocks, `conftest.py`, and `models/__init__.py` must import all models. When adding new models, update all 5 locations.
+13 model files in `backend/app/models/` (plus `__init__.py` re-exporting all models). Note: `FamilyMember` is defined in `user.py`, not a separate file; `AiRecipeCatalog` in `ai_recipe_catalog.py`; `NutritionGoal` in `recipe_rule.py`; `UsageLog` in `usage_log.py`; `RefreshToken` in `refresh_token.py`. All 3 `postgres.py` import blocks, `conftest.py`, and `models/__init__.py` must import all models. When adding new models, update all 5 locations.
 
 ## Meal Generation
 
@@ -431,12 +437,13 @@ AI-powered meal planning using Google Gemini (`gemini-2.5-flash` via `google-gen
 | Test flakiness | Use `waitUntil {}` in E2E tests; check `RetryUtils.kt` for patterns |
 | Screenshot processing errors | Use PNG, limit to 1280x720, avoid `fullPage` on long pages. Auto-resized by `post-screenshot-resize.sh` hook (max 1800px). Batch fix: `python .claude/hooks/resize_screenshot.py --all` |
 | ADB screenshot corrupted | Do NOT use `-d 0`. Hook auto-strips `[Warning] Multiple displays...` text and retries. Manual fix: `python .claude/hooks/resize_screenshot.py --all` |
-| 4 auth tests fail | Pre-existing: `conftest.py` globally overrides auth dependency, causing 4 failures in `test_auth.py`. Not a regression. |
-| OnboardingViewModelTest won't compile | Pre-existing: missing `generateMealPlanUseCase` constructor param. Not a regression. |
-| Festivals/Stats tests | `test_festivals_api.py` (9 tests) and `test_stats_api.py` (10 tests) now exist. |
-| Enum case in Room tests | Room stores MealType as uppercase (`BREAKFAST`, `LUNCH`, `DINNER`, `SNACKS`). DtoMappers/EntityMappers tests must match. |
+| 1 auth test fails | Pre-existing: `conftest.py` globally overrides auth dependency. Not a regression. |
+| Enum case in Room tests | Room stores MealType as uppercase (`BREAKFAST`, `LUNCH`, `DINNER`, `SNACKS`). Tests must match. |
 | Backend changes not reflected | Stale `.pyc` cache: `find backend -name "*.pyc" -delete && find backend -name "__pycache__" -type d -exec rm -rf {} +` |
 | Recipe ID 500 errors in PostgreSQL | Always compare recipe IDs as strings in queries — `uuid.UUID` vs `String(36)` column type mismatch causes silent 500s |
+| JUnit Platform Launcher (Gradle 9) | All modules need `testRuntimeOnly(libs.junit.platform.launcher)` — Gradle 9.x won't load JUnit 5 without it |
+| Hilt + KSP2 classloader error | Hilt 2.50 doesn't support KSP 2.x. Use Hilt 2.51+ (currently 2.56.1) |
+| Room "unexpected jvm signature V" | Room 2.6.1 doesn't support KSP2. Use Room 2.8.1+ |
 
 ## VPS Deployment
 
@@ -488,36 +495,11 @@ netstat -ano | findstr "3001 3002 3003 3004 8000"  # Check ports
    - The folder is gitignored - screenshots are temporary debugging artifacts
    - Use descriptive filenames: `{feature}_{context}.png` (e.g., `home_after_login.png`, `onboarding_step2.png`)
 
-   **Avoiding Image Processing Errors (API 400 "Could not process image"):**
-   - **Use PNG format** - Most reliable format for Claude to process
-   - **Limit dimensions** - Keep viewport to 1280x720 or similar; avoid extremely large images
-   - **Avoid `fullPage: true`** on long pages - Can create 10,000+ px tall images that fail processing
-   - **Wait for page stability** - Ensure content is fully loaded before capture
-   - **Verify file was saved** - Check file exists and has non-zero size before reading
-   - **If reading fails**: Re-capture with smaller dimensions, try JPEG instead of PNG
+   **Best practices:** Use PNG format, limit to 1280x720, avoid `fullPage: true` on long pages. Wait for page stability before capture. Hook auto-resizes >1800px and auto-strips ADB warnings.
 
-   **Playwright MCP Screenshot Pattern:**
-   ```javascript
-   // GOOD: Viewport screenshot with PNG
-   await browser_take_screenshot({
-     filename: "docs/testing/screenshots/home_after_login.png",
-     type: "png"
-   })
-
-   // BAD: Full page on long scrollable content
-   await browser_take_screenshot({
-     fullPage: true  // Can create huge images that fail processing
-   })
-   ```
-
-   **ADB Screenshot Pattern:**
    ```bash
-   # Capture to designated folder (hook auto-strips ADB warnings and auto-retries on failure)
+   # ADB screenshot
    adb exec-out screencap -p > docs/testing/screenshots/screen_name.png
-
-   # Verify file was captured successfully (check it's valid PNG, not text)
-   ls -la docs/testing/screenshots/screen_name.png
-   xxd docs/testing/screenshots/screen_name.png | head -1  # Should start with 8950 4e47 (PNG magic)
    ```
 
 4. **Offline-First**: All features must use Room as source of truth with offline support.

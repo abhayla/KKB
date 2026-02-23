@@ -9,18 +9,27 @@ Use this prompt to start a new conversation/context and continue the project fro
 ```
 I am building **RasoiAI** - an AI-powered meal planning app for Indian families.
 
-## Current State: Production-Ready (All Major Features Complete)
+## Current State: Pre-Production Hardened (24 Security Items Complete)
 
-Backend running on PostgreSQL with SQLAlchemy async ORM (~41 endpoints, 13 routers). Android app with Compose UI, Hilt DI, Room DB v11. Full E2E tests passing with real API calls. All 18 Settings sub-screens implemented. Gap analysis complete with Phase 1-3 fixes applied.
+Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 routers). Android app with Compose UI, Hilt DI, Room DB v11. Full E2E tests passing with real API calls. All 18 Settings sub-screens implemented. **Pre-production hardening complete: 24 items across 3 batches.**
 
-**Recent Work Highlights:**
-- **FR-010 through FR-014:** AI Recipe Catalog, Sharma Recipe Rules, Dedup, Family Members CRUD, Onboarding E2E
-- **FullJourneyFlowTest:** 7-step E2E (Auth → Onboarding → MealGen → Home → RecipeRules → MealGen2 → Home2)
-- **Email Uniqueness + Auth Merge Fix:** Unique email constraint, account merging on Firebase UID change
-- **Settings Screens (Phase A-G):** All 18 navigation destinations with real screens, 76+ backend tests
-- **Gap Analysis:** 39 gaps identified, Phases 1A/2/3 implemented (auth URLs, chat nav, meal gen timeout, recipe search)
-- **Quick-Win Features:** Notification Badge (#57), Voice Input (#12), Camera/Gallery for Pantry (#14/#15), Recipe Detail menu (#24), Stats share (#25), Chat context (#30)
-- **Recipe Rating endpoint, Room DB v11** (meal_plan_items PK fix, known ingredients seed)
+**Recent Work Highlights (Session 43 — Pre-Production Hardening):**
+- **Config security:** JWT secret required (no default), DEBUG=false default, sql_echo separated from DEBUG, CORS default `[]`
+- **GDPR compliance:** `DELETE /users/me` (soft delete), `GET /users/me/export` (data export)
+- **Refresh token rotation:** Short-lived access tokens (30min), opaque refresh tokens stored in DB, reuse detection
+- **API rate limiting:** slowapi with per-endpoint limits (auth 10/min, chat 30/min, meal gen 5/hr)
+- **AI usage limits:** Daily caps per user (50 chat, 5 meal gen, 10 photo analysis), 429 on exceed
+- **Security headers:** X-Content-Type-Options, X-Frame-Options, HSTS, X-API-Version middleware
+- **Database indexes:** Performance indexes on user email, meal plans, chat messages, recipe rules
+- **Data cleanup service:** Auto-purge old chat messages (30d) and inactive meal plans (90d)
+- **Image validation:** Magic byte checking (JPEG/PNG/WebP), 5MB limit
+- **Sentry hardening:** `send_default_pii=False`, lower traces sample rate
+- **Android release signing:** Env var-based keystore config, Crashlytics enabled
+- **Certificate pinning:** Placeholder pins for production domain, cleartext only for emulator
+- **ProGuard:** Enabled for data module release builds
+- **Accessibility:** 30 contentDescription fixes across 15 Compose screens
+- **Encrypted tokens:** SecureTokenStorage with EncryptedSharedPreferences (AES256-GCM)
+- **Dependency fixes:** Hilt 2.50→2.56.1, Room 2.6.1→2.8.1, JUnit Platform Launcher for Gradle 9
 
 **Requirements Documentation Structure:**
 ```
@@ -49,8 +58,8 @@ docs/requirements/
 **Test Results Summary:**
 | Platform | Tests | Status |
 |----------|-------|--------|
-| Backend | ~498 (37 files) | PASS |
-| Android Unit | ~330 | PASS |
+| Backend | ~538 (43 files) | PASS |
+| Android Unit | ~580 | PASS |
 | Android UI | 750+ | PASS |
 | Android E2E | 67+ | PASS |
 
@@ -100,12 +109,12 @@ Each requirement in the documentation follows this BDD-style format:
 - Then: [outcome]
 - And: [additional outcomes]
 
-### Backend API Endpoints (~41 total across 13 routers)
+### Backend API Endpoints (~44 total across 13 routers)
 
 | Router | Endpoints | Purpose |
 |--------|-----------|---------|
-| auth | 1 | Firebase token exchange (with account merging) |
-| users | 3 | User profile, preferences, onboarding |
+| auth | 3 | Firebase token exchange, refresh token, logout |
+| users | 4 | User profile, preferences, onboarding, deletion, data export |
 | meal_plans | 7 | Meal plan CRUD, swap, lock, generation |
 | recipes | 5 | Recipe details, search, rating |
 | grocery | 5 | Grocery list management |
@@ -153,6 +162,19 @@ Each requirement in the documentation follows this BDD-style format:
 | Chat Context | DONE | Issue #30 - Contextual chat |
 | Recipe Rating | DONE | Backend endpoint for recipe ratings |
 | Room DB v11 | DONE | meal_plan_items PK fix, known ingredients seed |
+| Pre-Prod: Config Security | DONE | JWT secret required, DEBUG=false, sql_echo, CORS hardened |
+| Pre-Prod: GDPR Compliance | DONE | DELETE /me, GET /me/export, soft delete |
+| Pre-Prod: Rate Limiting | DONE | slowapi per-endpoint limits |
+| Pre-Prod: AI Usage Limits | DONE | Daily caps (50 chat, 5 meal gen, 10 photo) |
+| Pre-Prod: Token Rotation | DONE | 30min access, opaque refresh, reuse detection |
+| Pre-Prod: Security Headers | DONE | X-Content-Type-Options, HSTS, X-Frame-Options |
+| Pre-Prod: DB Indexes | DONE | Performance indexes + health check |
+| Pre-Prod: Cleanup Service | DONE | Auto-purge old chat (30d), inactive plans (90d) |
+| Pre-Prod: Image Validation | DONE | Magic byte check, 5MB limit |
+| Pre-Prod: Android Release | DONE | Signing, Crashlytics, ProGuard, cert pinning |
+| Pre-Prod: Accessibility | DONE | 30 contentDescription fixes across 15 screens |
+| Pre-Prod: Encrypted Tokens | DONE | SecureTokenStorage with AES256-GCM |
+| Dependency Fixes | DONE | Hilt 2.56.1, Room 2.8.1, JUnit Platform Launcher |
 
 ---
 
@@ -196,7 +218,7 @@ Each requirement in the documentation follows this BDD-style format:
 
 ## TEST SUMMARY
 
-### Backend Tests (~498 total, 37 files)
+### Backend Tests (~538 total, 43 files)
 
 | Test File | Tests | Purpose |
 |-----------|-------|---------|
@@ -237,12 +259,18 @@ Each requirement in the documentation follows this BDD-style format:
 | `test_recipe_rule_family_conflict.py` | 7 | Recipe rule family conflicts |
 | `test_recipe_rules_lifecycle.py` | 17 | Recipe rules lifecycle |
 | `test_recipe_rules_sync.py` | 16 | Recipe rules sync |
+| `test_token_rotation.py` | 9 | Refresh token rotation & reuse detection |
+| `test_cleanup_service.py` | 6 | Data cleanup (chat, meal plans) |
+| `test_usage_limits.py` | 8 | AI usage limit enforcement |
+| `test_production_config.py` | 4 | Config security defaults |
+| `test_security_middleware.py` | 5 | Rate limiting & security headers |
+| `test_user_deletion.py` | 8 | GDPR soft delete & data export |
 
 ### Android Tests
 
 | Category | Tests | Notes |
 |----------|-------|-------|
-| Unit Tests | ~330 | ViewModels, repositories |
+| Unit Tests | ~580 | ViewModels, repositories (app:400, data:178, domain:2) |
 | UI Tests | 750+ | Compose UI testing |
 | E2E Tests | 67+ | Full user flows (incl. FullJourneyFlowTest) |
 
@@ -256,8 +284,9 @@ DATABASE_URL=postgresql+asyncpg://user:password@host:5432/rasoiai
 FIREBASE_CREDENTIALS_PATH=./rasoiai-firebase-service-account.json
 ANTHROPIC_API_KEY=sk-ant-...
 GOOGLE_AI_API_KEY=your-gemini-api-key
-JWT_SECRET_KEY=your-secret-key
-DEBUG=true
+JWT_SECRET_KEY=your-secret-key         # REQUIRED (no default — crashes if missing)
+DEBUG=true                             # Default is false — must opt-in
+CORS_ORIGINS=["http://localhost:3000"] # Default is [] (empty)
 ```
 
 **Android Emulator:**
@@ -338,6 +367,17 @@ DEBUG=true
 - **Backend tests:** 351/351 passing after fix
 - **Key learnings:** Shell chaining for dropdowns works inconsistently (onboarding yes, settings no). Backend API fallback is the reliable strategy. Python bytecache (.pyc) can serve stale code — clear `__pycache__` after fixes.
 
+### Session 43: Pre-Production Hardening (24 Items)
+- **12 themed commits** implementing all 24 security/hardening items from Generic-Anywhere-Actions.md
+- **Batch 1 (Critical):** Config security defaults (JWT, DEBUG, sql_echo), CORS hardening, GDPR user deletion & export, Android release signing + Crashlytics
+- **Batch 2 (High):** API rate limiting (slowapi), AI usage limits, DB indexes + health check, data cleanup service, Sentry PII fix, image validation, security headers, certificate pinning
+- **Batch 3 (Medium):** Structured logging, API versioning header, exception sanitizing, ProGuard for data module, accessibility audit (30 fixes), refresh token rotation with reuse detection, encrypted token storage (EncryptedSharedPreferences)
+- **Dependency fixes:** Hilt 2.50→2.56.1 (KSP2 compat), Room 2.6.1→2.8.1 (KSP2 compat), JUnit Platform Launcher for Gradle 9.x
+- **New models:** UsageLog, RefreshToken
+- **New services:** cleanup_service, usage_limit_service, user_deletion_service
+- **New endpoints:** POST /auth/refresh, POST /auth/logout, DELETE /users/me, GET /users/me/export
+- **Test results:** Backend 531 pass (7 pre-existing), Android 580 unit tests pass (0 failures)
+
 ### Session 42: Data Module Test Fixes + Workflow Enforcement
 - **Data Module Tests:** Fixed 15 test failures across 7 files in `android/data/src/test/`
   - DtoMappersTest, EntityMappersTest, AuthRepositoryImplTest, SettingsRepositoryImplTest, PantryRepositoryImplTest, RecipeRulesRepositoryImplTest, MealPlanRepositoryImplTest
@@ -353,6 +393,6 @@ DEBUG=true
 - **Test Results:** Backend 364 tests passing, Android all modules (debug + release) pass
 - **Next Steps:** All data module tests passing. Ready for next feature work.
 
-*Last Updated: February 13, 2026*
-*All major features complete. ~498 backend tests (37 files). ~330 Android unit tests. 67+ E2E tests. 750+ UI tests.*
-*~41 API endpoints across 13 routers. 3,580 recipes. ~525 requirements across 12 screen files. Room DB v11.*
+*Last Updated: February 23, 2026*
+*Pre-production hardening complete (24 items). ~538 backend tests (43 files). ~580 Android unit tests. 67+ E2E tests. 750+ UI tests.*
+*~44 API endpoints across 13 routers. 3,580 recipes. ~525 requirements across 12 screen files. Room DB v11.*
