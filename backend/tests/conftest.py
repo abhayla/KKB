@@ -37,7 +37,9 @@ from app.models import (  # noqa: F401
     notification,
     recipe,
     recipe_rule,
+    refresh_token,
     stats,
+    usage_log,
     user,
 )
 
@@ -144,7 +146,8 @@ async def client(db_session: AsyncSession, test_user: User) -> AsyncGenerator[As
     def mock_session_maker():
         return _test_session_maker()
 
-    with patch('app.repositories.user_repository.async_session_maker', mock_session_maker):
+    with patch('app.repositories.user_repository.async_session_maker', mock_session_maker), \
+         patch('app.services.auth_service.async_session_maker', mock_session_maker):
         async with AsyncClient(
             transport=ASGITransport(app=app),
             base_url="http://test",
@@ -166,7 +169,8 @@ async def unauthenticated_client(db_session: AsyncSession) -> AsyncGenerator[Asy
     def mock_session_maker():
         return _test_session_maker()
 
-    with patch('app.repositories.user_repository.async_session_maker', mock_session_maker):
+    with patch('app.repositories.user_repository.async_session_maker', mock_session_maker), \
+         patch('app.services.auth_service.async_session_maker', mock_session_maker):
         async with AsyncClient(
             transport=ASGITransport(app=app),
             base_url="http://test",
@@ -210,7 +214,8 @@ async def authenticated_client(
     def mock_session_maker():
         return _test_session_maker()
 
-    with patch('app.repositories.user_repository.async_session_maker', mock_session_maker):
+    with patch('app.repositories.user_repository.async_session_maker', mock_session_maker), \
+         patch('app.services.auth_service.async_session_maker', mock_session_maker):
         async with AsyncClient(
             transport=ASGITransport(app=app),
             base_url="http://test",

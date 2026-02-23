@@ -1,19 +1,35 @@
-"""Authentication service using Firestore."""
+"""Authentication service with refresh token rotation."""
 
+import hashlib
 import logging
-from datetime import timedelta
+import secrets
+from datetime import datetime, timedelta, timezone
+
+from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from sqlalchemy.exc import IntegrityError
-
 from app.core.exceptions import AuthenticationError, ConflictError
 from app.core.firebase import verify_firebase_token
 from app.core.security import create_access_token, decode_access_token
+from app.db.postgres import async_session_maker
+from app.models.refresh_token import RefreshToken
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth import AuthResponse, RefreshTokenResponse, UserResponseForAuth
 from app.schemas.user import UserPreferencesDto
 
 logger = logging.getLogger(__name__)
+
+
+def _hash_token(token: str) -> str:
+    """Hash a refresh token for storage."""
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def _generate_refresh_token() -> str:
+    """Generate a cryptographically secure opaque refresh token."""
+    return secrets.token_urlsafe(48)
 
 
 async def authenticate_with_firebase(firebase_token: str) -> AuthResponse:
@@ -58,17 +74,25 @@ async def authenticate_with_firebase(firebase_token: str) -> AuthResponse:
                     f"An account with email '{email.strip().lower() if email else ''}' already exists"
                 )
 
-    # Create JWT tokens
+    # Create JWT access token
     access_token = create_access_token(
         data={"sub": user["id"]},
         expires_delta=timedelta(minutes=settings.access_token_expire_minutes),
     )
 
-    # For simplicity, refresh token is same as access token with longer expiry
-    refresh_token = create_access_token(
-        data={"sub": user["id"], "type": "refresh"},
-        expires_delta=timedelta(days=30),
-    )
+    # Create and store refresh token
+    raw_refresh_token = _generate_refresh_token()
+    token_hash = _hash_token(raw_refresh_token)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
+
+    async with async_session_maker() as db:
+        rt = RefreshToken(
+            user_id=user["id"],
+            token_hash=token_hash,
+            expires_at=expires_at,
+        )
+        db.add(rt)
+        await db.commit()
 
     # Get preferences if exists
     preferences = await user_repo.get_preferences(user["id"])
@@ -95,7 +119,7 @@ async def authenticate_with_firebase(firebase_token: str) -> AuthResponse:
 
     return AuthResponse(
         access_token=access_token,
-        refresh_token=refresh_token,
+        refresh_token=raw_refresh_token,
         token_type="bearer",
         expires_in=settings.access_token_expire_minutes * 60,
         user=user_response,
@@ -105,25 +129,64 @@ async def authenticate_with_firebase(firebase_token: str) -> AuthResponse:
 async def refresh_access_token(refresh_token: str) -> RefreshTokenResponse:
     """Refresh an access token using a valid refresh token.
 
+    Implements token rotation: the old refresh token is revoked and
+    a new one is issued alongside the new access token.
+
     Args:
-        refresh_token: The refresh token from initial authentication
+        refresh_token: The opaque refresh token from initial authentication
 
     Returns:
-        RefreshTokenResponse with new access token
+        RefreshTokenResponse with new access token and new refresh token
 
     Raises:
-        AuthenticationError: If refresh token is invalid or not a refresh token type
+        AuthenticationError: If refresh token is invalid, expired, or revoked
     """
-    # Decode and validate the refresh token
-    payload = decode_access_token(refresh_token)
+    token_hash = _hash_token(refresh_token)
 
-    # Verify this is actually a refresh token
-    if payload.get("type") != "refresh":
-        raise AuthenticationError("Invalid token type: expected refresh token")
+    async with async_session_maker() as db:
+        # Find the token
+        result = await db.execute(
+            select(RefreshToken).where(RefreshToken.token_hash == token_hash)
+        )
+        stored_token = result.scalar_one_or_none()
 
-    user_id = payload.get("sub")
-    if not user_id:
-        raise AuthenticationError("Token missing user ID")
+        if not stored_token:
+            raise AuthenticationError("Invalid refresh token")
+
+        if stored_token.is_revoked:
+            # Token reuse detected — revoke ALL tokens for this user (security measure)
+            await db.execute(
+                update(RefreshToken)
+                .where(RefreshToken.user_id == stored_token.user_id)
+                .values(is_revoked=True)
+            )
+            await db.commit()
+            logger.warning(
+                f"Refresh token reuse detected for user {stored_token.user_id}. "
+                "All tokens revoked."
+            )
+            raise AuthenticationError("Token has been revoked. Please sign in again.")
+
+        if stored_token.expires_at < datetime.now(timezone.utc):
+            raise AuthenticationError("Refresh token expired")
+
+        user_id = stored_token.user_id
+
+        # Revoke the old token
+        stored_token.is_revoked = True
+
+        # Create new refresh token (rotation)
+        new_raw_token = _generate_refresh_token()
+        new_token_hash = _hash_token(new_raw_token)
+        new_expires_at = datetime.now(timezone.utc) + timedelta(days=30)
+
+        new_rt = RefreshToken(
+            user_id=user_id,
+            token_hash=new_token_hash,
+            expires_at=new_expires_at,
+        )
+        db.add(new_rt)
+        await db.commit()
 
     # Verify user still exists
     user_repo = UserRepository()
@@ -139,6 +202,28 @@ async def refresh_access_token(refresh_token: str) -> RefreshTokenResponse:
 
     return RefreshTokenResponse(
         access_token=new_access_token,
+        refresh_token=new_raw_token,
         token_type="bearer",
         expires_in=settings.access_token_expire_minutes * 60,
     )
+
+
+async def logout_user(user_id: str) -> dict:
+    """Revoke all refresh tokens for a user.
+
+    Args:
+        user_id: User ID to log out
+
+    Returns:
+        Dict with logout confirmation
+    """
+    async with async_session_maker() as db:
+        await db.execute(
+            update(RefreshToken)
+            .where(RefreshToken.user_id == user_id)
+            .values(is_revoked=True)
+        )
+        await db.commit()
+
+    logger.info(f"All refresh tokens revoked for user {user_id}")
+    return {"message": "Logged out successfully"}

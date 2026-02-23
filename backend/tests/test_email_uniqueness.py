@@ -44,7 +44,8 @@ async def email_client(db_session: AsyncSession) -> AsyncClient:
     def mock_session_maker():
         return _test_session_maker()
 
-    with patch('app.repositories.user_repository.async_session_maker', mock_session_maker):
+    with patch('app.repositories.user_repository.async_session_maker', mock_session_maker), \
+         patch('app.services.auth_service.async_session_maker', mock_session_maker):
         async with AsyncClient(
             transport=ASGITransport(app=app),
             base_url="http://test",

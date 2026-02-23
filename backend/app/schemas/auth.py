@@ -48,9 +48,10 @@ class RefreshTokenRequest(BaseModel):
 
 
 class RefreshTokenResponse(BaseModel):
-    """Response with new access token."""
+    """Response with new access and refresh tokens (rotation)."""
 
     access_token: str
+    refresh_token: str = ""  # New refresh token (rotation)
     token_type: str = "bearer"
     expires_in: int  # seconds
 
