@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     firebase_credentials_path: Optional[str] = None
 
     # JWT
-    jwt_secret_key: str = "development-secret-key-change-in-production"
+    jwt_secret_key: str  # No default — crashes if missing (security: prevents running with weak secret)
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 10080  # 7 days
 
@@ -37,10 +37,18 @@ class Settings(BaseSettings):
 
     # Server
     api_v1_prefix: str = "/api/v1"
-    debug: bool = True
+    debug: bool = False  # Must opt-in to debug mode
+    sql_echo: bool = False  # SQL query logging (separate from debug)
+
+    # Usage limits (daily per user)
+    daily_chat_limit: int = 50
+    daily_meal_generation_limit: int = 5
+    daily_photo_analysis_limit: int = 10
 
     # CORS
-    cors_origins: list[str] = ["*"]
+    cors_origins: list[str] = (
+        []
+    )  # Empty = no CORS middleware (Android app doesn't need CORS)
 
 
 @lru_cache

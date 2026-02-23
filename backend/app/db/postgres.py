@@ -18,14 +18,16 @@ logger = logging.getLogger(__name__)
 # Using AsyncAdaptedQueuePool for better connection reuse
 engine = create_async_engine(
     settings.database_url,
-    echo=settings.debug,
+    echo=settings.sql_echo,
     pool_size=10,  # Number of connections to keep in pool
     max_overflow=20,  # Additional connections allowed when pool is full
     pool_timeout=30,  # Seconds to wait for a connection from pool
     pool_recycle=1800,  # Recycle connections after 30 minutes
     pool_pre_ping=True,  # Verify connections before using
     poolclass=AsyncAdaptedQueuePool,
-    connect_args={"server_settings": {"statement_timeout": "30000"}},  # 30s query timeout
+    connect_args={
+        "server_settings": {"statement_timeout": "30000"}
+    },  # 30s query timeout
 )
 
 # Create async session factory
@@ -57,7 +59,6 @@ async def init_db() -> None:
     Call this at application startup to verify connection.
     For production, use Alembic migrations for schema management.
     """
-    from app.db.base import Base
 
     # Import all models to register them with SQLAlchemy
     from app.models import (  # noqa: F401
@@ -70,7 +71,9 @@ async def init_db() -> None:
         notification,
         recipe,
         recipe_rule,
+        refresh_token,
         stats,
+        usage_log,
         user,
     )
 
@@ -98,7 +101,9 @@ async def create_tables() -> None:
         notification,
         recipe,
         recipe_rule,
+        refresh_token,
         stats,
+        usage_log,
         user,
     )
 
@@ -123,7 +128,9 @@ async def drop_tables() -> None:
         notification,
         recipe,
         recipe_rule,
+        refresh_token,
         stats,
+        usage_log,
         user,
     )
 
