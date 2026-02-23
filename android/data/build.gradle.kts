@@ -100,6 +100,7 @@ dependencies {
 
     // Testing
     testImplementation(libs.junit5)
+    testRuntimeOnly(libs.junit.platform.launcher)
     testImplementation(libs.mockk)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.room.testing)
