@@ -20,10 +20,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | Attribute | Details |
 |-----------|---------|
-| **Platform** | Android Native (Kotlin 1.9.22 + Jetpack Compose BOM 2024.02.00) |
+| **Platform** | Android Native (Kotlin 2.2.10 + Jetpack Compose BOM 2024.02.00) |
 | **Backend** | Python (FastAPI + PostgreSQL + SQLAlchemy async) |
 | **Target SDK** | 34 (Min SDK 24 / Android 7.0) |
-| **Build Tools** | AGP 8.13.2, KSP 1.9.22-1.0.17, Compose Compiler 1.5.10 |
+| **Build Tools** | AGP 9.0.1, KSP 2.3.2, Compose Compiler 1.5.10 |
 | **Target Market** | Pan-India (Tier 1, 2, 3 cities) |
 
 ## Architecture
