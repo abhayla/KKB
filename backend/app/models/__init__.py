@@ -8,7 +8,9 @@ from app.models.meal_plan import MealPlan, MealPlanItem
 from app.models.notification import FcmToken, Notification
 from app.models.recipe import Recipe, RecipeIngredient, RecipeInstruction, RecipeNutrition
 from app.models.recipe_rule import NutritionGoal, RecipeRule
+from app.models.refresh_token import RefreshToken
 from app.models.stats import Achievement, CookingDay, CookingStreak, UserAchievement
+from app.models.usage_log import UsageLog
 from app.models.user import FamilyMember, User, UserPreferences
 
 __all__ = [
@@ -35,4 +37,6 @@ __all__ = [
     "FcmToken",
     "RecipeRule",
     "NutritionGoal",
+    "UsageLog",
+    "RefreshToken",
 ]
