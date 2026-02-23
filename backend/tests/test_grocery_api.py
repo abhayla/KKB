@@ -6,10 +6,8 @@ Covers:
 - GET /api/v1/grocery/whatsapp — WhatsApp-formatted grocery list
 """
 
-import uuid as _uuid_mod
 import pytest
 from datetime import date, timedelta
-from unittest.mock import patch
 from uuid import uuid4
 
 import pytest_asyncio
@@ -22,23 +20,6 @@ from app.main import app
 from app.models.meal_plan import MealPlan, MealPlanItem
 from app.models.recipe import Recipe, RecipeIngredient
 from app.models.user import User
-
-# ---------------------------------------------------------------------------
-# SQLite compatibility: grocery_service does uuid.UUID(id_str) then compares
-# against String(36) columns.  PostgreSQL coerces automatically; SQLite does
-# not.  This wrapper validates format but returns a plain string for queries.
-# ---------------------------------------------------------------------------
-_real_uuid_cls = _uuid_mod.UUID
-
-
-def _str_uuid(*args, **kwargs):
-    if args and isinstance(args[0], str) and not kwargs:
-        _real_uuid_cls(args[0])
-        return args[0]
-    return _real_uuid_cls(*args, **kwargs)
-
-
-_GROCERY_SVC_UUID = "app.services.grocery_service.uuid.UUID"
 
 
 # ==================== Fixtures ====================
@@ -216,8 +197,7 @@ async def test_grocery_list_with_meal_plan_id(
 ):
     """GET / with mealPlanId returns grouped ingredients for specific plan."""
     plan_id = meal_plan_with_recipes.id
-    with patch(_GROCERY_SVC_UUID, _str_uuid):
-        response = await grocery_client.get(f"/api/v1/grocery?mealPlanId={plan_id}")
+    response = await grocery_client.get(f"/api/v1/grocery?mealPlanId={plan_id}")
 
     assert response.status_code == 200
     data = response.json()
@@ -232,8 +212,7 @@ async def test_grocery_list_aggregation(
 ):
     """GET / aggregates same ingredient across recipes."""
     plan_id = meal_plan_with_recipes.id
-    with patch(_GROCERY_SVC_UUID, _str_uuid):
-        response = await grocery_client.get(f"/api/v1/grocery?mealPlanId={plan_id}")
+    response = await grocery_client.get(f"/api/v1/grocery?mealPlanId={plan_id}")
 
     assert response.status_code == 200
     data = response.json()
@@ -259,8 +238,7 @@ async def test_grocery_list_category_grouping(
 ):
     """GET / groups items by category."""
     plan_id = meal_plan_with_recipes.id
-    with patch(_GROCERY_SVC_UUID, _str_uuid):
-        response = await grocery_client.get(f"/api/v1/grocery?mealPlanId={plan_id}")
+    response = await grocery_client.get(f"/api/v1/grocery?mealPlanId={plan_id}")
 
     assert response.status_code == 200
     data = response.json()
@@ -295,10 +273,9 @@ async def test_grocery_whatsapp_format(
 ):
     """GET /whatsapp returns emoji-formatted text."""
     plan_id = meal_plan_with_recipes.id
-    with patch(_GROCERY_SVC_UUID, _str_uuid):
-        response = await grocery_client.get(
-            f"/api/v1/grocery/whatsapp?mealPlanId={plan_id}"
-        )
+    response = await grocery_client.get(
+        f"/api/v1/grocery/whatsapp?mealPlanId={plan_id}"
+    )
 
     assert response.status_code == 200
     # Response is a plain string (not JSON dict)
@@ -313,10 +290,9 @@ async def test_grocery_whatsapp_structure(
 ):
     """GET /whatsapp has header, categories, and RasoiAI branding."""
     plan_id = meal_plan_with_recipes.id
-    with patch(_GROCERY_SVC_UUID, _str_uuid):
-        response = await grocery_client.get(
-            f"/api/v1/grocery/whatsapp?mealPlanId={plan_id}"
-        )
+    response = await grocery_client.get(
+        f"/api/v1/grocery/whatsapp?mealPlanId={plan_id}"
+    )
 
     assert response.status_code == 200
     text = response.text

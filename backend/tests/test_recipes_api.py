@@ -8,9 +8,7 @@ Covers:
 """
 
 import json
-import uuid as _uuid_mod
 import pytest
-from unittest.mock import patch
 from uuid import uuid4
 
 import pytest_asyncio
@@ -21,25 +19,13 @@ from app.api.deps import get_current_user
 from app.db.database import get_db
 from app.main import app
 from app.models.ai_recipe_catalog import AiRecipeCatalog
-from app.models.recipe import Recipe, RecipeIngredient, RecipeInstruction, RecipeNutrition
+from app.models.recipe import (
+    Recipe,
+    RecipeIngredient,
+    RecipeInstruction,
+    RecipeNutrition,
+)
 from app.models.user import User, UserPreferences
-
-# ---------------------------------------------------------------------------
-# SQLite compatibility: services do uuid.UUID(id_str) then compare against
-# String(36) columns.  PostgreSQL coerces automatically; SQLite does not.
-# This wrapper validates format but returns a plain string for queries.
-# ---------------------------------------------------------------------------
-_real_uuid_cls = _uuid_mod.UUID
-
-
-def _str_uuid(*args, **kwargs):
-    if args and isinstance(args[0], str) and not kwargs:
-        _real_uuid_cls(args[0])  # validate format (raises ValueError)
-        return args[0]
-    return _real_uuid_cls(*args, **kwargs)
-
-
-_RECIPE_SVC_UUID = "app.services.recipe_service.uuid.UUID"
 
 
 # ==================== Fixtures ====================
@@ -264,9 +250,7 @@ async def test_ai_catalog_search_basic(
     recipe_client: AsyncClient, ai_catalog_entries: list
 ):
     """GET /ai-catalog/search returns matching catalog entries."""
-    response = await recipe_client.get(
-        "/api/v1/recipes/ai-catalog/search?q=paneer"
-    )
+    response = await recipe_client.get("/api/v1/recipes/ai-catalog/search?q=paneer")
 
     assert response.status_code == 200
     data = response.json()
@@ -316,9 +300,7 @@ async def test_ai_catalog_search_limit(
     recipe_client: AsyncClient, ai_catalog_entries: list
 ):
     """GET /ai-catalog/search respects limit param."""
-    response = await recipe_client.get(
-        "/api/v1/recipes/ai-catalog/search?limit=2"
-    )
+    response = await recipe_client.get("/api/v1/recipes/ai-catalog/search?limit=2")
 
     assert response.status_code == 200
     data = response.json()
@@ -341,9 +323,7 @@ async def test_ai_catalog_search_empty_query(
 @pytest.mark.asyncio
 async def test_ai_catalog_unauthorized(unauthenticated_client: AsyncClient):
     """GET /ai-catalog/search returns 401 without auth."""
-    response = await unauthenticated_client.get(
-        "/api/v1/recipes/ai-catalog/search"
-    )
+    response = await unauthenticated_client.get("/api/v1/recipes/ai-catalog/search")
     assert response.status_code == 401
 
 
@@ -353,8 +333,7 @@ async def test_ai_catalog_unauthorized(unauthenticated_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_get_recipe_by_id(recipe_client: AsyncClient, sample_recipe: Recipe):
     """GET /{recipe_id} returns full recipe with ingredients."""
-    with patch(_RECIPE_SVC_UUID, _str_uuid):
-        response = await recipe_client.get(f"/api/v1/recipes/{sample_recipe.id}")
+    response = await recipe_client.get(f"/api/v1/recipes/{sample_recipe.id}")
 
     assert response.status_code == 200
     data = response.json()
@@ -397,9 +376,7 @@ async def test_get_recipe_unauthorized(
     unauthenticated_client: AsyncClient, sample_recipe: Recipe
 ):
     """GET /{recipe_id} returns 401 without auth."""
-    response = await unauthenticated_client.get(
-        f"/api/v1/recipes/{sample_recipe.id}"
-    )
+    response = await unauthenticated_client.get(f"/api/v1/recipes/{sample_recipe.id}")
     assert response.status_code == 401
 
 
@@ -409,10 +386,9 @@ async def test_get_recipe_unauthorized(
 @pytest.mark.asyncio
 async def test_scale_recipe_up(recipe_client: AsyncClient, sample_recipe: Recipe):
     """GET /{id}/scale?servings=8 doubles ingredients (4->8)."""
-    with patch(_RECIPE_SVC_UUID, _str_uuid):
-        response = await recipe_client.get(
-            f"/api/v1/recipes/{sample_recipe.id}/scale?servings=8"
-        )
+    response = await recipe_client.get(
+        f"/api/v1/recipes/{sample_recipe.id}/scale?servings=8"
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -433,10 +409,9 @@ async def test_scale_recipe_up(recipe_client: AsyncClient, sample_recipe: Recipe
 @pytest.mark.asyncio
 async def test_scale_recipe_down(recipe_client: AsyncClient, sample_recipe: Recipe):
     """GET /{id}/scale?servings=2 halves ingredients (4->2)."""
-    with patch(_RECIPE_SVC_UUID, _str_uuid):
-        response = await recipe_client.get(
-            f"/api/v1/recipes/{sample_recipe.id}/scale?servings=2"
-        )
+    response = await recipe_client.get(
+        f"/api/v1/recipes/{sample_recipe.id}/scale?servings=2"
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -454,9 +429,7 @@ async def test_scale_recipe_down(recipe_client: AsyncClient, sample_recipe: Reci
 async def test_scale_recipe_not_found(recipe_client: AsyncClient):
     """GET /{id}/scale returns 404 for invalid recipe."""
     fake_id = str(uuid4())
-    response = await recipe_client.get(
-        f"/api/v1/recipes/{fake_id}/scale?servings=4"
-    )
+    response = await recipe_client.get(f"/api/v1/recipes/{fake_id}/scale?servings=4")
     assert response.status_code == 404
 
 

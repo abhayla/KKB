@@ -7,12 +7,11 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.core.exceptions import AuthenticationError, ConflictError
 from app.core.firebase import verify_firebase_token
-from app.core.security import create_access_token, decode_access_token
+from app.core.security import create_access_token
 from app.db.postgres import async_session_maker
 from app.models.refresh_token import RefreshToken
 from app.repositories.user_repository import UserRepository
@@ -103,7 +102,8 @@ async def authenticate_with_firebase(firebase_token: str) -> AuthResponse:
             dietary_restrictions=preferences.get("dietary_tags") or [],
             cuisine_preferences=preferences.get("cuisine_preferences") or [],
             disliked_ingredients=preferences.get("disliked_ingredients") or [],
-            cooking_time_preference=preferences.get("cooking_time_preference") or "moderate",
+            cooking_time_preference=preferences.get("cooking_time_preference")
+            or "moderate",
             spice_level=preferences.get("spice_level") or "medium",
         )
 
@@ -167,7 +167,10 @@ async def refresh_access_token(refresh_token: str) -> RefreshTokenResponse:
             )
             raise AuthenticationError("Token has been revoked. Please sign in again.")
 
-        if stored_token.expires_at < datetime.now(timezone.utc):
+        expires_at = stored_token.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if expires_at < datetime.now(timezone.utc):
             raise AuthenticationError("Refresh token expired")
 
         user_id = stored_token.user_id

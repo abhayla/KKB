@@ -112,6 +112,15 @@ android {
         checkDependencies = true
     }
 
+    // Skip lint when FAST_BUILD env var is set (for iterative dev/ADB testing)
+    if (System.getenv("FAST_BUILD") != null) {
+        tasks.whenTaskAdded {
+            if (name.contains("lint", ignoreCase = true)) {
+                enabled = false
+            }
+        }
+    }
+
     testOptions {
         // Disabled Test Orchestrator temporarily to fix Compose test issues
         // execution = "ANDROIDX_TEST_ORCHESTRATOR"

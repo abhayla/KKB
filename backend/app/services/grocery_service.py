@@ -9,9 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import NotFoundError
-from app.models.grocery import GroceryItem, GroceryList
 from app.models.meal_plan import MealPlan, MealPlanItem
-from app.models.recipe import Recipe, RecipeIngredient
+from app.models.recipe import Recipe
 from app.models.user import User
 from app.schemas.grocery import (
     GroceryCategoryResponse,
@@ -96,7 +95,7 @@ async def get_grocery_list_for_meal_plan(
                 .selectinload(Recipe.ingredients)
             )
             .where(
-                MealPlan.id == plan_uuid,
+                MealPlan.id == str(plan_uuid),
                 MealPlan.user_id == user.id,
             )
         )
@@ -132,10 +131,16 @@ async def get_grocery_list_for_meal_plan(
 
     for item in meal_plan.items:
         if item.recipe:
-            scale_factor = item.servings / item.recipe.servings if item.recipe.servings else 1
+            scale_factor = (
+                item.servings / item.recipe.servings if item.recipe.servings else 1
+            )
             for ing in item.recipe.ingredients:
                 if not ing.is_optional:
-                    key = (ing.name.lower(), _normalize_unit(ing.unit), ing.category.lower())
+                    key = (
+                        ing.name.lower(),
+                        _normalize_unit(ing.unit),
+                        ing.category.lower(),
+                    )
                     aggregated[key] += ing.quantity * scale_factor
 
     # Group by category
@@ -156,7 +161,9 @@ async def get_grocery_list_for_meal_plan(
 
     # Sort categories by predefined order
     sorted_categories = []
-    for cat_name in sorted(categories_dict.keys(), key=lambda c: CATEGORY_INFO.get(c, {}).get("order", 50)):
+    for cat_name in sorted(
+        categories_dict.keys(), key=lambda c: CATEGORY_INFO.get(c, {}).get("order", 50)
+    ):
         sorted_categories.append(
             GroceryCategoryResponse(
                 category=cat_name.title(),

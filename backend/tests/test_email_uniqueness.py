@@ -33,6 +33,7 @@ async def email_client(db_session: AsyncSession) -> AsyncClient:
     Auth endpoint doesn't require auth — it creates/returns a user.
     We mock verify_firebase_token to control UID/email.
     """
+
     async def override_get_db():
         yield db_session
 
@@ -44,8 +45,9 @@ async def email_client(db_session: AsyncSession) -> AsyncClient:
     def mock_session_maker():
         return _test_session_maker()
 
-    with patch('app.repositories.user_repository.async_session_maker', mock_session_maker), \
-         patch('app.services.auth_service.async_session_maker', mock_session_maker):
+    with patch(
+        "app.repositories.user_repository.async_session_maker", mock_session_maker
+    ), patch("app.services.auth_service.async_session_maker", mock_session_maker):
         async with AsyncClient(
             transport=ASGITransport(app=app),
             base_url="http://test",
@@ -68,7 +70,9 @@ async def test_new_user_email_stored_lowercase(email_client: AsyncClient):
         "picture": None,
     }
 
-    with patch("app.services.auth_service.verify_firebase_token", return_value=mock_firebase):
+    with patch(
+        "app.services.auth_service.verify_firebase_token", return_value=mock_firebase
+    ):
         response = await email_client.post(
             "/api/v1/auth/firebase",
             json={"firebase_token": "any-token"},
@@ -105,7 +109,9 @@ async def test_duplicate_email_different_firebase_uid_merges(
         "picture": None,
     }
 
-    with patch("app.services.auth_service.verify_firebase_token", return_value=mock_firebase):
+    with patch(
+        "app.services.auth_service.verify_firebase_token", return_value=mock_firebase
+    ):
         response = await email_client.post(
             "/api/v1/auth/firebase",
             json={"firebase_token": "any-token"},
@@ -143,7 +149,9 @@ async def test_duplicate_email_case_insensitive_merges(
         "picture": None,
     }
 
-    with patch("app.services.auth_service.verify_firebase_token", return_value=mock_firebase):
+    with patch(
+        "app.services.auth_service.verify_firebase_token", return_value=mock_firebase
+    ):
         response = await email_client.post(
             "/api/v1/auth/firebase",
             json={"firebase_token": "any-token"},
@@ -210,7 +218,9 @@ async def test_existing_user_same_firebase_uid_no_conflict(
         "picture": None,
     }
 
-    with patch("app.services.auth_service.verify_firebase_token", return_value=mock_firebase):
+    with patch(
+        "app.services.auth_service.verify_firebase_token", return_value=mock_firebase
+    ):
         response = await email_client.post(
             "/api/v1/auth/firebase",
             json={"firebase_token": "any-token"},
@@ -222,11 +232,22 @@ async def test_existing_user_same_firebase_uid_no_conflict(
 @pytest.mark.asyncio
 async def test_fake_firebase_token_uses_test_email(email_client: AsyncClient):
     """fake-firebase-token should return e2e-test@rasoiai.test email."""
-    # Call with the actual fake-firebase-token (no mock needed - uses real code path)
-    response = await email_client.post(
-        "/api/v1/auth/firebase",
-        json={"firebase_token": "fake-firebase-token"},
-    )
+    # Mock verify_firebase_token to return e2e test data
+    # (settings.debug defaults to False, so the fake-token bypass in firebase.py is disabled)
+    mock_firebase = {
+        "uid": "fake-user-id",
+        "email": "e2e-test@rasoiai.test",
+        "name": "E2E Test User",
+        "picture": None,
+    }
+
+    with patch(
+        "app.services.auth_service.verify_firebase_token", return_value=mock_firebase
+    ):
+        response = await email_client.post(
+            "/api/v1/auth/firebase",
+            json={"firebase_token": "fake-firebase-token"},
+        )
 
     assert response.status_code == 200
     data = response.json()
@@ -257,7 +278,9 @@ async def test_merge_preserves_original_user_id(
         "picture": None,
     }
 
-    with patch("app.services.auth_service.verify_firebase_token", return_value=mock_firebase):
+    with patch(
+        "app.services.auth_service.verify_firebase_token", return_value=mock_firebase
+    ):
         response = await email_client.post(
             "/api/v1/auth/firebase",
             json={"firebase_token": "any-token"},
