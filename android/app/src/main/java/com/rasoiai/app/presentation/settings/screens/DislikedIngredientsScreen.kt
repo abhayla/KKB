@@ -233,7 +233,7 @@ fun DislikedIngredientsScreen(
                                 {
                                     Icon(
                                         imageVector = Icons.Default.Check,
-                                        contentDescription = null,
+                                        contentDescription = "Selected",
                                         modifier = Modifier.size(18.dp)
                                     )
                                 }

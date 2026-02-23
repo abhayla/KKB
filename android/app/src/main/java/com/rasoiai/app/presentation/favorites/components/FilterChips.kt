@@ -85,7 +85,7 @@ private fun CuisineFilterChip(
             trailingIcon = {
                 Icon(
                     imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = null
+                    contentDescription = "Show cuisine options"
                 )
             },
             colors = FilterChipDefaults.filterChipColors(
@@ -105,7 +105,7 @@ private fun CuisineFilterChip(
                     expanded = false
                 },
                 leadingIcon = if (selectedCuisine == null) {
-                    { Icon(Icons.Default.Check, null) }
+                    { Icon(Icons.Default.Check, "Selected") }
                 } else null
             )
 
@@ -117,7 +117,7 @@ private fun CuisineFilterChip(
                         expanded = false
                     },
                     leadingIcon = if (selectedCuisine == cuisine) {
-                        { Icon(Icons.Default.Check, null) }
+                        { Icon(Icons.Default.Check, "Selected") }
                     } else null
                 )
             }
@@ -140,7 +140,7 @@ private fun TimeFilterChip(
             trailingIcon = {
                 Icon(
                     imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = null
+                    contentDescription = "Show time options"
                 )
             },
             colors = FilterChipDefaults.filterChipColors(
@@ -160,7 +160,7 @@ private fun TimeFilterChip(
                     expanded = false
                 },
                 leadingIcon = if (selectedTimeFilter == null) {
-                    { Icon(Icons.Default.Check, null) }
+                    { Icon(Icons.Default.Check, "Selected") }
                 } else null
             )
 
@@ -172,7 +172,7 @@ private fun TimeFilterChip(
                         expanded = false
                     },
                     leadingIcon = if (selectedTimeFilter == timeFilter) {
-                        { Icon(Icons.Default.Check, null) }
+                        { Icon(Icons.Default.Check, "Selected") }
                     } else null
                 )
             }

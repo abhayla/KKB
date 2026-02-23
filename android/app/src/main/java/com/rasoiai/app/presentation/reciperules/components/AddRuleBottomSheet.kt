@@ -148,7 +148,7 @@ fun AddRuleBottomSheet(
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
-                            contentDescription = null
+                            contentDescription = "Search"
                         )
                     },
                     shape = RoundedCornerShape(8.dp),

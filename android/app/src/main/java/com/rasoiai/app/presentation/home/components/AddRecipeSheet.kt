@@ -120,7 +120,7 @@ fun AddRecipeSheet(
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
-                        contentDescription = null
+                        contentDescription = "Search"
                     )
                 },
                 singleLine = true,
@@ -309,7 +309,7 @@ fun AddRecipeSheet(
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
-                        contentDescription = null
+                        contentDescription = "Search"
                     )
                 },
                 singleLine = true,

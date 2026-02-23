@@ -253,7 +253,7 @@ fun FriendsLeaderboardScreen(
                         containerColor = MaterialTheme.colorScheme.secondary
                     )
                 ) {
-                    Icon(Icons.Default.Share, contentDescription = null)
+                    Icon(Icons.Default.Share, contentDescription = "Invite friends")
                     Spacer(modifier = Modifier.width(spacing.sm))
                     Text("Invite Friends", fontWeight = FontWeight.Medium)
                 }

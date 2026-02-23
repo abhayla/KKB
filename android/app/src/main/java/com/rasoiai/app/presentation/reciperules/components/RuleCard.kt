@@ -127,7 +127,7 @@ fun RuleCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.MoreVert,
-                        contentDescription = null,
+                        contentDescription = "More options",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -145,7 +145,7 @@ fun RuleCard(
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Edit,
-                                contentDescription = null,
+                                contentDescription = "Edit",
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -168,7 +168,7 @@ fun RuleCard(
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Delete,
-                                contentDescription = null,
+                                contentDescription = "Delete",
                                 modifier = Modifier.size(20.dp),
                                 tint = MaterialTheme.colorScheme.error
                             )

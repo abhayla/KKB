@@ -228,7 +228,7 @@ fun FamilyMembersScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Person,
-                                        contentDescription = null,
+                                        contentDescription = "Family member",
                                         tint = MaterialTheme.colorScheme.onPrimaryContainer
                                     )
                                 }

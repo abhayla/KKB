@@ -253,7 +253,7 @@ internal fun GroceryScreenContent(
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Default.RemoveCircleOutline,
-                                        contentDescription = null
+                                        contentDescription = "Clear purchased items"
                                     )
                                 }
                             )
@@ -263,7 +263,7 @@ internal fun GroceryScreenContent(
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Default.TextSnippet,
-                                        contentDescription = null
+                                        contentDescription = "Share as text"
                                     )
                                 }
                             )
@@ -376,7 +376,7 @@ private fun WhatsAppShareButton(onClick: () -> Unit) {
     ) {
         Icon(
             imageVector = Icons.Default.Share,
-            contentDescription = null,
+            contentDescription = "Share via WhatsApp",
             modifier = Modifier.size(20.dp)
         )
         Spacer(modifier = Modifier.width(spacing.sm))
@@ -586,7 +586,7 @@ private fun AddCustomItemButton(onClick: () -> Unit) {
     ) {
         Icon(
             imageVector = Icons.Default.Add,
-            contentDescription = null,
+            contentDescription = "Add custom item",
             modifier = Modifier.size(20.dp)
         )
         Spacer(modifier = Modifier.width(spacing.sm))

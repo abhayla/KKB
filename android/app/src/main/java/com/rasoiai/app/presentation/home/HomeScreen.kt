@@ -375,7 +375,7 @@ private fun HomeScreenContent(
                             ) {
                                 Icon(
                                     Icons.Outlined.CalendarMonth,
-                                    contentDescription = null,
+                                    contentDescription = "No meal plan",
                                     modifier = Modifier.size(64.dp),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -798,7 +798,7 @@ private fun SelectedDayHeader(
         ) {
             Icon(
                 imageVector = Icons.Default.Refresh,
-                contentDescription = null,
+                contentDescription = "Refresh",
                 modifier = Modifier.size(18.dp)
             )
             Spacer(modifier = Modifier.width(spacing.xs))
@@ -900,7 +900,7 @@ private fun MealSection(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = null,
+                            contentDescription = "Add recipe",
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(spacing.xxs))
@@ -1257,7 +1257,7 @@ private fun ActionSheetItem(
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = null,
+            contentDescription = text,
             tint = effectiveTextColor,
             modifier = Modifier.size(24.dp)
         )
@@ -1405,7 +1405,7 @@ private fun SwapRecipeSheet(
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
-                        contentDescription = null
+                        contentDescription = "Search"
                     )
                 },
                 singleLine = true,

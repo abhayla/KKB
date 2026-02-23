@@ -66,7 +66,7 @@ fun CollectionCard(
         ) {
             Icon(
                 imageVector = getCollectionIcon(collection),
-                contentDescription = null,
+                contentDescription = collection.name,
                 tint = if (isSelected) MaterialTheme.colorScheme.primary
                        else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(32.dp)

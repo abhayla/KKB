@@ -243,7 +243,7 @@ private fun SettingsItemRow(
 
         Icon(
             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = null,
+            contentDescription = "Navigate to $title",
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }

@@ -65,7 +65,7 @@ fun ImageSourceDialog(
                 ) {
                     Icon(
                         imageVector = Icons.Default.CameraAlt,
-                        contentDescription = null,
+                        contentDescription = "Take photo",
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(28.dp)
                     )
@@ -95,7 +95,7 @@ fun ImageSourceDialog(
                 ) {
                     Icon(
                         imageVector = Icons.Default.PhotoLibrary,
-                        contentDescription = null,
+                        contentDescription = "Choose from gallery",
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(28.dp)
                     )

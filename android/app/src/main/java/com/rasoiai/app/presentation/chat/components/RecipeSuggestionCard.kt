@@ -59,7 +59,7 @@ fun RecipeSuggestionCard(
                     // Recipe icon
                     Icon(
                         imageVector = Icons.Default.Restaurant,
-                        contentDescription = null,
+                        contentDescription = "Recipe",
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
                     )
@@ -81,7 +81,7 @@ fun RecipeSuggestionCard(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AccessTime,
-                                contentDescription = null,
+                                contentDescription = "Cooking time",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(14.dp)
                             )

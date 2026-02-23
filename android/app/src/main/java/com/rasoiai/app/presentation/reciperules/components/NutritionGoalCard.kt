@@ -202,7 +202,7 @@ fun NutritionGoalCard(
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Edit,
-                                contentDescription = null,
+                                contentDescription = "Edit",
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -239,7 +239,7 @@ fun NutritionGoalCard(
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Delete,
-                                contentDescription = null,
+                                contentDescription = "Delete",
                                 modifier = Modifier.size(20.dp),
                                 tint = MaterialTheme.colorScheme.error
                             )
