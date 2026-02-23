@@ -9,15 +9,15 @@ if [ -f "$SCRIPT_DIR/hook-utils.sh" ]; then
 else
     exit 0
 fi
+parse_hook_input
 
 # Only process Bash tool outputs
-TOOL_NAME=$(get_tool_name)
-if [ "$TOOL_NAME" != "Bash" ]; then
+if [ "$HOOK_TOOL_NAME" != "Bash" ]; then
     exit 0
 fi
 
 # Get the tool output
-OUTPUT=$(get_tool_output)
+OUTPUT="$HOOK_TOOL_OUTPUT"
 if [ -z "$OUTPUT" ]; then
     exit 0
 fi
@@ -32,7 +32,7 @@ if [ "$ANR_DETECTED" = "true" ]; then
     # Set testFailuresPending in workflow state
     STATE_FILE=".claude/workflow-state.json"
     if [ -f "$STATE_FILE" ]; then
-        python3 -c "
+        python -c "
 import json
 with open('$STATE_FILE') as f:
     d = json.load(f)

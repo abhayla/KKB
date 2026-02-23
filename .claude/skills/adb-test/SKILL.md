@@ -51,8 +51,8 @@ If `$ARGUMENTS` is empty, test ALL 12 screens sequentially. If a screen name is 
 ## ADB CONSTANTS & PATTERNS
 
 ```
-ADB = C:/Users/itsab/AppData/Local/Android/Sdk/platform-tools/adb.exe
-EMULATOR = C:/Users/itsab/AppData/Local/Android/Sdk/emulator/emulator.exe
+ADB = $HOME/AppData/Local/Android/Sdk/platform-tools/adb.exe
+EMULATOR = $HOME/AppData/Local/Android/Sdk/emulator/emulator.exe
 SCREENSHOT_DIR = docs/testing/screenshots
 LOG_DIR = .claude/logs/adb-test
 APP_PACKAGE = com.rasoiai.app
@@ -129,7 +129,7 @@ Before any testing, check the failure index for known issues that affect this sk
    ```bash
    python -c "
    import os
-   fp = 'C:/Users/itsab/.claude/projects/D--Abhay-VibeCoding-KKB/memory/fix-patterns.md'
+   import glob; fp = next(iter(glob.glob(os.path.expanduser('~/.claude/projects/*VibeCoding-KKB/memory/fix-patterns.md'))), '')
    if os.path.exists(fp):
        with open(fp) as f:
            content = f.read()
@@ -142,7 +142,7 @@ Before any testing, check the failure index for known issues that affect this sk
    ```bash
    python -c "
    import re, os
-   fp = 'C:/Users/itsab/.claude/projects/D--Abhay-VibeCoding-KKB/memory/fix-patterns.md'
+   import glob; fp = next(iter(glob.glob(os.path.expanduser('~/.claude/projects/*VibeCoding-KKB/memory/fix-patterns.md'))), '')
    if not os.path.exists(fp):
        print('Step 0: No fix-patterns.md found')
        exit(0)

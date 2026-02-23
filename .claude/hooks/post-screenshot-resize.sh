@@ -12,17 +12,13 @@
 # For non-screenshot Bash commands, exits immediately (< 5ms overhead).
 # =============================================================================
 
-# Read hook input from stdin
-INPUT=$(cat)
-
-# Extract tool name
-TOOL_NAME=$(echo "$INPUT" | python -c "import sys,json; print(json.load(sys.stdin).get('tool_name',''))" 2>/dev/null)
-
-# Extract tool input as JSON string
-TOOL_INPUT=$(echo "$INPUT" | python -c "import sys,json; print(json.dumps(json.load(sys.stdin).get('tool_input',{})))" 2>/dev/null)
-
-# Resolve script directory for resize_screenshot.py
+# Source shared utilities for consistent stdin parsing
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/hook-utils.sh"
+parse_hook_input
+
+TOOL_NAME="$HOOK_TOOL_NAME"
+TOOL_INPUT="$HOOK_TOOL_INPUT"
 
 case "$TOOL_NAME" in
   *browser_take_screenshot*)

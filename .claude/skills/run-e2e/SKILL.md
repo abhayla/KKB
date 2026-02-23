@@ -62,7 +62,7 @@ Before any test execution, check the failure index for known issues:
    ```bash
    python -c "
    import os
-   fp = 'C:/Users/itsab/.claude/projects/D--Abhay-VibeCoding-KKB/memory/fix-patterns.md'
+   import glob; fp = next(iter(glob.glob(os.path.expanduser('~/.claude/projects/*VibeCoding-KKB/memory/fix-patterns.md'))), '')
    if os.path.exists(fp):
        with open(fp) as f:
            content = f.read()
@@ -105,19 +105,19 @@ This marks the session as a `run-e2e` workflow. Hooks will:
 ### 1. Check Emulator
 
 ```bash
-C:/Users/itsab/AppData/Local/Android/Sdk/platform-tools/adb.exe devices
+$HOME/AppData/Local/Android/Sdk/platform-tools/adb.exe devices
 ```
 
 - If a device is listed as `device` — emulator is ready, continue.
 - If no device or only `offline` entries:
   1. Start the emulator:
      ```bash
-     C:/Users/itsab/AppData/Local/Android/Sdk/emulator/emulator.exe -avd Pixel_6 &
+     $HOME/AppData/Local/Android/Sdk/emulator/emulator.exe -avd Pixel_6 &
      ```
   2. Wait for boot:
      ```bash
-     C:/Users/itsab/AppData/Local/Android/Sdk/platform-tools/adb.exe wait-for-device
-     C:/Users/itsab/AppData/Local/Android/Sdk/platform-tools/adb.exe shell getprop sys.boot_completed
+     $HOME/AppData/Local/Android/Sdk/platform-tools/adb.exe wait-for-device
+     $HOME/AppData/Local/Android/Sdk/platform-tools/adb.exe shell getprop sys.boot_completed
      ```
      Loop until `sys.boot_completed` returns `1`.
 
@@ -453,13 +453,13 @@ After all groups complete (or the single requested group), capture emulator stat
 
 ```bash
 # Capture final emulator state
-C:/Users/itsab/AppData/Local/Android/Sdk/platform-tools/adb.exe exec-out screencap -p > docs/testing/screenshots/e2e_final_state.png
+$HOME/AppData/Local/Android/Sdk/platform-tools/adb.exe exec-out screencap -p > docs/testing/screenshots/e2e_final_state.png
 ```
 
 For groups with fixes applied, capture group-specific screenshots:
 ```bash
 # Per-group screenshot (if fixes were applied in that group)
-C:/Users/itsab/AppData/Local/Android/Sdk/platform-tools/adb.exe exec-out screencap -p > docs/testing/screenshots/e2e_{group_name}_after_fix.png
+$HOME/AppData/Local/Android/Sdk/platform-tools/adb.exe exec-out screencap -p > docs/testing/screenshots/e2e_{group_name}_after_fix.png
 ```
 
 Add screenshot paths to the evidence tracking:

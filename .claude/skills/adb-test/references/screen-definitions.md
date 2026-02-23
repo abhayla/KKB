@@ -118,7 +118,7 @@ If a flow step or interactive test reveals a backend API returning incorrect dat
    ```bash
    python -c "
    import re, os
-   fp = 'C:/Users/itsab/.claude/projects/D--Abhay-VibeCoding-KKB/memory/fix-patterns.md'
+   import glob; fp = next(iter(glob.glob(os.path.expanduser('~/.claude/projects/*VibeCoding-KKB/memory/fix-patterns.md'))), '')
    if not os.path.exists(fp):
        exit(0)
    with open(fp) as f:
@@ -252,7 +252,7 @@ After fix-loop exhaustion for an issue, if the issue is UNRESOLVED:
    ```bash
    python -c "
    import re, os
-   fp = 'C:/Users/itsab/.claude/projects/D--Abhay-VibeCoding-KKB/memory/fix-patterns.md'
+   import glob; fp = next(iter(glob.glob(os.path.expanduser('~/.claude/projects/*VibeCoding-KKB/memory/fix-patterns.md'))), '')
    issue_type = '{detected_issue_type}'
    if not os.path.exists(fp):
        exit(0)

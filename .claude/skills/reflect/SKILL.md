@@ -108,7 +108,7 @@ Before gathering data, scan fix-patterns.md for unfixed auto-fix eligible patter
 python -c "
 import re, os
 
-fp = 'C:/Users/itsab/.claude/projects/D--Abhay-VibeCoding-KKB/memory/fix-patterns.md'
+import glob; fp = next(iter(glob.glob(os.path.expanduser('~/.claude/projects/*VibeCoding-KKB/memory/fix-patterns.md'))), '')
 if not os.path.exists(fp):
     print('Step 0.5: No fix-patterns.md found')
     exit(0)

@@ -343,7 +343,8 @@ for e in d.get('entries', []):
 # =============================================================================
 
 LEARNING_LOG_DIR=".claude/logs/learning"
-MEMORY_DIR="C:/Users/itsab/.claude/projects/D--Abhay-VibeCoding-KKB/memory"
+MEMORY_DIR=$(ls -d "$HOME"/.claude/projects/*VibeCoding-KKB/memory 2>/dev/null | head -1)
+if [ -z "$MEMORY_DIR" ]; then MEMORY_DIR=""; fi
 
 parse_skill_outcome() {
     # Extract structured outcome from Skill tool_output text.
