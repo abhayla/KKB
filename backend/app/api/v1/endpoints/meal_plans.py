@@ -7,9 +7,10 @@ import uuid
 from datetime import date, datetime, timedelta
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from app.api.deps import CurrentUser
+from app.core.rate_limit import limiter
 from app.core.exceptions import NotFoundError
 from app.repositories.meal_plan_repository import MealPlanRepository
 from app.repositories.recipe_repository import RecipeRepository
@@ -112,8 +113,10 @@ def _build_response_from_firestore(plan: dict[str, Any]) -> MealPlanResponse:
 
 
 @router.post("/generate", response_model=MealPlanResponse)
+@limiter.limit("5/hour")
 async def generate(
-    request: GenerateMealPlanRequest,
+    request: Request,
+    gen_request: GenerateMealPlanRequest,
     current_user: CurrentUser,
 ) -> MealPlanResponse:
     """Generate a new meal plan with paired recipes.
@@ -141,7 +144,7 @@ async def generate(
 
         # Parse week start date
         try:
-            week_start = date.fromisoformat(request.week_start_date)
+            week_start = date.fromisoformat(gen_request.week_start_date)
         except ValueError:
             week_start = date.today()
             week_start = week_start - timedelta(days=week_start.weekday())
@@ -282,10 +285,14 @@ async def generate(
         )
 
         return _build_response_from_firestore(created_plan)
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions (like 504 timeout) as-is
     except Exception as e:
-        logger.error(f"Error generating meal plan: {e}")
-        logger.error(traceback.format_exc())
-        raise
+        logger.error("Error generating meal plan", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="Meal plan generation failed. Please try again.",
+        )
 
 
 def _meal_item_to_dict(item) -> dict:

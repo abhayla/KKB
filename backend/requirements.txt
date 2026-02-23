@@ -26,8 +26,14 @@ google-genai>=1.0.0,<2.0.0
 # Monitoring
 sentry-sdk[fastapi]>=2.0.0,<3.0.0
 
+# Security
+slowapi>=0.1.9,<1.0.0
+
 # HTTP client
 httpx>=0.26.0,<1.0.0
+
+# Logging
+python-json-logger>=3.0.0,<4.0.0
 
 # Utilities
 python-dotenv>=1.0.0,<2.0.0

@@ -3,11 +3,12 @@
 from datetime import datetime
 from uuid import uuid4
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from app.ai.chat_assistant import process_chat_message, get_chat_history
 from app.ai.gemini_client import analyze_food_image
 from app.api.deps import CurrentUser
+from app.core.rate_limit import limiter
 from app.schemas.chat import (
     ChatHistoryResponse,
     ChatImageRequest,
@@ -20,8 +21,10 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 
 
 @router.post("/message", response_model=ChatResponse)
+@limiter.limit("30/minute")
 async def send_message(
-    request: ChatMessageRequest,
+    request: Request,
+    chat_request: ChatMessageRequest,
     current_user: CurrentUser,
 ) -> ChatResponse:
     """Send a message to the AI cooking assistant.
@@ -42,7 +45,7 @@ async def send_message(
     - "Undo that" -> Reverts the last change
     """
     user_id = current_user.id
-    return await process_chat_message(user_id, request.message)
+    return await process_chat_message(user_id, chat_request.message)
 
 
 @router.get("/history", response_model=ChatHistoryResponse)
@@ -73,8 +76,10 @@ async def get_history(
 
 
 @router.post("/image", response_model=ChatResponse)
+@limiter.limit("10/hour")
 async def send_image_message(
-    request: ChatImageRequest,
+    request: Request,
+    image_request: ChatImageRequest,
     current_user: CurrentUser,
 ) -> ChatResponse:
     """Analyze a food image using Gemini Vision and respond.
@@ -89,9 +94,9 @@ async def send_image_message(
     """
     # Analyze the image with Gemini Vision
     response = await analyze_food_image(
-        image_base64=request.image_base64,
-        media_type=request.media_type,
-        prompt=request.message if request.message != "Please analyze this food image" else None
+        image_base64=image_request.image_base64,
+        media_type=image_request.media_type,
+        prompt=image_request.message if image_request.message != "Please analyze this food image" else None
     )
 
     message_id = str(uuid4())
