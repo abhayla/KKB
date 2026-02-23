@@ -1,6 +1,7 @@
 package com.rasoiai.data.repository
 
 import app.cash.turbine.test
+import com.rasoiai.data.local.datastore.SecureTokenStorage
 import com.rasoiai.data.local.datastore.UserPreferencesDataStore
 import com.rasoiai.data.remote.api.RasoiApiService
 import com.rasoiai.data.remote.dto.AuthResponse
@@ -9,6 +10,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -33,6 +35,7 @@ class AuthRepositoryImplTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var mockApiService: RasoiApiService
     private lateinit var mockUserPreferencesDataStore: UserPreferencesDataStore
+    private lateinit var mockSecureTokenStorage: SecureTokenStorage
     private lateinit var repository: AuthRepositoryImpl
 
     private val testUserResponse = UserResponse(
@@ -57,10 +60,12 @@ class AuthRepositoryImplTest {
         Dispatchers.setMain(testDispatcher)
         mockApiService = mockk(relaxed = true)
         mockUserPreferencesDataStore = mockk(relaxed = true)
+        mockSecureTokenStorage = mockk(relaxed = true)
 
         repository = AuthRepositoryImpl(
             apiService = mockApiService,
-            userPreferencesDataStore = mockUserPreferencesDataStore
+            userPreferencesDataStore = mockUserPreferencesDataStore,
+            secureTokenStorage = mockSecureTokenStorage
         )
     }
 
@@ -78,7 +83,7 @@ class AuthRepositoryImplTest {
         fun `should return true when authenticated`() = runTest {
             // Given - must set up mock BEFORE constructing repository (eager flow capture)
             every { mockUserPreferencesDataStore.isAuthenticated } returns flowOf(true)
-            repository = AuthRepositoryImpl(apiService = mockApiService, userPreferencesDataStore = mockUserPreferencesDataStore)
+            repository = AuthRepositoryImpl(apiService = mockApiService, userPreferencesDataStore = mockUserPreferencesDataStore, secureTokenStorage = mockSecureTokenStorage)
 
             // When & Then
             repository.isAuthenticated.test {
@@ -92,7 +97,7 @@ class AuthRepositoryImplTest {
         fun `should return false when not authenticated`() = runTest {
             // Given - must set up mock BEFORE constructing repository (eager flow capture)
             every { mockUserPreferencesDataStore.isAuthenticated } returns flowOf(false)
-            repository = AuthRepositoryImpl(apiService = mockApiService, userPreferencesDataStore = mockUserPreferencesDataStore)
+            repository = AuthRepositoryImpl(apiService = mockApiService, userPreferencesDataStore = mockUserPreferencesDataStore, secureTokenStorage = mockSecureTokenStorage)
 
             // When & Then
             repository.isAuthenticated.test {
@@ -111,7 +116,7 @@ class AuthRepositoryImplTest {
         fun `should return null when not authenticated`() = runTest {
             // Given - must set up mock BEFORE constructing repository (eager flow capture)
             every { mockUserPreferencesDataStore.isAuthenticated } returns flowOf(false)
-            repository = AuthRepositoryImpl(apiService = mockApiService, userPreferencesDataStore = mockUserPreferencesDataStore)
+            repository = AuthRepositoryImpl(apiService = mockApiService, userPreferencesDataStore = mockUserPreferencesDataStore, secureTokenStorage = mockSecureTokenStorage)
 
             // When — use .first() instead of Turbine test{} to avoid UncompletedCoroutinesError
             // from combine() with never-completing StateFlow
@@ -148,6 +153,15 @@ class AuthRepositoryImplTest {
                     userId = "user-1"
                 )
             }
+
+            // Verify tokens also saved to encrypted storage
+            verify {
+                mockSecureTokenStorage.saveTokens(
+                    accessToken = "access-token-123",
+                    refreshToken = "refresh-token-456",
+                    expiresAt = any()
+                )
+            }
         }
 
         @Test
@@ -178,6 +192,7 @@ class AuthRepositoryImplTest {
             // Then
             assertTrue(result.isSuccess)
             coVerify { mockUserPreferencesDataStore.clearAuthTokens() }
+            verify { mockSecureTokenStorage.clearTokens() }
         }
     }
 

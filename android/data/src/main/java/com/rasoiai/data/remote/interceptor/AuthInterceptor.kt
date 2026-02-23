@@ -1,5 +1,6 @@
 package com.rasoiai.data.remote.interceptor
 
+import com.rasoiai.data.local.datastore.SecureTokenStorage
 import com.rasoiai.data.local.datastore.UserPreferencesDataStoreInterface
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
@@ -10,7 +11,10 @@ import javax.inject.Singleton
 
 /**
  * OkHttp interceptor that adds Authorization header to API requests.
- * Reads the access token from DataStore and adds it as a Bearer token.
+ *
+ * Reads the access token from [SecureTokenStorage] (encrypted) first,
+ * falling back to [UserPreferencesDataStoreInterface] (DataStore) if the
+ * encrypted storage is unavailable or empty.
  *
  * Note: runBlocking is used here because OkHttp interceptors are synchronous by design
  * and run on OkHttp's dispatcher threads, not the main thread. This is the standard
@@ -18,6 +22,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class AuthInterceptor @Inject constructor(
+    private val secureTokenStorage: SecureTokenStorage,
     private val userPreferencesDataStore: UserPreferencesDataStoreInterface
 ) : Interceptor {
 
@@ -40,10 +45,8 @@ class AuthInterceptor @Inject constructor(
             return chain.proceed(originalRequest)
         }
 
-        // Get access token synchronously (required for interceptor)
-        val accessToken = runBlocking {
-            userPreferencesDataStore.getAccessTokenSync()
-        }
+        // Try encrypted storage first, fall back to DataStore
+        val accessToken = getAccessToken()
 
         return if (!accessToken.isNullOrEmpty()) {
             val authenticatedRequest = originalRequest.newBuilder()
@@ -56,6 +59,25 @@ class AuthInterceptor @Inject constructor(
             // Log only path to avoid exposing sensitive query parameters
             Timber.w("No access token available for request: $requestPath")
             chain.proceed(originalRequest)
+        }
+    }
+
+    /**
+     * Get access token from secure storage first, then DataStore as fallback.
+     * Only returns non-expired tokens from secure storage.
+     */
+    private fun getAccessToken(): String? {
+        // Try encrypted storage first (synchronous, no runBlocking needed)
+        if (secureTokenStorage.isAvailable() && !secureTokenStorage.isTokenExpired()) {
+            val secureToken = secureTokenStorage.getAccessToken()
+            if (!secureToken.isNullOrEmpty()) {
+                return secureToken
+            }
+        }
+
+        // Fall back to DataStore (suspend function, needs runBlocking)
+        return runBlocking {
+            userPreferencesDataStore.getAccessTokenSync()
         }
     }
 }

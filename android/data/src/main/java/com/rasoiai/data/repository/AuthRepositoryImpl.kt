@@ -1,5 +1,6 @@
 package com.rasoiai.data.repository
 
+import com.rasoiai.data.local.datastore.SecureTokenStorage
 import com.rasoiai.data.local.datastore.UserPreferencesDataStoreInterface
 import com.rasoiai.data.remote.api.RasoiApiService
 import com.rasoiai.data.remote.dto.AuthRequest
@@ -21,13 +22,14 @@ import javax.inject.Singleton
 /**
  * Implementation of AuthRepository that:
  * 1. Exchanges Firebase token for backend JWT
- * 2. Stores tokens in DataStore
+ * 2. Stores tokens in both EncryptedSharedPreferences (primary) and DataStore (fallback)
  * 3. Provides auth state streams
  */
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
     private val apiService: RasoiApiService,
-    private val userPreferencesDataStore: UserPreferencesDataStoreInterface
+    private val userPreferencesDataStore: UserPreferencesDataStoreInterface,
+    private val secureTokenStorage: SecureTokenStorage
 ) : AuthRepository {
 
     private val _currentUser = MutableStateFlow<User?>(null)
@@ -50,12 +52,20 @@ class AuthRepositoryImpl @Inject constructor(
                 AuthRequest(firebaseToken = idToken)
             )
 
-            // Store tokens in DataStore
+            // Store tokens in DataStore (fallback)
             userPreferencesDataStore.saveAuthTokens(
                 accessToken = authResponse.accessToken,
                 refreshToken = authResponse.refreshToken,
                 expiresInSeconds = authResponse.expiresIn,
                 userId = authResponse.user.id
+            )
+
+            // Store tokens in encrypted storage (primary)
+            val expiresAt = System.currentTimeMillis() + (authResponse.expiresIn * 1000)
+            secureTokenStorage.saveTokens(
+                accessToken = authResponse.accessToken,
+                refreshToken = authResponse.refreshToken,
+                expiresAt = expiresAt
             )
 
             // Save email for Settings profile display
@@ -83,8 +93,9 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun signOut(): Result<Unit> {
         return try {
-            // Clear tokens from DataStore
+            // Clear tokens from both stores
             userPreferencesDataStore.clearAuthTokens()
+            secureTokenStorage.clearTokens()
             _currentUser.value = null
 
             Timber.i("User signed out successfully")
@@ -117,10 +128,20 @@ class AuthRepositoryImpl @Inject constructor(
                 RefreshTokenRequest(refreshToken = refreshToken)
             )
 
-            // Update only the access token in DataStore
+            // Update only the access token in DataStore (fallback)
             userPreferencesDataStore.updateAccessToken(
                 accessToken = response.accessToken,
                 expiresInSeconds = response.expiresIn
+            )
+
+            // Update access token in encrypted storage (primary)
+            // Preserve the existing refresh token in secure storage
+            val existingRefreshToken = secureTokenStorage.getRefreshToken() ?: refreshToken
+            val expiresAt = System.currentTimeMillis() + (response.expiresIn * 1000)
+            secureTokenStorage.saveTokens(
+                accessToken = response.accessToken,
+                refreshToken = existingRefreshToken,
+                expiresAt = expiresAt
             )
 
             Timber.i("Successfully refreshed access token")

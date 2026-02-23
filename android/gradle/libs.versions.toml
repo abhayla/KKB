@@ -57,6 +57,9 @@ timber = "5.0.1"
 # DataStore
 datastore = "1.0.0"
 
+# Security
+security-crypto = "1.1.0-alpha06"
+
 # Coroutines
 coroutines = "1.7.3"
 
@@ -158,6 +161,9 @@ timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "tim
 
 # DataStore
 datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+
+# Security
+security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "security-crypto" }
 
 # Serialization
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
