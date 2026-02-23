@@ -1,6 +1,6 @@
 # Android Module
 
-Kotlin 1.9.22 + Jetpack Compose BOM 2024.02.00, targeting SDK 34 (min 24).
+Kotlin 2.2.10 + Jetpack Compose BOM 2024.02.00, targeting SDK 34 (min 24).
 
 ## Build Commands
 

@@ -166,6 +166,17 @@ PYTHONPATH=. python scripts/cleanup_user.py               # Remove test user dat
 PYTHONPATH=. python scripts/migrate_legacy_rules.py       # Migrate old preferences to recipe rules
 ```
 
+### Performance Testing (run from `backend/`)
+
+```bash
+bash tests/performance/run_perf_tests.sh smoke     # 1 user, 60s (~$0.002)
+bash tests/performance/run_perf_tests.sh crud      # 50 users, 5m, no AI ($0)
+bash tests/performance/run_perf_tests.sh load      # 20 users, 10m (~$0.03)
+bash tests/performance/run_perf_tests.sh web       # Interactive Locust UI at :8089
+```
+
+Three user classes in `tests/performance/locustfile.py`: `RasoiAIUser` (realistic mix), `MealGenHeavyUser` (AI-only), `CRUDOnlyUser` (no AI). Reports go to `tests/performance/reports/` (gitignored).
+
 ### Prerequisites
 
 | Tool | Version |
@@ -261,35 +272,11 @@ Located in `app/src/test/java/com/rasoiai/app/presentation/`. Use `TestDispatche
 
 **E2E backend URL:** Tests use `http://10.0.2.2:8000` (Android emulator maps `10.0.2.2` → host `localhost`).
 
-**E2E debug auth bypass:** `FakeGoogleAuthClient` sends `"fake-firebase-token"` to the backend. This only works when the backend runs with `DEBUG=true` — the backend's `firebase.py` accepts this fake token in debug mode and returns a test user. **E2E tests will fail against a non-debug backend.**
-
-**E2E Test Flow:**
-1. FakeGoogleAuthClient returns fake-firebase-token
-2. AuthViewModel calls `/api/v1/auth/firebase` (real API at `10.0.2.2:8000`)
-3. Backend (DEBUG=true) accepts fake token, returns JWT, saved to DataStore
-4. User completes 5-step onboarding
-5. BackendTestHelper.generateMealPlan() calls AI (4-7 seconds)
-6. Home screen displays meal cards
-7. Room DB caches meal plan for offline access
-
-**E2E test execution order:** `E2ETestSuite.kt` runs `CoreDataFlowTest` first — it clears state, does full auth/onboarding, and persists state to DataStore. Subsequent tests inherit this persisted state. Tests needing Home screen must call `setUpAuthenticatedState()` in `@Before` after `super.setUp()`.
+**E2E debug auth bypass:** `FakeGoogleAuthClient` sends `"fake-firebase-token"` to the backend (`DEBUG=true` required). See `android/app/src/androidTest/CLAUDE.md` for full auth flow, execution order, and state setup details.
 
 ### Backend Test Fixtures
 
-Defined in `backend/tests/conftest.py`:
-
-| Fixture | Purpose |
-|---------|---------|
-| `cleanup_production_engine` | Auto-use: disposes asyncpg production engine after each test |
-| `db_engine` | Creates SQLite test engine, creates/drops all tables |
-| `db_session` | Async SQLAlchemy session (SQLite in-memory) |
-| `test_user` | Creates a test user in the DB |
-| `client` | Authenticated AsyncClient (auth dependency overridden) |
-| `unauthenticated_client` | AsyncClient with DB override only (for testing 401 responses) |
-| `auth_token` | Valid JWT for test_user |
-| `authenticated_client` | AsyncClient with `Authorization: Bearer` header pre-set |
-
-**Important:** When adding new models, import them in `conftest.py` so SQLite creates the tables. Use `unauthenticated_client` for tests that verify auth is required.
+Defined in `backend/tests/conftest.py`. Key fixtures: `client` (most tests, pre-authenticated), `unauthenticated_client` (testing 401s), `authenticated_client` (JWT verification), `db_session` (direct service tests). When adding new models, import them in `conftest.py` so SQLite creates tables. See `backend/tests/CLAUDE.md` for full fixture guide.
 
 ## Domain Models
 
@@ -442,9 +429,8 @@ AI-powered meal planning using Google Gemini (`gemini-2.5-flash` via `google-gen
 | Meal generation timeout | Migrated to `google-genai` SDK with native async (`client.aio`). AI takes 4-7 seconds; E2E tests use 30-second timeout. Old `google-generativeai` SDK blocked uvicorn event loop. |
 | Room DB not found | Run `./gradlew clean` then rebuild - schema may have changed |
 | Test flakiness | Use `waitUntil {}` in E2E tests; check `RetryUtils.kt` for patterns |
-| Screenshot "Could not process image" | Use PNG format, avoid fullPage on long pages, limit to 1280x720, verify file saved before reading. See Screenshots rule above. |
-| Screenshot "image dimensions exceed max" (API 400) | Auto-resized by PostToolUse hook (`.claude/hooks/post-screenshot-resize.sh`). Max 1800px per dimension. To batch-resize existing files: `python .claude/hooks/resize_screenshot.py --all`. Manual fallback: `browser_resize(1280, 720)` before Playwright screenshots. |
-| ADB screenshot corrupted (text in PNG) | When emulator has multiple displays, `adb exec-out screencap -p` prepends `[Warning] Multiple displays were found...` text before PNG data. Auto-fixed by `post-screenshot-resize.sh` hook (strips ADB warnings via `resize_screenshot.py`, auto-retries without `-d` flag on failure). Do NOT use `-d 0` — it fails with "Display Id '0' is not valid" on some emulators. Manual fix: `python .claude/hooks/resize_screenshot.py --all`. |
+| Screenshot processing errors | Use PNG, limit to 1280x720, avoid `fullPage` on long pages. Auto-resized by `post-screenshot-resize.sh` hook (max 1800px). Batch fix: `python .claude/hooks/resize_screenshot.py --all` |
+| ADB screenshot corrupted | Do NOT use `-d 0`. Hook auto-strips `[Warning] Multiple displays...` text and retries. Manual fix: `python .claude/hooks/resize_screenshot.py --all` |
 | 4 auth tests fail | Pre-existing: `conftest.py` globally overrides auth dependency, causing 4 failures in `test_auth.py`. Not a regression. |
 | OnboardingViewModelTest won't compile | Pre-existing: missing `generateMealPlanUseCase` constructor param. Not a regression. |
 | Festivals/Stats tests | `test_festivals_api.py` (9 tests) and `test_stats_api.py` (10 tests) now exist. |
@@ -789,6 +775,17 @@ The `.claude/` directory contains Claude Code customization:
 | `/deploy` | Deployment workflow |
 | `/sync-check` | Verify offline/online sync consistency |
 | `/verify-screenshots` | Deep screenshot + backend verification |
+
+### Sub-directory CLAUDE.md Files
+
+Path-specific context files loaded automatically when working in these directories:
+
+| File | Scope |
+|------|-------|
+| `android/CLAUDE.md` | Build commands, module structure, key build config gotchas |
+| `backend/CLAUDE.md` | Backend structure, 5-location model rule, AI module, service patterns |
+| `backend/tests/CLAUDE.md` | Test fixture selection guide, SQLite vs PostgreSQL differences, known issues |
+| `android/app/src/androidTest/CLAUDE.md` | E2E test architecture, fake auth flow, robot pattern, state sharing |
 
 ## Key Documentation
 
