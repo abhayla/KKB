@@ -91,6 +91,10 @@ backend/scripts/add_pg_hba_rule.py
 backend/scripts/append_pg_hba.py
 backend/scripts/update_pg_hba.py
 
+# Performance test reports
+backend/tests/performance/reports/*.html
+backend/tests/performance/reports/*.csv
+
 # Testing/Debug
 .playwright-mcp/
 docs/testing/screenshots/

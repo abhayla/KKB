@@ -276,8 +276,9 @@ Wait 3 seconds, dump UI, detect which screen:
 
 **If on Auth screen:**
 1. Find "Sign in with Google" button, compute center from bounds, tap via ADB
-2. Wait up to 10 seconds for auth to complete (fake-firebase-token auto-authenticates)
-3. If onboarding appears next, proceed to onboarding steps below
+2. Google account picker appears — select the test account (`abhayfaircent@gmail.com` primary, `zmphzc@gmail.com` secondary). Credentials in `memory/test-accounts.md`
+3. Wait up to 15 seconds for OAuth to complete and transition
+4. If onboarding appears next, proceed to onboarding steps below
 
 **If on Onboarding — complete all 5 steps:**
 

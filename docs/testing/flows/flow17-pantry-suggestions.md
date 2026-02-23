@@ -32,8 +32,8 @@
 
 | Field | Value |
 |-------|-------|
-| Email | `e2e-test@rasoiai.test` |
-| Auth Token | `fake-firebase-token` |
+| Email | `abhayfaircent@gmail.com` (primary) or `zmphzc@gmail.com` (secondary) |
+| Auth | Real Google OAuth (account must be signed into emulator) |
 | Display Name | Abhay Sharma |
 | Dietary Preference | Vegetarian |
 | Cuisines | North Indian, South Indian |

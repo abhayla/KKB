@@ -12,7 +12,7 @@ Comprehensive test suite for the Sharma family Recipe Rules profile, verifying a
 
 | Attribute | Value |
 |-----------|-------|
-| Email | abhayinfosys@gmail.com |
+| Email | `abhayfaircent@gmail.com` (primary test account) |
 | Diet | Vegetarian + Sattvic |
 | Family Size | 3 |
 | Cuisines | North, South Indian |

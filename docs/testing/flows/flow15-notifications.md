@@ -31,8 +31,8 @@
 
 | Field | Value |
 |-------|-------|
-| Email | `e2e-test@rasoiai.test` |
-| Auth Token | `fake-firebase-token` |
+| Email | `abhayfaircent@gmail.com` (primary) or `zmphzc@gmail.com` (secondary) |
+| Auth | Real Google OAuth (account must be signed into emulator) |
 | Display Name | Abhay Sharma |
 | State | Has completed onboarding, has 1 active meal plan |
 

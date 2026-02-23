@@ -1,8 +1,8 @@
 [versions]
 # Kotlin & Android
-kotlin = "1.9.22"
-agp = "8.13.2"
-ksp = "1.9.22-1.0.17"
+kotlin = "2.2.10"
+agp = "9.0.1"
+ksp = "2.3.2"
 google-services = "4.4.0"
 
 # Crashlytics & Analytics
@@ -198,6 +198,7 @@ hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 google-services = { id = "com.google.gms.google-services", version.ref = "google-services" }
 firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "crashlytics-plugin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 
 [bundles]
 compose = ["compose-ui", "compose-ui-graphics", "compose-ui-tooling-preview", "compose-material3", "compose-material-icons"]

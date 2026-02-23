@@ -41,8 +41,11 @@ Reference file for `/adb-test` command. Each screen defines:
 
 ### Known Issues
 
-- Fake auth (`fake-firebase-token`) bypasses Google OAuth, returns immediately
-- E2E test email is `e2e-test@rasoiai.test` (changed from `abhayinfosys@gmail.com`)
+- Fake auth (`fake-firebase-token`) bypasses Google OAuth in Compose instrumented tests only
+- ADB tests use real Google OAuth with test Gmail accounts (see `memory/test-accounts.md` for credentials)
+- Primary ADB test account: `abhayfaircent@gmail.com`
+- Secondary ADB test account: `zmphzc@gmail.com`
+- Emulator must have one of these Google accounts signed in before ADB auth flow
 
 ---
 
@@ -440,7 +443,7 @@ curl -s -H "Authorization: Bearer $JWT" http://localhost:8000/api/v1/stats
 
 ### Data Validation
 
-- User email should match the test account email
+- User email should match the test account (`abhayfaircent@gmail.com` or `zmphzc@gmail.com`)
 - Toggle states should reflect actual preferences
 - Section headers should be properly organized
 
@@ -1262,7 +1265,7 @@ curl -s -H "Authorization: Bearer $JWT" http://localhost:8000/api/v1/users/me | 
 ### Data Validation
 
 - Name should match user's display name
-- Email should match test account email
+- Email should match test account (`abhayfaircent@gmail.com` or `zmphzc@gmail.com`)
 
 ### Backend Cross-Validation
 
