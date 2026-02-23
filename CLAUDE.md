@@ -156,6 +156,7 @@ PYTHONPATH=. pytest tests/test_preference_service.py::test_add_include_rule -v  
 
 # Database
 alembic upgrade head             # Run migrations
+alembic revision --autogenerate -m "description"  # New migration
 PYTHONPATH=. python scripts/seed_festivals.py
 PYTHONPATH=. python scripts/seed_achievements.py
 PYTHONPATH=. python scripts/import_recipes_postgres.py
@@ -322,7 +323,7 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 
 12 router files in `app/api/v1/endpoints/`: auth, chat, family_members, festivals, grocery, meal_plans, notifications, photos, recipe_rules, recipes, stats, users. Note: nutrition_goals endpoints are in `recipe_rules.py` (separate router, registered separately in `router.py` — 13 routers total). Run `PYTHONPATH=. pytest --collect-only -q` or visit `http://localhost:8000/docs` for current counts (~41 endpoints).
 
-**Full interactive docs:** `http://localhost:8000/docs` (Swagger UI)
+**Full interactive docs:** `http://localhost:8000/docs` (Swagger UI, only available when `DEBUG=true`)
 
 **Key backend files with gotchas:**
 
@@ -331,14 +332,32 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 | `app/db/postgres.py` | Has 3 model import blocks (init_db, create_tables, drop_tables) — must update all 3 when adding models |
 | `app/db/database.py` | `get_db()` dependency — imports from postgres.py |
 | `app/config.py` | Pydantic Settings — env vars, CORS (`["*"]`), JWT config, Sentry DSN |
-| `app/ai/chat_assistant.py` | Tool calling orchestration — ties Claude API to preference/rule services |
+| `app/ai/chat_assistant.py` | Tool calling orchestration (`MAX_TOOL_ITERATIONS=5`) — ties Claude API to preference/rule services |
 | `app/ai/claude_client.py` | Anthropic Claude client wrapper |
-| `app/ai/gemini_client.py` | Google Gemini client wrapper (google-genai SDK) |
+| `app/ai/gemini_client.py` | Google Gemini client wrapper (google-genai SDK). `MODEL_NAME = "gemini-2.5-flash"` — change it here only |
 | `app/ai/prompts/` | Prompt templates (`chat_prompt.py`, `meal_plan_prompt.py`) |
-| `app/ai/tools/` | Chat tool definitions (`preference_tools.py`) |
-| `app/cache/recipe_cache.py` | In-memory recipe cache, warmed on startup via `warm_recipe_cache()` |
+| `app/ai/tools/` | Chat tool definitions (`preference_tools.py`). `ALL_CHAT_TOOLS` — add new tools here AND in `chat_assistant.py` |
+| `app/cache/recipe_cache.py` | In-memory recipe cache, warmed on startup via `warm_recipe_cache()` (non-fatal) |
 | `app/repositories/` | Data access layer (one per model); called by services, wraps SQLAlchemy queries |
 | `app/services/` | 17 service files, one per domain area; all follow same async pattern with `db: AsyncSession` param |
+
+**Router gotchas:**
+- `recipe_rules.py` defines **two routers**: one for recipe rules, one for nutrition goals. Don't create a separate `nutrition_goals.py`.
+- `family_members.py` is registered under `/users` prefix — full path is `/api/v1/users/family-members/`.
+
+**Service patterns:**
+- Services take `db: AsyncSession` as parameter (DI from endpoint). They do NOT create their own sessions (except some background tasks using `async_session_maker` directly).
+- `family_constraints.py` is a shared module imported by BOTH `ai_meal_service.py` AND the `recipe_rules.py` endpoint — changes affect meal generation AND rule validation simultaneously.
+- `ai_meal_service.py` defines a local `UserPreferences` dataclass that shadows `app.models.user.UserPreferences` — don't confuse them.
+- Chat context is limited to last 6 messages via `ChatRepository.get_context_for_claude(limit=6)`.
+
+**AI SDK note:** Uses `google-genai` SDK (NOT old `google-generativeai`) with native async `client.aio`. Do NOT revert — the old SDK blocked uvicorn's event loop.
+
+**Startup sequence:** `main.py` lifespan handler: Sentry init → `init_db()` → `warm_recipe_cache()` (non-fatal) → app ready.
+
+**SQLAlchemy async rules:**
+- Use `selectinload()` for eager loading — `joinedload` and lazy loading raise `MissingGreenlet`.
+- `expire_on_commit=False` is set in session maker — required for async; without it, post-commit attribute access fails.
 
 ## Database Schema
 
@@ -432,6 +451,32 @@ AI-powered meal planning using Google Gemini (`gemini-2.5-flash` via `google-gen
 | Enum case in Room tests | Room stores MealType as uppercase (`BREAKFAST`, `LUNCH`, `DINNER`, `SNACKS`). DtoMappers/EntityMappers tests must match. |
 | Backend changes not reflected | Stale `.pyc` cache: `find backend -name "*.pyc" -delete && find backend -name "__pycache__" -type d -exec rm -rf {} +` |
 | Recipe ID 500 errors in PostgreSQL | Always compare recipe IDs as strings in queries — `uuid.UUID` vs `String(36)` column type mismatch causes silent 500s |
+
+## VPS Deployment
+
+This project's development VPS is **544934-ABHAYVPS** (Windows Server 2022, IP `103.118.16.189`). All deployment happens from `C:\Apps\`. VPS documentation lives at `C:\Apps\shared\docs\` — **do NOT modify files in `C:\Apps\shared\`**.
+
+| Component | Version |
+|-----------|---------|
+| Node.js | v24.1.0 |
+| PM2 | 6.0.13 |
+| Nginx | 1.26.2 |
+| PostgreSQL | 16.8 |
+| Redis | Port 6379 |
+
+**Architecture:** Internet → Cloudflare (HTTPS) → Nginx (port 80, reverse proxy) → PM2 apps (ports 3001-3004, 8000).
+
+**Key VPS commands (PowerShell):**
+```powershell
+pm2 ls                                    # List all apps
+pm2 logs <app-name> --lines 100           # View logs
+pm2 restart <app-name> && pm2 save        # Restart + persist state
+cd C:\Apps\nginx && .\nginx.exe -t        # Test Nginx config
+cd C:\Apps\nginx && .\nginx.exe -s reload # Reload Nginx (zero-downtime)
+netstat -ano | findstr "3001 3002 3003 3004 8000"  # Check ports
+```
+
+**VPS documentation index:** `C:\Apps\shared\docs\README.md` — covers setup, PM2, Nginx, Cloudflare, CI/CD, monitoring, troubleshooting.
 
 ## Rules for Claude
 

@@ -2,6 +2,11 @@
 
 Based on the current architecture (Android + FastAPI + PostgreSQL + Firebase + Gemini/Claude APIs), here's a production plan customized for this app.
 
+**Infrastructure:** Windows Server 2022 VPS (103.118.16.189) with PM2, Nginx, Cloudflare, and local PostgreSQL 16.8.
+**Companion docs:**
+- [VPS-Only-Actions.md](./VPS-Only-Actions.md) — Step-by-step VPS setup (PM2 config, Nginx config, CI/CD workflow, backup scripts)
+- [Generic-Anywhere-Actions.md](./Generic-Anywhere-Actions.md) — Code/config security fixes (do these first)
+
 ---
 
 ## Phase 1: Security Hardening (Week 1-2)
@@ -13,7 +18,7 @@ Based on the current architecture (Android + FastAPI + PostgreSQL + Firebase + G
 | `DEBUG=true` | Fake Firebase token accepted | **Remove debug auth bypass** in `firebase.py`. Only real Firebase tokens in prod. |
 | CORS `["*"]` in `config.py` | Open to all origins | Restrict to your domain + `localhost` for dev |
 | `JWT_SECRET_KEY` | Likely short/simple | Generate 256-bit random key, rotate quarterly |
-| `.env` secrets | Flat file | Use a secrets manager (GCP Secret Manager / AWS SSM) |
+| `.env` secrets | Flat file | Restrict file ACL on VPS (`icacls .env /grant:r SYSTEM:R /deny Everyone:F`). Never commit to git. |
 | API rate limiting | None | Add `slowapi` or similar — especially on `/chat`, `/meal-plans/generate` (AI calls are expensive) |
 | Input validation | Pydantic models | Audit all endpoints for injection vectors, especially recipe search and chat |
 
@@ -41,71 +46,43 @@ Based on the current architecture (Android + FastAPI + PostgreSQL + Firebase + G
 
 ## Phase 2: Infrastructure Setup (Week 2-3)
 
-### Recommended Stack (India-optimized)
+### Production Stack
 
-| Component | Recommendation | Why |
-|-----------|---------------|-----|
-| **Backend hosting** | GCP Cloud Run (Mumbai `asia-south1`) | Auto-scaling, pay-per-request, lowest latency for India |
-| **Database** | Cloud SQL PostgreSQL (Mumbai) | Managed, automated backups, replicas |
-| **CDN/Static** | Cloudflare | Free tier covers recipe images, global edge |
-| **Monitoring** | Sentry (already configured) + GCP Cloud Monitoring | Already have `SENTRY_DSN` in config |
-| **CI/CD** | GitHub Actions (already set up) | Extend existing `android-ci.yml` and `backend-ci.yml` |
+| Component | Setup | Notes |
+|-----------|-------|-------|
+| **Backend hosting** | VPS (Windows Server 2022) via PM2 + uvicorn | Single instance, auto-restart on crash/OOM |
+| **Database** | Local PostgreSQL 16.8 | Daily backup via scheduled task |
+| **Reverse proxy** | Nginx 1.26.2 (port 80) | Proxies to PM2/uvicorn on port 8001 |
+| **SSL/CDN/WAF** | Cloudflare (proxied) | SSL termination, caching, DDoS protection |
+| **Process manager** | PM2 6.0.13 | Auto-restart, log management, startup persistence |
+| **Monitoring** | Sentry (already configured) + PM2 monit + health-check.ps1 | Error tracking + process monitoring |
+| **CI/CD** | GitHub Actions (existing) + self-hosted runner on VPS | Two-stage: test on Ubuntu, deploy on VPS |
 
-### Why GCP over AWS for this app
-
-- Firebase is GCP-native (auth, analytics, crashlytics — zero-latency integration)
-- Mumbai region (`asia-south1`) has excellent coverage for Tier 2/3 Indian cities
-- Cloud Run handles async FastAPI naturally
-- Gemini API is Google's — lower latency from GCP
-
-### Backend Deployment Architecture
+### Production Architecture
 
 ```
-                    ┌─────────────────┐
-                    │   Cloudflare    │
-                    │   (CDN + WAF)   │
-                    └────────┬────────┘
-                             │
-                    ┌────────▼────────┐
-                    │  GCP Load       │
-                    │  Balancer       │
-                    └────────┬────────┘
-                             │
-              ┌──────────────┼──────────────┐
-              ▼              ▼              ▼
-        ┌───────────┐ ┌───────────┐ ┌───────────┐
-        │ Cloud Run │ │ Cloud Run │ │ Cloud Run │
-        │ Instance  │ │ Instance  │ │ Instance  │
-        │ (auto)    │ │ (auto)    │ │ (auto)    │
-        └─────┬─────┘ └─────┬─────┘ └─────┬─────┘
-              │              │              │
-              └──────────────┼──────────────┘
-                             │
-                    ┌────────▼────────┐
-                    │  Cloud SQL      │
-                    │  PostgreSQL     │
-                    │  (asia-south1)  │
-                    └─────────────────┘
-```
-
-### Dockerfile for Backend
-
-```dockerfile
-FROM python:3.11-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+Cloudflare (SSL termination + CDN + WAF)
+         │ HTTPS
+         ▼
+   Nginx (:80, reverse proxy)
+    ├─ /api/*     →  PM2 → uvicorn (:8001)
+    ├─ /health    →  PM2 → uvicorn (:8001)
+    └─ /*         →  404
+                          │
+                   PostgreSQL (:5432, local)
+                   Redis (:6379, local)
 ```
 
 ### Key Infrastructure Decisions
 
 | Decision | Recommendation |
 |----------|---------------|
-| **Recipe cache** | In-memory `recipe_cache.py` works on Cloud Run but resets on cold start. Add Redis (Memorystore) if cold starts become problematic |
-| **File storage** | Recipe images / user photos → GCS bucket with signed URLs |
-| **Background jobs** | Meal generation takes 4-7s — Cloud Run handles this fine (timeout 300s default). No task queue needed initially |
+| **Recipe cache** | In-memory `recipe_cache.py` works but resets on process restart. Add Redis (already on port 6379) if restarts become frequent |
+| **File storage** | Recipe images / user photos — store locally or use a CDN-backed object store when needed |
+| **Background jobs** | Meal generation takes 4-7s — uvicorn handles this fine (async). No task queue needed initially |
+| **Port** | 8001 (port 8000 is taken by AlgoChanakya) |
+
+**Detailed setup instructions:** See [VPS-Only-Actions.md](./VPS-Only-Actions.md) sections 1-8 for PM2 config, Nginx config, PostgreSQL setup, Cloudflare DNS, and environment file.
 
 ---
 
@@ -191,20 +168,21 @@ android {
 |-------|------|----------------|
 | **Crashes** | Firebase Crashlytics | ANRs, exceptions, crash-free rate |
 | **Backend errors** | Sentry (already configured) | 500s, AI API failures, DB timeouts |
-| **API latency** | GCP Cloud Monitoring | P50/P95/P99 for all endpoints |
-| **AI reliability** | Custom metrics | Gemini generation success rate, retry counts |
+| **Process health** | PM2 (`pm2 monit`, `pm2 describe`) | CPU, memory, restart count, uptime |
+| **Endpoint health** | `health-check.ps1` (5-min scheduled task) | HTTP 200 from `localhost:8001/health` |
+| **AI reliability** | Custom Sentry tags + structured logging | Gemini generation success rate, retry counts |
 | **User analytics** | Firebase Analytics | Onboarding completion, meal plan views, feature adoption |
 | **Business metrics** | Custom dashboard | DAU, retention, recipes viewed, meals cooked |
 
 ### Critical Alerts to Set Up
 
 ```
-1. Meal generation failure rate > 5% in 1 hour
-2. API P95 latency > 3 seconds
-3. Database connection pool exhaustion
-4. AI API quota approaching limit
-5. Crash-free rate drops below 99%
-6. Cloud Run instance count > 10 (cost spike)
+1. Meal generation failure rate > 5% in 1 hour          → Sentry alert rule
+2. PM2 process restarts > 3 in 10 minutes               → health-check.ps1 escalation
+3. Database connection pool exhaustion                   → Sentry / structured logging
+4. AI API quota approaching limit                        → Sentry breadcrumbs
+5. Crash-free rate drops below 99%                       → Firebase Crashlytics alert
+6. Health check fails 3 consecutive times                → health-check.ps1 → email/webhook alert
 ```
 
 ### Key Backend Metrics to Add
@@ -222,6 +200,8 @@ logger.info("meal_generation_complete",
     rules_applied=len(include_rules) + len(exclude_rules))
 ```
 
+**VPS monitoring details:** See [VPS-Only-Actions.md](./VPS-Only-Actions.md) sections 11-12 for health monitoring integration and log management.
+
 ---
 
 ## Phase 6: Performance Optimization (Week 5-6)
@@ -230,10 +210,12 @@ logger.info("meal_generation_complete",
 
 | Optimization | Impact | Effort |
 |-------------|--------|--------|
-| Add Redis for recipe cache | Eliminates cold-start cache rebuild of 3,580 recipes | Medium |
-| Connection pooling tuning | `asyncpg` pool size based on Cloud Run concurrency | Low |
+| Add Redis for recipe cache | Eliminates cache rebuild on PM2 restart of 3,580 recipes. Redis already on port 6379. | Medium |
+| Connection pooling tuning | `asyncpg` pool size tuned for single-server PostgreSQL (local socket, low latency) | Low |
 | Meal plan response caching | Cache current week's plan per user (invalidate on swap/regenerate) | Medium |
 | Database indexes | Add indexes on `meal_plans(user_id, week_start_date)`, `recipes(cuisine_type, dietary_tags)` | Low |
+| PM2 memory management | `max_memory_restart: '500M'` in ecosystem config prevents memory leaks | Low |
+| Nginx proxy caching | Cache static/infrequently-changing responses at Nginx level | Low |
 
 ### Android
 
@@ -280,19 +262,23 @@ Week 8:  Open Beta (500-1000 users)
 ### Launch Day Checklist
 
 ```
-□ Backend deployed to Cloud Run (asia-south1)
-□ Cloud SQL PostgreSQL with automated daily backups
+□ Backend running via PM2 on VPS (port 8001, auto-restart enabled)
+□ Nginx reverse proxy configured (api.rasoiai.com → localhost:8001)
+□ Cloudflare DNS A record pointing to VPS (103.118.16.189, proxied)
+□ SSL/TLS active via Cloudflare (Flexible mode)
+□ Local PostgreSQL with daily backup scheduled task (2 AM)
 □ 3,580 recipes imported and cache warmed
 □ Festival data seeded for next 12 months
 □ Firebase production project configured
 □ Sentry alerts configured
+□ Health check monitoring includes port 8001
 □ Play Store listing live (Internal → Production)
 □ Rate limiting enabled on AI endpoints
 □ DEBUG=false in production .env
-□ SSL/TLS on all endpoints
 □ Domain configured (api.rasoiai.com)
 □ Privacy policy URL accessible
 □ Crash-free baseline established from beta
+□ PM2 state saved (pm2 save) for auto-start after reboot
 ```
 
 ### Staged Rollout
@@ -335,25 +321,30 @@ Day 21:  100% rollout
 | Phase | Duration | Estimated Monthly Cost |
 |-------|----------|----------------------|
 | Development (current) | Done | $0 (local) |
-| Infrastructure setup | 2 weeks | ~$50-100/month (Cloud Run + Cloud SQL minimal) |
-| Beta (100 users) | 4 weeks | ~$100-200/month |
-| Launch (1K users) | Ongoing | ~$200-500/month |
-| Growth (10K users) | Ongoing | ~$500-2,000/month |
-| Scale (50K users) | Ongoing | ~$2,000-8,000/month |
+| Infrastructure setup | 2 weeks | $0 (VPS already paid, shared with other apps) |
+| Beta (100 users) | 4 weeks | ~$10-30/month (AI API costs only) |
+| Launch (1K users) | Ongoing | ~$50-150/month (AI API costs) |
+| Growth (10K users) | Ongoing | ~$300-1,000/month (AI API costs) |
+| Scale (50K users) | Ongoing | ~$1,500-5,000/month (AI API costs, may need dedicated VPS) |
 
-**Biggest cost driver:** Claude API for chat. Consider Gemini Flash as a cheaper alternative for chat (~10x cheaper) and reserve Claude for complex tool-calling scenarios only.
+**Fixed costs:** VPS hosting is shared across 5+ apps — no additional infrastructure cost until scale demands a dedicated server.
+
+**Variable costs:** Almost entirely AI API usage. Claude chat is the biggest driver. Consider Gemini Flash as a cheaper alternative for chat (~10x cheaper) and reserve Claude for complex tool-calling scenarios only.
+
+**Scale trigger:** At ~50K users, evaluate whether the single VPS can handle the load. Options: upgrade VPS specs, add a second VPS with load balancing, or migrate compute-heavy workloads to a cloud provider.
 
 ---
 
 ## Immediate Next Steps (This Week)
 
-1. **Remove `DEBUG=true` auth bypass** from production path (keep for dev only via build config)
-2. **Create Dockerfile** for backend
-3. **Set up GCP project** with Cloud Run + Cloud SQL in `asia-south1`
-4. **Create release build flavor** with production API URL
-5. **Draft privacy policy** (required for Play Store)
+1. **Apply security fixes** from [Generic-Anywhere-Actions.md](./Generic-Anywhere-Actions.md) (remove debug bypass, restrict CORS, generate JWT secret)
+2. **Follow VPS setup** in [VPS-Only-Actions.md](./VPS-Only-Actions.md) (PostgreSQL → Python venv → PM2 → Nginx → Cloudflare)
+3. **Create release build flavor** with production API URL (`https://api.rasoiai.com`)
+4. **Draft privacy policy** (required for Play Store)
+5. **Set up database backup** scheduled task (daily at 2 AM)
 
 ---
 
 *Created: February 2026*
+*Updated: February 2026 — Rewritten for actual VPS infrastructure (Windows Server 2022 + PM2 + Nginx + Cloudflare)*
 *Architecture: Android (Kotlin/Compose) + FastAPI + PostgreSQL + Firebase + Gemini/Claude*
