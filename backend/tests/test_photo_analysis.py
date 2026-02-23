@@ -98,13 +98,16 @@ class TestPhotoAnalysis:
 
     @pytest.mark.asyncio
     @patch("app.services.photo_analysis_service.get_gemini_client")
-    async def test_api_exception_propagates(self, mock_get_client):
-        """Gemini API exceptions propagate to caller."""
+    async def test_api_exception_returns_error(self, mock_get_client):
+        """Gemini API exceptions return error dict instead of propagating."""
         mock_client = MagicMock()
         mock_client.aio.models.generate_content = AsyncMock(
             side_effect=Exception("API quota exceeded")
         )
         mock_get_client.return_value = mock_client
 
-        with pytest.raises(Exception, match="API quota exceeded"):
-            await analyze_food_photo(b"fake-image-data")
+        result = await analyze_food_photo(b"fake-image-data")
+
+        assert "error" in result
+        assert result["error"] == "Photo analysis failed. Please try again later."
+        assert len(result["identified_foods"]) == 0

@@ -60,10 +60,8 @@ async def analyze_food_photo(
         mime_type: Image MIME type (image/jpeg, image/png)
 
     Returns:
-        Analysis result with identified foods, ingredients, and nutrition
-
-    Raises:
-        Exception: If Gemini API call fails
+        Analysis result with identified foods, ingredients, and nutrition.
+        On failure, returns a dict with empty results and an 'error' key.
     """
     logger.info(f"Analyzing food photo ({len(image_data)} bytes, {mime_type})")
 
@@ -109,4 +107,10 @@ async def analyze_food_photo(
         }
     except Exception as e:
         logger.error(f"Gemini Vision API error: {e}")
-        raise
+        return {
+            "identified_foods": [],
+            "all_ingredients": [],
+            "overall_cuisine": "unknown",
+            "overall_meal_type": "unknown",
+            "error": "Photo analysis failed. Please try again later.",
+        }
