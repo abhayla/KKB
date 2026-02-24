@@ -32,7 +32,7 @@ app/
 ├── models/        # SQLAlchemy ORM (13 files, incl. usage_log, refresh_token)
 ├── repositories/  # Data access (5 files)
 ├── schemas/       # Pydantic request/response
-└── services/      # Business logic (21 files, incl. cleanup, usage_limit, user_deletion)
+└── services/      # Business logic (20 files, incl. cleanup, usage_limit, user_deletion)
 ```
 
 ## Adding a New Model (5 mandatory locations)
