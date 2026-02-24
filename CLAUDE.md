@@ -327,7 +327,7 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 | `app/ai/tools/` | Chat tool definitions (`preference_tools.py`). `ALL_CHAT_TOOLS` — add new tools here AND in `chat_assistant.py` |
 | `app/cache/recipe_cache.py` | In-memory recipe cache, warmed on startup via `warm_recipe_cache()` (non-fatal) |
 | `app/repositories/` | Data access layer (one per model); called by services, wraps SQLAlchemy queries |
-| `app/services/` | 21 service files, one per domain area; all follow same async pattern with `db: AsyncSession` param |
+| `app/services/` | 20 service files, one per domain area; all follow same async pattern with `db: AsyncSession` param |
 | `app/main.py` | SecurityHeadersMiddleware (X-Content-Type-Options, X-Frame-Options, HSTS, X-API-Version), rate limiting (slowapi) |
 
 **Router gotchas:**
@@ -725,6 +725,8 @@ The 7-step workflow (Rule #7) is enforced by shell hooks in `.claude/hooks/`. Al
 | `post-screenshot-resize.sh` | PostToolUse (Bash/Playwright) | Auto-resize screenshots >1800px |
 | `post-screenshot-validate.sh` | PostToolUse (Bash/Playwright) | Records screenshot metadata; validates file exists and non-zero; updates `screenshotsCaptured[]` in workflow state |
 | `auto-fix-pattern-scan.sh` | PostToolUse | Scans for common fix patterns after tool use |
+| `auto-format.sh` | PostToolUse | Auto-formats code after edits |
+| `post-skill-learning.sh` | PostToolUse (Skill) | Records skill outcomes for learning system |
 
 Workflow state is tracked in `.claude/workflow-state.json` (extended schema with `testFailuresPending`, `fixLoopInvestigating`, `visualIssuesPending`, `screenshotsCaptured`, `backendChecks`, `skillInvocations`, `evidence`, `agentDelegations`). The full hook system and enforcement logic is documented in `docs/rules/Claude Code Enforced Workflow Rules.md`.
 
