@@ -6,72 +6,28 @@ edge cases (duplicates, last_sync_time filtering, timezone).
 """
 
 import pytest
+import pytest_asyncio
 from datetime import datetime, timezone, timedelta
 from uuid import uuid4
 
-import pytest_asyncio
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user
-from app.db.database import get_db
-from app.main import app
-from app.models.recipe_rule import NutritionGoal, RecipeRule
-from app.models.user import User, UserPreferences
+from tests.factories import make_preferences
 
 
 # ==================== Fixtures ====================
 
 
-@pytest_asyncio.fixture
-async def test_user(db_session: AsyncSession) -> User:
-    """Create a test user in the test database."""
-    user_id = str(uuid4())
-    user = User(
-        id=user_id,
-        firebase_uid=f"firebase-sync-test-{user_id}",
-        email=f"sync-test-{user_id}@example.com",
-        name="Sync Test User",
-        is_onboarded=True,
-        is_active=True,
-    )
-    db_session.add(user)
-
-    prefs = UserPreferences(
-        id=str(uuid4()),
-        user_id=user_id,
-        dietary_type="vegetarian",
-        family_size=4,
-    )
+@pytest_asyncio.fixture(autouse=True)
+async def _ensure_preferences(db_session: AsyncSession, test_user):
+    """Ensure user preferences exist (required by sync endpoint)."""
+    prefs = make_preferences(test_user.id)
     db_session.add(prefs)
-
     await db_session.commit()
-    await db_session.refresh(user)
-    return user
 
 
-@pytest_asyncio.fixture
-async def authenticated_client(
-    db_session: AsyncSession, test_user: User
-) -> AsyncClient:
-    """Create a test client with authentication overridden."""
-
-    async def override_get_db():
-        yield db_session
-
-    async def override_get_current_user():
-        return test_user
-
-    app.dependency_overrides[get_db] = override_get_db
-    app.dependency_overrides[get_current_user] = override_get_current_user
-
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test",
-    ) as ac:
-        yield ac
-
-    app.dependency_overrides.clear()
+# ==================== Helpers ====================
 
 
 def _make_rule_sync_item(**overrides) -> dict:
@@ -109,9 +65,9 @@ def _make_goal_sync_item(**overrides) -> dict:
 
 
 @pytest.mark.asyncio
-async def test_sync_empty_both_directions(authenticated_client: AsyncClient):
+async def test_sync_empty_both_directions(client: AsyncClient):
     """Test sync with no pending changes in either direction."""
-    response = await authenticated_client.post(
+    response = await client.post(
         "/api/v1/recipe-rules/sync",
         json={
             "recipe_rules": [],
@@ -132,11 +88,11 @@ async def test_sync_empty_both_directions(authenticated_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_sync_new_rule_from_client(authenticated_client: AsyncClient):
+async def test_sync_new_rule_from_client(client: AsyncClient):
     """Test syncing a new rule from client to server."""
     rule_item = _make_rule_sync_item(target_name="Paratha")
 
-    response = await authenticated_client.post(
+    response = await client.post(
         "/api/v1/recipe-rules/sync",
         json={
             "recipe_rules": [rule_item],
@@ -150,7 +106,7 @@ async def test_sync_new_rule_from_client(authenticated_client: AsyncClient):
     assert rule_item["id"] in data["synced_rule_ids"]
 
     # Verify rule exists on server
-    get_response = await authenticated_client.get(
+    get_response = await client.get(
         f"/api/v1/recipe-rules/{rule_item['id']}"
     )
     assert get_response.status_code == 200
@@ -158,11 +114,11 @@ async def test_sync_new_rule_from_client(authenticated_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_sync_new_goal_from_client(authenticated_client: AsyncClient):
+async def test_sync_new_goal_from_client(client: AsyncClient):
     """Test syncing a new nutrition goal from client to server."""
     goal_item = _make_goal_sync_item(food_category="LEAFY_GREENS", weekly_target=7)
 
-    response = await authenticated_client.post(
+    response = await client.post(
         "/api/v1/recipe-rules/sync",
         json={
             "recipe_rules": [],
@@ -181,11 +137,11 @@ async def test_sync_new_goal_from_client(authenticated_client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_sync_conflict_server_wins_older_client_timestamp(
-    authenticated_client: AsyncClient,
+    client: AsyncClient,
 ):
     """Test that server wins when client timestamp is older."""
     # Create rule on server (gets current timestamp)
-    create_response = await authenticated_client.post(
+    create_response = await client.post(
         "/api/v1/recipe-rules",
         json={
             "target_type": "INGREDIENT",
@@ -201,7 +157,7 @@ async def test_sync_conflict_server_wins_older_client_timestamp(
 
     # Sync with old timestamp - server should win
     old_time = "2020-01-01T00:00:00+00:00"
-    response = await authenticated_client.post(
+    response = await client.post(
         "/api/v1/recipe-rules/sync",
         json={
             "recipe_rules": [
@@ -225,11 +181,11 @@ async def test_sync_conflict_server_wins_older_client_timestamp(
 
 @pytest.mark.asyncio
 async def test_sync_conflict_client_wins_newer_client_timestamp(
-    authenticated_client: AsyncClient,
+    client: AsyncClient,
 ):
     """Test that client wins when client timestamp is newer."""
     # Create rule on server
-    create_response = await authenticated_client.post(
+    create_response = await client.post(
         "/api/v1/recipe-rules",
         json={
             "target_type": "INGREDIENT",
@@ -244,7 +200,7 @@ async def test_sync_conflict_client_wins_newer_client_timestamp(
 
     # Sync with future timestamp - client should win
     future_time = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
-    response = await authenticated_client.post(
+    response = await client.post(
         "/api/v1/recipe-rules/sync",
         json={
             "recipe_rules": [
@@ -266,15 +222,15 @@ async def test_sync_conflict_client_wins_newer_client_timestamp(
     assert rule_id in data["synced_rule_ids"]
 
     # Verify the update was applied
-    get_response = await authenticated_client.get(f"/api/v1/recipe-rules/{rule_id}")
+    get_response = await client.get(f"/api/v1/recipe-rules/{rule_id}")
     assert get_response.json()["target_name"] == "Vada Pav Updated"
 
 
 @pytest.mark.asyncio
-async def test_sync_goal_conflict_server_wins(authenticated_client: AsyncClient):
+async def test_sync_goal_conflict_server_wins(client: AsyncClient):
     """Test that server wins for goal sync with older client timestamp."""
     # Create goal on server
-    create_response = await authenticated_client.post(
+    create_response = await client.post(
         "/api/v1/nutrition-goals",
         json={
             "food_category": "PROTEIN",
@@ -286,7 +242,7 @@ async def test_sync_goal_conflict_server_wins(authenticated_client: AsyncClient)
     goal_id = create_response.json()["id"]
 
     old_time = "2020-01-01T00:00:00+00:00"
-    response = await authenticated_client.post(
+    response = await client.post(
         "/api/v1/recipe-rules/sync",
         json={
             "recipe_rules": [],
@@ -308,9 +264,9 @@ async def test_sync_goal_conflict_server_wins(authenticated_client: AsyncClient)
 
 
 @pytest.mark.asyncio
-async def test_sync_goal_conflict_client_wins(authenticated_client: AsyncClient):
+async def test_sync_goal_conflict_client_wins(client: AsyncClient):
     """Test that client wins for goal sync with newer client timestamp."""
-    create_response = await authenticated_client.post(
+    create_response = await client.post(
         "/api/v1/nutrition-goals",
         json={
             "food_category": "FERMENTED",
@@ -322,7 +278,7 @@ async def test_sync_goal_conflict_client_wins(authenticated_client: AsyncClient)
     goal_id = create_response.json()["id"]
 
     future_time = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
-    response = await authenticated_client.post(
+    response = await client.post(
         "/api/v1/recipe-rules/sync",
         json={
             "recipe_rules": [],
@@ -347,14 +303,14 @@ async def test_sync_goal_conflict_client_wins(authenticated_client: AsyncClient)
 
 
 @pytest.mark.asyncio
-async def test_sync_batch_five_rules(authenticated_client: AsyncClient):
+async def test_sync_batch_five_rules(client: AsyncClient):
     """Test syncing 5 new rules in a single batch."""
     rules = [
         _make_rule_sync_item(target_name=name)
         for name in ["Chai", "Dosa", "Idli", "Poha", "Upma"]
     ]
 
-    response = await authenticated_client.post(
+    response = await client.post(
         "/api/v1/recipe-rules/sync",
         json={
             "recipe_rules": rules,
@@ -368,19 +324,19 @@ async def test_sync_batch_five_rules(authenticated_client: AsyncClient):
     assert len(data["synced_rule_ids"]) == 5
 
     # Verify all exist
-    list_response = await authenticated_client.get("/api/v1/recipe-rules")
+    list_response = await client.get("/api/v1/recipe-rules")
     assert list_response.json()["total_count"] == 5
 
 
 @pytest.mark.asyncio
-async def test_sync_batch_three_goals(authenticated_client: AsyncClient):
+async def test_sync_batch_three_goals(client: AsyncClient):
     """Test syncing 3 new goals in a single batch."""
     goals = [
         _make_goal_sync_item(food_category=cat)
         for cat in ["PROTEIN", "LEAFY_GREENS", "FERMENTED"]
     ]
 
-    response = await authenticated_client.post(
+    response = await client.post(
         "/api/v1/recipe-rules/sync",
         json={
             "recipe_rules": [],
@@ -395,7 +351,7 @@ async def test_sync_batch_three_goals(authenticated_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_sync_batch_mixed_rules_and_goals(authenticated_client: AsyncClient):
+async def test_sync_batch_mixed_rules_and_goals(client: AsyncClient):
     """Test syncing rules and goals together."""
     rules = [
         _make_rule_sync_item(target_name="Roti"),
@@ -403,7 +359,7 @@ async def test_sync_batch_mixed_rules_and_goals(authenticated_client: AsyncClien
     ]
     goals = [_make_goal_sync_item(food_category="OMEGA_3")]
 
-    response = await authenticated_client.post(
+    response = await client.post(
         "/api/v1/recipe-rules/sync",
         json={
             "recipe_rules": rules,
@@ -419,12 +375,12 @@ async def test_sync_batch_mixed_rules_and_goals(authenticated_client: AsyncClien
 
 
 @pytest.mark.asyncio
-async def test_sync_large_batch_ten_rules(authenticated_client: AsyncClient):
+async def test_sync_large_batch_ten_rules(client: AsyncClient):
     """Test syncing 10 rules in a single batch."""
     items = [f"Item_{i}" for i in range(10)]
     rules = [_make_rule_sync_item(target_name=name) for name in items]
 
-    response = await authenticated_client.post(
+    response = await client.post(
         "/api/v1/recipe-rules/sync",
         json={
             "recipe_rules": rules,
@@ -441,10 +397,10 @@ async def test_sync_large_batch_ten_rules(authenticated_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_sync_duplicate_rule_in_batch(authenticated_client: AsyncClient):
+async def test_sync_duplicate_rule_in_batch(client: AsyncClient):
     """Test that syncing a duplicate rule (same target/action) is treated as conflict."""
     # Create rule on server first
-    await authenticated_client.post(
+    await client.post(
         "/api/v1/recipe-rules",
         json={
             "target_type": "INGREDIENT",
@@ -463,7 +419,7 @@ async def test_sync_duplicate_rule_in_batch(authenticated_client: AsyncClient):
         target_type="INGREDIENT",
     )
 
-    response = await authenticated_client.post(
+    response = await client.post(
         "/api/v1/recipe-rules/sync",
         json={
             "recipe_rules": [dup_rule],
@@ -479,10 +435,10 @@ async def test_sync_duplicate_rule_in_batch(authenticated_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_sync_with_last_sync_time_filters(authenticated_client: AsyncClient):
+async def test_sync_with_last_sync_time_filters(client: AsyncClient):
     """Test that last_sync_time filters server response."""
     # Create a rule via direct API (gets server timestamp)
-    create_response = await authenticated_client.post(
+    create_response = await client.post(
         "/api/v1/recipe-rules",
         json={
             "target_type": "INGREDIENT",
@@ -497,7 +453,7 @@ async def test_sync_with_last_sync_time_filters(authenticated_client: AsyncClien
 
     # Use a future last_sync_time - should filter out the rule
     future_time = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
-    response = await authenticated_client.post(
+    response = await client.post(
         "/api/v1/recipe-rules/sync",
         json={
             "recipe_rules": [],
@@ -513,11 +469,11 @@ async def test_sync_with_last_sync_time_filters(authenticated_client: AsyncClien
 
 
 @pytest.mark.asyncio
-async def test_sync_returns_all_server_rules(authenticated_client: AsyncClient):
+async def test_sync_returns_all_server_rules(client: AsyncClient):
     """Test that sync without last_sync_time returns all server rules."""
     # Create 3 rules via API
     for name in ["Rule1", "Rule2", "Rule3"]:
-        await authenticated_client.post(
+        await client.post(
             "/api/v1/recipe-rules",
             json={
                 "target_type": "INGREDIENT",
@@ -529,7 +485,7 @@ async def test_sync_returns_all_server_rules(authenticated_client: AsyncClient):
             },
         )
 
-    response = await authenticated_client.post(
+    response = await client.post(
         "/api/v1/recipe-rules/sync",
         json={
             "recipe_rules": [],
@@ -544,10 +500,10 @@ async def test_sync_returns_all_server_rules(authenticated_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_sync_timezone_aware_comparison(authenticated_client: AsyncClient):
+async def test_sync_timezone_aware_comparison(client: AsyncClient):
     """Test that timezone-naive and timezone-aware timestamps are handled correctly."""
     # Create rule on server
-    create_response = await authenticated_client.post(
+    create_response = await client.post(
         "/api/v1/recipe-rules",
         json={
             "target_type": "INGREDIENT",
@@ -562,7 +518,7 @@ async def test_sync_timezone_aware_comparison(authenticated_client: AsyncClient)
 
     # Sync with timezone-aware future timestamp (should win)
     future_time = (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat()
-    response = await authenticated_client.post(
+    response = await client.post(
         "/api/v1/recipe-rules/sync",
         json={
             "recipe_rules": [

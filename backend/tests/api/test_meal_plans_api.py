@@ -21,13 +21,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest_asyncio
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user
-from app.db.database import get_db
-from app.main import app
 from app.models.user import User
+from tests.api.conftest import make_api_client
+from tests.factories import make_user
 
 
 # ==================== Test Data Builders ====================
@@ -109,15 +108,7 @@ def _make_plan(
 @pytest_asyncio.fixture
 async def mp_user(db_session: AsyncSession) -> User:
     """Create a user for meal plan tests."""
-    user_id = str(uuid4())
-    user = User(
-        id=user_id,
-        firebase_uid=f"firebase-mp-{user_id}",
-        email=f"mp-{user_id}@example.com",
-        name="MealPlan Test User",
-        is_onboarded=True,
-        is_active=True,
-    )
+    user = make_user(name="MealPlan Test User")
     db_session.add(user)
     await db_session.commit()
     await db_session.refresh(user)
@@ -127,23 +118,8 @@ async def mp_user(db_session: AsyncSession) -> User:
 @pytest_asyncio.fixture
 async def mp_client(db_session: AsyncSession, mp_user: User):
     """Authenticated client for meal plan user."""
-
-    async def override_get_db():
-        yield db_session
-
-    async def override_get_current_user():
-        return mp_user
-
-    app.dependency_overrides[get_db] = override_get_db
-    app.dependency_overrides[get_current_user] = override_get_current_user
-
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test",
-    ) as ac:
-        yield ac
-
-    app.dependency_overrides.clear()
+    async with make_api_client(db_session, mp_user) as c:
+        yield c
 
 
 # ==================== POST /generate Tests ====================

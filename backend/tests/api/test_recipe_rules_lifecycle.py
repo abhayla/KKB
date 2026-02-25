@@ -5,17 +5,15 @@ partial updates, cross-user isolation, and ordering.
 
 import pytest
 from datetime import datetime, timezone
-from uuid import uuid4
 
 import pytest_asyncio
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user
-from app.db.database import get_db
-from app.main import app
-from app.models.recipe_rule import NutritionGoal, RecipeRule
-from app.models.user import User, UserPreferences
+from app.models.user import User
+
+from tests.api.conftest import make_api_client
+from tests.factories import make_user, make_preferences
 
 
 # ==================== Fixtures ====================
@@ -24,25 +22,10 @@ from app.models.user import User, UserPreferences
 @pytest_asyncio.fixture
 async def test_user(db_session: AsyncSession) -> User:
     """Create a test user in the test database."""
-    user_id = str(uuid4())
-    user = User(
-        id=user_id,
-        firebase_uid=f"firebase-lifecycle-test-{user_id}",
-        email=f"lifecycle-test-{user_id}@example.com",
-        name="Lifecycle Test User",
-        is_onboarded=True,
-        is_active=True,
-    )
+    user = make_user(name="Lifecycle Test User")
     db_session.add(user)
-
-    prefs = UserPreferences(
-        id=str(uuid4()),
-        user_id=user_id,
-        dietary_type="vegetarian",
-        family_size=4,
-    )
+    prefs = make_preferences(user.id)
     db_session.add(prefs)
-
     await db_session.commit()
     await db_session.refresh(user)
     return user
@@ -51,25 +34,10 @@ async def test_user(db_session: AsyncSession) -> User:
 @pytest_asyncio.fixture
 async def test_user_b(db_session: AsyncSession) -> User:
     """Create a second test user for cross-user isolation tests."""
-    user_id = str(uuid4())
-    user = User(
-        id=user_id,
-        firebase_uid=f"firebase-lifecycle-b-{user_id}",
-        email=f"lifecycle-b-{user_id}@example.com",
-        name="Lifecycle Test User B",
-        is_onboarded=True,
-        is_active=True,
-    )
+    user = make_user(name="Lifecycle Test User B")
     db_session.add(user)
-
-    prefs = UserPreferences(
-        id=str(uuid4()),
-        user_id=user_id,
-        dietary_type="non-vegetarian",
-        family_size=2,
-    )
+    prefs = make_preferences(user.id, dietary_type="non-vegetarian", family_size=2)
     db_session.add(prefs)
-
     await db_session.commit()
     await db_session.refresh(user)
     return user
@@ -80,23 +48,8 @@ async def authenticated_client(
     db_session: AsyncSession, test_user: User
 ) -> AsyncClient:
     """Create a test client authenticated as test_user."""
-
-    async def override_get_db():
-        yield db_session
-
-    async def override_get_current_user():
-        return test_user
-
-    app.dependency_overrides[get_db] = override_get_db
-    app.dependency_overrides[get_current_user] = override_get_current_user
-
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test",
-    ) as ac:
-        yield ac
-
-    app.dependency_overrides.clear()
+    async with make_api_client(db_session, test_user) as c:
+        yield c
 
 
 # Helper to create a rule and return its ID
@@ -343,26 +296,15 @@ async def test_user_b_cannot_see_user_a_rules(
     test_user_b: User,
 ):
     """Test that user B cannot see user A's rules."""
-
-    async def override_get_db():
-        yield db_session
-
     # Create rule as user A
-    app.dependency_overrides[get_db] = override_get_db
-    app.dependency_overrides[get_current_user] = lambda: test_user
-
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client_a:
+    async with make_api_client(db_session, test_user) as client_a:
         await _create_rule(client_a, target_name="Secret Chai")
 
     # List as user B - should see nothing
-    app.dependency_overrides[get_current_user] = lambda: test_user_b
-
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client_b:
+    async with make_api_client(db_session, test_user_b) as client_b:
         response = await client_b.get("/api/v1/recipe-rules")
         assert response.status_code == 200
         assert response.json()["total_count"] == 0
-
-    app.dependency_overrides.clear()
 
 
 @pytest.mark.asyncio
@@ -372,27 +314,17 @@ async def test_user_b_cannot_update_user_a_rules(
     test_user_b: User,
 ):
     """Test that user B cannot update user A's rules."""
-
-    async def override_get_db():
-        yield db_session
-
-    app.dependency_overrides[get_db] = override_get_db
-    app.dependency_overrides[get_current_user] = lambda: test_user
-
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client_a:
+    # Create rule as user A
+    async with make_api_client(db_session, test_user) as client_a:
         rule_id = await _create_rule(client_a, target_name="Guarded Dal")
 
     # Try to update as user B
-    app.dependency_overrides[get_current_user] = lambda: test_user_b
-
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client_b:
+    async with make_api_client(db_session, test_user_b) as client_b:
         response = await client_b.put(
             f"/api/v1/recipe-rules/{rule_id}",
             json={"target_name": "Hacked Dal"},
         )
         assert response.status_code == 404
-
-    app.dependency_overrides.clear()
 
 
 @pytest.mark.asyncio
@@ -402,31 +334,19 @@ async def test_user_b_cannot_delete_user_a_rules(
     test_user_b: User,
 ):
     """Test that user B cannot delete user A's rules."""
-
-    async def override_get_db():
-        yield db_session
-
-    app.dependency_overrides[get_db] = override_get_db
-    app.dependency_overrides[get_current_user] = lambda: test_user
-
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client_a:
+    # Create rule as user A
+    async with make_api_client(db_session, test_user) as client_a:
         rule_id = await _create_rule(client_a, target_name="Protected Rice")
 
     # Try to delete as user B
-    app.dependency_overrides[get_current_user] = lambda: test_user_b
-
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client_b:
+    async with make_api_client(db_session, test_user_b) as client_b:
         response = await client_b.delete(f"/api/v1/recipe-rules/{rule_id}")
         assert response.status_code == 404
 
     # Verify rule still exists for user A
-    app.dependency_overrides[get_current_user] = lambda: test_user
-
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client_a:
+    async with make_api_client(db_session, test_user) as client_a:
         get_response = await client_a.get(f"/api/v1/recipe-rules/{rule_id}")
         assert get_response.status_code == 200
-
-    app.dependency_overrides.clear()
 
 
 # ==================== Ordering Tests ====================

@@ -7,17 +7,16 @@ Covers:
 """
 
 import pytest
-from uuid import uuid4
 
 import pytest_asyncio
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user
-from app.db.database import get_db
-from app.main import app
 from app.models.user import User, UserPreferences
+
+from tests.api.conftest import make_api_client
+from tests.factories import make_user, make_preferences
 
 
 # ==================== Fixtures ====================
@@ -26,15 +25,7 @@ from app.models.user import User, UserPreferences
 @pytest_asyncio.fixture
 async def user_no_prefs(db_session: AsyncSession) -> User:
     """Create a test user WITHOUT preferences."""
-    user_id = str(uuid4())
-    user = User(
-        id=user_id,
-        firebase_uid=f"firebase-user-noprefs-{user_id}",
-        email=f"noprefs-{user_id}@example.com",
-        name="User No Prefs",
-        is_onboarded=False,
-        is_active=True,
-    )
+    user = make_user(name="User No Prefs", is_onboarded=False)
     db_session.add(user)
     await db_session.commit()
     await db_session.refresh(user)
@@ -44,23 +35,11 @@ async def user_no_prefs(db_session: AsyncSession) -> User:
 @pytest_asyncio.fixture
 async def user_with_prefs(db_session: AsyncSession) -> User:
     """Create a test user WITH existing preferences."""
-    user_id = str(uuid4())
-    user = User(
-        id=user_id,
-        firebase_uid=f"firebase-user-prefs-{user_id}",
-        email=f"prefs-{user_id}@example.com",
-        name="User With Prefs",
-        is_onboarded=True,
-        is_active=True,
-    )
+    user = make_user(name="User With Prefs")
     db_session.add(user)
     await db_session.flush()
-
-    prefs = UserPreferences(
-        id=str(uuid4()),
-        user_id=user_id,
-        dietary_type="vegetarian",
-        family_size=4,
+    prefs = make_preferences(
+        user.id,
         cuisine_preferences=["north", "south"],
         spice_level="medium",
         cooking_time_preference="moderate",
@@ -77,20 +56,7 @@ async def user_with_prefs(db_session: AsyncSession) -> User:
 
 def _make_client(db_session, user):
     """Helper to build an authenticated test client for a specific user."""
-
-    async def override_get_db():
-        yield db_session
-
-    async def override_get_current_user():
-        return user
-
-    app.dependency_overrides[get_db] = override_get_db
-    app.dependency_overrides[get_current_user] = override_get_current_user
-
-    return AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test",
-    )
+    return make_api_client(db_session, user)
 
 
 # ==================== GET /me Tests ====================
@@ -104,7 +70,6 @@ async def test_get_current_user_with_preferences(
     async with _make_client(db_session, user_with_prefs) as ac:
         response = await ac.get("/api/v1/users/me")
 
-    app.dependency_overrides.clear()
 
     assert response.status_code == 200
     data = response.json()
@@ -133,7 +98,6 @@ async def test_get_current_user_no_preferences(
     async with _make_client(db_session, user_no_prefs) as ac:
         response = await ac.get("/api/v1/users/me")
 
-    app.dependency_overrides.clear()
 
     assert response.status_code == 200
     data = response.json()
@@ -167,7 +131,6 @@ async def test_update_preferences_first_time(
             },
         )
 
-    app.dependency_overrides.clear()
 
     assert response.status_code == 200
     data = response.json()
@@ -191,7 +154,6 @@ async def test_update_preferences_existing(
             },
         )
 
-    app.dependency_overrides.clear()
 
     assert response.status_code == 200
     data = response.json()
@@ -214,7 +176,6 @@ async def test_update_preferences_primary_diet_mapping(
             json={"primary_diet": "vegan"},
         )
 
-    app.dependency_overrides.clear()
 
     assert response.status_code == 200
     assert response.json()["preferences"]["dietary_type"] == "vegan"
@@ -238,7 +199,6 @@ async def test_update_preferences_busy_days(
             json={"busy_days": ["TUESDAY", "THURSDAY"]},
         )
 
-    app.dependency_overrides.clear()
 
     assert response.status_code == 200
     assert response.json()["preferences"]["busy_days"] == ["TUESDAY", "THURSDAY"]
@@ -258,7 +218,6 @@ async def test_update_preferences_cooking_times(
             },
         )
 
-    app.dependency_overrides.clear()
 
     assert response.status_code == 200
     prefs = response.json()["preferences"]
@@ -279,7 +238,6 @@ async def test_update_preferences_marks_onboarded(
             json={"household_size": 2},
         )
 
-    app.dependency_overrides.clear()
 
     assert response.status_code == 200
     assert response.json()["is_onboarded"] is True
