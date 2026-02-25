@@ -1,6 +1,5 @@
 """Pytest configuration and fixtures."""
 
-import asyncio
 import sqlite3
 import uuid
 from typing import AsyncGenerator
@@ -19,10 +18,9 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
-from app.config import settings
 from app.db.base import Base
 from app.db.database import get_db
-from app.db.postgres import engine as production_engine, async_session_maker as prod_session_maker
+from app.db.postgres import engine as production_engine
 from app.main import app
 from app.models.user import User
 
@@ -125,12 +123,27 @@ async def test_user(db_session: AsyncSession) -> User:
     return user
 
 
+@pytest.fixture(autouse=True)
+def _clear_dependency_overrides():
+    """Clear FastAPI dependency overrides after every test.
+
+    Prevents stale overrides from leaking between tests when they run
+    in different orderings (fixes email_uniqueness test failures in
+    full-suite runs).
+    """
+    yield
+    app.dependency_overrides.clear()
+
+
+# ==================== Legacy Client Fixtures ====================
+# These will be removed after all test files are moved to subdirectories.
+# They are duplicated in tests/api/conftest.py using make_api_client.
+
+
 @pytest_asyncio.fixture(scope="function")
 async def client(db_session: AsyncSession, test_user: User) -> AsyncGenerator[AsyncClient, None]:
     """Create test HTTP client with database and auth overrides."""
     from app.api.deps import get_current_user
-    from app.core.security import create_access_token
-    from datetime import timedelta
 
     async def override_get_db():
         yield db_session
@@ -138,11 +151,9 @@ async def client(db_session: AsyncSession, test_user: User) -> AsyncGenerator[As
     async def override_get_current_user():
         return test_user
 
-    # Override dependencies
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_current_user] = override_get_current_user
 
-    # Patch UserRepository to use test session
     def mock_session_maker():
         return _test_session_maker()
 
@@ -153,8 +164,6 @@ async def client(db_session: AsyncSession, test_user: User) -> AsyncGenerator[As
             base_url="http://test",
         ) as ac:
             yield ac
-
-    app.dependency_overrides.clear()
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -176,8 +185,6 @@ async def unauthenticated_client(db_session: AsyncSession) -> AsyncGenerator[Asy
             base_url="http://test",
         ) as ac:
             yield ac
-
-    app.dependency_overrides.clear()
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -222,5 +229,3 @@ async def authenticated_client(
             headers={"Authorization": f"Bearer {auth_token}"},
         ) as ac:
             yield ac
-
-    app.dependency_overrides.clear()
