@@ -34,6 +34,23 @@ class FeatureViewModel @Inject constructor(
 - Tags defined in `presentation/common/TestTags.kt` — never use raw strings
 
 ## Design System
-- Primary: `#FF6838` (Orange), Secondary: `#5A822B` (Green), Background: `#FDFAF4` (Cream)
-- Spacing: 8dp grid (4, 8, 16, 24, 32, 48dp)
-- Shapes: 8dp small, 16dp medium, 24dp large corners
+
+| Element | Light | Dark |
+|---------|-------|------|
+| Primary | `#FF6838` (Orange) | `#FFB59C` |
+| Secondary | `#5A822B` (Green) | `#A8D475` |
+| Background | `#FDFAF4` (Cream) | `#1C1B1F` |
+
+| Token | Value |
+|-------|-------|
+| Spacing | 8dp grid (4, 8, 16, 24, 32, 48dp) |
+| Shapes | Rounded corners (8dp small, 16dp medium, 24dp large) |
+
+## Reference Implementations
+
+| Pattern | Reference | Key Features |
+|---------|-----------|--------------|
+| Tabs + Bottom Sheets | `presentation/reciperules/` | 2-tab layout (Rules, Nutrition), modal sheets |
+| Form-based Settings | `presentation/settings/` | Sections, toggles |
+| Bottom Navigation | `presentation/home/` | RasoiBottomNavigation |
+| List with Filtering | `presentation/favorites/` | Tab/list pattern |
