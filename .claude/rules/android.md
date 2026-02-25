@@ -59,6 +59,9 @@ Located in `domain/src/main/java/com/rasoiai/domain/model/`:
 **Room-only entities** (no domain model counterpart):
 `KnownIngredientEntity`, `OfflineQueueEntity`, `CookedRecipeEntity`, `RecentlyViewedEntity`
 
+## Coroutines
+- Every coroutine in a ViewModel MUST use `viewModelScope.launch {}`. Never use `GlobalScope` or manual `CoroutineScope` — `viewModelScope` auto-cancels on nav pop, preventing leaks.
+
 ## Compose
 - Use `TestTags` constants from `presentation/common/TestTags.kt` for all `testTag()` modifiers — UI tests break if tags are missing
 - `RasoiBottomNavigation` lives in `home/components/`, not `common/`

@@ -97,6 +97,17 @@ AI-powered meal planning using Gemini (`gemini-2.5-flash` via `google-genai` SDK
 
 **Security headers:** `SecurityHeadersMiddleware` adds X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, X-API-Version, Strict-Transport-Security (non-debug only).
 
+## FastAPI Patterns (Prevent Common Bugs)
+
+**No blocking in async routes:**
+- Never use blocking I/O in `async def` handlers: no `time.sleep()` (use `await asyncio.sleep()`), no synchronous HTTP (use `httpx.AsyncClient`), no synchronous file reads (use `aiofiles`). One blocking call stalls ALL concurrent requests on the same worker.
+
+**Exception discipline:**
+- Services raise domain exceptions (e.g., `UserNotFoundError`, `DuplicateRuleError`). Routers catch domain exceptions and map to `HTTPException`. Never raise `HTTPException` inside a service — services must not know about HTTP.
+
+**No `__future__` annotations in routers:**
+- Do NOT add `from __future__ import annotations` to FastAPI router files. This makes type hints strings at runtime (PEP 563), breaking `Annotated + Depends()` schema generation and OpenAPI docs. Safe in non-router files.
+
 ## Auth Debug Bypass
 - `DEBUG=true` makes `firebase.py` accept `"fake-firebase-token"` for E2E tests
 - E2E tests fail against non-debug backend

@@ -480,8 +480,7 @@ The 7-step workflow (Rule #7) is enforced by shell hooks in `.claude/hooks/`. Al
 | `verify-test-rerun.sh` | PostToolUse (Bash) | Re-runs same test independently; **blocks** if claimed PASS but re-run FAIL |
 | `log-workflow.sh` | PostToolUse (Bash/Skill/Write/Edit) | Logs events; **tracks Skill invocations**; **clears fixLoopInvestigating on fix-loop completion** |
 | `post-anr-detection.sh` | PostToolUse (Bash) | Detects ANR patterns in Bash output; sets `testFailuresPending=true` and logs to `adb-test/anr-events.log` |
-| `post-screenshot-resize.sh` | PostToolUse (Bash/Playwright) | Auto-resize screenshots >1800px |
-| `post-screenshot-validate.sh` | PostToolUse (Bash/Playwright) | Records screenshot metadata; validates file exists and non-zero; updates `screenshotsCaptured[]` in workflow state |
+| `post-screenshot.sh` | PostToolUse (Bash/Playwright) | Combined: auto-resize screenshots >1800px + validate file + record metadata in workflow state |
 | `auto-fix-pattern-scan.sh` | PostToolUse | Scans for common fix patterns after tool use |
 | `auto-format.sh` | PostToolUse | Auto-formats code after edits |
 | `post-skill-learning.sh` | PostToolUse (Skill) | Records skill outcomes for learning system |
@@ -490,7 +489,7 @@ Workflow state is tracked in `.claude/workflow-state.json` (extended schema with
 
 ## Claude Code Configuration
 
-The `.claude/` directory contains: `agents/` (9 agents), `knowledge.db` (pattern library), `skills/` (12 slash commands), `hooks/` (13 hooks — see table above), `rules/` (5 path-scoped rule files), `logs/` (session logs).
+The `.claude/` directory contains: `agents/` (11 agents), `knowledge.db` (pattern library), `skills/` (12 slash commands), `hooks/` (12 hooks — see table above), `rules/` (5 path-scoped rule files), `logs/` (session logs).
 
 **Skills:** `/adb-test`, `/auto-verify`, `/fix-issue`, `/fix-loop`, `/implement`, `/post-fix-pipeline`, `/reflect`, `/run-e2e`, `/db-migrate`, `/deploy`, `/sync-check`, `/verify-screenshots`
 

@@ -63,13 +63,8 @@
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/post-screenshot-resize.sh",
+            "command": "bash .claude/hooks/post-screenshot.sh",
             "timeout": 30
-          },
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/post-screenshot-validate.sh",
-            "timeout": 10
           },
           {
             "type": "command",
@@ -93,13 +88,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/post-screenshot-resize.sh",
+            "command": "bash .claude/hooks/post-screenshot.sh",
             "timeout": 30
-          },
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/post-screenshot-validate.sh",
-            "timeout": 10
           }
         ]
       },

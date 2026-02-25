@@ -34,6 +34,10 @@ paths:
 - Fresh installs seed `known_ingredients` with 40+ Indian cooking ingredients
 - Room-only entities (no domain model): `KnownIngredientEntity`, `OfflineQueueEntity`, `CookedRecipeEntity`, `RecentlyViewedEntity`
 
+### Room Patterns
+- Use `@Upsert` for insert-or-update operations instead of `@Insert(onConflict=REPLACE)` + `@Update` pairs. `@Upsert` is atomic (Room 2.5+); the separate pair has a race window.
+- Every `@TypeConverter` MUST have a unit test with boundary cases (empty list, null, special characters). Incorrect converters cause silent data loss at runtime, not compile time.
+
 ### Room DAOs
 MealPlan, Recipe, Grocery, Favorite, Collection, Pantry, Stats, RecipeRules, Chat, Notification, OfflineQueue.
 
