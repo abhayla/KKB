@@ -1,27 +1,19 @@
 package com.rasoiai.data.local.dao
 
-import android.content.Context
-import androidx.room.Room
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
-import com.rasoiai.data.local.RasoiDatabase
 import com.rasoiai.data.local.entity.ChatMessageEntity
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class ChatDaoTest {
-
-    private lateinit var database: RasoiDatabase
-    private lateinit var chatDao: ChatDao
+class ChatDaoTest : BaseDaoTest() {
+    private val chatDao: ChatDao get() = database.chatDao()
 
     private val baseTimestamp = System.currentTimeMillis()
 
@@ -33,21 +25,6 @@ class ChatDaoTest {
         quickActionsJson = null,
         recipeSuggestionsJson = null
     )
-
-    @Before
-    fun setup() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        database = Room.inMemoryDatabaseBuilder(
-            context,
-            RasoiDatabase::class.java
-        ).allowMainThreadQueries().build()
-        chatDao = database.chatDao()
-    }
-
-    @After
-    fun tearDown() {
-        database.close()
-    }
 
     @Test
     fun insertMessage_andGetAll_returnsMessages() = runTest {

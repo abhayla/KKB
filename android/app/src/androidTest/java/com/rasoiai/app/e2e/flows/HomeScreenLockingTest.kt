@@ -1,12 +1,8 @@
 package com.rasoiai.app.e2e.flows
 
-import android.util.Log
 import androidx.compose.ui.test.onNodeWithText
-import com.rasoiai.app.e2e.base.BaseE2ETest
-import com.rasoiai.app.e2e.robots.HomeRobot
 import com.rasoiai.domain.model.MealType
 import dagger.hilt.android.testing.HiltAndroidTest
-import org.junit.Before
 import org.junit.Test
 import java.time.DayOfWeek
 
@@ -31,35 +27,8 @@ import java.time.DayOfWeek
  * 3. Generates a meal plan for testing
  */
 @HiltAndroidTest
-class HomeScreenLockingTest : BaseE2ETest() {
+class HomeScreenLockingTest : HomeScreenBaseE2ETest() {
 
-    private lateinit var homeRobot: HomeRobot
-
-    @Before
-    override fun setUp() {
-        super.setUp()
-
-        // Set up authenticated state with meal plan
-        setUpAuthenticatedState()
-
-        homeRobot = HomeRobot(composeTestRule)
-
-        // Wait for home screen and meal data to load
-        homeRobot.waitForHomeScreen(LONG_TIMEOUT)
-        waitForMealDataToLoad()
-    }
-
-    /**
-     * Wait for meal data to load (up to 60s for API-generated meal plans)
-     */
-    private fun waitForMealDataToLoad() {
-        try {
-            homeRobot.assertMealCardDisplayed(MealType.BREAKFAST, timeoutMillis = 60000)
-            Log.i(TAG, "Meal data loaded successfully")
-        } catch (e: Exception) {
-            Log.w(TAG, "Meal data may not have loaded: ${e.message}")
-        }
-    }
 
     // ===================== Day Lock Tests =====================
 
@@ -288,7 +257,4 @@ class HomeScreenLockingTest : BaseE2ETest() {
         homeRobot.tapLockMeal(MealType.LUNCH)
     }
 
-    companion object {
-        private const val TAG = "HomeScreenLockingTest"
-    }
 }

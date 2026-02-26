@@ -13,7 +13,6 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.recipe import Recipe
-from app.models.user import User
 
 
 async def create_test_recipe(
@@ -43,7 +42,7 @@ async def create_test_recipe(
 
 
 @pytest.mark.asyncio
-async def test_search_chai_returns_results(authenticated_client: AsyncClient, db_session: AsyncSession, test_user: User):
+async def test_search_chai_returns_results(client: AsyncClient, db_session: AsyncSession):
     """Test that searching for 'chai' returns Chai recipes.
 
     This is the core test for FR-001: when a user types "chai" in the
@@ -68,7 +67,7 @@ async def test_search_chai_returns_results(authenticated_client: AsyncClient, db
     )
 
     # Act: Search for chai
-    response = await authenticated_client.get(
+    response = await client.get(
         "/api/v1/recipes/search",
         params={"q": "chai"},
     )
@@ -81,13 +80,13 @@ async def test_search_chai_returns_results(authenticated_client: AsyncClient, db
 
 
 @pytest.mark.asyncio
-async def test_search_case_insensitive(authenticated_client: AsyncClient, db_session: AsyncSession, test_user: User):
+async def test_search_case_insensitive(client: AsyncClient, db_session: AsyncSession):
     """Test that search is case-insensitive."""
     await create_test_recipe(db_session, name="Masala Chai")
 
     # Search with different cases
     for query in ["CHAI", "chai", "Chai", "ChAi"]:
-        response = await authenticated_client.get(
+        response = await client.get(
             "/api/v1/recipes/search",
             params={"q": query},
         )
@@ -97,12 +96,12 @@ async def test_search_case_insensitive(authenticated_client: AsyncClient, db_ses
 
 
 @pytest.mark.asyncio
-async def test_search_partial_match(authenticated_client: AsyncClient, db_session: AsyncSession, test_user: User):
+async def test_search_partial_match(client: AsyncClient, db_session: AsyncSession):
     """Test that partial text matches work."""
     await create_test_recipe(db_session, name="Masala Chai")
     await create_test_recipe(db_session, name="Masala Dosa")
 
-    response = await authenticated_client.get(
+    response = await client.get(
         "/api/v1/recipes/search",
         params={"q": "masala"},
     )
@@ -114,12 +113,12 @@ async def test_search_partial_match(authenticated_client: AsyncClient, db_sessio
 
 
 @pytest.mark.asyncio
-async def test_search_empty_query_returns_all(authenticated_client: AsyncClient, db_session: AsyncSession, test_user: User):
+async def test_search_empty_query_returns_all(client: AsyncClient, db_session: AsyncSession):
     """Test that empty query returns recipes (paginated)."""
     await create_test_recipe(db_session, name="Recipe 1")
     await create_test_recipe(db_session, name="Recipe 2")
 
-    response = await authenticated_client.get(
+    response = await client.get(
         "/api/v1/recipes/search",
         params={"q": ""},
     )
@@ -130,11 +129,11 @@ async def test_search_empty_query_returns_all(authenticated_client: AsyncClient,
 
 
 @pytest.mark.asyncio
-async def test_search_no_results(authenticated_client: AsyncClient, db_session: AsyncSession, test_user: User):
+async def test_search_no_results(client: AsyncClient, db_session: AsyncSession):
     """Test that searching for non-existent recipe returns empty list."""
     await create_test_recipe(db_session, name="Poha")
 
-    response = await authenticated_client.get(
+    response = await client.get(
         "/api/v1/recipes/search",
         params={"q": "nonexistent_xyz_recipe"},
     )
@@ -145,12 +144,12 @@ async def test_search_no_results(authenticated_client: AsyncClient, db_session: 
 
 
 @pytest.mark.asyncio
-async def test_search_with_cuisine_filter(authenticated_client: AsyncClient, db_session: AsyncSession, test_user: User):
+async def test_search_with_cuisine_filter(client: AsyncClient, db_session: AsyncSession):
     """Test filtering search results by cuisine."""
     await create_test_recipe(db_session, name="North Chai", cuisine_type="NORTH")
     await create_test_recipe(db_session, name="South Chai", cuisine_type="SOUTH")
 
-    response = await authenticated_client.get(
+    response = await client.get(
         "/api/v1/recipes/search",
         params={"q": "chai", "cuisine": "SOUTH"},
     )
@@ -165,7 +164,7 @@ async def test_search_with_cuisine_filter(authenticated_client: AsyncClient, db_
 
 
 @pytest.mark.asyncio
-async def test_search_with_meal_type_filter(authenticated_client: AsyncClient, db_session: AsyncSession, test_user: User):
+async def test_search_with_meal_type_filter(client: AsyncClient, db_session: AsyncSession):
     """Test filtering search results by meal type."""
     await create_test_recipe(
         db_session,
@@ -178,7 +177,7 @@ async def test_search_with_meal_type_filter(authenticated_client: AsyncClient, d
         meal_types=["SNACKS"],
     )
 
-    response = await authenticated_client.get(
+    response = await client.get(
         "/api/v1/recipes/search",
         params={"q": "chai", "mealType": "BREAKFAST"},
     )
@@ -190,14 +189,14 @@ async def test_search_with_meal_type_filter(authenticated_client: AsyncClient, d
 
 
 @pytest.mark.asyncio
-async def test_search_pagination(authenticated_client: AsyncClient, db_session: AsyncSession, test_user: User):
+async def test_search_pagination(client: AsyncClient, db_session: AsyncSession):
     """Test that search results are paginated."""
     # Create 25 recipes
     for i in range(25):
         await create_test_recipe(db_session, name=f"Recipe {i}")
 
     # First page (default limit is 20)
-    response = await authenticated_client.get(
+    response = await client.get(
         "/api/v1/recipes/search",
         params={"q": "Recipe", "page": 1, "limit": 10},
     )
@@ -207,7 +206,7 @@ async def test_search_pagination(authenticated_client: AsyncClient, db_session: 
     assert len(page1) == 10
 
     # Second page
-    response = await authenticated_client.get(
+    response = await client.get(
         "/api/v1/recipes/search",
         params={"q": "Recipe", "page": 2, "limit": 10},
     )
@@ -223,29 +222,18 @@ async def test_search_pagination(authenticated_client: AsyncClient, db_session: 
 
 
 @pytest.mark.asyncio
-async def test_search_requires_authentication(client: AsyncClient):
+async def test_search_requires_authentication(unauthenticated_client: AsyncClient):
     """Test that search endpoint requires authentication."""
-    from app.main import app
-    from app.api.deps import get_current_user
-    from app.core.exceptions import AuthenticationError
-
-    async def no_auth():
-        raise AuthenticationError("Missing authorization header")
-
-    app.dependency_overrides[get_current_user] = no_auth
-
-    response = await client.get(
+    response = await unauthenticated_client.get(
         "/api/v1/recipes/search",
         params={"q": "chai"},
     )
 
     assert response.status_code == 401
 
-    app.dependency_overrides.pop(get_current_user, None)
-
 
 @pytest.mark.asyncio
-async def test_search_response_structure(authenticated_client: AsyncClient, db_session: AsyncSession, test_user: User):
+async def test_search_response_structure(client: AsyncClient, db_session: AsyncSession):
     """Test that search response has expected structure."""
     await create_test_recipe(
         db_session,
@@ -254,7 +242,7 @@ async def test_search_response_structure(authenticated_client: AsyncClient, db_s
         dietary_tags=["VEGETARIAN", "VEGAN"],
     )
 
-    response = await authenticated_client.get(
+    response = await client.get(
         "/api/v1/recipes/search",
         params={"q": "chai"},
     )

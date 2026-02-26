@@ -5,17 +5,15 @@ Tests for missing preference field sync and family members CRUD API.
 """
 
 import pytest
-from uuid import uuid4
 
 import pytest_asyncio
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user
-from app.db.database import get_db
-from app.main import app
 from app.models.user import FamilyMember, User, UserPreferences
+from tests.api.conftest import make_api_client
+from tests.factories import make_user, make_preferences
 
 
 # ==================== Fixtures ====================
@@ -23,25 +21,11 @@ from app.models.user import FamilyMember, User, UserPreferences
 
 @pytest_asyncio.fixture
 async def test_user(db_session: AsyncSession) -> User:
-    """Create a test user for family members tests."""
-    user_id = str(uuid4())
-    user = User(
-        id=user_id,
-        firebase_uid=f"firebase-family-test-{user_id}",
-        email=f"family-test-{user_id}@example.com",
-        name="Family Test User",
-        is_onboarded=True,
-        is_active=True,
-    )
+    """Create a test user with preferences for family members tests."""
+    user = make_user()
     db_session.add(user)
-
-    prefs = UserPreferences(
-        id=str(uuid4()),
-        user_id=user_id,
-        family_size=4,
-    )
+    prefs = make_preferences(user.id, family_size=4, dietary_type=None)
     db_session.add(prefs)
-
     await db_session.commit()
     await db_session.refresh(user)
     return user
@@ -51,24 +35,9 @@ async def test_user(db_session: AsyncSession) -> User:
 async def authenticated_client(
     db_session: AsyncSession, test_user: User
 ) -> AsyncClient:
-    """Create a test client with authentication overridden."""
-
-    async def override_get_db():
-        yield db_session
-
-    async def override_get_current_user():
-        return test_user
-
-    app.dependency_overrides[get_db] = override_get_db
-    app.dependency_overrides[get_current_user] = override_get_current_user
-
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test",
-    ) as ac:
-        yield ac
-
-    app.dependency_overrides.clear()
+    """Authenticated client for family members tests."""
+    async with make_api_client(db_session, test_user) as c:
+        yield c
 
 
 # ==================== Missing Preference Fields Tests ====================

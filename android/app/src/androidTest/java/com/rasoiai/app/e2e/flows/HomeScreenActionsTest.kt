@@ -2,12 +2,9 @@ package com.rasoiai.app.e2e.flows
 
 import android.util.Log
 import androidx.compose.ui.test.onNodeWithText
-import com.rasoiai.app.e2e.base.BaseE2ETest
-import com.rasoiai.app.e2e.robots.HomeRobot
 import com.rasoiai.app.e2e.robots.RecipeDetailRobot
 import com.rasoiai.domain.model.MealType
 import dagger.hilt.android.testing.HiltAndroidTest
-import org.junit.Before
 import org.junit.Test
 import java.time.DayOfWeek
 
@@ -32,36 +29,12 @@ import java.time.DayOfWeek
  * 3. Generates a meal plan for testing
  */
 @HiltAndroidTest
-class HomeScreenActionsTest : BaseE2ETest() {
+class HomeScreenActionsTest : HomeScreenBaseE2ETest() {
 
-    private lateinit var homeRobot: HomeRobot
     private lateinit var recipeDetailRobot: RecipeDetailRobot
 
-    @Before
-    override fun setUp() {
-        super.setUp()
-
-        // Set up authenticated state with meal plan
-        setUpAuthenticatedState()
-
-        homeRobot = HomeRobot(composeTestRule)
+    override fun initializeAdditionalRobots() {
         recipeDetailRobot = RecipeDetailRobot(composeTestRule)
-
-        // Wait for home screen and meal data to load
-        homeRobot.waitForHomeScreen(LONG_TIMEOUT)
-        waitForMealDataToLoad()
-    }
-
-    /**
-     * Wait for meal data to load (up to 60s for API-generated meal plans)
-     */
-    private fun waitForMealDataToLoad() {
-        try {
-            homeRobot.assertMealCardDisplayed(MealType.BREAKFAST, timeoutMillis = 60000)
-            Log.i(TAG, "Meal data loaded successfully")
-        } catch (e: Exception) {
-            Log.w(TAG, "Meal data may not have loaded: ${e.message}")
-        }
     }
 
     // ===================== Recipe Action Sheet Tests =====================
@@ -370,6 +343,7 @@ class HomeScreenActionsTest : BaseE2ETest() {
         // but we verify the structure is present
         Log.i(TAG, "Meal content verification passed")
     }
+
 
     companion object {
         private const val TAG = "HomeScreenActionsTest"

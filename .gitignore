@@ -132,6 +132,9 @@ CLAUDE.local.md
 # Analysis artifacts
 CLAUDE_MD_GAPS_ANALYSIS.txt
 
+# Git worktrees
+.worktrees/
+
 # Misc
 nul
 *.tmp
