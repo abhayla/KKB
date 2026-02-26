@@ -1,30 +1,22 @@
 package com.rasoiai.data.local.dao
 
-import android.content.Context
-import androidx.room.Room
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
-import com.rasoiai.data.local.RasoiDatabase
 import com.rasoiai.data.local.entity.MealPlanEntity
 import com.rasoiai.data.local.entity.MealPlanFestivalEntity
 import com.rasoiai.data.local.entity.MealPlanItemEntity
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class MealPlanDaoTest {
-
-    private lateinit var database: RasoiDatabase
-    private lateinit var mealPlanDao: MealPlanDao
+class MealPlanDaoTest : BaseDaoTest() {
+    private val mealPlanDao: MealPlanDao get() = database.mealPlanDao()
 
     private val testMealPlan = MealPlanEntity(
         id = "plan-1",
@@ -59,21 +51,6 @@ class MealPlanDaoTest {
         isFastingDay = false,
         suggestedDishes = listOf("Tricolor Salad", "Tiranga Pulao")
     )
-
-    @Before
-    fun setup() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        database = Room.inMemoryDatabaseBuilder(
-            context,
-            RasoiDatabase::class.java
-        ).allowMainThreadQueries().build()
-        mealPlanDao = database.mealPlanDao()
-    }
-
-    @After
-    fun tearDown() {
-        database.close()
-    }
 
     // ==================== Meal Plan Tests ====================
 
