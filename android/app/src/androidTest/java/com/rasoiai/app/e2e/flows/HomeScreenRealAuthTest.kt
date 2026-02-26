@@ -8,7 +8,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
-import com.rasoiai.app.e2e.base.BaseE2ETest
 import com.rasoiai.app.e2e.base.waitUntilWithBackoff
 import com.rasoiai.app.e2e.robots.HomeRobot
 import com.rasoiai.app.presentation.common.TestTags
@@ -30,27 +29,22 @@ import org.junit.Test
  * 2. Backend must have DEBUG=true to accept fake-firebase-token
  */
 @HiltAndroidTest
-class HomeScreenRealAuthTest : BaseE2ETest() {
-
-    companion object {
-        private const val TAG = "HomeScreenRealAuthTest"
-    }
-
-    private lateinit var homeRobot: HomeRobot
+class HomeScreenRealAuthTest : HomeScreenBaseE2ETest() {
 
     private val uiDevice: UiDevice
         get() = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
 
     @Before
     override fun setUp() {
-        super.setUp()
+        // Custom setup: different ordering from base class
+        // (inject first, then robot init, then auth, then longer wait)
+        hiltRule.inject()
         homeRobot = HomeRobot(composeTestRule)
         setUpAuthenticatedState()
 
-        // Wait for Home screen to appear after auth
         homeRobot.waitForHomeScreen(LONG_TIMEOUT + MEDIUM_TIMEOUT)
         homeRobot.waitForMealListToLoad()
-        Log.d(TAG, "Home screen ready for testing")
+        Log.d("HomeScreenRealAuthTest", "Home screen ready for testing")
     }
 
     /**
@@ -189,5 +183,9 @@ class HomeScreenRealAuthTest : BaseE2ETest() {
         composeTestRule.onNodeWithTag(TestTags.HOME_SCREEN)
             .assertIsDisplayed()
         Log.d(TAG, "Navigation back to Home works")
+    }
+
+    companion object {
+        private const val TAG = "HomeScreenRealAuthTest"
     }
 }

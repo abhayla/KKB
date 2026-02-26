@@ -9,12 +9,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
-import com.rasoiai.app.e2e.base.BaseE2ETest
-import com.rasoiai.app.e2e.robots.HomeRobot
 import com.rasoiai.app.presentation.common.TestTags
-import com.rasoiai.domain.model.MealType
 import dagger.hilt.android.testing.HiltAndroidTest
-import org.junit.Before
 import org.junit.Test
 import java.time.DayOfWeek
 
@@ -32,37 +28,10 @@ import java.time.DayOfWeek
  * - Android emulator with API 34
  */
 @HiltAndroidTest
-class HomeScreenButtonsTest : BaseE2ETest() {
+class HomeScreenButtonsTest : HomeScreenBaseE2ETest() {
 
-    private lateinit var homeRobot: HomeRobot
     private val uiDevice: UiDevice
         get() = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-
-    @Before
-    override fun setUp() {
-        super.setUp()
-
-        // Set up authenticated state with meal plan
-        setUpAuthenticatedState()
-
-        homeRobot = HomeRobot(composeTestRule)
-
-        // Wait for home screen and meal data to load
-        homeRobot.waitForHomeScreen(LONG_TIMEOUT)
-        waitForMealDataToLoad()
-    }
-
-    /**
-     * Wait for meal data to load (up to 60s for API-generated meal plans)
-     */
-    private fun waitForMealDataToLoad() {
-        try {
-            homeRobot.assertMealCardDisplayed(MealType.BREAKFAST, timeoutMillis = 60000)
-            Log.i(TAG, "Meal data loaded successfully")
-        } catch (e: Exception) {
-            Log.w(TAG, "Meal data may not have loaded: ${e.message}")
-        }
-    }
 
     // ===================== Issue #4: Add Recipe Button Tests =====================
 
@@ -283,6 +252,7 @@ class HomeScreenButtonsTest : BaseE2ETest() {
 
         Log.i(TAG, "SUCCESS: All header buttons work correctly")
     }
+
 
     companion object {
         private const val TAG = "HomeScreenButtonsTest"

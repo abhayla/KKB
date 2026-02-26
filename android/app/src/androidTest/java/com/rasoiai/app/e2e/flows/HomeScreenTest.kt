@@ -1,14 +1,12 @@
 package com.rasoiai.app.e2e.flows
 
-import com.rasoiai.app.e2e.base.BaseE2ETest
 import com.rasoiai.app.e2e.robots.ChatRobot
+import com.rasoiai.domain.model.MealType
 import com.rasoiai.app.e2e.robots.FavoritesRobot
 import com.rasoiai.app.e2e.robots.GroceryRobot
-import com.rasoiai.app.e2e.robots.HomeRobot
 import com.rasoiai.app.e2e.robots.RecipeDetailRobot
 import com.rasoiai.app.e2e.robots.StatsRobot
 import com.rasoiai.app.e2e.util.PerformanceTracker
-import com.rasoiai.domain.model.MealType
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.After
 import org.junit.Before
@@ -36,60 +34,29 @@ import java.time.DayOfWeek
  * - App navigates directly to Home screen
  */
 @HiltAndroidTest
-class HomeScreenTest : BaseE2ETest() {
+class HomeScreenTest : HomeScreenBaseE2ETest() {
 
-    private lateinit var homeRobot: HomeRobot
     private lateinit var recipeDetailRobot: RecipeDetailRobot
     private lateinit var groceryRobot: GroceryRobot
     private lateinit var chatRobot: ChatRobot
     private lateinit var favoritesRobot: FavoritesRobot
     private lateinit var statsRobot: StatsRobot
 
-    @Before
-    override fun setUp() {
-        super.setUp()
-
-        // Reset performance tracker for this test class
-        PerformanceTracker.reset()
-
-        // Set up authenticated state - gets real JWT from backend
-        // This makes the test self-contained (doesn't depend on CoreDataFlowTest running first)
-        setUpAuthenticatedState()
-
-        homeRobot = HomeRobot(composeTestRule)
+    override fun initializeAdditionalRobots() {
         recipeDetailRobot = RecipeDetailRobot(composeTestRule)
         groceryRobot = GroceryRobot(composeTestRule)
         chatRobot = ChatRobot(composeTestRule)
         favoritesRobot = FavoritesRobot(composeTestRule)
         statsRobot = StatsRobot(composeTestRule)
-
-        // Measure home screen load time
-        PerformanceTracker.measure(
-            "Home Screen Load",
-            PerformanceTracker.HOME_SCREEN_LOAD_MS
-        ) {
-            // Wait for home screen (should navigate directly due to persisted auth state)
-            homeRobot.waitForHomeScreen(LONG_TIMEOUT)
-        }
-
-        // CRITICAL: Wait for meal data to actually load, not just the screen
-        // Meal plan generation can take 30+ seconds if backend needs to call AI
-        // We wait for meal_card_breakfast to appear, which indicates meal data is ready
-        waitForMealDataToLoad()
     }
 
-    /**
-     * Wait for meal data to load (up to 60s for API-generated meal plans)
-     */
-    private fun waitForMealDataToLoad() {
-        try {
-            // Wait for breakfast meal card - indicates meal data has loaded
-            homeRobot.assertMealCardDisplayed(MealType.BREAKFAST, timeoutMillis = 60000)
-            android.util.Log.i("HomeScreenTest", "Meal data loaded successfully")
-        } catch (e: Exception) {
-            android.util.Log.w("HomeScreenTest", "Meal data may not have loaded: ${e.message}")
-            // Continue anyway - individual tests will fail if data isn't present
-        }
+    @Before
+    override fun setUp() {
+        // Reset performance tracker before base class setup
+        PerformanceTracker.reset()
+
+        // Base class handles: auth, homeRobot init, waitForHomeScreen, waitForMealDataToLoad
+        super.setUp()
     }
 
     @After
