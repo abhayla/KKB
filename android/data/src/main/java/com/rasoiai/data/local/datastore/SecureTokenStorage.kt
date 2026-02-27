@@ -30,23 +30,25 @@ class SecureTokenStorage @Inject constructor(
         const val KEY_EXPIRES_AT = "expires_at"
     }
 
-    private val prefs: SharedPreferences? = try {
-        val masterKey = MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
+    private val prefs: SharedPreferences? by lazy {
+        try {
+            val masterKey = MasterKey.Builder(context)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
 
-        EncryptedSharedPreferences.create(
-            context,
-            PREFS_NAME,
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
-    } catch (e: Exception) {
-        // On some devices (especially older ones or after backup/restore),
-        // EncryptedSharedPreferences can fail. Fall back gracefully.
-        Timber.e(e, "Failed to initialize EncryptedSharedPreferences — tokens will use DataStore only")
-        null
+            EncryptedSharedPreferences.create(
+                context,
+                PREFS_NAME,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        } catch (e: Exception) {
+            // On some devices (especially older ones or after backup/restore),
+            // EncryptedSharedPreferences can fail. Fall back gracefully.
+            Timber.e(e, "Failed to initialize EncryptedSharedPreferences — tokens will use DataStore only")
+            null
+        }
     }
 
     /**
