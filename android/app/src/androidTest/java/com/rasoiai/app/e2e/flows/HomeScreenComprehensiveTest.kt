@@ -127,13 +127,13 @@ class HomeScreenComprehensiveTest : RealPhoneAuthE2ETest() {
 
         // Sign in if needed
         try {
-            composeTestRule.onNodeWithTag(TestTags.AUTH_SIGN_IN_BUTTON).assertIsDisplayed()
-            Log.d(TAG, "Found sign-in button, clicking...")
-            composeTestRule.onNodeWithTag(TestTags.AUTH_SIGN_IN_BUTTON).performClick()
+            composeTestRule.onNodeWithTag(TestTags.SEND_OTP_BUTTON).assertIsDisplayed()
+            Log.d(TAG, "Found send OTP button, clicking...")
+            composeTestRule.onNodeWithTag(TestTags.SEND_OTP_BUTTON).performClick()
             waitFor(3000)
             waitForIdle()
         } catch (e: AssertionError) {
-            Log.d(TAG, "Sign-in button not found, might already be signed in")
+            Log.d(TAG, "Send OTP button not found, might already be signed in")
         }
 
         // .takeDebugScreenshot("02_after_signin")
@@ -1211,7 +1211,7 @@ class HomeScreenComprehensiveTest : RealPhoneAuthE2ETest() {
 
         // Check for auth screen
         val onAuthScreen = try {
-            composeTestRule.onNodeWithTag(TestTags.AUTH_SIGN_IN_BUTTON).assertExists()
+            composeTestRule.onNodeWithTag(TestTags.SEND_OTP_BUTTON).assertExists()
             true
         } catch (e: AssertionError) {
             false
@@ -1219,7 +1219,7 @@ class HomeScreenComprehensiveTest : RealPhoneAuthE2ETest() {
 
         if (onAuthScreen) {
             Log.d(TAG, "On Auth screen, signing in...")
-            composeTestRule.onNodeWithTag(TestTags.AUTH_SIGN_IN_BUTTON).performClick()
+            composeTestRule.onNodeWithTag(TestTags.SEND_OTP_BUTTON).performClick()
             waitFor(3000)
             waitForIdle()
         }

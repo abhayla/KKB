@@ -1029,9 +1029,6 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
         Log.d(TAG, "Asserting rules sorted: active=$activeNames before paused=$pausedNames")
         composeTestRule.waitForIdle()
 
-        // Dump the full semantic tree to check ordering
-        val allNodes = composeTestRule.onRoot().fetchSemanticsNodes()
-
         // Verify each active name appears before each paused name
         // by checking node indices in the semantic tree
         for (activeName in activeNames) {
