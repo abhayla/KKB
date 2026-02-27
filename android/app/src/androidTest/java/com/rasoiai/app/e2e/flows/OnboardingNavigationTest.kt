@@ -61,7 +61,7 @@ class OnboardingNavigationTest : BaseE2ETest() {
         Log.d(TAG, "Auth screen displayed")
 
         // Act: Perform sign-in (mocked)
-        authRobot.tapGoogleSignIn()
+        authRobot.tapSendOtp()
         Log.d(TAG, "Tapped Google Sign-In")
 
         // Assert: Should navigate to onboarding
@@ -163,7 +163,7 @@ class OnboardingNavigationTest : BaseE2ETest() {
 
         // Act: Sign in (simulates the state after app restart for signed-in user)
         // The key thing being tested is: isOnboarded=false → goes to Onboarding
-        authRobot.tapGoogleSignIn()
+        authRobot.tapSendOtp()
 
         // Assert: Should navigate to Onboarding (not Home)
         // This proves that the navigation logic correctly routes non-onboarded users

@@ -128,8 +128,8 @@ class AuthRepositoryImplTest {
     }
 
     @Nested
-    @DisplayName("signInWithGoogle")
-    inner class SignInWithGoogle {
+    @DisplayName("signInWithFirebase")
+    inner class SignInWithFirebase {
 
         @Test
         @DisplayName("Should exchange Firebase token and store JWT")
@@ -138,7 +138,7 @@ class AuthRepositoryImplTest {
             coEvery { mockApiService.authenticateWithFirebase(any()) } returns testAuthResponse
 
             // When
-            val result = repository.signInWithGoogle("firebase-id-token")
+            val result = repository.signInWithFirebase("firebase-id-token")
 
             // Then
             assertTrue(result.isSuccess)
@@ -171,7 +171,7 @@ class AuthRepositoryImplTest {
             coEvery { mockApiService.authenticateWithFirebase(any()) } throws RuntimeException("Network error")
 
             // When
-            val result = repository.signInWithGoogle("firebase-id-token")
+            val result = repository.signInWithFirebase("firebase-id-token")
 
             // Then
             assertTrue(result.isFailure)

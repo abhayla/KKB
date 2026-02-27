@@ -307,7 +307,7 @@ class EdgeCasesTest : BaseE2ETest() {
     private fun navigateToOnboarding() {
         setUpNewUserState()
         authRobot.waitForAuthScreen()
-        authRobot.tapGoogleSignIn()
+        authRobot.tapSendOtp()
         authRobot.assertNavigatedToOnboarding()
     }
 

@@ -24,7 +24,7 @@ class FakeAuthRepository @Inject constructor() : AuthRepository {
     private var shouldSucceed = true
     private var fakeAccessToken = "fake-access-token"
 
-    override suspend fun signInWithGoogle(idToken: String): Result<User> {
+    override suspend fun signInWithFirebase(idToken: String): Result<User> {
         return if (shouldSucceed) {
             _isAuthenticated.value = true
             val user = createFakeUser()
@@ -92,6 +92,7 @@ class FakeAuthRepository @Inject constructor() : AuthRepository {
     private fun createFakeUser(isOnboarded: Boolean = false): User = User(
         id = "fake-user-id",
         email = "test@example.com",
+        phoneNumber = "+911111111111",
         name = "Test User",
         profileImageUrl = null,
         isOnboarded = isOnboarded,

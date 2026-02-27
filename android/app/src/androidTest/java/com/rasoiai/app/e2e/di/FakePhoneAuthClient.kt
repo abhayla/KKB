@@ -1,24 +1,24 @@
 package com.rasoiai.app.e2e.di
 
-import android.content.Context
-import com.google.firebase.auth.FirebaseUser
-import com.rasoiai.app.presentation.auth.GoogleAuthClientInterface
-import com.rasoiai.app.presentation.auth.GoogleSignInResult
+import android.app.Activity
+import com.rasoiai.app.presentation.auth.OtpVerificationResult
+import com.rasoiai.app.presentation.auth.PhoneAuthClientInterface
+import com.rasoiai.app.presentation.auth.PhoneAuthResult
 import com.rasoiai.app.presentation.auth.SignInUserData
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Fake Google Auth Client for E2E testing.
- * Implements GoogleAuthClientInterface and auto-returns success.
- * No need to mock FirebaseUser since SignInUserData is a simple data class.
+ * Fake Phone Auth Client for E2E testing.
+ * Implements PhoneAuthClientInterface and auto-returns success.
+ * No need to interact with Firebase since SignInUserData is a simple data class.
  *
  * ## Pre-Initialization Pattern
  * For tests that need to start already signed in, set the static companion
  * object state BEFORE Hilt injection via @BeforeClass.
  */
 @Singleton
-class FakeGoogleAuthClient @Inject constructor() : GoogleAuthClientInterface {
+class FakePhoneAuthClient @Inject constructor() : PhoneAuthClientInterface {
 
     /**
      * Static configuration that can be set BEFORE Hilt injection.
@@ -43,42 +43,54 @@ class FakeGoogleAuthClient @Inject constructor() : GoogleAuthClientInterface {
     // Initialize from companion state (set before injection)
     private var _isSignedIn = initialSignedIn
     private var shouldSucceed = true
+    private var autoVerify = true
     private var errorMessage = "Sign-in failed"
 
     // Fake user data
     private val fakeUserId = "fake-user-id"
+    private val fakeUserPhone = "+911111111111"
     private val fakeUserEmail = "e2e-test@rasoiai.test"
     private val fakeUserName = "E2E Test User"
     private val fakeFirebaseToken = "fake-firebase-token"
-
-    override val currentUser: FirebaseUser?
-        get() = null // Not used in tests since we check isSignedIn
+    private val fakeVerificationId = "fake-verification-id"
 
     override val isSignedIn: Boolean
         get() = _isSignedIn
 
-    override suspend fun signIn(
-        activityContext: Context,
-        webClientId: String
-    ): GoogleSignInResult {
+    override suspend fun sendOtp(phoneNumber: String, activity: Activity): PhoneAuthResult {
+        return if (shouldSucceed) {
+            if (autoVerify) {
+                _isSignedIn = true
+                PhoneAuthResult.AutoVerified(createFakeUserData())
+            } else {
+                PhoneAuthResult.CodeSent(fakeVerificationId)
+            }
+        } else {
+            PhoneAuthResult.Error(errorMessage)
+        }
+    }
+
+    override suspend fun verifyOtp(verificationId: String, code: String): OtpVerificationResult {
         return if (shouldSucceed) {
             _isSignedIn = true
-            val userData = SignInUserData(
-                userId = fakeUserId,
-                email = fakeUserEmail,
-                displayName = fakeUserName,
-                photoUrl = null,
-                firebaseIdToken = fakeFirebaseToken
-            )
-            GoogleSignInResult.Success(userData)
+            OtpVerificationResult.Success(createFakeUserData())
         } else {
-            GoogleSignInResult.Error(errorMessage)
+            OtpVerificationResult.Error(errorMessage)
         }
     }
 
     override suspend fun signOut() {
         _isSignedIn = false
     }
+
+    private fun createFakeUserData() = SignInUserData(
+        userId = fakeUserId,
+        phoneNumber = fakeUserPhone,
+        email = fakeUserEmail,
+        displayName = fakeUserName,
+        photoUrl = null,
+        firebaseIdToken = fakeFirebaseToken
+    )
 
     // Test control methods
     fun setSignInSuccess() {
@@ -90,6 +102,10 @@ class FakeGoogleAuthClient @Inject constructor() : GoogleAuthClientInterface {
         errorMessage = error.message ?: "Sign-in failed"
     }
 
+    fun setAutoVerify(auto: Boolean) {
+        autoVerify = auto
+    }
+
     fun simulateSignedIn() {
         _isSignedIn = true
     }
@@ -97,6 +113,7 @@ class FakeGoogleAuthClient @Inject constructor() : GoogleAuthClientInterface {
     fun reset() {
         _isSignedIn = false
         shouldSucceed = true
+        autoVerify = true
         errorMessage = "Sign-in failed"
     }
 }

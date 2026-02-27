@@ -17,6 +17,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,7 +42,7 @@ import org.junit.Rule
 import org.junit.Test
 
 /**
- * Compose UI tests for AuthScreen.
+ * Compose UI tests for AuthScreen (Phone OTP flow).
  *
  * These tests verify the UI behavior of AuthScreen using Compose testing APIs.
  * They test the UI layer in isolation by providing mock data directly to a
@@ -49,18 +50,10 @@ import org.junit.Test
  *
  * ## Test Categories:
  * - Screen display tests (logo, app name, welcome text, tagline)
- * - Google Sign-In button tests (display, loading, click)
+ * - Phone input tests (phone number field, Send OTP button)
+ * - OTP verification tests (OTP input, Verify button)
  * - Terms and Privacy tests
  * - Error state tests
- *
- * ## Running Tests:
- * ```bash
- * ./gradlew :app:connectedDebugAndroidTest --tests "*.AuthScreenTest"
- * ```
- *
- * ## E2E Test Coverage (Phase 1: Authentication):
- * - Test 1.1: Splash Screen - covered by SplashScreenTest (separate)
- * - Test 1.2: Google OAuth Login - covered by tests below
  */
 class AuthScreenTest {
 
@@ -72,10 +65,24 @@ class AuthScreenTest {
     private fun createTestUiState(
         isLoading: Boolean = false,
         errorMessage: String? = null,
-        isSignedIn: Boolean = false
+        isSignedIn: Boolean = false,
+        phoneNumber: String = "",
+        isPhoneValid: Boolean = false,
+        otpSent: Boolean = false,
+        otpCode: String = "",
+        verificationId: String? = null,
+        resendCountdownSeconds: Int = 0,
+        isVerifying: Boolean = false
     ) = AuthUiState(
         isLoading = isLoading,
         errorMessage = errorMessage,
+        phoneNumber = phoneNumber,
+        isPhoneValid = isPhoneValid,
+        otpSent = otpSent,
+        otpCode = otpCode,
+        verificationId = verificationId,
+        resendCountdownSeconds = resendCountdownSeconds,
+        isVerifying = isVerifying,
         isSignedIn = isSignedIn
     )
 
@@ -89,7 +96,7 @@ class AuthScreenTest {
 
         composeTestRule.setContent {
             RasoiAITheme {
-                AuthScreenTestContent(uiState = uiState)
+                PhoneInputTestContent(uiState = uiState)
             }
         }
 
@@ -102,7 +109,7 @@ class AuthScreenTest {
 
         composeTestRule.setContent {
             RasoiAITheme {
-                AuthScreenTestContent(uiState = uiState)
+                PhoneInputTestContent(uiState = uiState)
             }
         }
 
@@ -115,7 +122,7 @@ class AuthScreenTest {
 
         composeTestRule.setContent {
             RasoiAITheme {
-                AuthScreenTestContent(uiState = uiState)
+                PhoneInputTestContent(uiState = uiState)
             }
         }
 
@@ -129,7 +136,7 @@ class AuthScreenTest {
 
         composeTestRule.setContent {
             RasoiAITheme {
-                AuthScreenTestContent(uiState = uiState)
+                PhoneInputTestContent(uiState = uiState)
             }
         }
 
@@ -138,46 +145,73 @@ class AuthScreenTest {
 
     // endregion
 
-    // region Google Sign-In Button Tests
+    // region Phone Input Tests
 
     @Test
-    fun authScreen_displaysGoogleSignInButton() {
+    fun authScreen_displaysPhoneNumberField() {
         val uiState = createTestUiState()
 
         composeTestRule.setContent {
             RasoiAITheme {
-                AuthScreenTestContent(uiState = uiState)
+                PhoneInputTestContent(uiState = uiState)
             }
         }
 
-        composeTestRule.onNodeWithTag(TestTags.GOOGLE_SIGN_IN_BUTTON).assertIsDisplayed()
-        composeTestRule.onNodeWithText("Continue with Google").assertIsDisplayed()
+        composeTestRule.onNodeWithTag(TestTags.PHONE_NUMBER_FIELD).assertIsDisplayed()
     }
 
     @Test
-    fun authScreen_googleSignInButton_isEnabled_whenNotLoading() {
+    fun authScreen_displaysCountryCodePrefix() {
+        val uiState = createTestUiState()
+
+        composeTestRule.setContent {
+            RasoiAITheme {
+                PhoneInputTestContent(uiState = uiState)
+            }
+        }
+
+        composeTestRule.onNodeWithTag(TestTags.COUNTRY_CODE_PREFIX).assertIsDisplayed()
+        composeTestRule.onNodeWithText("+91").assertIsDisplayed()
+    }
+
+    @Test
+    fun authScreen_displaysSendOtpButton() {
+        val uiState = createTestUiState()
+
+        composeTestRule.setContent {
+            RasoiAITheme {
+                PhoneInputTestContent(uiState = uiState)
+            }
+        }
+
+        composeTestRule.onNodeWithTag(TestTags.SEND_OTP_BUTTON).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Send OTP").assertIsDisplayed()
+    }
+
+    @Test
+    fun authScreen_sendOtpButton_isEnabled_whenNotLoading() {
         val uiState = createTestUiState(isLoading = false)
 
         composeTestRule.setContent {
             RasoiAITheme {
-                AuthScreenTestContent(uiState = uiState)
+                PhoneInputTestContent(uiState = uiState)
             }
         }
 
-        composeTestRule.onNodeWithTag(TestTags.GOOGLE_SIGN_IN_BUTTON).assertIsEnabled()
+        composeTestRule.onNodeWithTag(TestTags.SEND_OTP_BUTTON).assertIsEnabled()
     }
 
     @Test
-    fun authScreen_googleSignInButton_isDisabled_whenLoading() {
+    fun authScreen_sendOtpButton_isDisabled_whenLoading() {
         val uiState = createTestUiState(isLoading = true)
 
         composeTestRule.setContent {
             RasoiAITheme {
-                AuthScreenTestContent(uiState = uiState)
+                PhoneInputTestContent(uiState = uiState)
             }
         }
 
-        composeTestRule.onNodeWithTag(TestTags.GOOGLE_SIGN_IN_BUTTON).assertIsNotEnabled()
+        composeTestRule.onNodeWithTag(TestTags.SEND_OTP_BUTTON).assertIsNotEnabled()
     }
 
     @Test
@@ -186,57 +220,30 @@ class AuthScreenTest {
 
         composeTestRule.setContent {
             RasoiAITheme {
-                AuthScreenTestContent(uiState = uiState)
+                PhoneInputTestContent(uiState = uiState)
             }
         }
 
-        composeTestRule.onNodeWithText("Signing in…").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Sending OTP…").assertIsDisplayed()
     }
 
     @Test
-    fun authScreen_hidesSignInText_whenLoading() {
-        val uiState = createTestUiState(isLoading = true)
-
-        composeTestRule.setContent {
-            RasoiAITheme {
-                AuthScreenTestContent(uiState = uiState)
-            }
-        }
-
-        composeTestRule.onNodeWithText("Continue with Google").assertDoesNotExist()
-    }
-
-    @Test
-    fun authScreen_googleSignInClick_triggersCallback() {
-        var signInClicked = false
+    fun authScreen_sendOtpClick_triggersCallback() {
+        var sendOtpClicked = false
         val uiState = createTestUiState()
 
         composeTestRule.setContent {
             RasoiAITheme {
-                AuthScreenTestContent(
+                PhoneInputTestContent(
                     uiState = uiState,
-                    onSignInClick = { signInClicked = true }
+                    onSendOtpClick = { sendOtpClicked = true }
                 )
             }
         }
 
-        composeTestRule.onNodeWithTag(TestTags.GOOGLE_SIGN_IN_BUTTON).performClick()
+        composeTestRule.onNodeWithTag(TestTags.SEND_OTP_BUTTON).performClick()
 
-        assert(signInClicked) { "Sign in callback was not invoked" }
-    }
-
-    @Test
-    fun authScreen_displaysGoogleIcon() {
-        val uiState = createTestUiState()
-
-        composeTestRule.setContent {
-            RasoiAITheme {
-                AuthScreenTestContent(uiState = uiState)
-            }
-        }
-
-        // The Google icon is represented by "G" text in the current implementation
-        composeTestRule.onNodeWithText("G").assertIsDisplayed()
+        assert(sendOtpClicked) { "Send OTP callback was not invoked" }
     }
 
     // endregion
@@ -249,7 +256,7 @@ class AuthScreenTest {
 
         composeTestRule.setContent {
             RasoiAITheme {
-                AuthScreenTestContent(uiState = uiState)
+                PhoneInputTestContent(uiState = uiState)
             }
         }
 
@@ -262,7 +269,7 @@ class AuthScreenTest {
 
         composeTestRule.setContent {
             RasoiAITheme {
-                AuthScreenTestContent(uiState = uiState)
+                PhoneInputTestContent(uiState = uiState)
             }
         }
 
@@ -275,7 +282,7 @@ class AuthScreenTest {
 
         composeTestRule.setContent {
             RasoiAITheme {
-                AuthScreenTestContent(uiState = uiState)
+                PhoneInputTestContent(uiState = uiState)
             }
         }
 
@@ -289,7 +296,7 @@ class AuthScreenTest {
 
         composeTestRule.setContent {
             RasoiAITheme {
-                AuthScreenTestContent(
+                PhoneInputTestContent(
                     uiState = uiState,
                     onTermsClick = { termsClicked = true }
                 )
@@ -308,7 +315,7 @@ class AuthScreenTest {
 
         composeTestRule.setContent {
             RasoiAITheme {
-                AuthScreenTestContent(
+                PhoneInputTestContent(
                     uiState = uiState,
                     onPrivacyClick = { privacyClicked = true }
                 )
@@ -330,17 +337,17 @@ class AuthScreenTest {
 
         composeTestRule.setContent {
             RasoiAITheme {
-                AuthScreenTestContent(uiState = uiState)
+                PhoneInputTestContent(uiState = uiState)
             }
         }
 
-        // Verify all main elements are displayed
         composeTestRule.onNodeWithTag(TestTags.AUTH_SCREEN).assertIsDisplayed()
         composeTestRule.onNodeWithText("RasoiAI").assertIsDisplayed()
         composeTestRule.onNodeWithText("Welcome!").assertIsDisplayed()
         composeTestRule.onNodeWithText("AI Meal Planning for Indian Families").assertIsDisplayed()
-        composeTestRule.onNodeWithTag(TestTags.GOOGLE_SIGN_IN_BUTTON).assertIsDisplayed()
-        composeTestRule.onNodeWithText("Continue with Google").assertIsDisplayed()
+        composeTestRule.onNodeWithTag(TestTags.PHONE_NUMBER_FIELD).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(TestTags.SEND_OTP_BUTTON).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Send OTP").assertIsDisplayed()
         composeTestRule.onNodeWithText("By continuing, you agree to our").assertIsDisplayed()
         composeTestRule.onNodeWithText("Terms of Service").assertIsDisplayed()
         composeTestRule.onNodeWithText("Privacy Policy").assertIsDisplayed()
@@ -352,32 +359,29 @@ class AuthScreenTest {
 
         composeTestRule.setContent {
             RasoiAITheme {
-                AuthScreenTestContent(uiState = uiState)
+                PhoneInputTestContent(uiState = uiState)
             }
         }
 
-        // Screen elements should still be visible
         composeTestRule.onNodeWithTag(TestTags.AUTH_SCREEN).assertIsDisplayed()
         composeTestRule.onNodeWithText("RasoiAI").assertIsDisplayed()
         composeTestRule.onNodeWithText("Welcome!").assertIsDisplayed()
-
-        // Button should show loading state
-        composeTestRule.onNodeWithTag(TestTags.GOOGLE_SIGN_IN_BUTTON).assertIsNotEnabled()
-        composeTestRule.onNodeWithText("Signing in…").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Continue with Google").assertDoesNotExist()
+        composeTestRule.onNodeWithTag(TestTags.SEND_OTP_BUTTON).assertIsNotEnabled()
+        composeTestRule.onNodeWithText("Sending OTP…").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Send OTP").assertDoesNotExist()
     }
 
     // endregion
 }
 
 /**
- * Test composable that mirrors the structure of AuthScreen content.
+ * Test composable that mirrors the structure of AuthScreen phone input content.
  * This allows testing the UI in isolation without the ViewModel.
  */
 @Composable
-private fun AuthScreenTestContent(
+private fun PhoneInputTestContent(
     uiState: AuthUiState,
-    onSignInClick: () -> Unit = {},
+    onSendOtpClick: () -> Unit = {},
     onTermsClick: () -> Unit = {},
     onPrivacyClick: () -> Unit = {}
 ) {
@@ -395,7 +399,7 @@ private fun AuthScreenTestContent(
         ) {
             Spacer(modifier = Modifier.weight(0.15f))
 
-            // Logo placeholder (simplified for testing)
+            // Logo placeholder
             Box(
                 modifier = Modifier.size(100.dp),
                 contentAlignment = Alignment.Center
@@ -437,123 +441,106 @@ private fun AuthScreenTestContent(
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.weight(0.2f))
+            Spacer(modifier = Modifier.weight(0.1f))
 
-            // Google Sign-In Button
-            GoogleSignInButtonTestContent(
-                onClick = onSignInClick,
-                isLoading = uiState.isLoading,
-                modifier = Modifier.fillMaxWidth()
-            )
+            // Phone number input with country code prefix
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "+91",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.testTag(TestTags.COUNTRY_CODE_PREFIX)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                OutlinedTextField(
+                    value = uiState.phoneNumber,
+                    onValueChange = {},
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag(TestTags.PHONE_NUMBER_FIELD),
+                    placeholder = { Text("Enter 10-digit number") }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Send OTP Button
+            Button(
+                onClick = onSendOtpClick,
+                enabled = !uiState.isLoading,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .testTag(TestTags.SEND_OTP_BUTTON),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White
+                )
+            ) {
+                if (uiState.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Sending OTP…",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                } else {
+                    Text(
+                        text = "Send OTP",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.weight(0.15f))
 
             // Terms and Privacy
-            TermsAndPrivacyTestContent(
-                onTermsClick = onTermsClick,
-                onPrivacyClick = onPrivacyClick,
-                modifier = Modifier.padding(bottom = 32.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun GoogleSignInButtonTestContent(
-    onClick: () -> Unit,
-    isLoading: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Button(
-        onClick = onClick,
-        enabled = !isLoading,
-        modifier = modifier
-            .height(56.dp)
-            .testTag(TestTags.GOOGLE_SIGN_IN_BUTTON),
-        shape = RoundedCornerShape(8.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Color.White,
-            contentColor = Color.Black,
-            disabledContainerColor = Color.White.copy(alpha = 0.7f),
-            disabledContentColor = Color.Black.copy(alpha = 0.5f)
-        )
-    ) {
-        if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
-                color = MaterialTheme.colorScheme.primary,
-                strokeWidth = 2.dp
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = "Signing in…",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
-        } else {
-            // Google "G" icon
-            Box(
-                modifier = Modifier.size(24.dp),
-                contentAlignment = Alignment.Center
+            Column(
+                modifier = Modifier.padding(bottom = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "G",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF4285F4)
-                )
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = "Continue with Google",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
-        }
-    }
-}
-
-@Composable
-private fun TermsAndPrivacyTestContent(
-    onTermsClick: () -> Unit,
-    onPrivacyClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "By continuing, you agree to our",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TextButton(onClick = onTermsClick) {
-                Text(
-                    text = "Terms of Service",
+                    text = "By continuing, you agree to our",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    textDecoration = TextDecoration.Underline
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
                 )
-            }
-            Text(
-                text = " • ",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            TextButton(onClick = onPrivacyClick) {
-                Text(
-                    text = "Privacy Policy",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    textDecoration = TextDecoration.Underline
-                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = onTermsClick) {
+                        Text(
+                            text = "Terms of Service",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            textDecoration = TextDecoration.Underline
+                        )
+                    }
+                    Text(
+                        text = " • ",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    TextButton(onClick = onPrivacyClick) {
+                        Text(
+                            text = "Privacy Policy",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            textDecoration = TextDecoration.Underline
+                        )
+                    }
+                }
             }
         }
     }

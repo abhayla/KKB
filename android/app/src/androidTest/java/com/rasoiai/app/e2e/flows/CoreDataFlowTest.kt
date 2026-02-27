@@ -23,8 +23,8 @@ import org.junit.Test
  * Tests the sequential flow: Auth → Onboarding → Generation → Home
  *
  * This test:
- * 1. Clears ALL state (DataStore, FakeGoogleAuthClient) for a fresh start
- * 2. Authenticates via FakeGoogleAuthClient (returns fake-firebase-token)
+ * 1. Clears ALL state (DataStore, FakePhoneAuthClient) for a fresh start
+ * 2. Authenticates via FakePhoneAuthClient (returns fake-firebase-token)
  * 3. Completes onboarding (saves preferences to REAL DataStore)
  * 4. Waits for meal plan generation
  * 5. Verifies Home screen displays
@@ -53,7 +53,7 @@ class CoreDataFlowTest : BaseE2ETest() {
 
     /**
      * Test the core sequential flow from Auth through Grocery.
-     * Uses FakeGoogleAuthClient for authentication.
+     * Uses FakePhoneAuthClient for authentication.
      */
     @Test
     fun coreFlow_authToGrocery_completesSuccessfully() {
@@ -83,13 +83,13 @@ class CoreDataFlowTest : BaseE2ETest() {
 
         // Verify auth screen elements
         composeTestRule.onNodeWithTag(TestTags.AUTH_SCREEN).assertIsDisplayed()
-        composeTestRule.onNodeWithTag(TestTags.GOOGLE_SIGN_IN_BUTTON).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(TestTags.SEND_OTP_BUTTON).assertIsDisplayed()
         composeTestRule.onNodeWithText("Welcome!").assertIsDisplayed()
     }
 
     private fun step2_signInAndNavigateToOnboarding() {
-        // Tap Google Sign-In button (uses FakeGoogleAuthClient)
-        composeTestRule.onNodeWithTag(TestTags.GOOGLE_SIGN_IN_BUTTON).performClick()
+        // Tap Phone Auth button (uses FakePhoneAuthClient)
+        composeTestRule.onNodeWithTag(TestTags.SEND_OTP_BUTTON).performClick()
 
         // Wait for onboarding screen
         composeTestRule.waitUntilNodeWithTagExists(TestTags.ONBOARDING_PROGRESS_BAR, 10000)

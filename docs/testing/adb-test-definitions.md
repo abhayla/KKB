@@ -17,7 +17,7 @@ Reference file for `/adb-test` command. Each screen defines:
 **Navigation:** App launch (fresh install or after sign-out)
 **Last Verified:** 2026-02-09 | **Definition Confidence:** HIGH
 
-**Primary Identifier:** text="Continue with Google" OR text="Welcome"
+**Primary Identifier:** text="Continue with Phone" OR text="Welcome"
 
 ### Required Elements
 
@@ -25,14 +25,14 @@ Reference file for `/adb-test` command. Each screen defines:
 |---------|-----------|----------------|
 | App logo/title | text | "RasoiAI" or app name |
 | Welcome text | text | Contains "Welcome" or "Sign in" |
-| Google sign-in button | text | "Continue with Google" |
+| Phone auth button | text | "Continue with Phone" |
 | App tagline | text | Contains "meal" or "cooking" or "family" |
 
 ### Interactive Elements
 
 | Action | Target | Expected Result |
 |--------|--------|-----------------|
-| Tap "Continue with Google" | text="Continue with Google" | Navigates to Google auth flow (fake auth returns immediately) → Onboarding or Home |
+| Tap "Continue with Phone" | text="Continue with Phone" | Navigates to Firebase Phone Auth flow (fake auth returns immediately) → Onboarding or Home |
 
 ### Data Validation
 
@@ -41,8 +41,8 @@ Reference file for `/adb-test` command. Each screen defines:
 
 ### Known Issues
 
-- Fake auth (`fake-firebase-token`) bypasses Google OAuth in Compose instrumented tests only
-- ADB tests use real Google OAuth with test Gmail accounts (see `memory/test-accounts.md` for credentials)
+- Fake auth (`fake-firebase-token`) bypasses Firebase Phone Auth in Compose instrumented tests only
+- ADB tests use real Firebase Phone Auth with test phone numbers (see `memory/test-accounts.md` for credentials)
 - Primary ADB test account: `abhayfaircent@gmail.com`
 - Secondary ADB test account: `zmphzc@gmail.com`
 - Emulator must have one of these Google accounts signed in before ADB auth flow
@@ -1337,7 +1337,7 @@ curl -s -H "Authorization: Bearer $JWT" http://localhost:8000/api/v1/users/me | 
 
 ### Data Validation
 
-- Google should show as connected (user signed in via Google OAuth)
+- Phone should show as connected (user signed in via Firebase Phone Auth)
 - Other providers may show as "Not connected"
 
 ### Known Issues
@@ -1419,7 +1419,7 @@ Since Compose `testTag()` values (from `TestTags.kt`) are NOT visible in uiautom
 ### Screen Identifiers
 | Screen | Search Via | Value |
 |--------|-----------|-------|
-| Auth | text | "Continue with Google" |
+| Auth | text | "Continue with Phone" |
 | Onboarding | text | "Tell us about your household" or "Next" |
 | Home | text | "This Week's Menu" or "BREAKFAST" |
 | Grocery | text | "Grocery List" or "Grocery" (title) |

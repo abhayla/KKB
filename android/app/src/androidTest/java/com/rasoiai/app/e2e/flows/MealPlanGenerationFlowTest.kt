@@ -202,9 +202,9 @@ class MealPlanGenerationFlowTest : BaseE2ETest() {
         takeScreenshot("01_auth_screen")
 
         authRobot.assertAuthScreenDisplayed()
-        authRobot.assertGoogleSignInButtonDisplayed()
+        authRobot.assertSendOtpButtonDisplayed()
 
-        authRobot.tapGoogleSignIn()
+        authRobot.tapSendOtp()
         authRobot.assertNavigatedToOnboarding()
 
         Log.i(TAG, "Phase 1 complete: Authenticated and navigated to onboarding")

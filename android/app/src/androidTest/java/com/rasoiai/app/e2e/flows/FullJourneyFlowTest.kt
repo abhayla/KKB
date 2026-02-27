@@ -104,11 +104,11 @@ class FullJourneyFlowTest : BaseE2ETest() {
         // Wait for auth screen
         authRobot.waitForAuthScreen(10000)
         authRobot.assertAuthScreenDisplayed()
-        authRobot.assertGoogleSignInButtonDisplayed()
-        Log.i(TAG, "Auth screen displayed with Google Sign-In button")
+        authRobot.assertSendOtpButtonDisplayed()
+        Log.i(TAG, "Auth screen displayed with Phone Auth button")
 
-        // Tap Google Sign-In (FakeGoogleAuthClient returns fake-firebase-token)
-        authRobot.tapGoogleSignIn()
+        // Tap Phone Auth (FakePhoneAuthClient returns fake-firebase-token)
+        authRobot.tapSendOtp()
 
         // Wait for navigation to onboarding
         composeTestRule.waitUntilNodeWithTagExists(TestTags.ONBOARDING_PROGRESS_BAR, 10000)

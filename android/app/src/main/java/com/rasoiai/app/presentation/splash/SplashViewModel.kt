@@ -2,7 +2,7 @@ package com.rasoiai.app.presentation.splash
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.rasoiai.app.presentation.auth.GoogleAuthClientInterface
+import com.rasoiai.app.presentation.auth.PhoneAuthClientInterface
 import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.data.local.datastore.UserPreferencesDataStoreInterface
 import com.rasoiai.domain.repository.MealPlanRepository
@@ -36,7 +36,7 @@ sealed class SplashNavigationEvent {
 class SplashViewModel @Inject constructor(
     networkMonitor: NetworkMonitor,
     private val userPreferencesDataStore: UserPreferencesDataStoreInterface,
-    private val googleAuthClient: GoogleAuthClientInterface,
+    private val phoneAuthClient: PhoneAuthClientInterface,
     private val mealPlanRepository: MealPlanRepository
 ) : ViewModel() {
 
@@ -63,7 +63,7 @@ class SplashViewModel @Inject constructor(
             delay(2000)
 
             // Check if user is logged in via injected auth client (allows test mocking)
-            val isLoggedIn = googleAuthClient.isSignedIn
+            val isLoggedIn = phoneAuthClient.isSignedIn
 
             // Check if onboarding is complete from DataStore
             val isOnboarded = userPreferencesDataStore.isOnboarded.first()

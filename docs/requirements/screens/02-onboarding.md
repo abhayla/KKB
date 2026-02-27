@@ -739,14 +739,14 @@ Legend: ✓ = done, ◯ = in progress, ○ = pending
 **Acceptance Criteria:**
 
 **Scenario A: First-time user sees onboarding**
-- Given: User completed Google Sign-In
+- Given: User completed Phone Auth
 - And: User has NOT previously completed onboarding (`isOnboarded = false`)
 - When: Auth flow completes
 - Then: Navigate to Onboarding Step 1
 - And: User must complete all 5 steps
 
 **Scenario B: Returning user skips onboarding**
-- Given: User completed Google Sign-In
+- Given: User completed Phone Auth
 - And: User HAS previously completed onboarding (`isOnboarded = true`)
 - When: Auth flow completes
 - Then: Navigate directly to Home screen

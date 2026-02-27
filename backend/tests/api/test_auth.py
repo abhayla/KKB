@@ -80,6 +80,21 @@ async def test_refresh_token_invalid_token(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_firebase_auth_returns_phone_number(client: AsyncClient):
+    """Test Firebase auth endpoint returns phone_number in user response."""
+    response = await client.post(
+        "/api/v1/auth/firebase",
+        json={"firebase_token": "mock-token-for-testing"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    user = data["user"]
+    # phone_number should be present in the response (may be None for dev mock)
+    assert "phone_number" in user
+
+
+@pytest.mark.asyncio
 async def test_refresh_token_with_access_token_fails(client: AsyncClient):
     """Test that using an access token as refresh token fails."""
     # First, authenticate to get tokens

@@ -22,7 +22,7 @@ import org.junit.runners.Suite
  *    - Verifies Home screen
  *
  * 2. Subsequent tests inherit persisted state:
- *    - FakeGoogleAuthClient.simulateSignedIn() sets Google auth state
+ *    - FakePhoneAuthClient.simulateSignedIn() sets Phone auth state
  *    - Real DataStore already has JWT + onboarded flag from step 1
  *    - App navigates directly to Home screen via SplashViewModel
  *

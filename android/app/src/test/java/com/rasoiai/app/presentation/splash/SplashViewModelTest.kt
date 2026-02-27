@@ -1,7 +1,7 @@
 package com.rasoiai.app.presentation.splash
 
 import app.cash.turbine.test
-import com.rasoiai.app.presentation.auth.GoogleAuthClientInterface
+import com.rasoiai.app.presentation.auth.PhoneAuthClientInterface
 import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.data.local.datastore.UserPreferencesDataStoreInterface
 import com.rasoiai.domain.repository.MealPlanRepository
@@ -32,7 +32,7 @@ class SplashViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var fakeNetworkMonitor: FakeNetworkMonitor
     private lateinit var mockUserPreferencesDataStore: UserPreferencesDataStoreInterface
-    private lateinit var mockGoogleAuthClient: GoogleAuthClientInterface
+    private lateinit var mockPhoneAuthClient: PhoneAuthClientInterface
     private lateinit var mockMealPlanRepository: MealPlanRepository
 
     @BeforeEach
@@ -40,10 +40,10 @@ class SplashViewModelTest {
         Dispatchers.setMain(testDispatcher)
         fakeNetworkMonitor = FakeNetworkMonitor()
         mockUserPreferencesDataStore = mockk(relaxed = true)
-        mockGoogleAuthClient = mockk(relaxed = true)
+        mockPhoneAuthClient = mockk(relaxed = true)
         mockMealPlanRepository = mockk(relaxed = true)
         every { mockUserPreferencesDataStore.isOnboarded } returns flowOf(false)
-        every { mockGoogleAuthClient.isSignedIn } returns false
+        every { mockPhoneAuthClient.isSignedIn } returns false
         coEvery { mockMealPlanRepository.hasMealPlanForCurrentWeek() } returns false
     }
 
@@ -55,7 +55,7 @@ class SplashViewModelTest {
     @Test
     @DisplayName("Initial state should be loading")
     fun `initial state should be loading`() = runTest {
-        val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore, mockGoogleAuthClient, mockMealPlanRepository)
+        val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore, mockPhoneAuthClient, mockMealPlanRepository)
 
         viewModel.uiState.test {
             val initialState = awaitItem()
@@ -67,7 +67,7 @@ class SplashViewModelTest {
     @Test
     @DisplayName("isOnline should reflect network state")
     fun `isOnline should reflect network state`() = runTest {
-        val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore, mockGoogleAuthClient, mockMealPlanRepository)
+        val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore, mockPhoneAuthClient, mockMealPlanRepository)
 
         viewModel.isOnline.test {
             // Initial state is online
@@ -88,7 +88,7 @@ class SplashViewModelTest {
     @Test
     @DisplayName("After delay, isLoading should be false")
     fun `after delay isLoading should be false`() = runTest {
-        val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore, mockGoogleAuthClient, mockMealPlanRepository)
+        val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore, mockPhoneAuthClient, mockMealPlanRepository)
 
         viewModel.uiState.test {
             // Initial state
@@ -107,7 +107,7 @@ class SplashViewModelTest {
     @Test
     @DisplayName("Navigation event should be emitted after delay")
     fun `navigation event should be emitted after delay`() = runTest {
-        val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore, mockGoogleAuthClient, mockMealPlanRepository)
+        val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore, mockPhoneAuthClient, mockMealPlanRepository)
 
         // Advance time to trigger navigation
         testDispatcher.scheduler.advanceTimeBy(2500)
@@ -128,9 +128,9 @@ class SplashViewModelTest {
         @Test
         @DisplayName("Should navigate to Auth when not logged in")
         fun `should navigate to Auth when not logged in`() = runTest {
-            every { mockGoogleAuthClient.isSignedIn } returns false
+            every { mockPhoneAuthClient.isSignedIn } returns false
 
-            val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore, mockGoogleAuthClient, mockMealPlanRepository)
+            val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore, mockPhoneAuthClient, mockMealPlanRepository)
 
             testDispatcher.scheduler.advanceTimeBy(2500)
 
@@ -144,11 +144,11 @@ class SplashViewModelTest {
         @Test
         @DisplayName("Should navigate to Onboarding when logged in but not onboarded and no meal plan")
         fun `should navigate to Onboarding when logged in but not onboarded and no meal plan`() = runTest {
-            every { mockGoogleAuthClient.isSignedIn } returns true
+            every { mockPhoneAuthClient.isSignedIn } returns true
             every { mockUserPreferencesDataStore.isOnboarded } returns flowOf(false)
             coEvery { mockMealPlanRepository.hasMealPlanForCurrentWeek() } returns false
 
-            val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore, mockGoogleAuthClient, mockMealPlanRepository)
+            val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore, mockPhoneAuthClient, mockMealPlanRepository)
 
             testDispatcher.scheduler.advanceTimeBy(2500)
 
@@ -162,10 +162,10 @@ class SplashViewModelTest {
         @Test
         @DisplayName("Should navigate to Home when logged in and onboarded")
         fun `should navigate to Home when logged in and onboarded`() = runTest {
-            every { mockGoogleAuthClient.isSignedIn } returns true
+            every { mockPhoneAuthClient.isSignedIn } returns true
             every { mockUserPreferencesDataStore.isOnboarded } returns flowOf(true)
 
-            val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore, mockGoogleAuthClient, mockMealPlanRepository)
+            val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore, mockPhoneAuthClient, mockMealPlanRepository)
 
             testDispatcher.scheduler.advanceTimeBy(2500)
 
@@ -180,11 +180,11 @@ class SplashViewModelTest {
         @DisplayName("Should navigate to Home when meal plan exists even if isOnboarded is false")
         fun `should navigate to Home when meal plan exists even if isOnboarded is false`() = runTest {
             // This is the key bug fix test - user has meal plan but DataStore was cleared
-            every { mockGoogleAuthClient.isSignedIn } returns true
+            every { mockPhoneAuthClient.isSignedIn } returns true
             every { mockUserPreferencesDataStore.isOnboarded } returns flowOf(false) // DataStore was cleared
             coEvery { mockMealPlanRepository.hasMealPlanForCurrentWeek() } returns true // But Room has meal plan
 
-            val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore, mockGoogleAuthClient, mockMealPlanRepository)
+            val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore, mockPhoneAuthClient, mockMealPlanRepository)
 
             testDispatcher.scheduler.advanceTimeBy(2500)
 
@@ -199,11 +199,11 @@ class SplashViewModelTest {
         @Test
         @DisplayName("Should handle exception when checking meal plan existence")
         fun `should handle exception when checking meal plan existence`() = runTest {
-            every { mockGoogleAuthClient.isSignedIn } returns true
+            every { mockPhoneAuthClient.isSignedIn } returns true
             every { mockUserPreferencesDataStore.isOnboarded } returns flowOf(false)
             coEvery { mockMealPlanRepository.hasMealPlanForCurrentWeek() } throws Exception("Database error")
 
-            val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore, mockGoogleAuthClient, mockMealPlanRepository)
+            val viewModel = SplashViewModel(fakeNetworkMonitor, mockUserPreferencesDataStore, mockPhoneAuthClient, mockMealPlanRepository)
 
             testDispatcher.scheduler.advanceTimeBy(2500)
 

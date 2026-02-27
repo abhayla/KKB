@@ -41,7 +41,7 @@ start app/build/reports/androidTests/connected/index.html
 2. Backend running: `cd backend && uvicorn app.main:app --reload --port 8000`
 3. App installed: `./gradlew installDebug`
 
-**Auth Bypass:** Tests use `FakeGoogleAuthClient` which returns `fake-firebase-token`. The backend accepts this token in debug mode (`DEBUG=true`).
+**Auth Bypass:** Tests use `FakePhoneAuthClient` which returns `fake-firebase-token`. The backend accepts this token in debug mode (`DEBUG=true`).
 
 ---
 
@@ -115,7 +115,7 @@ The tests follow a **15-phase sequence** that mimics a complete user journey:
 ```
 Phase 1: AUTH ──► Phase 2: ONBOARDING (5 steps) ──► Phase 3: GENERATION
    │                                                        │
-   └─ FakeGoogleAuthClient                                 ▼
+   └─ FakePhoneAuthClient                                 ▼
       "fake-firebase-token"                     Phase 4: HOME ──► Phase 5: GROCERY
                                                    │                    │
                                                    ▼                    ▼
@@ -135,7 +135,7 @@ Phase 1: AUTH ──► Phase 2: ONBOARDING (5 steps) ──► Phase 3: GENERAT
 
 | Phase | Name | Tests | Key Validations |
 |:-----:|------|:-----:|-----------------|
-| 1 | Auth | 18 | FakeGoogleAuthClient → Backend accepts fake token → JWT returned |
+| 1 | Auth | 18 | FakePhoneAuthClient → Backend accepts fake token → JWT returned |
 | 2 | Onboarding | 41 | 5 steps with Sharma Family profile data |
 | 3 | Generation | 17 | 4-step progress, API calls, 28 meal items created |
 | 4 | Home | 22 | Meal cards, lock/swap, day navigation |
@@ -163,7 +163,7 @@ Phase 1: AUTH ──► Phase 2: ONBOARDING (5 steps) ──► Phase 3: GENERAT
 |-------|-----------|---------|
 | Unit Tests | JUnit5 + MockK | ViewModel, Repository, UseCase |
 | UI Screen Tests | Compose UI Testing | Screen composables with mock UiState |
-| Integration Tests | Hilt + FakeGoogleAuthClient | Full navigation flows with auth bypass |
+| Integration Tests | Hilt + FakePhoneAuthClient | Full navigation flows with phone auth bypass |
 | Flow Testing | Turbine | StateFlow/Channel in ViewModels |
 
 **Note:** All tests run via `./gradlew connectedDebugAndroidTest`. ADB commands are for debugging/setup only.
@@ -209,8 +209,8 @@ Phase 1: AUTH ──► Phase 2: ONBOARDING (5 steps) ──► Phase 3: GENERAT
 
 ## Test Architecture: Real Backend + Fake Auth
 
-The E2E tests use **Real Backend + Fake Google Auth Only**:
-- Google OAuth is bypassed using `FakeGoogleAuthClient`
+The E2E tests use **Real Backend + Fake Phone Auth Only**:
+- Firebase Phone Auth is bypassed using `FakePhoneAuthClient`
 - All API calls go to the real Python backend
 - Database is PostgreSQL (real, not emulated)
 
@@ -218,7 +218,7 @@ The E2E tests use **Real Backend + Fake Google Auth Only**:
 
 | Component | Status | Details |
 |-----------|--------|---------|
-| Google OAuth | **FAKE** | `FakeGoogleAuthClient` bypasses real Google sign-in |
+| Phone Auth | **FAKE** | `FakePhoneAuthClient` bypasses real Firebase Phone Auth |
 | Firebase Token | **FAKE** | Hardcoded `"fake-firebase-token"` |
 | Backend API | **REAL** | Python FastAPI at `localhost:8000` |
 | JWT Tokens | **REAL** | Backend generates real JWTs |
@@ -227,8 +227,8 @@ The E2E tests use **Real Backend + Fake Google Auth Only**:
 
 ### Auth Flow
 
-1. User taps "Sign in with Google"
-2. `FakeGoogleAuthClient` returns `{ userId: "fake-user-id", email: "test@example.com", firebaseIdToken: "fake-firebase-token" }`
+1. User enters phone number and taps "Send OTP"
+2. `FakePhoneAuthClient` auto-verifies and returns `{ userId: "fake-user-id", phoneNumber: "+911111111111", firebaseIdToken: "fake-firebase-token" }`
 3. `AuthViewModel` calls `POST http://10.0.2.2:8000/api/v1/auth/firebase` with `{ "firebase_token": "fake-firebase-token" }`
 4. Backend (`DEBUG=true`) accepts fake token, creates/finds user in PostgreSQL, returns real JWT
 5. App stores JWT in DataStore, navigates to Onboarding (new user) or Home (returning user)
@@ -237,8 +237,8 @@ The E2E tests use **Real Backend + Fake Google Auth Only**:
 
 | File | Purpose |
 |------|---------|
-| `e2e/di/FakeGoogleAuthClient.kt` | Bypasses Google OAuth, returns fake credentials |
-| `e2e/di/FakeAuthModule.kt` | Hilt module that replaces real GoogleAuthClient |
+| `e2e/di/FakePhoneAuthClient.kt` | Bypasses Firebase Phone Auth, returns fake credentials |
+| `e2e/di/FakeAuthModule.kt` | Hilt module that replaces real PhoneAuthClient |
 | `e2e/base/BaseE2ETest.kt` | Base test class with Hilt setup |
 | `presentation/common/TestTags.kt` | All semantic test tags for UI elements |
 | `presentation/*ScreenTest.kt` | UI tests for each screen (13 files) |
@@ -326,7 +326,7 @@ adb shell settings put global airplane_mode_on 0 && adb shell am broadcast -a an
 ## Known Issues
 
 1. **Compose Dropdown Selection:** `ExposedDropdownMenu` items aren't captured by UI Automator. Use tap coordinates for manual testing.
-2. **Google OAuth in Emulator:** Not needed for instrumented tests — `FakeGoogleAuthClient` bypasses OAuth entirely.
+2. **Firebase Phone Auth in Emulator:** Not needed for instrumented tests — `FakePhoneAuthClient` bypasses real phone auth entirely.
 3. **API 36 Espresso Issues:** Use API 34 for tests. API 36 has compatibility problems.
 
 ---

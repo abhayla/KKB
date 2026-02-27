@@ -12,7 +12,7 @@ import org.junit.Test
  *
  * Tests:
  * 1.1 Splash Screen - Launch app, observe splash, verify redirect
- * 1.2 Google OAuth Login - Sign in with Google, verify navigation
+ * 1.2 Firebase Phone Auth Login - Sign in with phone, verify navigation
  */
 @HiltAndroidTest
 class AuthFlowTest : BaseE2ETest() {
@@ -56,10 +56,10 @@ class AuthFlowTest : BaseE2ETest() {
     }
 
     /**
-     * Test 1.2: Google OAuth Login
+     * Test 1.2: Firebase Phone Auth Login
      *
      * Steps:
-     * 1. Tap "Sign in with Google" button
+     * 1. Tap "Sign in with phone" button
      * 2. Complete OAuth flow (mocked)
      *
      * Expected:
@@ -67,15 +67,15 @@ class AuthFlowTest : BaseE2ETest() {
      * - Redirects to Onboarding screen (not Home for new user)
      */
     @Test
-    fun test_1_2_googleOAuthLogin_navigatesToOnboarding() {
+    fun test_1_2_phoneAuthLogin_navigatesToOnboarding() {
         // Given: Auth screen is displayed
         authRobot.waitForAuthScreen()
         authRobot.assertAuthScreenDisplayed()
         authRobot.assertWelcomeTextDisplayed()
-        authRobot.assertGoogleSignInButtonDisplayed()
+        authRobot.assertSendOtpButtonDisplayed()
 
-        // When: User taps Google Sign-In
-        authRobot.tapGoogleSignIn()
+        // When: User taps Phone Auth
+        authRobot.tapSendOtp()
 
         // Then: Should navigate to onboarding (new user)
         authRobot.assertNavigatedToOnboarding(LONG_TIMEOUT)
@@ -92,7 +92,7 @@ class AuthFlowTest : BaseE2ETest() {
         // Then: All elements should be visible
         authRobot.assertAuthScreenDisplayed()
         authRobot.assertWelcomeTextDisplayed()
-        authRobot.assertGoogleSignInButtonDisplayed()
+        authRobot.assertSendOtpButtonDisplayed()
     }
 
     /**
@@ -100,14 +100,14 @@ class AuthFlowTest : BaseE2ETest() {
      */
     @Test
     fun signIn_failure_showsError() {
-        // Given: FakeGoogleAuthClient is configured to fail
-        // This simulates Google Sign-In failure before reaching backend
-        fakeGoogleAuthClient.setSignInFailure(Exception("Network error"))
+        // Given: FakePhoneAuthClient is configured to fail
+        // This simulates Phone Auth failure before reaching backend
+        fakePhoneAuthClient.setSignInFailure(Exception("Network error"))
 
         authRobot.waitForAuthScreen()
 
         // When: User attempts sign-in
-        authRobot.tapGoogleSignIn()
+        authRobot.tapSendOtp()
 
         // Then: Should remain on auth screen (sign-in failed)
         waitFor(ANIMATION_DURATION)

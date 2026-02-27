@@ -3,6 +3,7 @@ package com.rasoiai.domain.model
 data class User(
     val id: String,
     val email: String,
+    val phoneNumber: String? = null,
     val name: String,
     val profileImageUrl: String?,
     val isOnboarded: Boolean,

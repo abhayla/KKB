@@ -37,8 +37,7 @@ data → core, domain
 ## Key Build Configuration
 
 - **Version Catalog**: All dependency versions in `gradle/libs.versions.toml`. Never hardcode versions in module `build.gradle.kts`. `settings.gradle.kts` sets `FAIL_ON_PROJECT_REPOS`.
-- **`WEB_CLIENT_ID`**: Must be in `local.properties` OR set as env variable (`System.getenv` fallback). Build throws `GradleException` if missing.
-- **`google-services.json`**: Required in `android/app/` from Firebase Console.
+- **`google-services.json`**: Required in `android/app/` from Firebase Console (for Firebase Phone Auth).
 - **JUnit 5** for unit tests (`useJUnitPlatform()`), **JUnit 4 rules** for instrumented tests — don't mix. All modules need `testRuntimeOnly(libs.junit.platform.launcher)` for Gradle 9.x.
 - **Release signing** via env vars: `KEYSTORE_PATH`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`.
 - **ProGuard** enabled for `data` module release builds (`isMinifyEnabled = true`). Check `consumer-rules.pro` for Room/Retrofit keep rules.

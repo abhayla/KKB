@@ -64,9 +64,16 @@ object TestTags {
 
     // Auth Screen
     const val AUTH_SCREEN = "auth_screen"
-    const val AUTH_SIGN_IN_BUTTON = "google_sign_in_button"
-    const val GOOGLE_SIGN_IN_BUTTON = "google_sign_in_button" // Alias for AUTH_SIGN_IN_BUTTON
     const val AUTH_WELCOME_TEXT = "auth_welcome_text"
+    const val PHONE_NUMBER_FIELD = "phone_number_field"
+    const val COUNTRY_CODE_PREFIX = "country_code_prefix"
+    const val SEND_OTP_BUTTON = "send_otp_button"
+    const val OTP_INPUT_PREFIX = "otp_input_"
+    const val VERIFY_OTP_BUTTON = "verify_otp_button"
+    const val RESEND_OTP_BUTTON = "resend_otp_button"
+    const val OTP_SCREEN_TITLE = "otp_screen_title"
+    const val OTP_PHONE_DISPLAY = "otp_phone_display"
+    const val AUTH_BACK_BUTTON = "auth_back_button"
 
     // Onboarding Screen (container)
     const val ONBOARDING_SCREEN = "onboarding_screen"

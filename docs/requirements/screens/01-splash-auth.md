@@ -11,16 +11,18 @@
 | SPLASH-005 | Navigation: Authenticated | Route to Home if logged in | Implemented | `SplashViewModelTest.kt` |
 | SPLASH-006 | Navigation: New User | Route to Auth if not logged in | Implemented | `SplashViewModelTest.kt` |
 | SPLASH-007 | Offline Banner | Show if no network | Implemented | `SplashScreenTest.kt` |
-| AUTH-001 | Auth Screen | Display login options | Implemented | `AuthScreenTest.kt` |
-| AUTH-002 | Google Sign-In Button | Initiate Google OAuth | Implemented | `AuthScreenTest.kt` |
-| AUTH-003 | Google OAuth Flow | Complete authentication | Implemented | `AuthViewModelTest.kt` |
-| AUTH-004 | Loading State | Show during authentication | Implemented | `AuthScreenTest.kt` |
-| AUTH-005 | Error Handling | Display auth errors | Implemented | `AuthScreenTest.kt` |
-| AUTH-006 | Terms Link | Navigate to Terms of Service | Implemented | `AuthScreenTest.kt` |
-| AUTH-007 | Privacy Link | Navigate to Privacy Policy | Implemented | `AuthScreenTest.kt` |
-| AUTH-008 | Navigation: First User | Route to Onboarding after auth | Implemented | `AuthViewModelTest.kt` |
-| AUTH-009 | Navigation: Returning User | Route to Home after auth | Implemented | `AuthViewModelTest.kt` |
-| AUTH-010 | Token Storage | Save JWT to secure storage | Implemented | `AuthViewModelTest.kt` |
+| AUTH-001 | Auth Screen | Display phone input | Implemented | `AuthScreenTest.kt` |
+| AUTH-002 | Phone Number Input | Enter 10-digit Indian number with +91 prefix | Implemented | `AuthScreenTest.kt` |
+| AUTH-003 | Send OTP Button | Initiate Firebase Phone Auth OTP | Implemented | `AuthScreenTest.kt` |
+| AUTH-004 | OTP Verification Screen | Enter 6-digit OTP code | Implemented | `AuthScreenTest.kt` |
+| AUTH-005 | Loading State | Show during OTP send/verify | Implemented | `AuthScreenTest.kt` |
+| AUTH-006 | Error Handling | Display auth errors | Implemented | `AuthScreenTest.kt` |
+| AUTH-007 | Terms Link | Navigate to Terms of Service | Implemented | `AuthScreenTest.kt` |
+| AUTH-008 | Privacy Link | Navigate to Privacy Policy | Implemented | `AuthScreenTest.kt` |
+| AUTH-009 | Navigation: First User | Route to Onboarding after auth | Implemented | `AuthViewModelTest.kt` |
+| AUTH-010 | Navigation: Returning User | Route to Home after auth | Implemented | `AuthViewModelTest.kt` |
+| AUTH-011 | Token Storage | Save JWT to secure storage | Implemented | `AuthViewModelTest.kt` |
+| AUTH-012 | Resend OTP | Resend OTP with 30s countdown | Implemented | `AuthScreenTest.kt` |
 
 ---
 
@@ -75,61 +77,84 @@
 └─────────────────────────────────────┘
 ```
 
-### Auth - Default State
+### Auth - Phone Input (Default State)
 ```
 ┌─────────────────────────────────────┐
 │                                     │
-│                                     │
 │            ┌─────────┐              │
-│            │  🍲     │              │
+│            │  🍳     │              │
 │            │  Logo   │              │
 │            └─────────┘              │
 │                                     │
 │             RasoiAI                 │
-│                                     │
 │                                     │
 │            Welcome!                 │
 │                                     │
 │     AI Meal Planning for Indian     │
 │              Families               │
 │                                     │
+│  +91 ┌──────────────────────────┐   │
+│      │ Enter 10-digit number    │   │
+│      └──────────────────────────┘   │
 │                                     │
 │  ┌─────────────────────────────┐    │
-│  │  G  Continue with Google    │    │
+│  │        Send OTP             │    │
 │  └─────────────────────────────┘    │
-│                                     │
 │                                     │
 │    By continuing, you agree to      │
 │    Terms of Service · Privacy       │
 └─────────────────────────────────────┘
 ```
 
-### Auth - Loading State
+### Auth - Sending OTP (Loading State)
 ```
 ┌─────────────────────────────────────┐
 │                                     │
-│                                     │
 │            ┌─────────┐              │
-│            │  🍲     │              │
+│            │  🍳     │              │
 │            │  Logo   │              │
 │            └─────────┘              │
 │                                     │
 │             RasoiAI                 │
-│                                     │
 │                                     │
 │            Welcome!                 │
 │                                     │
 │     AI Meal Planning for Indian     │
 │              Families               │
 │                                     │
+│  +91 ┌──────────────────────────┐   │
+│      │ 9876543210               │   │
+│      └──────────────────────────┘   │
 │                                     │
 │  ┌─────────────────────────────┐    │
-│  │  ◯  Signing in...          │    │
+│  │  ◯  Sending OTP…           │    │
 │  └─────────────────────────────┘    │
 │         (button disabled)           │
 │                                     │
 │    By continuing, you agree to      │
 │    Terms of Service · Privacy       │
+└─────────────────────────────────────┘
+```
+
+### Auth - OTP Verification
+```
+┌─────────────────────────────────────┐
+│  ← Back                            │
+│                                     │
+│       Verify your number            │
+│                                     │
+│  OTP sent to +91 98765 43210       │
+│                                     │
+│   ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐
+│   │   │ │   │ │   │ │   │ │   │ │   │
+│   └───┘ └───┘ └───┘ └───┘ └───┘ └───┘
+│                                     │
+│  ┌─────────────────────────────┐    │
+│  │        Verify OTP           │    │
+│  └─────────────────────────────┘    │
+│                                     │
+│      Resend OTP (30s)              │
+│                                     │
 └─────────────────────────────────────┘
 ```
 
@@ -296,86 +321,105 @@
 | Field | Value |
 |-------|-------|
 | **Screen** | Auth |
-| **Element** | Full screen auth |
+| **Element** | Phone input screen |
 | **Trigger** | Navigation from Splash |
 | **Status** | Implemented |
-| **Test** | `AuthScreenTest.kt:authScreen_displaysCorrectly` |
+| **Test** | `AuthScreenTest.kt:authScreen_isDisplayed` |
 
 **Acceptance Criteria:**
 - Given: User is not authenticated
 - When: Auth screen displays
 - Then: Logo appears at top
 - And: "Welcome!" heading is visible
-- And: Google Sign-In button is prominent
+- And: Phone number input field with +91 prefix is visible
+- And: "Send OTP" button is displayed
 - And: Terms and Privacy links are at bottom
 
 ---
 
-### AUTH-002: Google Sign-In Button
+### AUTH-002: Phone Number Input
 
 | Field | Value |
 |-------|-------|
 | **Screen** | Auth |
-| **Element** | Google OAuth button |
+| **Element** | Phone number field with country code |
+| **Trigger** | User input |
+| **Status** | Implemented |
+| **Test** | `AuthScreenTest.kt:authScreen_displaysPhoneNumberField` |
+
+**Acceptance Criteria:**
+- Given: User is on Auth screen
+- When: User enters phone number
+- Then: +91 country code prefix is displayed
+- And: Input field accepts 10-digit numbers
+- And: Validation indicates if phone is valid (10 digits)
+
+---
+
+### AUTH-003: Send OTP
+
+| Field | Value |
+|-------|-------|
+| **Screen** | Auth |
+| **Element** | Send OTP button |
 | **Trigger** | User tap |
 | **Status** | Implemented |
-| **Test** | `AuthScreenTest.kt:googleButton_whenTapped_initiatesOAuth` |
+| **Test** | `AuthScreenTest.kt:authScreen_sendOtpClick_triggersCallback` |
 
 **Preconditions:**
 - Auth screen displayed
 - Network available
 
 **Acceptance Criteria:**
-- Given: User is on Auth screen
-- When: User taps "Continue with Google" button
-- Then: Google account picker appears
-- And: Button shows Google "G" icon
-- And: Button has Google-branded styling
+- Given: User entered a valid phone number
+- When: User taps "Send OTP"
+- Then: Firebase Phone Auth sends OTP to +91{phone}
+- And: Button shows "Sending OTP..." with spinner while loading
+- And: On success, navigates to OTP verification screen
 
 ---
 
-### AUTH-003: Google OAuth Flow
+### AUTH-004: OTP Verification Screen
+
+| Field | Value |
+|-------|-------|
+| **Screen** | Auth (OTP) |
+| **Element** | OTP input with 6 digit boxes |
+| **Trigger** | OTP sent successfully |
+| **Status** | Implemented |
+| **Test** | `AuthScreenTest.kt` |
+
+**Acceptance Criteria:**
+- Given: OTP has been sent to user's phone
+- When: OTP verification screen displays
+- Then: Shows "Verify your number" title
+- And: Displays phone number the OTP was sent to
+- And: Shows 6 individual digit input boxes
+- And: "Verify OTP" button is displayed
+- And: "Resend OTP" link with countdown timer
+
+---
+
+### AUTH-005: Loading State During Auth
 
 | Field | Value |
 |-------|-------|
 | **Screen** | Auth |
-| **Element** | OAuth completion |
-| **Trigger** | Google account selected |
+| **Element** | Loading indicator |
+| **Trigger** | OTP send or verify in progress |
 | **Status** | Implemented |
-| **Test** | `AuthViewModelTest.kt:googleOAuth_exchangesTokenWithBackend` |
-
-**Preconditions:**
-- User selected Google account
+| **Test** | `AuthScreenTest.kt:authScreen_sendOtpButton_isDisabled_whenLoading` |
 
 **Acceptance Criteria:**
-- Given: User selected a Google account
-- When: Google returns OAuth token
-- Then: App exchanges token with backend `/api/v1/auth/firebase`
-- And: Backend returns JWT token
-- And: JWT stored securely in DataStore
+- Given: User initiated OTP send or verification
+- When: Operation is in progress
+- Then: Button shows spinner with loading text ("Sending OTP..." or "Verifying...")
+- And: Button is disabled
+- And: User cannot interact with input fields
 
 ---
 
-### AUTH-004: Loading State During Auth
-
-| Field | Value |
-|-------|-------|
-| **Screen** | Auth |
-| **Element** | Loading overlay |
-| **Trigger** | Auth in progress |
-| **Status** | Implemented |
-| **Test** | `AuthScreenTest.kt:loadingState_showsDuringAuth` |
-
-**Acceptance Criteria:**
-- Given: User initiated sign-in
-- When: Authentication is in progress
-- Then: Loading indicator overlays the screen
-- And: Google button is disabled
-- And: User cannot interact with other elements
-
----
-
-### AUTH-005: Authentication Error Handling
+### AUTH-006: Authentication Error Handling
 
 | Field | Value |
 |-------|-------|
@@ -383,20 +427,21 @@
 | **Element** | Error display |
 | **Trigger** | Auth failure |
 | **Status** | Implemented |
-| **Test** | `AuthScreenTest.kt:error_displaysMessage` |
+| **Test** | `AuthScreenTest.kt` |
 
 **Acceptance Criteria:**
 - Given: Authentication attempt failed
-- When: Error occurs
-- Then: Error message displays below button
-- And: Google button re-enables
-- And: User can retry authentication
+- When: Error occurs (invalid OTP, network error, etc.)
+- Then: Error message displays
+- And: Input fields re-enable
+- And: User can retry
 
 **Error Messages:**
 | Error Type | Message |
 |------------|---------|
 | Network Error | "No internet connection. Please try again." |
-| Google Cancelled | "Sign in was cancelled." |
+| Invalid OTP | "Invalid OTP. Please try again." |
+| OTP Expired | "OTP expired. Please request a new one." |
 | Server Error | "Something went wrong. Please try again." |
 
 ---
@@ -506,7 +551,8 @@
 | Splash ViewModel | `presentation/splash/SplashViewModel.kt` |
 | Auth Screen | `presentation/auth/AuthScreen.kt` |
 | Auth ViewModel | `presentation/auth/AuthViewModel.kt` |
-| Google Auth Client | `data/auth/GoogleAuthClient.kt` |
+| Phone Auth Client | `presentation/auth/PhoneAuthClient.kt` |
+| Phone Auth Interface | `presentation/auth/PhoneAuthClientInterface.kt` |
 
 ## Test Files
 

@@ -53,7 +53,7 @@ app ─────┬──────> core
 | State Management | StateFlow + Single UiState Data Class |
 | Navigation | Navigation Compose |
 | Database | Room (Android cache), PostgreSQL (backend source of truth) |
-| Auth | Firebase Auth (Google OAuth only) |
+| Auth | Firebase Auth (Phone OTP) |
 | LLM | Claude API (chat tool calling), Gemini `gemini-2.5-flash` via `google-genai` SDK (meal generation + food photo analysis) |
 | Offline Support | Room as source of truth with sync to backend |
 
@@ -153,9 +153,8 @@ CORS_ORIGINS=["http://localhost:3000"] # Default is [] — Android app doesn't n
 **Android `local.properties`** (required — see `local.properties.example`):
 ```properties
 sdk.dir=/path/to/Android/sdk
-WEB_CLIENT_ID=your-web-client-id.apps.googleusercontent.com
 ```
-The build will fail with `GradleException` if `WEB_CLIENT_ID` is missing. The build also checks `System.getenv("WEB_CLIENT_ID")` as fallback, enabling CI builds without `local.properties`. Also requires `google-services.json` in `android/app/` (from Firebase Console).
+Also requires `google-services.json` in `android/app/` (from Firebase Console, with Phone Auth enabled).
 
 **PostgreSQL:**
 ```sql

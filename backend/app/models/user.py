@@ -5,7 +5,15 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, TypeDecorator
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    TypeDecorator,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
@@ -53,6 +61,9 @@ class User(Base, TimestampMixin):
         nullable=False,
     )
     email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    phone_number: Mapped[Optional[str]] = mapped_column(
+        String(20), nullable=True, unique=True, index=True
+    )
     name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     profile_picture_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     is_onboarded: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

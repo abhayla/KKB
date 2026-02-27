@@ -13,6 +13,7 @@ class UserResponseForAuth(BaseModel):
 
     id: str
     email: str
+    phone_number: Optional[str] = None
     name: str
     profile_image_url: Optional[str] = None
     is_onboarded: bool

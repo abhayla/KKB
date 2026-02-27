@@ -1,5 +1,3 @@
-import java.util.Properties
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -9,22 +7,6 @@ plugins {
     alias(libs.plugins.firebase.crashlytics)
     alias(libs.plugins.kotlin.compose)
 }
-
-// Load local.properties for sensitive configuration
-val localProperties = Properties().apply {
-    val localPropertiesFile = rootProject.file("local.properties")
-    if (localPropertiesFile.exists()) {
-        load(localPropertiesFile.inputStream())
-    }
-}
-
-// Get Web Client ID from local.properties or environment variable (for CI)
-val webClientId: String = localProperties.getProperty("WEB_CLIENT_ID")
-    ?: System.getenv("WEB_CLIENT_ID")
-    ?: throw GradleException(
-        "WEB_CLIENT_ID not found. Please add it to local.properties or set as environment variable.\n" +
-        "See local.properties.example for reference."
-    )
 
 android {
     namespace = "com.rasoiai.app"
@@ -44,8 +26,6 @@ android {
             useSupportLibrary = true
         }
 
-        // Web Client ID for Google Sign-In (loaded from local.properties or environment variable)
-        buildConfigField("String", "WEB_CLIENT_ID", "\"$webClientId\"")
     }
 
     signingConfigs {
@@ -169,12 +149,6 @@ dependencies {
     implementation(libs.firebase.messaging)
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
-
-    // Google Sign-In / Credentials
-    implementation(libs.play.services.auth)
-    implementation(libs.credentials)
-    implementation(libs.credentials.play.services)
-    implementation(libs.googleid)
 
     // WorkManager
     implementation(libs.work.runtime)

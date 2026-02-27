@@ -5,7 +5,7 @@ import android.util.Log
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.core.app.ApplicationProvider
 import com.rasoiai.app.TestActivity
-import com.rasoiai.app.e2e.di.FakeGoogleAuthClient
+import com.rasoiai.app.e2e.di.FakePhoneAuthClient
 import com.rasoiai.app.e2e.rules.RetryRule
 import com.rasoiai.app.e2e.util.BackendTestHelper
 import com.rasoiai.app.e2e.util.RetryUtils
@@ -37,8 +37,8 @@ import kotlin.math.min
  * All E2E flow tests should extend this class.
  *
  * ## Test Architecture
- * This test setup uses "Real Backend + Fake Google Auth + Real DataStore":
- * - FakeGoogleAuthClient: Bypasses Google OAuth, returns "fake-firebase-token"
+ * This test setup uses "Real Backend + Fake Phone Auth + Real DataStore":
+ * - FakePhoneAuthClient: Bypasses Firebase Phone Auth, returns "fake-firebase-token"
  * - UserPreferencesDataStore: REAL DataStore (persists to disk)
  * - All Repositories: REAL implementations calling real backend APIs
  *
@@ -76,7 +76,7 @@ abstract class BaseE2ETest {
     )
 
     @Inject
-    lateinit var fakeGoogleAuthClient: FakeGoogleAuthClient
+    lateinit var fakePhoneAuthClient: FakePhoneAuthClient
 
     @Inject
     lateinit var userPreferencesDataStore: UserPreferencesDataStoreInterface
@@ -123,7 +123,7 @@ abstract class BaseE2ETest {
      *
      * ## Timing constraint
      * `createAndroidComposeRule` launches the Activity BEFORE setUp() runs.
-     * SplashViewModel checks `googleAuthClient.isSignedIn` ONCE after a 2-second
+     * SplashViewModel checks `phoneAuthClient.isSignedIn` ONCE after a 2-second
      * delay (one-shot, not reactive). `simulateSignedIn()` + token storage MUST
      * complete before that 2s check fires, or the app navigates to Auth (stuck).
      *
@@ -162,7 +162,7 @@ abstract class BaseE2ETest {
         // Step 2: Store auth tokens + simulate signed in IMMEDIATELY
         // CRITICAL: Must complete before SplashViewModel's 2-second check.
         // At ~T=0.8s this is well within the window.
-        fakeGoogleAuthClient.simulateSignedIn()
+        fakePhoneAuthClient.simulateSignedIn()
         runBlocking {
             userPreferencesDataStore.saveAuthTokens(
                 accessToken = authResult.accessToken,
@@ -199,7 +199,7 @@ abstract class BaseE2ETest {
     protected fun setUpAuthenticatedStateWithoutMealPlan() {
         val authResult = authenticateWithBackend()
 
-        fakeGoogleAuthClient.simulateSignedIn()
+        fakePhoneAuthClient.simulateSignedIn()
 
         if (authResult != null) {
             runBlocking {
@@ -248,8 +248,8 @@ abstract class BaseE2ETest {
         runBlocking {
             userPreferencesDataStore.clearPreferences()
         }
-        fakeGoogleAuthClient.reset()
-        FakeGoogleAuthClient.resetStaticState()
+        fakePhoneAuthClient.reset()
+        FakePhoneAuthClient.resetStaticState()
         Log.d(TAG, "Cleared all state for fresh test")
     }
 
@@ -424,7 +424,7 @@ abstract class BaseE2ETest {
      * Call this in tests that need to test the Onboarding flow.
      */
     protected fun setUpNewUserState() {
-        fakeGoogleAuthClient.setSignInSuccess()
+        fakePhoneAuthClient.setSignInSuccess()
         // Real DataStore - just clear it to simulate new user
         runBlocking {
             userPreferencesDataStore.clearPreferences()
@@ -435,7 +435,7 @@ abstract class BaseE2ETest {
      * Resets auth state to logged out.
      */
     protected fun resetAuthState() {
-        fakeGoogleAuthClient.reset()
+        fakePhoneAuthClient.reset()
         runBlocking {
             userPreferencesDataStore.clearPreferences()
         }

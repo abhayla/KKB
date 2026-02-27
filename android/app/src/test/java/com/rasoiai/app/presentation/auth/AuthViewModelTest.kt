@@ -2,9 +2,9 @@ package com.rasoiai.app.presentation.auth
 
 import android.content.Context
 import app.cash.turbine.test
-import com.google.firebase.auth.FirebaseUser
-import com.rasoiai.data.local.datastore.UserPreferencesDataStore
+import com.rasoiai.data.local.datastore.UserPreferencesDataStoreInterface
 import com.rasoiai.domain.repository.AuthRepository
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -28,18 +28,19 @@ class AuthViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var mockContext: Context
-    private lateinit var mockGoogleAuthClient: GoogleAuthClient
+    private lateinit var mockPhoneAuthClient: PhoneAuthClientInterface
     private lateinit var mockAuthRepository: AuthRepository
-    private lateinit var mockUserPreferencesDataStore: UserPreferencesDataStore
+    private lateinit var mockUserPreferencesDataStore: UserPreferencesDataStoreInterface
 
     @BeforeEach
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         mockContext = mockk(relaxed = true)
-        mockGoogleAuthClient = mockk(relaxed = true)
+        mockPhoneAuthClient = mockk(relaxed = true)
         mockAuthRepository = mockk(relaxed = true)
         mockUserPreferencesDataStore = mockk(relaxed = true)
         every { mockUserPreferencesDataStore.isOnboarded } returns flowOf(false)
+        every { mockPhoneAuthClient.isSignedIn } returns false
     }
 
     @AfterEach
@@ -50,74 +51,37 @@ class AuthViewModelTest {
     @Test
     @DisplayName("Initial state should not be loading and not signed in")
     fun `initial state should not be loading and not signed in`() = runTest {
-        every { mockGoogleAuthClient.isSignedIn } returns false
-        every { mockGoogleAuthClient.currentUser } returns null
-
-        val viewModel = AuthViewModel(mockContext, mockGoogleAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
+        val viewModel = AuthViewModel(mockContext, mockPhoneAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
 
         viewModel.uiState.test {
             val state = awaitItem()
             assertFalse(state.isLoading)
             assertFalse(state.isSignedIn)
             assertNull(state.errorMessage)
+            assertEquals("", state.phoneNumber)
+            assertFalse(state.otpSent)
             cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    @DisplayName("When already signed in, should set isSignedIn to true")
-    fun `when already signed in should set isSignedIn to true`() = runTest {
-        val mockUser = mockk<FirebaseUser>(relaxed = true)
-        every { mockGoogleAuthClient.isSignedIn } returns true
-        every { mockGoogleAuthClient.currentUser } returns mockUser
-
-        val viewModel = AuthViewModel(mockContext, mockGoogleAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
+    @DisplayName("updatePhoneNumber validates 10-digit Indian number")
+    fun `updatePhoneNumber validates 10-digit Indian number`() = runTest {
+        val viewModel = AuthViewModel(mockContext, mockPhoneAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
 
         viewModel.uiState.test {
-            val state = awaitItem()
-            assertTrue(state.isSignedIn)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
+            awaitItem() // initial
 
-    @Test
-    @DisplayName("When already signed in, should emit navigation event")
-    fun `when already signed in should emit navigation event`() = runTest {
-        val mockUser = mockk<FirebaseUser>(relaxed = true)
-        every { mockGoogleAuthClient.isSignedIn } returns true
-        every { mockGoogleAuthClient.currentUser } returns mockUser
+            viewModel.updatePhoneNumber("98765")
+            val partial = awaitItem()
+            assertEquals("98765", partial.phoneNumber)
+            assertFalse(partial.isPhoneValid)
 
-        val viewModel = AuthViewModel(mockContext, mockGoogleAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
+            viewModel.updatePhoneNumber("9876543210")
+            val valid = awaitItem()
+            assertEquals("9876543210", valid.phoneNumber)
+            assertTrue(valid.isPhoneValid)
 
-        // Subscribe to navigation events BEFORE advancing, so we don't miss the event
-        viewModel.navigationEvent.test {
-            // Advance to allow init coroutine to complete
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            val event = awaitItem()
-            // Not onboarded, so should navigate to onboarding
-            assertEquals(AuthNavigationEvent.NavigateToOnboarding, event)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    @DisplayName("When already signed in and onboarded, should navigate to home")
-    fun `when already signed in and onboarded should navigate to home`() = runTest {
-        val mockUser = mockk<FirebaseUser>(relaxed = true)
-        every { mockGoogleAuthClient.isSignedIn } returns true
-        every { mockGoogleAuthClient.currentUser } returns mockUser
-        every { mockUserPreferencesDataStore.isOnboarded } returns flowOf(true)
-
-        val viewModel = AuthViewModel(mockContext, mockGoogleAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
-
-        // Subscribe to navigation events BEFORE advancing, so we don't miss the event
-        viewModel.navigationEvent.test {
-            // Advance to allow init coroutine to complete
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            val event = awaitItem()
-            assertEquals(AuthNavigationEvent.NavigateToHome, event)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -125,18 +89,46 @@ class AuthViewModelTest {
     @Test
     @DisplayName("clearError should clear error message")
     fun `clearError should clear error message`() = runTest {
-        every { mockGoogleAuthClient.isSignedIn } returns false
-        every { mockGoogleAuthClient.currentUser } returns null
-
-        val viewModel = AuthViewModel(mockContext, mockGoogleAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
+        val viewModel = AuthViewModel(mockContext, mockPhoneAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
 
         viewModel.uiState.test {
             viewModel.clearError()
             testDispatcher.scheduler.advanceUntilIdle()
 
-            // Use expectMostRecentItem since state may not emit if errorMessage was already null
             val state = expectMostRecentItem()
             assertNull(state.errorMessage)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    @DisplayName("goBack should reset to phone input screen")
+    fun `goBack should reset to phone input screen`() = runTest {
+        val viewModel = AuthViewModel(mockContext, mockPhoneAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
+
+        // goBack from default state keeps otpSent=false, otpCode="", verificationId=null
+        viewModel.goBack()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.uiState.test {
+            val state = awaitItem()
+            assertFalse(state.otpSent)
+            assertEquals("", state.otpCode)
+            assertNull(state.verificationId)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    @DisplayName("When already signed in, should set isSignedIn to true")
+    fun `when already signed in should set isSignedIn to true`() = runTest {
+        every { mockPhoneAuthClient.isSignedIn } returns true
+
+        val viewModel = AuthViewModel(mockContext, mockPhoneAuthClient, mockAuthRepository, mockUserPreferencesDataStore)
+
+        viewModel.uiState.test {
+            val state = awaitItem()
+            assertTrue(state.isSignedIn)
             cancelAndIgnoreRemainingEvents()
         }
     }

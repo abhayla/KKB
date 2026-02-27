@@ -14,8 +14,8 @@ import org.junit.Test
 /**
  * Integration tests for Auth screen with Hilt dependency injection.
  *
- * These tests use FakeGoogleAuthClient and FakeAuthRepository to test
- * the full authentication flow without requiring actual Google OAuth.
+ * These tests use FakePhoneAuthClient and FakeAuthRepository to test
+ * the full authentication flow without requiring actual Firebase Phone Auth.
  *
  * ## What These Tests Cover:
  * - Sign-in button triggers auth flow
@@ -24,7 +24,7 @@ import org.junit.Test
  * - Already signed-in user skips auth screen
  *
  * ## E2E Test Coverage (Phase 1: Authentication):
- * - Test 1.2: Google OAuth Login - Full flow with mocked auth
+ * - Test 1.2: Firebase Phone Auth Login - Full flow with mocked auth
  *
  * ## Running Tests:
  * ```bash
@@ -38,7 +38,7 @@ class AuthIntegrationTest : BaseE2ETest() {
     override fun setUp() {
         super.setUp()
         // Reset to known state - ensure user is NOT signed in so we go to Auth screen
-        // Uses clearAllState() which resets both FakeGoogleAuthClient and real DataStore
+        // Uses clearAllState() which resets both FakePhoneAuthClient and real DataStore
         clearAllState()
     }
 
@@ -70,7 +70,7 @@ class AuthIntegrationTest : BaseE2ETest() {
         waitForAuthScreen()
 
         // Verify sign-in button is displayed and enabled
-        composeTestRule.onNodeWithTag(TestTags.GOOGLE_SIGN_IN_BUTTON)
+        composeTestRule.onNodeWithTag(TestTags.SEND_OTP_BUTTON)
             .assertIsDisplayed()
             .assertIsEnabled()
     }
@@ -91,14 +91,14 @@ class AuthIntegrationTest : BaseE2ETest() {
 
     @Test
     fun authScreen_successfulSignIn_navigatesToOnboarding() {
-        // Configure fake Google auth to succeed
+        // Configure fake Phone auth to succeed
         // Real AuthRepositoryImpl will call backend with "fake-firebase-token"
-        fakeGoogleAuthClient.setSignInSuccess()
+        fakePhoneAuthClient.setSignInSuccess()
 
         waitForAuthScreen()
 
         // Tap sign-in button
-        composeTestRule.onNodeWithTag(TestTags.GOOGLE_SIGN_IN_BUTTON).performClick()
+        composeTestRule.onNodeWithTag(TestTags.SEND_OTP_BUTTON).performClick()
 
         // Wait for navigation to complete
         waitFor(ANIMATION_DURATION)
@@ -123,12 +123,12 @@ class AuthIntegrationTest : BaseE2ETest() {
     @Test
     fun authScreen_failedSignIn_showsErrorMessage() {
         // Configure fake to fail
-        fakeGoogleAuthClient.setSignInFailure(Exception("Network error"))
+        fakePhoneAuthClient.setSignInFailure(Exception("Network error"))
 
         waitForAuthScreen()
 
         // Tap sign-in button
-        composeTestRule.onNodeWithTag(TestTags.GOOGLE_SIGN_IN_BUTTON).performClick()
+        composeTestRule.onNodeWithTag(TestTags.SEND_OTP_BUTTON).performClick()
 
         // Wait for error to appear
         waitFor(ANIMATION_DURATION)
@@ -136,7 +136,7 @@ class AuthIntegrationTest : BaseE2ETest() {
 
         // Verify error is shown (via snackbar or error state)
         // The button should still be visible (not navigated away)
-        composeTestRule.onNodeWithTag(TestTags.GOOGLE_SIGN_IN_BUTTON).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(TestTags.SEND_OTP_BUTTON).assertIsDisplayed()
     }
 
     @Test
@@ -146,7 +146,7 @@ class AuthIntegrationTest : BaseE2ETest() {
 
         // Verify we're still on auth screen
         composeTestRule.onNodeWithTag(TestTags.AUTH_SCREEN).assertIsDisplayed()
-        composeTestRule.onNodeWithTag(TestTags.GOOGLE_SIGN_IN_BUTTON).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(TestTags.SEND_OTP_BUTTON).assertIsDisplayed()
     }
 
     // endregion
@@ -182,7 +182,7 @@ class AuthIntegrationTest : BaseE2ETest() {
     fun authScreen_signInButton_showsCorrectText() {
         waitForAuthScreen()
 
-        composeTestRule.onNodeWithText("Continue with Google").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Send OTP").assertIsDisplayed()
     }
 
     // endregion

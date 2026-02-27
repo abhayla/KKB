@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,11 +17,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -32,17 +39,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -85,66 +87,27 @@ fun AuthScreen(
             .background(MaterialTheme.colorScheme.background)
             .testTag(TestTags.AUTH_SCREEN)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = spacing.screenPadding),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(modifier = Modifier.weight(0.15f))
-
-            // Logo section
-            AppLogo(modifier = Modifier.size(100.dp))
-
-            Spacer(modifier = Modifier.height(spacing.lg))
-
-            // App name
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            Spacer(modifier = Modifier.height(spacing.xxl))
-
-            // Welcome text
-            Text(
-                text = stringResource(R.string.welcome_title),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.testTag(TestTags.AUTH_WELCOME_TEXT)
-            )
-
-            Spacer(modifier = Modifier.height(spacing.sm))
-
-            // Tagline
-            Text(
-                text = stringResource(R.string.splash_tagline),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.weight(0.2f))
-
-            // Google Sign-In Button
-            GoogleSignInButton(
-                onClick = {
-                    // Need Activity context for Credential Manager
+        if (uiState.otpSent) {
+            OtpVerificationContent(
+                uiState = uiState,
+                onOtpCodeChanged = viewModel::updateOtpCode,
+                onVerifyOtp = viewModel::verifyOtp,
+                onResendOtp = {
                     (context as? Activity)?.let { activity ->
-                        viewModel.signInWithGoogle(activity)
+                        viewModel.resendOtp(activity)
                     }
                 },
-                isLoading = uiState.isLoading,
-                modifier = Modifier.fillMaxWidth()
+                onGoBack = viewModel::goBack
             )
-
-            Spacer(modifier = Modifier.weight(0.15f))
-
-            // Terms and Privacy
-            TermsAndPrivacyText(
+        } else {
+            PhoneInputContent(
+                uiState = uiState,
+                onPhoneNumberChanged = viewModel::updatePhoneNumber,
+                onSendOtp = {
+                    (context as? Activity)?.let { activity ->
+                        viewModel.sendOtp(activity)
+                    }
+                },
                 onTermsClick = {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://rasoiai.com/terms"))
                     context.startActivity(intent)
@@ -152,8 +115,7 @@ fun AuthScreen(
                 onPrivacyClick = {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://rasoiai.com/privacy"))
                     context.startActivity(intent)
-                },
-                modifier = Modifier.padding(bottom = spacing.xl)
+                }
             )
         }
 
@@ -172,67 +134,290 @@ fun AuthScreen(
 }
 
 @Composable
-private fun GoogleSignInButton(
-    onClick: () -> Unit,
-    isLoading: Boolean,
-    modifier: Modifier = Modifier
+private fun PhoneInputContent(
+    uiState: AuthUiState,
+    onPhoneNumberChanged: (String) -> Unit,
+    onSendOtp: () -> Unit,
+    onTermsClick: () -> Unit,
+    onPrivacyClick: () -> Unit
 ) {
-    Button(
-        onClick = onClick,
-        enabled = !isLoading,
-        modifier = modifier
-            .height(56.dp)
-            .testTag(TestTags.GOOGLE_SIGN_IN_BUTTON),
-        shape = RoundedCornerShape(spacing.sm),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Color.White,
-            contentColor = Color.Black,
-            disabledContainerColor = Color.White.copy(alpha = 0.7f),
-            disabledContentColor = Color.Black.copy(alpha = 0.5f)
-        ),
-        elevation = ButtonDefaults.buttonElevation(
-            defaultElevation = 2.dp,
-            pressedElevation = 4.dp
-        )
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = spacing.screenPadding),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
-                color = MaterialTheme.colorScheme.primary,
-                strokeWidth = 2.dp
-            )
-            Spacer(modifier = Modifier.width(spacing.md))
+        Spacer(modifier = Modifier.weight(0.15f))
+
+        // Logo section
+        AppLogo(modifier = Modifier.size(100.dp))
+
+        Spacer(modifier = Modifier.height(spacing.lg))
+
+        // App name
+        Text(
+            text = "RasoiAI",
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Spacer(modifier = Modifier.height(spacing.xxl))
+
+        // Welcome text
+        Text(
+            text = "Welcome!",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.testTag(TestTags.AUTH_WELCOME_TEXT)
+        )
+
+        Spacer(modifier = Modifier.height(spacing.sm))
+
+        // Tagline
+        Text(
+            text = "AI Meal Planning for Indian Families",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.weight(0.15f))
+
+        // Phone number input
+        OutlinedTextField(
+            value = uiState.phoneNumber,
+            onValueChange = onPhoneNumberChanged,
+            label = { Text("Phone Number") },
+            placeholder = { Text("Enter 10-digit number") },
+            prefix = {
+                Text(
+                    text = "+91 ",
+                    modifier = Modifier.testTag(TestTags.COUNTRY_CODE_PREFIX)
+                )
+            },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(TestTags.PHONE_NUMBER_FIELD)
+        )
+
+        Spacer(modifier = Modifier.height(spacing.lg))
+
+        // Send OTP Button
+        Button(
+            onClick = onSendOtp,
+            enabled = uiState.isPhoneValid && !uiState.isLoading,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .testTag(TestTags.SEND_OTP_BUTTON),
+            shape = RoundedCornerShape(spacing.sm)
+        ) {
+            if (uiState.isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    strokeWidth = 2.dp
+                )
+                Spacer(modifier = Modifier.width(spacing.md))
+                Text(
+                    text = "Sending OTP...",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
+                )
+            } else {
+                Text(
+                    text = "Send OTP",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.weight(0.15f))
+
+        // Terms and Privacy
+        TermsAndPrivacyText(
+            onTermsClick = onTermsClick,
+            onPrivacyClick = onPrivacyClick,
+            modifier = Modifier.padding(bottom = spacing.xl)
+        )
+    }
+}
+
+@Composable
+private fun OtpVerificationContent(
+    uiState: AuthUiState,
+    onOtpCodeChanged: (String) -> Unit,
+    onVerifyOtp: () -> Unit,
+    onResendOtp: () -> Unit,
+    onGoBack: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = spacing.screenPadding),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(modifier = Modifier.height(spacing.xl))
+
+        // Back button
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start
+        ) {
+            IconButton(
+                onClick = onGoBack,
+                modifier = Modifier.testTag(TestTags.AUTH_BACK_BUTTON)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Go back"
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(spacing.xl))
+
+        // Title
+        Text(
+            text = "Verify your number",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.testTag(TestTags.OTP_SCREEN_TITLE)
+        )
+
+        Spacer(modifier = Modifier.height(spacing.sm))
+
+        // Phone display
+        Text(
+            text = "OTP sent to +91 ${uiState.phoneNumber}",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.testTag(TestTags.OTP_PHONE_DISPLAY)
+        )
+
+        Spacer(modifier = Modifier.height(spacing.xxl))
+
+        // OTP Input boxes
+        OtpInputRow(
+            otpCode = uiState.otpCode,
+            onOtpCodeChanged = onOtpCodeChanged
+        )
+
+        Spacer(modifier = Modifier.height(spacing.xxl))
+
+        // Verify button
+        Button(
+            onClick = onVerifyOtp,
+            enabled = uiState.otpCode.length == 6 && !uiState.isVerifying,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .testTag(TestTags.VERIFY_OTP_BUTTON),
+            shape = RoundedCornerShape(spacing.sm)
+        ) {
+            if (uiState.isVerifying) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    strokeWidth = 2.dp
+                )
+                Spacer(modifier = Modifier.width(spacing.md))
+                Text(
+                    text = "Verifying...",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
+                )
+            } else {
+                Text(
+                    text = "Verify OTP",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(spacing.lg))
+
+        // Resend OTP
+        TextButton(
+            onClick = onResendOtp,
+            enabled = uiState.resendCountdownSeconds == 0 && !uiState.isLoading,
+            modifier = Modifier.testTag(TestTags.RESEND_OTP_BUTTON)
+        ) {
             Text(
-                text = stringResource(R.string.signing_in),
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
-        } else {
-            // Google "G" icon
-            GoogleIcon(modifier = Modifier.size(24.dp))
-            Spacer(modifier = Modifier.width(spacing.md))
-            Text(
-                text = stringResource(R.string.sign_in_with_google),
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
+                text = if (uiState.resendCountdownSeconds > 0) {
+                    "Resend OTP in ${uiState.resendCountdownSeconds}s"
+                } else {
+                    "Resend OTP"
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (uiState.resendCountdownSeconds > 0) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.primary
+                }
             )
         }
     }
 }
 
 @Composable
-private fun GoogleIcon(modifier: Modifier = Modifier) {
-    // Using a simple "G" text styled like Google's logo
-    // In production, use the official Google sign-in button asset
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "G",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF4285F4) // Google Blue
+private fun OtpInputRow(
+    otpCode: String,
+    onOtpCodeChanged: (String) -> Unit
+) {
+    // Hidden text field that captures keyboard input
+    Box {
+        BasicTextField(
+            value = otpCode,
+            onValueChange = { value ->
+                if (value.length <= 6 && value.all { it.isDigit() }) {
+                    onOtpCodeChanged(value)
+                }
+            },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+            decorationBox = {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    repeat(6) { index ->
+                        val char = otpCode.getOrNull(index)?.toString() ?: ""
+                        val isFocused = index == otpCode.length
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(56.dp)
+                                .border(
+                                    width = if (isFocused) 2.dp else 1.dp,
+                                    color = if (isFocused) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.outline
+                                    },
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                .testTag("${TestTags.OTP_INPUT_PREFIX}$index"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = char,
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                    }
+                }
+            }
         )
     }
 }
@@ -248,7 +433,7 @@ private fun TermsAndPrivacyText(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = stringResource(R.string.auth_terms_prefix),
+            text = "By continuing, you agree to our",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -260,20 +445,20 @@ private fun TermsAndPrivacyText(
         ) {
             TextButton(onClick = onTermsClick) {
                 Text(
-                    text = stringResource(R.string.auth_terms_of_service),
+                    text = "Terms of Service",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                     textDecoration = TextDecoration.Underline
                 )
             }
             Text(
-                text = " • ",
+                text = " \u2022 ",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             TextButton(onClick = onPrivacyClick) {
                 Text(
-                    text = stringResource(R.string.auth_privacy_policy),
+                    text = "Privacy Policy",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                     textDecoration = TextDecoration.Underline
@@ -282,98 +467,3 @@ private fun TermsAndPrivacyText(
         }
     }
 }
-
-// region Previews
-
-@androidx.compose.ui.tooling.preview.Preview(
-    name = "Light Mode",
-    showBackground = true,
-    backgroundColor = 0xFFFDFAF4
-)
-@androidx.compose.ui.tooling.preview.Preview(
-    name = "Dark Mode",
-    showBackground = true,
-    uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES,
-    backgroundColor = 0xFF1C1B1F
-)
-@Composable
-private fun AuthScreenPreview() {
-    com.rasoiai.app.presentation.theme.RasoiAITheme {
-        AuthScreenContent(isLoading = false)
-    }
-}
-
-@androidx.compose.ui.tooling.preview.Preview(
-    name = "Loading State",
-    showBackground = true,
-    backgroundColor = 0xFFFDFAF4
-)
-@Composable
-private fun AuthScreenLoadingPreview() {
-    com.rasoiai.app.presentation.theme.RasoiAITheme {
-        AuthScreenContent(isLoading = true)
-    }
-}
-
-@Composable
-private fun AuthScreenContent(isLoading: Boolean) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = spacing.screenPadding),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(modifier = Modifier.weight(0.15f))
-
-            AppLogo(modifier = Modifier.size(100.dp))
-            Spacer(modifier = Modifier.height(spacing.lg))
-
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            Spacer(modifier = Modifier.height(spacing.xxl))
-
-            Text(
-                text = stringResource(R.string.welcome_title),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Spacer(modifier = Modifier.height(spacing.sm))
-
-            Text(
-                text = stringResource(R.string.splash_tagline),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.weight(0.2f))
-
-            GoogleSignInButton(
-                onClick = { },
-                isLoading = isLoading,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.weight(0.15f))
-
-            TermsAndPrivacyText(
-                onTermsClick = { },
-                onPrivacyClick = { },
-                modifier = Modifier.padding(bottom = spacing.xl)
-            )
-        }
-    }
-}
-
-// endregion

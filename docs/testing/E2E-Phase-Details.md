@@ -11,7 +11,7 @@ Detailed test scenarios for each of the 15 E2E testing phases. This is a referen
 | Category | Attribute | Value |
 |----------|-----------|-------|
 | **Account** | Email | test.sharma@gmail.com |
-| **Account** | Auth Method | Google OAuth |
+| **Account** | Auth Method | Firebase Phone Auth |
 | **Household** | Size | 3 |
 | **Diet** | Primary | VEGETARIAN |
 | **Diet** | Restrictions | SATTVIC |
@@ -101,23 +101,23 @@ Based on this profile, generated meal plans MUST:
 -- auth_token = null
 ```
 
-### Test 1.2: Auth via FakeGoogleAuthClient
+### Test 1.2: Auth via FakePhoneAuthClient
 
-**Note:** E2E tests use `FakeGoogleAuthClient` which bypasses real Google OAuth entirely.
+**Note:** E2E tests use `FakePhoneAuthClient` which bypasses real Firebase Phone Auth entirely.
 
 **Steps:**
-1. Tap "Continue with Google" button
-2. FakeGoogleAuthClient intercepts and returns fake credentials immediately
+1. Tap "Continue with Phone" button
+2. FakePhoneAuthClient intercepts and returns fake credentials immediately
 3. App sends "fake-firebase-token" to backend
 4. Backend (in debug mode) accepts fake token and returns real JWT
 
 **Expected Results:**
-- [ ] No Google account picker (bypassed by FakeGoogleAuthClient)
+- [ ] No phone verification UI (bypassed by FakePhoneAuthClient)
 - [ ] Loading indicator during auth
 - [ ] Successful authentication (no error)
 - [ ] Redirects to Onboarding Step 1 (NOT Home)
 
-**FakeGoogleAuthClient Returns:**
+**FakePhoneAuthClient Returns:**
 ```kotlin
 GoogleAuthResult(
     userId = "fake-user-id",
@@ -146,8 +146,8 @@ Response: 200 OK {
 -- is_onboarded should still be false
 ```
 
-**Test Variations (via FakeGoogleAuthClient configuration):**
-- [ ] Simulate auth failure → FakeGoogleAuthClient returns error → should show error with retry
+**Test Variations (via FakePhoneAuthClient configuration):**
+- [ ] Simulate auth failure → FakePhoneAuthClient returns error → should show error with retry
 - [ ] Network timeout → backend unreachable → should show error with retry
 - [ ] Invalid token response → backend rejects → should show error
 

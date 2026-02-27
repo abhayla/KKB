@@ -62,6 +62,7 @@ def verify_firebase_token(id_token: str) -> dict:
             "email": "e2e-test@rasoiai.test",
             "name": "E2E Test User",
             "picture": None,
+            "phone_number": "+911111111111",
         }
 
     # Development mode: mock Firebase verification
@@ -74,6 +75,7 @@ def verify_firebase_token(id_token: str) -> dict:
                 "email": "dev@example.com",
                 "name": "Development User",
                 "picture": None,
+                "phone_number": "+919999999999",
             }
         raise ServiceUnavailableError("Firebase authentication not available")
 
@@ -85,6 +87,7 @@ def verify_firebase_token(id_token: str) -> dict:
             "email": decoded_token.get("email"),
             "name": decoded_token.get("name"),
             "picture": decoded_token.get("picture"),
+            "phone_number": decoded_token.get("phone_number"),
         }
     except auth.InvalidIdTokenError as e:
         logger.error(f"Invalid Firebase token: {e}")

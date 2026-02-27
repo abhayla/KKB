@@ -65,6 +65,7 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 route
 | Pre-Prod: Accessibility | DONE | 30 contentDescription fixes across 15 screens |
 | Pre-Prod: Encrypted Tokens | DONE | SecureTokenStorage with AES256-GCM |
 | Dependency Fixes | DONE | Hilt 2.56.1, Room 2.8.1, JUnit Platform Launcher |
+| Phone Auth Migration | DONE | Google OAuth → Firebase Phone OTP (backend + Android + tests + docs) |
 
 ---
 

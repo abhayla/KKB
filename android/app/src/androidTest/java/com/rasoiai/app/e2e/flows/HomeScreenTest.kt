@@ -29,7 +29,7 @@ import java.time.DayOfWeek
  * - Generates meal plan (stores in Room DB)
  *
  * This test then:
- * - Sets FakeGoogleAuthClient.simulateSignedIn() so SplashViewModel sees user as signed in
+ * - Sets FakePhoneAuthClient.simulateSignedIn() so SplashViewModel sees user as signed in
  * - Real DataStore already has JWT + onboarded flag from CoreDataFlowTest
  * - App navigates directly to Home screen
  */

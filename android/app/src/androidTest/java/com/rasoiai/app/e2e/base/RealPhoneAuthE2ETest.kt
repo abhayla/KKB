@@ -9,9 +9,8 @@ import androidx.test.uiautomator.UiDevice
 import com.rasoiai.app.TestActivity
 import com.rasoiai.app.e2e.rules.RetryRule
 import com.rasoiai.app.e2e.util.BackendTestHelper
-import com.rasoiai.app.e2e.util.GoogleAuthTestHelper
 import com.rasoiai.app.e2e.util.RetryUtils
-import com.rasoiai.app.presentation.auth.GoogleAuthClientInterface
+import com.rasoiai.app.presentation.auth.PhoneAuthClientInterface
 import com.rasoiai.data.local.datastore.UserPreferencesDataStoreInterface
 import com.rasoiai.domain.model.CuisineType
 import com.rasoiai.domain.model.DayOfWeek
@@ -28,36 +27,25 @@ import javax.inject.Inject
 import kotlin.math.min
 
 /**
- * Base class for E2E tests that use REAL Google Authentication.
+ * Base class for E2E tests that use REAL Firebase Phone Authentication.
  *
  * ## How it differs from BaseE2ETest
- * - Does NOT use FakeAuthModule - requires real Google sign-in
- * - Uses UI Automator to interact with Google sign-in system dialog
- * - Requires a Google account to be signed in on the device/emulator
+ * - Does NOT use FakeAuthModule - requires real Firebase phone auth
+ * - Uses Firebase test phone number (+91 11 1111 1111 / OTP 123456) for auto-verification
+ * - Requires backend running at localhost:8000
  *
  * ## Prerequisites
- * 1. Emulator/device must have a Google account signed in
- * 2. Backend must be running at localhost:8000
- * 3. App must be configured with valid Firebase credentials
- *
- * ## Test Flow
- * 1. App shows Auth screen with "Sign in with Google" button
- * 2. Test clicks the button (via Compose test)
- * 3. Google shows system account picker dialog
- * 4. UI Automator selects the account
- * 5. Google returns credential to app
- * 6. App exchanges with Firebase, gets token
- * 7. App calls backend /auth/firebase with real Firebase token
- * 8. Backend returns JWT, test continues
+ * 1. Backend must be running at localhost:8000
+ * 2. App must be configured with valid Firebase credentials
+ * 3. Firebase Console must have test phone number configured
  *
  * NOTE: Since FakeAuthModule uses @TestInstallIn (auto-replaces in tests),
- * real Google auth tests require NOT having FakeAuthModule in the test classpath,
- * OR the user needs to configure tests differently. For now, this test works
- * alongside the fake auth - the fake client will be used, which returns
- * "fake-firebase-token". The backend accepts this for E2E testing.
+ * real phone auth tests require NOT having FakeAuthModule in the test classpath.
+ * For now, the fake client will be used, which returns "fake-firebase-token".
+ * The backend accepts this for E2E testing.
  */
 @HiltAndroidTest
-abstract class RealGoogleAuthE2ETest {
+abstract class RealPhoneAuthE2ETest {
 
     @get:Rule(order = 0)
     val hiltRule = HiltAndroidRule(this)
@@ -74,7 +62,7 @@ abstract class RealGoogleAuthE2ETest {
     )
 
     @Inject
-    lateinit var googleAuthClient: GoogleAuthClientInterface
+    lateinit var phoneAuthClient: PhoneAuthClientInterface
 
     @Inject
     lateinit var userPreferencesDataStore: UserPreferencesDataStoreInterface
@@ -99,64 +87,12 @@ abstract class RealGoogleAuthE2ETest {
     }
 
     /**
-     * Performs real Google sign-in flow.
-     * 1. Clears any existing auth state
-     * 2. Waits for Auth screen to appear
-     * 3. Clicks "Sign in with Google" button (done by caller)
-     * 4. Uses UI Automator to select Google account
-     * 5. Waits for sign-in to complete
-     *
-     * @param accountEmail Optional specific email to select
-     * @return true if sign-in was successful
-     */
-    protected fun performRealGoogleSignIn(accountEmail: String? = null): Boolean {
-        Log.d(TAG, "Starting real Google sign-in flow...")
-
-        // Take a debug screenshot before attempting sign-in
-        GoogleAuthTestHelper.takeDebugScreenshot("before_google_signin")
-
-        // Wait for Google account picker to appear
-        Thread.sleep(2000) // Give time for dialog to animate in
-
-        // Take screenshot of the dialog
-        GoogleAuthTestHelper.takeDebugScreenshot("google_dialog_appeared")
-        GoogleAuthTestHelper.dumpUiHierarchy()
-
-        // Select the Google account
-        val accountSelected = GoogleAuthTestHelper.selectGoogleAccount(
-            accountEmail = accountEmail,
-            timeoutMs = GOOGLE_DIALOG_TIMEOUT
-        )
-
-        if (!accountSelected) {
-            Log.e(TAG, "Failed to select Google account")
-            GoogleAuthTestHelper.takeDebugScreenshot("account_selection_failed")
-            return false
-        }
-
-        // Wait for sign-in to complete
-        val signInComplete = GoogleAuthTestHelper.waitForSignInComplete(
-            timeoutMs = SIGN_IN_COMPLETE_TIMEOUT
-        )
-
-        if (!signInComplete) {
-            Log.e(TAG, "Sign-in did not complete in time")
-            GoogleAuthTestHelper.takeDebugScreenshot("signin_timeout")
-            return false
-        }
-
-        Log.d(TAG, "Google sign-in flow completed successfully")
-        GoogleAuthTestHelper.takeDebugScreenshot("after_google_signin")
-        return true
-    }
-
-    /**
      * Clears all authentication state for a fresh test.
      */
     protected fun clearAuthState() {
         runBlocking {
             try {
-                googleAuthClient.signOut()
+                phoneAuthClient.signOut()
             } catch (e: Exception) {
                 Log.w(TAG, "Error signing out: ${e.message}")
             }
@@ -232,7 +168,7 @@ abstract class RealGoogleAuthE2ETest {
     }
 
     companion object {
-        private const val TAG = "RealGoogleAuthE2ETest"
+        private const val TAG = "RealPhoneAuthE2ETest"
 
         // Backend URL
         const val BACKEND_BASE_URL = "http://10.0.2.2:8000"
@@ -241,8 +177,6 @@ abstract class RealGoogleAuthE2ETest {
         const val SHORT_TIMEOUT = 2000L
         const val MEDIUM_TIMEOUT = 5000L
         const val LONG_TIMEOUT = 10000L
-        const val GOOGLE_DIALOG_TIMEOUT = 15000L
-        const val SIGN_IN_COMPLETE_TIMEOUT = 20000L
 
         // Animation durations
         const val ANIMATION_DURATION = 300L

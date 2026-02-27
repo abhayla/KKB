@@ -54,16 +54,26 @@
     <string name="onboarding_building_grocery_list">Building grocery list</string>
 
     <!-- Auth -->
-    <string name="sign_in_with_google">Continue with Google</string>
     <string name="welcome_title">Welcome!</string>
     <string name="welcome_subtitle">Your AI-powered meal planning assistant</string>
     <string name="auth_terms_prefix">By continuing, you agree to our</string>
     <string name="auth_terms_of_service">Terms of Service</string>
     <string name="auth_privacy_policy">Privacy Policy</string>
     <string name="auth_error_generic">Sign in failed. Please try again.</string>
-    <string name="auth_error_cancelled">Sign in was cancelled.</string>
-    <string name="auth_error_no_credentials">No Google account found.</string>
-    <string name="signing_in">Signing in…</string>
+    <string name="phone_number_label">Phone Number</string>
+    <string name="phone_number_hint">Enter 10-digit number</string>
+    <string name="send_otp">Send OTP</string>
+    <string name="sending_otp">Sending OTP…</string>
+    <string name="verify_otp">Verify OTP</string>
+    <string name="verifying_otp">Verifying…</string>
+    <string name="otp_sent_to">OTP sent to %1$s</string>
+    <string name="verify_your_number">Verify your number</string>
+    <string name="resend_otp">Resend OTP</string>
+    <string name="resend_otp_countdown">Resend OTP in %1$ds</string>
+    <string name="invalid_phone_number">Please enter a valid 10-digit phone number</string>
+    <string name="invalid_otp">Please enter the 6-digit OTP</string>
+    <string name="otp_expired">OTP has expired. Please resend.</string>
+    <string name="country_code_india">+91</string>
 
     <!-- Home -->
     <string name="this_weeks_meals">This Week\'s Meals</string>

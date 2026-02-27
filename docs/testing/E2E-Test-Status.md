@@ -17,7 +17,7 @@ cd android
 ```
 
 ### How It Works:
-- **FakeGoogleAuthClient** bypasses real Google OAuth (returns `fake-firebase-token`)
+- **FakePhoneAuthClient** bypasses real Firebase Phone Auth (returns `fake-firebase-token`)
 - **Real backend** (localhost:8000) accepts `fake-firebase-token` in debug mode
 - Tests run on emulator with real UI interactions
 - ~265 tests across 13 screens
@@ -26,7 +26,7 @@ cd android
 | Type | Pattern | Purpose |
 |------|---------|---------|
 | UI Screen Tests | `*ScreenTest.kt` | Test individual screens with mock UiState |
-| Integration Tests | `*IntegrationTest.kt` | Test navigation flows with FakeGoogleAuthClient |
+| Integration Tests | `*IntegrationTest.kt` | Test navigation flows with FakePhoneAuthClient |
 
 ### Running Tests:
 ```bash

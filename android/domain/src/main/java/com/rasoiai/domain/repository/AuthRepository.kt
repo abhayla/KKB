@@ -15,9 +15,9 @@ interface AuthRepository {
     val currentUser: Flow<User?>
 
     /**
-     * Sign in with Google (Firebase Auth).
+     * Sign in with Firebase Auth (exchange Firebase ID token for backend JWT).
      */
-    suspend fun signInWithGoogle(idToken: String): Result<User>
+    suspend fun signInWithFirebase(idToken: String): Result<User>
 
     /**
      * Sign out the current user.

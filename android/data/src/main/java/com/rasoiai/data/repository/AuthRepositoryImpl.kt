@@ -43,7 +43,7 @@ class AuthRepositoryImpl @Inject constructor(
         if (isAuth) user else null
     }
 
-    override suspend fun signInWithGoogle(idToken: String): Result<User> {
+    override suspend fun signInWithFirebase(idToken: String): Result<User> {
         return try {
             Timber.d("Exchanging Firebase token for backend JWT")
 
@@ -68,8 +68,8 @@ class AuthRepositoryImpl @Inject constructor(
                 expiresAt = expiresAt
             )
 
-            // Save email for Settings profile display
-            if (authResponse.user.email.isNotBlank()) {
+            // Save email for Settings profile display (optional with phone auth)
+            if (!authResponse.user.email.isNullOrBlank()) {
                 userPreferencesDataStore.saveEmail(authResponse.user.email)
             }
 

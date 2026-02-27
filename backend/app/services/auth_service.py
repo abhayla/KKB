@@ -43,34 +43,48 @@ async def authenticate_with_firebase(firebase_token: str) -> AuthResponse:
     # Verify Firebase token
     firebase_user = verify_firebase_token(firebase_token)
     firebase_uid = firebase_user["uid"]
+    phone_number = firebase_user.get("phone_number")
 
-    # Find or create user in Firestore
+    # Find or create user
     user_repo = UserRepository()
     user = await user_repo.get_by_firebase_uid(firebase_uid)
 
     if not user:
-        email = firebase_user.get("email")
-        if email:
-            existing = await user_repo.get_by_email(email)
+        # Try phone number lookup (Phone Auth)
+        if phone_number:
+            existing = await user_repo.get_by_phone_number(phone_number)
             if existing:
-                # Same person, different Firebase UID → merge account
                 await user_repo.update_firebase_uid(existing["id"], firebase_uid)
                 user = existing
                 user["firebase_uid"] = firebase_uid
-                logger.info(f"Merged Firebase UID for user {user['id']}")
+                logger.info(f"Merged Firebase UID (phone) for user {user['id']}")
+
+        # Try email lookup (legacy/fallback)
+        if not user:
+            email = firebase_user.get("email")
+            if email:
+                existing = await user_repo.get_by_email(email)
+                if existing:
+                    await user_repo.update_firebase_uid(existing["id"], firebase_uid)
+                    user = existing
+                    user["firebase_uid"] = firebase_uid
+                    logger.info(f"Merged Firebase UID (email) for user {user['id']}")
 
         if not user:
             # Create new user
+            email = firebase_user.get("email")
             try:
                 user = await user_repo.create(
                     firebase_uid=firebase_uid,
                     email=email,
                     name=firebase_user.get("name"),
                     profile_picture_url=firebase_user.get("picture"),
+                    phone_number=phone_number,
                 )
             except IntegrityError:
+                identifier = phone_number or (email.strip().lower() if email else "")
                 raise ConflictError(
-                    f"An account with email '{email.strip().lower() if email else ''}' already exists"
+                    f"An account with identifier '{identifier}' already exists"
                 )
 
     # Create JWT access token
@@ -111,6 +125,7 @@ async def authenticate_with_firebase(firebase_token: str) -> AuthResponse:
     user_response = UserResponseForAuth(
         id=user["id"],
         email=user.get("email") or "",
+        phone_number=user.get("phone_number"),
         name=user.get("name") or "",
         profile_image_url=user.get("profile_picture_url"),
         is_onboarded=user.get("is_onboarded", False),

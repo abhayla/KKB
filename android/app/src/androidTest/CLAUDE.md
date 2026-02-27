@@ -34,10 +34,10 @@ Tests connect to `http://10.0.2.2:8000` (Android emulator → host localhost). B
 
 ### Fake Auth Flow
 
-1. `FakeGoogleAuthClient` returns `"fake-firebase-token"` (injected via `FakeAuthModule` with `@TestInstallIn`)
+1. `FakePhoneAuthClient` returns `"fake-firebase-token"` (injected via `FakeAuthModule` with `@TestInstallIn`)
 2. Backend (`DEBUG=true`) accepts fake token in `firebase.py`, returns JWT
 3. JWT is saved to DataStore
-4. `SplashViewModel` checks `isSignedIn` after a **2-second delay**
+4. `SplashViewModel` checks `phoneAuthClient.isSignedIn` after a **2-second delay**
 
 **Timing gotcha**: `createAndroidComposeRule` launches `TestActivity` BEFORE `@Before` runs. Auth tokens must be stored before the 2-second Splash check fires.
 

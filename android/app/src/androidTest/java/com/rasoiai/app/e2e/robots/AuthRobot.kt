@@ -5,12 +5,13 @@ import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import com.rasoiai.app.e2e.base.waitUntilNodeWithTagExists
 import com.rasoiai.app.presentation.common.TestTags
 
 /**
  * Robot for Auth screen interactions.
- * Handles splash screen and Google OAuth login.
+ * Handles splash screen and Firebase Phone OTP login.
  */
 class AuthRobot(private val composeTestRule: ComposeContentTestRule) {
 
@@ -18,8 +19,6 @@ class AuthRobot(private val composeTestRule: ComposeContentTestRule) {
      * Verify splash screen is displayed.
      */
     fun assertSplashScreenDisplayed() = apply {
-        // Splash screen may have logo and tagline
-        // Wait a bit for splash animation
         composeTestRule.waitForIdle()
     }
 
@@ -45,22 +44,52 @@ class AuthRobot(private val composeTestRule: ComposeContentTestRule) {
     }
 
     /**
-     * Assert Google Sign-In button is displayed.
+     * Assert Send OTP button is displayed.
      */
-    fun assertGoogleSignInButtonDisplayed() = apply {
-        composeTestRule.onNodeWithTag(TestTags.GOOGLE_SIGN_IN_BUTTON).assertIsDisplayed()
+    fun assertSendOtpButtonDisplayed() = apply {
+        composeTestRule.onNodeWithTag(TestTags.SEND_OTP_BUTTON).assertIsDisplayed()
     }
 
     /**
-     * Tap Google Sign-In button.
+     * Enter phone number in the phone input field.
      */
-    fun tapGoogleSignIn() = apply {
-        composeTestRule.onNodeWithTag(TestTags.GOOGLE_SIGN_IN_BUTTON).performClick()
+    fun enterPhoneNumber(phone: String = "1111111111") = apply {
+        composeTestRule.onNodeWithTag(TestTags.PHONE_NUMBER_FIELD).performTextInput(phone)
+    }
+
+    /**
+     * Tap Send OTP button.
+     */
+    fun tapSendOtp() = apply {
+        composeTestRule.onNodeWithTag(TestTags.SEND_OTP_BUTTON).performClick()
+    }
+
+    /**
+     * Assert OTP verification screen is displayed.
+     */
+    fun assertOtpScreenDisplayed() = apply {
+        composeTestRule.onNodeWithTag(TestTags.OTP_SCREEN_TITLE).assertIsDisplayed()
+    }
+
+    /**
+     * Enter OTP code digit by digit.
+     */
+    fun enterOtp(otp: String = "123456") = apply {
+        otp.forEachIndexed { index, digit ->
+            composeTestRule.onNodeWithTag("${TestTags.OTP_INPUT_PREFIX}$index")
+                .performTextInput(digit.toString())
+        }
+    }
+
+    /**
+     * Tap Verify OTP button.
+     */
+    fun tapVerifyOtp() = apply {
+        composeTestRule.onNodeWithTag(TestTags.VERIFY_OTP_BUTTON).performClick()
     }
 
     /**
      * Verify navigation to onboarding after successful sign-in.
-     * This is used with mocked auth.
      */
     fun assertNavigatedToOnboarding(timeoutMillis: Long = 5000) = apply {
         composeTestRule.waitUntilNodeWithTagExists(
@@ -70,14 +99,16 @@ class AuthRobot(private val composeTestRule: ComposeContentTestRule) {
     }
 
     /**
-     * Full auth flow for testing with mocked sign-in.
+     * Full auth flow for testing with mocked phone auth.
+     * With FakePhoneAuthClient (autoVerify=true), sendOtp auto-verifies.
      */
-    fun performMockedSignIn() = apply {
+    fun performMockedPhoneAuth() = apply {
         waitForAuthScreen()
         assertAuthScreenDisplayed()
-        assertGoogleSignInButtonDisplayed()
-        tapGoogleSignIn()
-        // With mocked auth, should navigate to onboarding
+        assertSendOtpButtonDisplayed()
+        enterPhoneNumber()
+        tapSendOtp()
+        // With mocked auth (autoVerify=true), should auto-navigate to onboarding
     }
 
     companion object {

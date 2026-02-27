@@ -6,7 +6,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
-import com.rasoiai.app.e2e.base.RealGoogleAuthE2ETest
+import com.rasoiai.app.e2e.base.RealPhoneAuthE2ETest
 import com.rasoiai.app.e2e.robots.AuthRobot
 import com.rasoiai.app.e2e.robots.ChatRobot
 import com.rasoiai.app.e2e.robots.FavoritesRobot
@@ -16,7 +16,6 @@ import com.rasoiai.app.e2e.robots.OnboardingRobot
 import com.rasoiai.app.e2e.robots.RecipeDetailRobot
 import com.rasoiai.app.e2e.robots.SettingsRobot
 import com.rasoiai.app.e2e.robots.StatsRobot
-import com.rasoiai.app.e2e.util.GoogleAuthTestHelper
 import com.rasoiai.app.presentation.common.TestTags
 import com.rasoiai.domain.model.MealType
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -28,7 +27,7 @@ import org.junit.runners.MethodSorters
 import java.time.DayOfWeek
 
 /**
- * Comprehensive E2E tests for the Home screen with Real Google Sign-In.
+ * Comprehensive E2E tests for the Home screen with Real Phone Auth.
  *
  * This test suite covers 48 features across 10 categories:
  * - Navigation (8 tests)
@@ -43,7 +42,7 @@ import java.time.DayOfWeek
  * - Festival Banner (2 tests)
  *
  * ## Prerequisites
- * 1. API 34 emulator with Google Play Services
+ * 1. API 34 emulator with Firebase
  * 2. Backend running at localhost:8000 with DEBUG=true
  * 3. Gmail account signed into emulator
  * 4. Valid Firebase credentials configured
@@ -55,7 +54,7 @@ import java.time.DayOfWeek
  */
 @HiltAndroidTest
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
+class HomeScreenComprehensiveTest : RealPhoneAuthE2ETest() {
 
     private lateinit var homeRobot: HomeRobot
     private lateinit var authRobot: AuthRobot
@@ -91,18 +90,18 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
     // =====================================================================
 
     /**
-     * Test 00: Sign in with Google and complete onboarding to reach Home screen
+     * Test 00: Sign in with phone and complete onboarding to reach Home screen
      *
      * This test:
      * 1. Clears existing auth state
      * 2. Waits for splash screen
-     * 3. Signs in with Google (FakeGoogleAuthClient)
+     * 3. Signs in with phone (FakePhoneAuthClient)
      * 4. Completes onboarding or skips if already done
      * 5. Waits for meal plan generation
      * 6. Verifies Home screen is displayed with meal data
      */
     @Test
-    fun test_00_realGoogleSignIn_completesOnboarding_showsHome() {
+    fun test_00_realPhoneAuth_completesOnboarding_showsHome() {
         Log.d(TAG, "Starting comprehensive test setup - sign-in and onboarding")
 
         // Save onboarding preferences FIRST so when we sign in, app goes directly to Home
@@ -113,7 +112,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         // Clear auth state (but NOT preferences - we already saved them)
         runBlocking {
             try {
-                googleAuthClient.signOut()
+                phoneAuthClient.signOut()
             } catch (e: Exception) {
                 Log.w(TAG, "Error signing out: ${e.message}")
             }
@@ -124,7 +123,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         waitFor(SPLASH_DURATION + 1000)
         waitForIdle()
 
-        GoogleAuthTestHelper.takeDebugScreenshot("01_after_splash")
+        // .takeDebugScreenshot("01_after_splash")
 
         // Sign in if needed
         try {
@@ -137,19 +136,19 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
             Log.d(TAG, "Sign-in button not found, might already be signed in")
         }
 
-        GoogleAuthTestHelper.takeDebugScreenshot("02_after_signin")
+        // .takeDebugScreenshot("02_after_signin")
 
         // After sign-in with onboarding pre-saved, app should go directly to Home
         // Wait for Home screen and meal list to load
         homeRobot.waitForHomeScreen(15000)
 
-        GoogleAuthTestHelper.takeDebugScreenshot("03_on_home_screen")
+        // .takeDebugScreenshot("03_on_home_screen")
 
         // Wait for meal list (may need to generate meal plan)
         homeRobot.waitForMealListToLoad(MEAL_GENERATION_TIMEOUT)
         homeRobot.assertHomeScreenDisplayed()
 
-        GoogleAuthTestHelper.takeDebugScreenshot("04_home_with_meals")
+        // .takeDebugScreenshot("04_home_with_meals")
         Log.d(TAG, "Setup complete - Home screen displayed with meal data")
     }
 
@@ -169,7 +168,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         waitFor(500)
 
         settingsRobot.assertSettingsScreenDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("nav01_settings")
+        // .takeDebugScreenshot("nav01_settings")
 
         // Navigate back
         uiDevice.pressBack()
@@ -189,7 +188,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         waitFor(500)
 
         composeTestRule.onNodeWithTag(TestTags.NOTIFICATIONS_SCREEN).assertIsDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("nav02_notifications")
+        // .takeDebugScreenshot("nav02_notifications")
 
         uiDevice.pressBack()
         waitFor(500)
@@ -208,7 +207,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         waitFor(500)
 
         settingsRobot.assertSettingsScreenDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("nav03_profile_settings")
+        // .takeDebugScreenshot("nav03_profile_settings")
 
         uiDevice.pressBack()
         waitFor(500)
@@ -227,7 +226,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         waitFor(500)
 
         groceryRobot.assertGroceryScreenDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("nav04_grocery")
+        // .takeDebugScreenshot("nav04_grocery")
 
         homeRobot.navigateToHome()
         waitFor(500)
@@ -246,7 +245,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         waitFor(500)
 
         chatRobot.assertChatScreenDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("nav05_chat")
+        // .takeDebugScreenshot("nav05_chat")
 
         homeRobot.navigateToHome()
         waitFor(500)
@@ -265,7 +264,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         waitFor(1000)  // Extra time for Favorites screen to load
 
         favoritesRobot.assertFavoritesScreenDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("nav06_favorites")
+        // .takeDebugScreenshot("nav06_favorites")
 
         homeRobot.navigateToHome()
         waitFor(1000)  // Extra time for Home screen to reload
@@ -285,7 +284,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         waitFor(500)
 
         statsRobot.assertStatsScreenDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("nav07_stats")
+        // .takeDebugScreenshot("nav07_stats")
 
         homeRobot.navigateToHome()
         waitFor(500)
@@ -306,7 +305,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         waitFor(500)
 
         recipeDetailRobot.assertRecipeDetailScreenDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("nav08_recipe_detail")
+        // .takeDebugScreenshot("nav08_recipe_detail")
 
         uiDevice.pressBack()
         waitFor(500)
@@ -330,12 +329,12 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         // Select Tuesday
         homeRobot.selectDay(DayOfWeek.TUESDAY)
         homeRobot.assertDaySelected(DayOfWeek.TUESDAY)
-        GoogleAuthTestHelper.takeDebugScreenshot("week01_tuesday")
+        // .takeDebugScreenshot("week01_tuesday")
 
         // Select Friday
         homeRobot.selectDay(DayOfWeek.FRIDAY)
         homeRobot.assertDaySelected(DayOfWeek.FRIDAY)
-        GoogleAuthTestHelper.takeDebugScreenshot("week01_friday")
+        // .takeDebugScreenshot("week01_friday")
 
         Log.d(TAG, "WEEK-01: PASSED")
     }
@@ -349,7 +348,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         ensureOnHomeScreen()
 
         homeRobot.assertTodayIndicatorVisible()
-        GoogleAuthTestHelper.takeDebugScreenshot("week02_today_indicator")
+        // .takeDebugScreenshot("week02_today_indicator")
 
         Log.d(TAG, "WEEK-02: PASSED")
     }
@@ -370,7 +369,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         homeRobot.selectDay(DayOfWeek.MONDAY)
         homeRobot.assertDaySelected(DayOfWeek.MONDAY)
 
-        GoogleAuthTestHelper.takeDebugScreenshot("week03_scroll")
+        // .takeDebugScreenshot("week03_scroll")
         Log.d(TAG, "WEEK-03: PASSED")
     }
 
@@ -383,7 +382,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         ensureOnHomeScreen()
 
         homeRobot.assertWeekHeaderDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("week04_header")
+        // .takeDebugScreenshot("week04_header")
 
         Log.d(TAG, "WEEK-04: PASSED")
     }
@@ -397,7 +396,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         ensureOnHomeScreen()
 
         homeRobot.assertSelectedDayDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("week05_day_label")
+        // .takeDebugScreenshot("week05_day_label")
 
         Log.d(TAG, "WEEK-05: PASSED")
     }
@@ -417,12 +416,12 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         // Lock the day
         homeRobot.tapDayLock()
         homeRobot.assertDayLocked()
-        GoogleAuthTestHelper.takeDebugScreenshot("lock01_day_locked")
+        // .takeDebugScreenshot("lock01_day_locked")
 
         // Unlock the day
         homeRobot.tapDayLock()
         homeRobot.assertDayUnlocked()
-        GoogleAuthTestHelper.takeDebugScreenshot("lock01_day_unlocked")
+        // .takeDebugScreenshot("lock01_day_unlocked")
 
         Log.d(TAG, "LOCK-01: PASSED")
     }
@@ -447,7 +446,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         // Return to Tuesday - should still be locked
         homeRobot.selectDay(DayOfWeek.TUESDAY)
         homeRobot.assertDayLocked()
-        GoogleAuthTestHelper.takeDebugScreenshot("lock02_persistence")
+        // .takeDebugScreenshot("lock02_persistence")
 
         // Cleanup - unlock
         homeRobot.tapDayLock()
@@ -468,7 +467,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
 
         // Verify meal lock buttons are disabled
         homeRobot.assertMealLockButtonDisabled(MealType.BREAKFAST)
-        GoogleAuthTestHelper.takeDebugScreenshot("lock03_meal_disabled")
+        // .takeDebugScreenshot("lock03_meal_disabled")
 
         // Cleanup
         homeRobot.tapDayLock()
@@ -486,12 +485,12 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         // Lock breakfast
         homeRobot.tapLockMeal(MealType.BREAKFAST)
         homeRobot.assertMealLocked(MealType.BREAKFAST)
-        GoogleAuthTestHelper.takeDebugScreenshot("lock04_meal_locked")
+        // .takeDebugScreenshot("lock04_meal_locked")
 
         // Unlock breakfast
         homeRobot.tapLockMeal(MealType.BREAKFAST)
         homeRobot.assertMealUnlocked(MealType.BREAKFAST)
-        GoogleAuthTestHelper.takeDebugScreenshot("lock04_meal_unlocked")
+        // .takeDebugScreenshot("lock04_meal_unlocked")
 
         Log.d(TAG, "LOCK-04: PASSED")
     }
@@ -515,7 +514,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
 
         // Lunch should still be locked
         homeRobot.assertMealLocked(MealType.LUNCH)
-        GoogleAuthTestHelper.takeDebugScreenshot("lock05_persistence")
+        // .takeDebugScreenshot("lock05_persistence")
 
         // Cleanup
         homeRobot.tapLockMeal(MealType.LUNCH)
@@ -538,7 +537,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         homeRobot.tapLockRecipeAction()
         waitFor(500)
 
-        GoogleAuthTestHelper.takeDebugScreenshot("lock06_recipe_locked")
+        // .takeDebugScreenshot("lock06_recipe_locked")
         Log.d(TAG, "LOCK-06: PASSED")
     }
 
@@ -559,7 +558,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         homeRobot.assertRecipeActionSheetDisplayed()
 
         // The lock option should show "Unlock meal first" subtitle
-        GoogleAuthTestHelper.takeDebugScreenshot("lock07_recipe_disabled")
+        // .takeDebugScreenshot("lock07_recipe_disabled")
 
         homeRobot.dismissRecipeActionSheet()
         homeRobot.tapLockMeal(MealType.BREAKFAST) // Cleanup
@@ -581,7 +580,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         // Meals should show locked state
         homeRobot.assertMealLocked(MealType.BREAKFAST)
         homeRobot.assertMealLocked(MealType.LUNCH)
-        GoogleAuthTestHelper.takeDebugScreenshot("lock08_hierarchy")
+        // .takeDebugScreenshot("lock08_hierarchy")
 
         // Cleanup
         homeRobot.tapDayLock()
@@ -605,7 +604,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         homeRobot.tapDayLock()
         homeRobot.assertDayUnlocked()
         homeRobot.assertMealLockButtonEnabled(MealType.BREAKFAST)
-        GoogleAuthTestHelper.takeDebugScreenshot("lock09_meal_enabled")
+        // .takeDebugScreenshot("lock09_meal_enabled")
 
         Log.d(TAG, "LOCK-09: PASSED")
     }
@@ -624,7 +623,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
 
         homeRobot.tapMealCard(MealType.BREAKFAST)
         homeRobot.assertRecipeActionSheetDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("action01_sheet_open")
+        // .takeDebugScreenshot("action01_sheet_open")
 
         homeRobot.dismissRecipeActionSheet()
         Log.d(TAG, "ACTION-01: PASSED")
@@ -644,7 +643,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         waitFor(500)
 
         recipeDetailRobot.assertRecipeDetailScreenDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("action02_recipe_detail")
+        // .takeDebugScreenshot("action02_recipe_detail")
 
         uiDevice.pressBack()
         waitFor(500)
@@ -668,7 +667,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         waitFor(2000)  // Give more time for swap sheet to appear and load suggestions
 
         homeRobot.assertSwapSheetDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("action03_swap_sheet")
+        // .takeDebugScreenshot("action03_swap_sheet")
 
         homeRobot.dismissSwapSheet()
         waitFor(500)
@@ -690,7 +689,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         // Open action sheet - Swap should be disabled
         homeRobot.tapMealCard(MealType.BREAKFAST)
         homeRobot.assertRecipeActionSheetDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("action04_swap_disabled")
+        // .takeDebugScreenshot("action04_swap_disabled")
 
         homeRobot.dismissRecipeActionSheet()
         homeRobot.tapLockMeal(MealType.BREAKFAST) // Cleanup
@@ -709,7 +708,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         homeRobot.tapMealCard(MealType.SNACKS)
         homeRobot.assertRecipeActionSheetDisplayed()
 
-        GoogleAuthTestHelper.takeDebugScreenshot("action05_before_remove")
+        // .takeDebugScreenshot("action05_before_remove")
         // We'll just verify the option exists - actually removing may affect other tests
         homeRobot.dismissRecipeActionSheet()
 
@@ -737,7 +736,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
 
         homeRobot.assertSwapSheetDisplayed()
         homeRobot.assertSwapSuggestionsDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("swap01_sheet")
+        // .takeDebugScreenshot("swap01_sheet")
 
         homeRobot.dismissSwapSheet()
         waitFor(500)
@@ -759,7 +758,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
 
         // Search for a recipe
         homeRobot.searchSwapRecipe("dal")
-        GoogleAuthTestHelper.takeDebugScreenshot("swap02_search")
+        // .takeDebugScreenshot("swap02_search")
 
         homeRobot.dismissSwapSheet()
         Log.d(TAG, "SWAP-02: PASSED")
@@ -784,7 +783,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         waitFor(2000)  // Give time for swap sheet to appear and load
         homeRobot.assertSwapSheetDisplayed()
 
-        GoogleAuthTestHelper.takeDebugScreenshot("swap03_ready_to_select")
+        // .takeDebugScreenshot("swap03_ready_to_select")
         homeRobot.dismissSwapSheet()
         waitFor(500)
 
@@ -813,7 +812,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
 
         // Should be back on Home
         homeRobot.assertHomeScreenDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("swap04_cancelled")
+        // .takeDebugScreenshot("swap04_cancelled")
 
         Log.d(TAG, "SWAP-04: PASSED")
     }
@@ -835,7 +834,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         homeRobot.tapAddRecipeButton(MealType.BREAKFAST)
         waitFor(1000)  // Wait for sheet animation
         homeRobot.assertAddRecipeSheetDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("add01_sheet")
+        // .takeDebugScreenshot("add01_sheet")
 
         homeRobot.dismissAddRecipeSheet()
         waitFor(500)
@@ -855,7 +854,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         homeRobot.tapAddRecipeButton(MealType.LUNCH)
         waitFor(1000)  // Wait for sheet animation
         homeRobot.assertAddRecipeSheetDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("add02_suggestions")
+        // .takeDebugScreenshot("add02_suggestions")
 
         homeRobot.dismissAddRecipeSheet()
         waitFor(500)
@@ -876,7 +875,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         homeRobot.tapAddRecipeButton(MealType.BREAKFAST)
         waitFor(1000)  // Wait for sheet animation
         homeRobot.assertAddRecipeSheetDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("add03_favorites_tab")
+        // .takeDebugScreenshot("add03_favorites_tab")
 
         homeRobot.dismissAddRecipeSheet()
         waitFor(500)
@@ -896,7 +895,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         homeRobot.tapAddRecipeButton(MealType.LUNCH)
         waitFor(1000)  // Wait for sheet animation
         homeRobot.assertAddRecipeSheetDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("add04_search")
+        // .takeDebugScreenshot("add04_search")
 
         homeRobot.dismissAddRecipeSheet()
         waitFor(500)
@@ -917,7 +916,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         homeRobot.tapAddRecipeButton(MealType.BREAKFAST)
         waitFor(1000)  // Wait for sheet animation
         homeRobot.assertAddRecipeSheetDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("add05_ready")
+        // .takeDebugScreenshot("add05_ready")
 
         homeRobot.dismissAddRecipeSheet()
         waitFor(500)
@@ -938,7 +937,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
 
         homeRobot.tapRefreshButton()
         homeRobot.assertRefreshSheetDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("refresh01_options")
+        // .takeDebugScreenshot("refresh01_options")
 
         homeRobot.dismissRefreshSheet()
         Log.d(TAG, "REFRESH-01: PASSED")
@@ -954,7 +953,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
 
         homeRobot.tapRefreshButton()
         homeRobot.assertRefreshSheetDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("refresh02_day_option")
+        // .takeDebugScreenshot("refresh02_day_option")
 
         // Don't actually regenerate to preserve test state
         homeRobot.dismissRefreshSheet()
@@ -971,7 +970,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
 
         homeRobot.tapRefreshButton()
         homeRobot.assertRefreshSheetDisplayed()
-        GoogleAuthTestHelper.takeDebugScreenshot("refresh03_week_option")
+        // .takeDebugScreenshot("refresh03_week_option")
 
         homeRobot.dismissRefreshSheet()
         Log.d(TAG, "REFRESH-03: PASSED")
@@ -990,7 +989,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         ensureOnHomeScreen()
 
         homeRobot.swipeToRevealRecipeActions(MealType.BREAKFAST)
-        GoogleAuthTestHelper.takeDebugScreenshot("swipe01_actions")
+        // .takeDebugScreenshot("swipe01_actions")
 
         Log.d(TAG, "SWIPE-01: PASSED")
     }
@@ -1009,7 +1008,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         homeRobot.swipeToRevealRecipeActions(MealType.BREAKFAST)
         waitFor(500)  // Wait for swipe animation
         homeRobot.tapRecipeLockInSwipeActions()
-        GoogleAuthTestHelper.takeDebugScreenshot("swipe02_locked")
+        // .takeDebugScreenshot("swipe02_locked")
 
         Log.d(TAG, "SWIPE-02: PASSED")
     }
@@ -1028,7 +1027,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
 
         // Just verify swipe works - don't delete to preserve state
         homeRobot.swipeToRevealRecipeActions(MealType.DINNER)
-        GoogleAuthTestHelper.takeDebugScreenshot("swipe03_delete_ready")
+        // .takeDebugScreenshot("swipe03_delete_ready")
 
         Log.d(TAG, "SWIPE-03: PASSED")
     }
@@ -1048,7 +1047,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         homeRobot.assertMealCardDisplayed(MealType.BREAKFAST)
         homeRobot.assertMealCardDisplayed(MealType.LUNCH)
         homeRobot.assertMealCardDisplayed(MealType.DINNER)
-        GoogleAuthTestHelper.takeDebugScreenshot("content01_names")
+        // .takeDebugScreenshot("content01_names")
 
         Log.d(TAG, "CONTENT-01: PASSED")
     }
@@ -1063,7 +1062,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
 
         // Meal items should show "X min" format
         homeRobot.assertMealCardDisplayed(MealType.BREAKFAST)
-        GoogleAuthTestHelper.takeDebugScreenshot("content02_prep_time")
+        // .takeDebugScreenshot("content02_prep_time")
 
         Log.d(TAG, "CONTENT-02: PASSED")
     }
@@ -1078,7 +1077,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
 
         // Meal items should show "Y kcal" format
         homeRobot.assertMealCardDisplayed(MealType.LUNCH)
-        GoogleAuthTestHelper.takeDebugScreenshot("content03_calories")
+        // .takeDebugScreenshot("content03_calories")
 
         Log.d(TAG, "CONTENT-03: PASSED")
     }
@@ -1093,7 +1092,7 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
 
         // Dietary indicators are colored dots on meal items
         homeRobot.assertMealCardDisplayed(MealType.DINNER)
-        GoogleAuthTestHelper.takeDebugScreenshot("content04_dietary")
+        // .takeDebugScreenshot("content04_dietary")
 
         Log.d(TAG, "CONTENT-04: PASSED")
     }
@@ -1114,12 +1113,12 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
         // This test verifies the banner exists OR gracefully handles no festival
         try {
             homeRobot.assertFestivalBannerDisplayed()
-            GoogleAuthTestHelper.takeDebugScreenshot("fest01_banner_present")
+            // .takeDebugScreenshot("fest01_banner_present")
             Log.d(TAG, "FEST-01: PASSED (banner displayed)")
         } catch (e: AssertionError) {
             // No festival nearby - that's okay
             homeRobot.assertFestivalBannerNotDisplayed()
-            GoogleAuthTestHelper.takeDebugScreenshot("fest01_no_festival")
+            // .takeDebugScreenshot("fest01_no_festival")
             Log.d(TAG, "FEST-01: PASSED (no festival nearby)")
         }
     }
@@ -1138,13 +1137,13 @@ class HomeScreenComprehensiveTest : RealGoogleAuthE2ETest() {
 
             homeRobot.tapFestivalBanner()
             homeRobot.assertFestivalRecipesSheetDisplayed()
-            GoogleAuthTestHelper.takeDebugScreenshot("fest02_recipes_sheet")
+            // .takeDebugScreenshot("fest02_recipes_sheet")
 
             homeRobot.dismissFestivalRecipesSheet()
             Log.d(TAG, "FEST-02: PASSED")
         } catch (e: AssertionError) {
             Log.d(TAG, "FEST-02: SKIPPED (no festival banner present)")
-            GoogleAuthTestHelper.takeDebugScreenshot("fest02_skipped")
+            // .takeDebugScreenshot("fest02_skipped")
         }
     }
 

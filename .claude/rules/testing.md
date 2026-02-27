@@ -58,7 +58,7 @@ Tests use **Compose UI Testing** (not Espresso). Located in `app/src/androidTest
 | `base/ComposeTestExtensions.kt` | Compose test extension functions |
 | `base/TestDataFactory.kt` | Test data creation helpers |
 | `util/BackendTestHelper.kt` | Backend API calls with retry |
-| `di/FakeGoogleAuthClient.kt` | Fake auth (returns `fake-firebase-token`) |
+| `di/FakePhoneAuthClient.kt` | Fake auth (returns `fake-firebase-token`) |
 | `robots/` | Robot pattern classes (HomeRobot, GroceryRobot, etc.) |
 | `rules/RetryRule.kt` | JUnit rule for retrying flaky tests |
 | `E2ETestSuite.kt` | Test suite runner (runs CoreDataFlowTest first) |
@@ -66,7 +66,7 @@ Tests use **Compose UI Testing** (not Espresso). Located in `app/src/androidTest
 
 **E2E backend URL:** `http://10.0.2.2:8000` (Android emulator maps `10.0.2.2` → host `localhost`).
 
-**E2E auth bypass:** `FakeGoogleAuthClient` sends `"fake-firebase-token"` to backend (`DEBUG=true` required). See `android/app/src/androidTest/CLAUDE.md` for full auth flow details.
+**E2E auth bypass:** `FakePhoneAuthClient` sends `"fake-firebase-token"` to backend (`DEBUG=true` required). See `android/app/src/androidTest/CLAUDE.md` for full auth flow details.
 
 ## Android E2E Tests
 - Extend `BaseE2ETest`, use Robot pattern

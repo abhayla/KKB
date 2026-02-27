@@ -32,7 +32,7 @@ import java.time.DayOfWeek
  * This test follows the "Sharma Family" profile from E2E-Testing-Prompt.md
  * through the entire application flow:
  *
- * 1. Auth (Google OAuth via FakeGoogleAuthClient)
+ * 1. Auth (Firebase Phone Auth via FakePhoneAuthClient)
  * 2. Onboarding (5 steps: Household, Diet, Cuisine, Dislikes, Cooking Time)
  * 3. Generation (4-step progress screen)
  * 4. Home (Meal plan viewing)
@@ -181,10 +181,10 @@ class FullUserJourneyTest : BaseE2ETest() {
             .assertSplashScreenDisplayed()
             .waitForAuthScreen(LONG_TIMEOUT)
             .assertAuthScreenDisplayed()
-            .assertGoogleSignInButtonDisplayed()
+            .assertSendOtpButtonDisplayed()
 
-        // Tap Google Sign-In (uses FakeGoogleAuthClient)
-        authRobot.tapGoogleSignIn()
+        // Tap Phone Auth (uses FakePhoneAuthClient)
+        authRobot.tapSendOtp()
 
         // Should navigate to onboarding for new user
         authRobot.assertNavigatedToOnboarding(LONG_TIMEOUT)

@@ -1,12 +1,11 @@
 """User repository for PostgreSQL operations."""
 
-import json
 import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from sqlalchemy import func, select, delete
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.postgres import async_session_maker
@@ -31,9 +30,7 @@ class UserRepository:
     async def get_by_id(self, user_id: str) -> Optional[dict[str, Any]]:
         """Get user by ID."""
         async with async_session_maker() as session:
-            result = await session.execute(
-                select(User).where(User.id == user_id)
-            )
+            result = await session.execute(select(User).where(User.id == user_id))
             user = result.scalar_one_or_none()
             if user:
                 return self._user_to_dict(user)
@@ -61,12 +58,24 @@ class UserRepository:
                 return self._user_to_dict(user)
             return None
 
+    async def get_by_phone_number(self, phone_number: str) -> Optional[dict[str, Any]]:
+        """Get user by phone number."""
+        async with async_session_maker() as session:
+            result = await session.execute(
+                select(User).where(User.phone_number == phone_number)
+            )
+            user = result.scalar_one_or_none()
+            if user:
+                return self._user_to_dict(user)
+            return None
+
     async def create(
         self,
         firebase_uid: str,
         email: Optional[str] = None,
         name: Optional[str] = None,
         profile_picture_url: Optional[str] = None,
+        phone_number: Optional[str] = None,
     ) -> dict[str, Any]:
         """Create a new user."""
         async with async_session_maker() as session:
@@ -74,6 +83,7 @@ class UserRepository:
                 id=str(uuid.uuid4()),
                 firebase_uid=firebase_uid,
                 email=email.strip().lower() if email else None,
+                phone_number=phone_number,
                 name=name,
                 profile_picture_url=profile_picture_url,
                 is_onboarded=False,
@@ -89,9 +99,7 @@ class UserRepository:
     async def update_firebase_uid(self, user_id: str, firebase_uid: str) -> None:
         """Update a user's Firebase UID (for account merging)."""
         async with async_session_maker() as session:
-            result = await session.execute(
-                select(User).where(User.id == user_id)
-            )
+            result = await session.execute(select(User).where(User.id == user_id))
             user = result.scalar_one_or_none()
             if user:
                 user.firebase_uid = firebase_uid
@@ -99,22 +107,28 @@ class UserRepository:
                 await session.commit()
                 logger.info(f"Updated firebase_uid for user {user_id}")
 
-    async def update(self, user_id: str, data: dict[str, Any]) -> Optional[dict[str, Any]]:
+    async def update(
+        self, user_id: str, data: dict[str, Any]
+    ) -> Optional[dict[str, Any]]:
         """Update user data."""
         async with async_session_maker() as session:
-            result = await session.execute(
-                select(User).where(User.id == user_id)
-            )
+            result = await session.execute(select(User).where(User.id == user_id))
             user = result.scalar_one_or_none()
             if not user:
                 return None
 
             # Normalize email before saving
-            if 'email' in data and data['email']:
-                data['email'] = data['email'].strip().lower()
+            if "email" in data and data["email"]:
+                data["email"] = data["email"].strip().lower()
 
             # Update allowed fields
-            allowed_fields = ['name', 'email', 'profile_picture_url', 'is_onboarded', 'is_active']
+            allowed_fields = [
+                "name",
+                "email",
+                "profile_picture_url",
+                "is_onboarded",
+                "is_active",
+            ]
             for field in allowed_fields:
                 if field in data:
                     setattr(user, field, data[field])
@@ -128,9 +142,7 @@ class UserRepository:
     async def delete(self, user_id: str) -> bool:
         """Delete user and all related data (cascades)."""
         async with async_session_maker() as session:
-            result = await session.execute(
-                select(User).where(User.id == user_id)
-            )
+            result = await session.execute(select(User).where(User.id == user_id))
             user = result.scalar_one_or_none()
             if not user:
                 return False
@@ -152,7 +164,9 @@ class UserRepository:
                 return self._preferences_to_dict(prefs)
             return None
 
-    async def save_preferences(self, user_id: str, preferences: dict[str, Any]) -> dict[str, Any]:
+    async def save_preferences(
+        self, user_id: str, preferences: dict[str, Any]
+    ) -> dict[str, Any]:
         """Save user preferences (upsert)."""
         async with async_session_maker() as session:
             result = await session.execute(
@@ -177,12 +191,8 @@ class UserRepository:
             await session.refresh(prefs)
 
             # Mark user as onboarded
-            await session.execute(
-                select(User).where(User.id == user_id)
-            )
-            user_result = await session.execute(
-                select(User).where(User.id == user_id)
-            )
+            await session.execute(select(User).where(User.id == user_id))
+            user_result = await session.execute(select(User).where(User.id == user_id))
             user = user_result.scalar_one_or_none()
             if user:
                 user.is_onboarded = True
@@ -200,7 +210,9 @@ class UserRepository:
             members = result.scalars().all()
             return [self._family_member_to_dict(m) for m in members]
 
-    async def add_family_member(self, user_id: str, member_data: dict[str, Any]) -> dict[str, Any]:
+    async def add_family_member(
+        self, user_id: str, member_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Add a family member."""
         async with async_session_maker() as session:
             member = FamilyMember(
@@ -224,8 +236,7 @@ class UserRepository:
         async with async_session_maker() as session:
             result = await session.execute(
                 select(FamilyMember).where(
-                    FamilyMember.id == member_id,
-                    FamilyMember.user_id == user_id
+                    FamilyMember.id == member_id, FamilyMember.user_id == user_id
                 )
             )
             member = result.scalar_one_or_none()
@@ -233,7 +244,12 @@ class UserRepository:
                 return None
 
             # Update allowed fields
-            allowed_fields = ['name', 'age_group', 'dietary_restrictions', 'health_conditions']
+            allowed_fields = [
+                "name",
+                "age_group",
+                "dietary_restrictions",
+                "health_conditions",
+            ]
             for field in allowed_fields:
                 if field in data:
                     setattr(member, field, data[field])
@@ -249,8 +265,7 @@ class UserRepository:
         async with async_session_maker() as session:
             result = await session.execute(
                 select(FamilyMember).where(
-                    FamilyMember.id == member_id,
-                    FamilyMember.user_id == user_id
+                    FamilyMember.id == member_id, FamilyMember.user_id == user_id
                 )
             )
             member = result.scalar_one_or_none()
@@ -268,6 +283,7 @@ class UserRepository:
             "id": user.id,
             "firebase_uid": user.firebase_uid,
             "email": user.email,
+            "phone_number": user.phone_number,
             "name": user.name,
             "profile_picture_url": user.profile_picture_url,
             "is_onboarded": user.is_onboarded,
@@ -303,7 +319,9 @@ class UserRepository:
             "updated_at": prefs.updated_at,
         }
 
-    def _update_preferences_from_dict(self, prefs: UserPreferences, data: dict[str, Any]) -> None:
+    def _update_preferences_from_dict(
+        self, prefs: UserPreferences, data: dict[str, Any]
+    ) -> None:
         """Update UserPreferences model from dictionary."""
         # Map of dict keys to model attributes
         field_map = {

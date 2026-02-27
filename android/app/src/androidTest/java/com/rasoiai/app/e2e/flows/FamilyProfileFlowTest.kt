@@ -71,7 +71,7 @@ class FamilyProfileFlowTest : BaseE2ETest() {
      *
      * Steps:
      * 1. Clear all state for fresh start
-     * 2. Sign in with Google (fake)
+     * 2. Sign in with phone (fake)
      * 3. Complete 5-step onboarding with Sharma Family data
      * 4. Verify DataStore contains correct family data
      * 5. Verify Backend API returns matching household_size
@@ -88,7 +88,7 @@ class FamilyProfileFlowTest : BaseE2ETest() {
             // Step 2: Sign in
             authRobot.waitForAuthScreen()
             Log.d(TAG, "Auth screen displayed")
-            authRobot.tapGoogleSignIn()
+            authRobot.tapSendOtp()
             authRobot.assertNavigatedToOnboarding()
             Log.d(TAG, "Navigated to onboarding")
 
@@ -333,7 +333,7 @@ class FamilyProfileFlowTest : BaseE2ETest() {
         assertNotNull("Authentication should succeed", authResult)
 
         // Set up fake auth client state
-        fakeGoogleAuthClient.simulateSignedIn()
+        fakePhoneAuthClient.simulateSignedIn()
 
         // Store JWT and Sharma Family preferences
         runBlocking {
