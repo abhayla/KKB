@@ -68,43 +68,18 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 route
 
 ---
 
-## PREVIOUS SESSIONS SUMMARY
+## Key Milestones (Condensed)
 
-### Session 43: Pre-Production Hardening (24 Items)
-- **12 themed commits** implementing all 24 security/hardening items
-- **Batch 1 (Critical):** Config security defaults (JWT, DEBUG, sql_echo), CORS hardening, GDPR user deletion & export, Android release signing + Crashlytics
-- **Batch 2 (High):** API rate limiting (slowapi), AI usage limits, DB indexes + health check, data cleanup service, Sentry PII fix, image validation, security headers, certificate pinning
-- **Batch 3 (Medium):** Structured logging, API versioning header, exception sanitizing, ProGuard for data module, accessibility audit (30 fixes), refresh token rotation with reuse detection, encrypted token storage (EncryptedSharedPreferences)
-- **Dependency fixes:** Hilt 2.50→2.56.1 (KSP2 compat), Room 2.6.1→2.8.1 (KSP2 compat), JUnit Platform Launcher for Gradle 9.x
-- **New models:** UsageLog, RefreshToken
-- **New services:** cleanup_service, usage_limit_service, user_deletion_service
-- **New endpoints:** POST /auth/refresh, POST /auth/logout, DELETE /users/me, GET /users/me/export
-- **Test results:** Backend 531 pass (7 pre-existing), Android 580 unit tests pass (0 failures)
-
-### Session 42: Data Module Test Fixes + Workflow Enforcement
-- **Data Module Tests:** Fixed 15 test failures across 7 files in `android/data/src/test/`
-- **Hook Enforcement:** Added `testFailuresPending` flag-and-gate mechanism
-- **Test Results:** Backend 364 tests passing, Android all modules pass
-
-### Session 41: ADB Flow Test — New User Journey
-- **ADB Test:** `/adb-test new-user-journey` — Flow 01 complete, 79/79 steps PASS
-- **Bug Fix:** Recipe endpoint 500 error — `recipe_service.py` compared `uuid.UUID` with `String(36)` column
-- **Backend tests:** 351/351 passing after fix
-
-### Sessions 38-40: Requirements, E2E Tests, Photo/Items Features
-- Requirements Documentation: 12 screen files, ~525 requirements
-- Home Screen E2E Tests: 24 tests
-- Photo Attachment (Issue #13), Items per Meal (Issue #16)
-- FR-010 through FR-014 implemented
-
-### Sessions 1-37: Core Implementation
-- Android Compose UI with 18+ screens
-- PostgreSQL backend with FastAPI (~41 endpoints, 13 routers)
-- E2E test infrastructure
-- 3,580 recipes imported
+| Session | Milestone |
+|---------|-----------|
+| 43 | Pre-production hardening: 24 items (config security, GDPR, rate limiting, token rotation, security headers, DB indexes, cleanup service, cert pinning, accessibility) |
+| 42 | Data module test fixes (15 failures), workflow hook enforcement (`testFailuresPending` gate) |
+| 41 | ADB new-user-journey flow (79/79 PASS), recipe ID 500 bug fix |
+| 38-40 | Requirements docs (525 reqs), E2E tests, photo attachment, items per meal, FR-010 through FR-014 |
+| 1-37 | Core implementation: 18+ screens, FastAPI backend, E2E infrastructure, 3,580 recipes imported |
 
 ---
 
-*Last Updated: February 25, 2026*
+*Last Updated: February 27, 2026*
 *Pre-production hardening complete (24 items). ~538 backend tests (43 files). ~580 Android unit tests. 67+ E2E tests. 750+ UI tests.*
 *~44 API endpoints across 13 routers. 3,580 recipes. ~525 requirements across 12 screen files. Room DB v11.*

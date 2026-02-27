@@ -117,6 +117,12 @@ PYTHONPATH=. pytest tests/test_auth.py -v                    # Single file
 PYTHONPATH=. pytest tests/test_preference_service.py::test_add_include_rule -v  # Single test
 alembic upgrade head             # Run migrations
 alembic revision --autogenerate -m "description"  # New migration
+
+# After migrations — seed reference data (first-time setup)
+PYTHONPATH=. python scripts/seed_festivals.py               # Festival calendar
+PYTHONPATH=. python scripts/seed_achievements.py            # Achievement definitions
+PYTHONPATH=. python scripts/import_recipes_postgres.py      # 3,580 recipes from KKB dataset
+PYTHONPATH=. python scripts/sync_config_postgres.py         # Meal gen YAML config → PostgreSQL
 ```
 
 ### Prerequisites
