@@ -16,6 +16,8 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
+from httpx import AsyncClient
+
 from app.db.base import Base
 from app.db.postgres import engine as production_engine
 from app.main import app
@@ -130,3 +132,56 @@ def _clear_dependency_overrides():
     """
     yield
     app.dependency_overrides.clear()
+
+
+# ==================== Shared Client Fixtures ====================
+# Used by both api/ and services/ tests. Built on make_api_client
+# from tests.api.conftest (which holds the core setup logic).
+
+
+@pytest_asyncio.fixture(scope="function")
+async def client(
+    db_session: AsyncSession, test_user: User
+) -> AsyncGenerator[AsyncClient, None]:
+    """Authenticated test client (overrides get_db + get_current_user)."""
+    from tests.api.conftest import make_api_client
+
+    async with make_api_client(db_session, test_user) as c:
+        yield c
+
+
+@pytest_asyncio.fixture(scope="function")
+async def unauthenticated_client(
+    db_session: AsyncSession,
+) -> AsyncGenerator[AsyncClient, None]:
+    """Test client WITHOUT auth override — for testing 401 responses."""
+    from tests.api.conftest import make_api_client
+
+    async with make_api_client(db_session, user=None) as c:
+        yield c
+
+
+@pytest_asyncio.fixture(scope="function")
+async def auth_token(test_user: User) -> str:
+    """Create a valid auth token for the test user."""
+    from app.core.security import create_access_token
+    from datetime import timedelta
+
+    return create_access_token(
+        data={"sub": test_user.id},
+        expires_delta=timedelta(hours=1),
+    )
+
+
+@pytest_asyncio.fixture(scope="function")
+async def authenticated_client(
+    db_session: AsyncSession,
+    test_user: User,
+    auth_token: str,
+) -> AsyncGenerator[AsyncClient, None]:
+    """Test client with Authorization header pre-configured."""
+    from tests.api.conftest import make_api_client
+
+    async with make_api_client(db_session, test_user) as c:
+        c.headers["Authorization"] = f"Bearer {auth_token}"
+        yield c
