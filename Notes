@@ -184,3 +184,20 @@ I have acess to VPS server also and I can run a session of Claude code on the VP
                                                                                                        
   save 'VPS only actions' and 'anywhere actions' in 2 seperate docs and place them in                  
   d:\Abhay\VibeCoding\cric\docs\pre-prod 
+
+      342 +| Suite | Journey | Tests |                                                                                               
+      343 +|-------|---------|:-----:|                                                                                               
+      344 +| J01 | First-Time User Gets Started | 3 |                                                                                
+      345 +| J02 | New User First Meal Plan | 2 |                                                                                    
+      346 +| J03 | Complete End-to-End Journey | 1 |                                                                                 
+      347 +| J04 | Daily Meal Planning | 2 |                                                                                         
+      348 +| J05 | Weekly Grocery Shopping | 2 |                                                                                     
+      349 +| J06 | Cooking a Meal | 3 |                                                                                              
+      350 +| J07 | Managing Dietary Preferences | 3 |                                                                                
+      351 +| J08 | AI Meal Plan Quality Assurance | 2 |                                                                              
+      352 +| J09 | Family Profile Management | 2 |                                                                                   
+      353 +| J10 | Exploring App Features | 4 |                                                                                      
+      354 +| J11 | Customizing App Settings | 3 |                                                                                    
+      355 +| J12 | Offline and Error Resilience | 2 |                                                                                
+      356 +| J13 | Returning User Quick Check | 3 |                                                                                  
+      357 +| J14 | AI Chat and Recipe Discovery | 3 |

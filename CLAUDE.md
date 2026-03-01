@@ -117,6 +117,7 @@ PYTHONPATH=. pytest tests/test_auth.py -v                    # Single file
 PYTHONPATH=. pytest tests/test_preference_service.py::test_add_include_rule -v  # Single test
 alembic upgrade head             # Run migrations
 alembic revision --autogenerate -m "description"  # New migration
+PYTHONPATH=. pytest --collect-only -q             # Count all tests
 
 # After migrations — seed reference data (first-time setup)
 PYTHONPATH=. python scripts/seed_festivals.py               # Festival calendar
@@ -136,6 +137,18 @@ PYTHONPATH=. python scripts/sync_config_postgres.py         # Meal gen YAML conf
 
 **Dependency versions:** See `backend/requirements.txt` and `android/gradle/libs.versions.toml`.
 
+### Code Formatting
+
+Auto-formatting runs via the `auto-format.sh` hook after edits. Manual commands:
+
+```bash
+# Python (from backend/)
+black app/ tests/                    # Format code
+ruff check app/ tests/ --fix        # Lint + auto-fix
+
+# Kotlin — no manual formatter configured; Compose stability rules in android/app/compose-stability.conf
+```
+
 ### Environment Setup
 
 **Backend `.env` file:**
@@ -154,7 +167,7 @@ CORS_ORIGINS=["http://localhost:3000"] # Default is [] — Android app doesn't n
 ```properties
 sdk.dir=/path/to/Android/sdk
 ```
-Also requires `google-services.json` in `android/app/` (from Firebase Console, with Phone Auth enabled).
+Also requires `google-services.json` in `android/app/` (from Firebase Console, with Phone Auth enabled). No `WEB_CLIENT_ID` needed — Phone Auth doesn't use it.
 
 **PostgreSQL:**
 ```sql
@@ -207,6 +220,8 @@ Key test commands: `PYTHONPATH=. pytest` (backend) | `./gradlew test` (Android) 
 | JUnit Platform Launcher (Gradle 9) | All modules need `testRuntimeOnly(libs.junit.platform.launcher)` — Gradle 9.x won't load JUnit 5 without it |
 | Hilt + KSP2 classloader error | Hilt 2.50 doesn't support KSP 2.x. Use Hilt 2.51+ (currently 2.56.1) |
 | Room "unexpected jvm signature V" | Room 2.6.1 doesn't support KSP2. Use Room 2.8.1+ |
+| Test Orchestrator breaks E2E | Intentionally disabled — re-enabling clears DataStore between tests, breaking `BaseE2ETest.backendMealPlanGenerated` state sharing |
+| Auth race condition in E2E | SplashViewModel has 2-second delay before checking `phoneAuthClient.isSignedIn`. Tokens must be in DataStore before this fires. `FakePhoneAuthClient` handles this. |
 
 ## VPS Deployment
 
@@ -497,6 +512,8 @@ Workflow state is tracked in `.claude/workflow-state.json` (extended schema with
 The `.claude/` directory contains: `agents/` (11 agents), `knowledge.db` (pattern library), `skills/` (12 slash commands), `hooks/` (12 hooks — see table above), `rules/` (5 path-scoped rule files), `logs/` (session logs).
 
 **Skills:** `/adb-test`, `/auto-verify`, `/fix-issue`, `/fix-loop`, `/implement`, `/post-fix-pipeline`, `/reflect`, `/run-e2e`, `/db-migrate`, `/deploy`, `/sync-check`, `/verify-screenshots`
+
+**MCP Servers** (`.mcp.json`): Playwright (`@anthropic-ai/mcp-server-playwright`) for web screenshots, ADB (`adb-mcp`) for Android emulator automation.
 
 ### Sub-directory CLAUDE.md Files
 

@@ -10,7 +10,7 @@ This document describes the implementation of RasoiAI's AI-powered meal plan gen
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Gemini AI generation | ✅ Implemented | Uses Gemini 2.0 Flash |
+| Gemini AI generation | ✅ Implemented | Uses Gemini 2.5 Flash (`gemini-2.5-flash`) |
 | 2-item pairing logic | ✅ Implemented | AI generates complementary pairs |
 | INCLUDE rules (DAILY/TIMES_PER_WEEK) | ✅ Implemented | Passed to AI in prompt |
 | EXCLUDE rules (NEVER/SPECIFIC_DAYS) | ✅ Implemented | Post-processing enforcement |
@@ -40,7 +40,7 @@ The algorithm generates a **7-day personalized meal plan** using Google Gemini A
 │                                                                     │
 │  Process:                                                           │
 │  ├── Build comprehensive prompt                                      │
-│  ├── Call Gemini 2.0 Flash (JSON output)                            │
+│  ├── Call Gemini 2.5 Flash (JSON output)                            │
 │  ├── Validate response structure                                     │
 │  └── Post-process: enforce allergens, EXCLUDE rules                  │
 │                                                                     │
@@ -558,7 +558,7 @@ Tests the Sharma Family profile with constraints:
 
 | Issue | Solution |
 |-------|----------|
-| Gemini 404 error | Check model name (gemini-2.0-flash), verify API key |
+| Gemini 404 error | Check model name (`gemini-2.5-flash`), verify API key |
 | Empty response | Retry logic handles this; check prompt size |
 | Invalid JSON | Validate response structure; retry automatically |
 | Missing items after enforcement | AI included allergen; post-processing removed it |

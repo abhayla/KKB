@@ -4,6 +4,5 @@
 # Android SDK location (automatically set by Android Studio)
 # sdk.dir=/Users/username/Library/Android/sdk
 
-# Google OAuth Web Client ID (from Firebase Console > Authentication > Sign-in methods > Google)
-# This ID is used for Google Sign-In and should be kept private
-WEB_CLIENT_ID=your-web-client-id-here.apps.googleusercontent.com
+# Note: WEB_CLIENT_ID is no longer needed after migration to Firebase Phone Auth.
+# google-services.json in android/app/ handles Firebase configuration.

@@ -323,6 +323,41 @@ adb shell settings put global airplane_mode_on 0 && adb shell am broadcast -a an
 
 ---
 
+## Customer Journey Test Suites
+
+14 journey-based suites group the 23 E2E test files into realistic user scenarios. Each journey is a runnable JUnit `@Suite` class in `e2e/journeys/`.
+
+**Full documentation:** [Customer-Journey-Test-Suites.md](./Customer-Journey-Test-Suites.md)
+
+```bash
+# Run a specific journey
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.journeys.J01_FirstTimeUserSuite
+
+# Run all journeys
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.package=com.rasoiai.app.e2e.journeys
+```
+
+| Suite | Journey | Tests |
+|-------|---------|:-----:|
+| J01 | First-Time User Gets Started | 3 |
+| J02 | New User First Meal Plan | 2 |
+| J03 | Complete End-to-End Journey | 1 |
+| J04 | Daily Meal Planning | 2 |
+| J05 | Weekly Grocery Shopping | 2 |
+| J06 | Cooking a Meal | 3 |
+| J07 | Managing Dietary Preferences | 3 |
+| J08 | AI Meal Plan Quality Assurance | 2 |
+| J09 | Family Profile Management | 2 |
+| J10 | Exploring App Features | 4 |
+| J11 | Customizing App Settings | 3 |
+| J12 | Offline and Error Resilience | 2 |
+| J13 | Returning User Quick Check | 3 |
+| J14 | AI Chat and Recipe Discovery | 3 |
+
+---
+
 ## Known Issues
 
 1. **Compose Dropdown Selection:** `ExposedDropdownMenu` items aren't captured by UI Automator. Use tap coordinates for manual testing.
@@ -331,5 +366,5 @@ adb shell settings put global airplane_mode_on 0 && adb shell am broadcast -a an
 
 ---
 
-*Last Updated: February 2026*
+*Last Updated: March 2026*
 *Recipe Database: 3,580 recipes (imported from khanakyabanega)*

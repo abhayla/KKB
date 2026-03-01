@@ -44,13 +44,8 @@ class RecipeInteractionFlowTest : BaseE2ETest() {
         favoritesRobot = FavoritesRobot(composeTestRule)
 
         homeRobot.waitForHomeScreen(LONG_TIMEOUT)
-
-        try {
-            homeRobot.assertMealCardDisplayed(MealType.BREAKFAST, timeoutMillis = 60000)
-            Log.i(TAG, "Meal data loaded successfully")
-        } catch (e: Exception) {
-            Log.w(TAG, "Meal data may not have loaded: ${e.message}")
-        }
+        homeRobot.waitForMealListToLoad(60000)
+        Log.i(TAG, "Meal data loaded successfully")
     }
 
     // ==================== Recipe Search (FR-001) ====================
@@ -186,6 +181,8 @@ class RecipeInteractionFlowTest : BaseE2ETest() {
         homeRobot.navigateToHome()
         homeRobot.waitForHomeScreen()
         homeRobot.waitForMealListToLoad()
+        // Extra settle time to clear any leftover snackbar state from previous navigation
+        Thread.sleep(2000)
 
         if (!hasFavoritesOnScreen) {
             homeRobot.tapAddRecipeButton(MealType.LUNCH)

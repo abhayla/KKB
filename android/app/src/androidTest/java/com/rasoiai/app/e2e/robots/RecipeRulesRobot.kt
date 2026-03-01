@@ -196,17 +196,24 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
      */
     fun enterSearchQuery(query: String) = apply {
         Log.d(TAG, "Entering search query: $query")
-        // Find the search field (placeholder "Search recipes..." or "Search ingredients...")
-        val searchFields = composeTestRule.onAllNodesWithText("Search", substring = true).fetchSemanticsNodes()
-        if (searchFields.isNotEmpty()) {
-            composeTestRule.onAllNodesWithText("Search", substring = true)[0]
+        try {
+            // Use test tag for reliable selection
+            composeTestRule.onNodeWithTag(TestTags.BOTTOM_SHEET_SEARCH_FIELD)
                 .performTextClearance()
-            composeTestRule.onAllNodesWithText("Search", substring = true)[0]
+            composeTestRule.onNodeWithTag(TestTags.BOTTOM_SHEET_SEARCH_FIELD)
                 .performTextInput(query)
-        } else {
-            // Try using UiAutomator
-            val searchField = uiDevice.findObject(UiSelector().className("android.widget.EditText"))
-            searchField.setText(query)
+        } catch (e: Exception) {
+            Log.w(TAG, "Tag-based search field not found, falling back: ${e.message}")
+            val searchFields = composeTestRule.onAllNodesWithText("Search", substring = true).fetchSemanticsNodes()
+            if (searchFields.isNotEmpty()) {
+                composeTestRule.onAllNodesWithText("Search", substring = true)[0]
+                    .performTextClearance()
+                composeTestRule.onAllNodesWithText("Search", substring = true)[0]
+                    .performTextInput(query)
+            } else {
+                val searchField = uiDevice.findObject(UiSelector().className("android.widget.EditText"))
+                searchField.setText(query)
+            }
         }
         composeTestRule.waitForIdle()
         Thread.sleep(500) // Wait for search results
@@ -224,21 +231,32 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
         // Wait a bit for search results to appear
         Thread.sleep(300)
 
-        // Find all nodes with the target name
+        // Try tag-based selection first (reliable)
+        val tag = "${TestTags.SEARCH_RESULT_CHIP_PREFIX}$name"
+        try {
+            val tagNodes = composeTestRule.onAllNodesWithTag(tag).fetchSemanticsNodes()
+            if (tagNodes.isNotEmpty()) {
+                Log.d(TAG, "Found target via tag: $tag")
+                composeTestRule.onNodeWithTag(tag)
+                    .performScrollTo()
+                    .performClick()
+                composeTestRule.waitForIdle()
+                return@apply
+            }
+        } catch (e: Exception) {
+            Log.d(TAG, "Tag-based selection failed for '$name': ${e.message}")
+        }
+
+        // Fallback: text-based disambiguation
         val allNodes = composeTestRule.onAllNodesWithText(name, substring = true, ignoreCase = true).fetchSemanticsNodes()
-        Log.d(TAG, "Found ${allNodes.size} nodes with text '$name'")
+        Log.d(TAG, "Found ${allNodes.size} nodes with text '$name' (fallback)")
 
         if (allNodes.size > 1) {
-            // Multiple matches - find the one that's NOT the search field
-            // The chip/suggestion should be the one with Role = Checkbox or without ImeAction
             for (i in allNodes.indices) {
                 val node = allNodes[i]
                 val isSearchField = node.config.any { it.key.name == "ImeAction" }
                 val hasRole = node.config.any { it.key.name == "Role" }
-                Log.d(TAG, "Node $i: isSearchField=$isSearchField, hasRole=$hasRole")
-
                 if (!isSearchField || hasRole) {
-                    Log.d(TAG, "Clicking node $i (appears to be the suggestion chip)")
                     composeTestRule.onAllNodesWithText(name, substring = true, ignoreCase = true)[i]
                         .performScrollTo()
                         .performClick()
@@ -246,8 +264,6 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
                     return@apply
                 }
             }
-            // Fallback: click the last one (often the suggestion, not the input)
-            Log.d(TAG, "Falling back to clicking last node")
             composeTestRule.onAllNodesWithText(name, substring = true, ignoreCase = true)[allNodes.size - 1]
                 .performScrollTo()
                 .performClick()
@@ -328,73 +344,44 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
      * Uses UiAutomator for more reliable scrolling and clicking in bottom sheets.
      */
     fun selectEnforcement(enforcement: RuleEnforcement) = apply {
-        val fullText = when (enforcement) {
+        val tag = when (enforcement) {
+            RuleEnforcement.REQUIRED -> TestTags.ENFORCEMENT_REQUIRED
+            RuleEnforcement.PREFERRED -> TestTags.ENFORCEMENT_PREFERRED
+        }
+        val text = when (enforcement) {
             RuleEnforcement.REQUIRED -> "Required"
             RuleEnforcement.PREFERRED -> "Preferred"
         }
-        val shortText = when (enforcement) {
-            RuleEnforcement.REQUIRED -> "Required"
-            RuleEnforcement.PREFERRED -> "Preferred"
-        }
-        Log.d(TAG, "Selecting enforcement: $fullText")
+        Log.d(TAG, "Selecting enforcement: $text (tag: $tag)")
 
-        // Wait for bottom sheet content to be fully visible
         Thread.sleep(300)
         composeTestRule.waitForIdle()
 
-        // Try UiAutomator first (handles scrolling better)
-        var found = false
-
-        // Approach 1: Try full text with UiAutomator
-        val fullTextElement = uiDevice.findObject(UiSelector().textContains(fullText))
-        if (fullTextElement.exists()) {
-            Log.d(TAG, "Found enforcement text via UiAutomator, clicking")
-            fullTextElement.click()
-            found = true
+        // Try tag-based selection first (reliable)
+        try {
+            composeTestRule.onNodeWithTag(tag)
+                .performScrollTo()
+                .performClick()
+            composeTestRule.waitForIdle()
+            return@apply
+        } catch (e: Throwable) {
+            Log.d(TAG, "Tag-based enforcement selection failed, using fallback: ${e.message}")
         }
 
-        // Approach 2: Try short text with UiAutomator
-        if (!found) {
-            val shortTextElement = uiDevice.findObject(UiSelector().textContains(shortText))
-            if (shortTextElement.exists()) {
-                Log.d(TAG, "Found short enforcement text via UiAutomator, clicking")
-                shortTextElement.click()
-                found = true
-            }
-        }
-
-        // Approach 3: Try scrolling the bottom sheet and finding
-        if (!found) {
-            Log.d(TAG, "Enforcement text not immediately visible, trying scroll")
-            // Scroll down in the bottom sheet by swiping
+        // Fallback: UiAutomator text search
+        val textElement = uiDevice.findObject(UiSelector().textContains(text))
+        if (textElement.exists()) {
+            textElement.click()
+        } else {
+            // Scroll and retry
             uiDevice.swipe(540, 1500, 540, 800, 10)
             Thread.sleep(300)
-
-            val afterScrollElement = uiDevice.findObject(UiSelector().textContains(shortText))
+            val afterScrollElement = uiDevice.findObject(UiSelector().textContains(text))
             if (afterScrollElement.waitForExists(2000)) {
                 afterScrollElement.click()
-                found = true
+            } else {
+                Log.w(TAG, "Could not find enforcement '$text' - it may already be selected")
             }
-        }
-
-        // Approach 4: Compose fallback
-        if (!found) {
-            Log.d(TAG, "Using Compose fallback for enforcement")
-            try {
-                val nodes = composeTestRule.onAllNodesWithText(shortText, substring = true, ignoreCase = true)
-                    .fetchSemanticsNodes()
-                if (nodes.isNotEmpty()) {
-                    composeTestRule.onAllNodesWithText(shortText, substring = true, ignoreCase = true)[0]
-                        .performClick()
-                    found = true
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Compose fallback also failed: ${e.message}")
-            }
-        }
-
-        if (!found) {
-            Log.w(TAG, "Could not find enforcement '$shortText' - it may already be selected")
         }
 
         composeTestRule.waitForIdle()
@@ -696,7 +683,9 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
         selectFrequencyCount(goal.weeklyTarget)
         Thread.sleep(300)
 
-        selectEnforcement(goal.enforcement)
+        // AddNutritionGoalSheet does NOT have enforcement radio buttons —
+        // skip enforcement selection for nutrition goals (only AddRuleBottomSheet has them)
+        Log.d(TAG, "Skipping enforcement selection — not available in NutritionGoalSheet")
         Thread.sleep(300)
 
         // Tap save - use UiAutomator for reliability

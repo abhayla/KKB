@@ -243,4 +243,11 @@ object TestTags {
     const val MEAL_SLOT_MODE_ANY = "meal_slot_mode_any"
     const val MEAL_SLOT_MODE_SPECIFIC = "meal_slot_mode_specific"
     const val MEAL_SLOT_CHIP_PREFIX = "meal_slot_chip_"
+
+    // Recipe Rules Bottom Sheet
+    const val SEARCH_RESULT_CHIP_PREFIX = "search_result_chip_"
+    const val BOTTOM_SHEET_SEARCH_FIELD = "bottom_sheet_search_field"
+    const val FREQUENCY_COUNT_DROPDOWN = "frequency_count_dropdown"
+    const val ENFORCEMENT_REQUIRED = "enforcement_required"
+    const val ENFORCEMENT_PREFERRED = "enforcement_preferred"
 }

@@ -1,6 +1,7 @@
 package com.rasoiai.app.e2e.flows
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
@@ -96,15 +97,26 @@ class CoreDataFlowTest : BaseE2ETest() {
 
     private fun step3_completeOnboarding() {
         // Step 1: Household Size - just tap Next with defaults
-        composeTestRule.waitUntilNodeWithTagExists(TestTags.ONBOARDING_STEP_INDICATOR, 5000)
+        composeTestRule.waitUntilNodeWithTagExists(TestTags.ONBOARDING_STEP_INDICATOR, 10000)
         composeTestRule.onNodeWithText("1 of 5", substring = true).assertIsDisplayed()
 
-        // Tap Next to proceed (household size defaults to 1)
-        composeTestRule.onNodeWithTag(TestTags.ONBOARDING_NEXT_BUTTON).performClick()
+        // Dismiss any soft keyboard that may be lingering from auth screen
+        androidx.test.espresso.Espresso.closeSoftKeyboard()
+        Thread.sleep(500) // Allow keyboard dismiss to settle
+
+        // Select household size (default is 0 / "Select family size" — button is disabled until selected)
+        composeTestRule.onNodeWithTag(TestTags.HOUSEHOLD_SIZE_DROPDOWN).performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("${TestTags.HOUSEHOLD_SIZE_OPTION_PREFIX}1").performClick()
         composeTestRule.waitForIdle()
 
+        // Tap Next to proceed
+        composeTestRule.onNodeWithTag(TestTags.ONBOARDING_NEXT_BUTTON).performClick()
+        composeTestRule.waitForIdle()
+        Thread.sleep(500) // Allow AnimatedContent transition to settle
+
         // Step 2: Dietary Preferences - select first "Vegetarian" option (the primary diet card)
-        composeTestRule.waitUntilNodeWithTextExists("2 of 5", 5000)
+        composeTestRule.waitUntilNodeWithTextExists("2 of 5", 10000)
         // "Vegetarian" appears in both the primary diet card and possibly elsewhere
         // Use onAllNodesWithText and select the first one
         composeTestRule.onAllNodesWithText("Vegetarian", substring = true).onFirst().performClick()
@@ -112,18 +124,18 @@ class CoreDataFlowTest : BaseE2ETest() {
         composeTestRule.waitForIdle()
 
         // Step 3: Cuisine Preferences
-        composeTestRule.waitUntilNodeWithTextExists("3 of 5", 5000)
+        composeTestRule.waitUntilNodeWithTextExists("3 of 5", 10000)
         composeTestRule.onNodeWithText("NORTH", substring = true).performClick()
         composeTestRule.onNodeWithTag(TestTags.ONBOARDING_NEXT_BUTTON).performClick()
         composeTestRule.waitForIdle()
 
         // Step 4: Disliked Ingredients (can skip)
-        composeTestRule.waitUntilNodeWithTextExists("4 of 5", 5000)
+        composeTestRule.waitUntilNodeWithTextExists("4 of 5", 10000)
         composeTestRule.onNodeWithTag(TestTags.ONBOARDING_NEXT_BUTTON).performClick()
         composeTestRule.waitForIdle()
 
         // Step 5: Cooking Time - tap Create My Meal Plan
-        composeTestRule.waitUntilNodeWithTextExists("5 of 5", 5000)
+        composeTestRule.waitUntilNodeWithTextExists("5 of 5", 10000)
         composeTestRule.onNodeWithText("Create My Meal Plan", substring = true).performClick()
         composeTestRule.waitForIdle()
     }
@@ -137,8 +149,8 @@ class CoreDataFlowTest : BaseE2ETest() {
             // Wait for generating screen
             composeTestRule.waitUntilNodeWithTagExists(TestTags.GENERATING_SCREEN, 10000)
 
-            // Wait for home screen (generation may take time)
-            composeTestRule.waitUntilNodeWithTagExists(TestTags.HOME_SCREEN, 60000)
+            // Wait for home screen (generation may take 4-45s via Gemini AI)
+            composeTestRule.waitUntilNodeWithTagExists(TestTags.HOME_SCREEN, 120000)
         }
     }
 

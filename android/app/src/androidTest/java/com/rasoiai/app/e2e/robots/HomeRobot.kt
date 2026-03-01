@@ -1602,7 +1602,8 @@ class HomeRobot(private val composeTestRule: ComposeContentTestRule) {
      * Waits briefly then verifies no such snackbar exists.
      */
     fun assertFavoriteAddedSnackbarNotDisplayed() = apply {
-        Thread.sleep(1500) // Wait for any potential snackbar to appear
+        composeTestRule.waitForIdle()
+        Thread.sleep(2500) // Wait for any potential snackbar to appear (includes animation settle time)
 
         val nodes = composeTestRule.onAllNodesWithText("added to favorites", substring = true, useUnmergedTree = true)
             .fetchSemanticsNodes()

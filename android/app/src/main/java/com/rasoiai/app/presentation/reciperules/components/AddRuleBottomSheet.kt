@@ -141,7 +141,9 @@ fun AddRuleBottomSheet(
                 OutlinedTextField(
                     value = uiState.searchQuery,
                     onValueChange = onSearchQueryChange,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(TestTags.BOTTOM_SHEET_SEARCH_FIELD),
                     placeholder = {
                         Text(text = "Search recipes or ingredients")
                     },
@@ -180,6 +182,7 @@ fun AddRuleBottomSheet(
                             FilterChip(
                                 selected = false,
                                 onClick = { onSelectSearchResult(item) },
+                                modifier = Modifier.testTag("${TestTags.SEARCH_RESULT_CHIP_PREFIX}${item.displayName}"),
                                 label = { Text("${item.emoji} ${item.displayName}") },
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -305,7 +308,8 @@ fun AddRuleBottomSheet(
                                     onValueChange = {},
                                     modifier = Modifier
                                         .width(80.dp)
-                                        .menuAnchor(),
+                                        .menuAnchor()
+                                        .testTag(TestTags.FREQUENCY_COUNT_DROPDOWN),
                                     readOnly = true,
                                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = frequencyExpanded) },
                                     shape = RoundedCornerShape(8.dp)
@@ -439,7 +443,9 @@ fun AddRuleBottomSheet(
                 )
                 Text(
                     text = "Required",
-                    modifier = Modifier.clickable { onEnforcementChange(RuleEnforcement.REQUIRED) }
+                    modifier = Modifier
+                        .testTag(TestTags.ENFORCEMENT_REQUIRED)
+                        .clickable { onEnforcementChange(RuleEnforcement.REQUIRED) }
                 )
                 Spacer(modifier = Modifier.width(spacing.lg))
                 RadioButton(
@@ -448,7 +454,9 @@ fun AddRuleBottomSheet(
                 )
                 Text(
                     text = "Preferred",
-                    modifier = Modifier.clickable { onEnforcementChange(RuleEnforcement.PREFERRED) }
+                    modifier = Modifier
+                        .testTag(TestTags.ENFORCEMENT_PREFERRED)
+                        .clickable { onEnforcementChange(RuleEnforcement.PREFERRED) }
                 )
             }
 
