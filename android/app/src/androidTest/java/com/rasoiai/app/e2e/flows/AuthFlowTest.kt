@@ -74,7 +74,8 @@ class AuthFlowTest : BaseE2ETest() {
         authRobot.assertWelcomeTextDisplayed()
         authRobot.assertSendOtpButtonDisplayed()
 
-        // When: User taps Phone Auth
+        // When: User enters phone number and taps Send OTP
+        authRobot.enterPhoneNumber()
         authRobot.tapSendOtp()
 
         // Then: Should navigate to onboarding (new user)
@@ -106,7 +107,8 @@ class AuthFlowTest : BaseE2ETest() {
 
         authRobot.waitForAuthScreen()
 
-        // When: User attempts sign-in
+        // When: User enters phone number and attempts sign-in
+        authRobot.enterPhoneNumber()
         authRobot.tapSendOtp()
 
         // Then: Should remain on auth screen (sign-in failed)

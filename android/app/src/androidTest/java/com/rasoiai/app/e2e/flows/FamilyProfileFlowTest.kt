@@ -88,6 +88,7 @@ class FamilyProfileFlowTest : BaseE2ETest() {
             // Step 2: Sign in
             authRobot.waitForAuthScreen()
             Log.d(TAG, "Auth screen displayed")
+            authRobot.enterPhoneNumber()
             authRobot.tapSendOtp()
             authRobot.assertNavigatedToOnboarding()
             Log.d(TAG, "Navigated to onboarding")

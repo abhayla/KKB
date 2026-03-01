@@ -204,6 +204,7 @@ class MealPlanGenerationFlowTest : BaseE2ETest() {
         authRobot.assertAuthScreenDisplayed()
         authRobot.assertSendOtpButtonDisplayed()
 
+        authRobot.enterPhoneNumber()
         authRobot.tapSendOtp()
         authRobot.assertNavigatedToOnboarding()
 

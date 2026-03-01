@@ -44,6 +44,7 @@ class OnboardingFlowTest : BaseE2ETest() {
 
     private fun navigateToOnboarding() {
         authRobot.waitForAuthScreen()
+        authRobot.enterPhoneNumber()
         authRobot.tapSendOtp()
         authRobot.assertNavigatedToOnboarding()
     }

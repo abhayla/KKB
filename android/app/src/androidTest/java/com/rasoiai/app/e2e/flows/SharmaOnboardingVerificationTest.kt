@@ -168,7 +168,8 @@ class SharmaOnboardingVerificationTest : BaseE2ETest() {
         // Wait for auth screen after splash
         authRobot.waitForAuthScreen(10000)
         authRobot.assertAuthScreenDisplayed()
-        // Tap Phone Auth (uses FakePhoneAuthClient)
+        // Enter phone number and tap Send OTP (uses FakePhoneAuthClient)
+        authRobot.enterPhoneNumber()
         authRobot.tapSendOtp()
         // Wait for onboarding to appear
         authRobot.assertNavigatedToOnboarding(10000)

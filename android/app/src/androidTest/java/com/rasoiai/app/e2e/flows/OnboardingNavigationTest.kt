@@ -60,9 +60,10 @@ class OnboardingNavigationTest : BaseE2ETest() {
         authRobot.assertAuthScreenDisplayed()
         Log.d(TAG, "Auth screen displayed")
 
-        // Act: Perform sign-in (mocked)
+        // Act: Enter phone number and sign in (mocked)
+        authRobot.enterPhoneNumber()
         authRobot.tapSendOtp()
-        Log.d(TAG, "Tapped Google Sign-In")
+        Log.d(TAG, "Entered phone number and tapped Send OTP")
 
         // Assert: Should navigate to onboarding
         // 10s timeout: backend auth can take 1-5s, then navigation animation
@@ -161,8 +162,9 @@ class OnboardingNavigationTest : BaseE2ETest() {
         authRobot.waitForAuthScreen(timeoutMillis = SPLASH_DURATION + 2000)
         Log.d(TAG, "Auth screen displayed")
 
-        // Act: Sign in (simulates the state after app restart for signed-in user)
+        // Act: Enter phone number and sign in (simulates state after app restart)
         // The key thing being tested is: isOnboarded=false → goes to Onboarding
+        authRobot.enterPhoneNumber()
         authRobot.tapSendOtp()
 
         // Assert: Should navigate to Onboarding (not Home)

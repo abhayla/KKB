@@ -190,6 +190,15 @@ abstract class BaseE2ETest {
             }
         }
         seedMealPlanFromBackend(authResult.accessToken)
+
+        // Verify Room has meal plan data; insert synthetic if seeding failed
+        // This prevents HomeViewModel from triggering a slow Gemini AI call (4-45s)
+        val today = java.time.LocalDate.now().toString()
+        val hasMealPlan = runBlocking { mealPlanDao.hasMealPlanForDate(today) }
+        if (!hasMealPlan) {
+            Log.w(TAG, "Backend seeding returned no meal plan — inserting synthetic test data")
+            insertSyntheticTestMealPlan()
+        }
     }
 
     /**
@@ -390,6 +399,66 @@ abstract class BaseE2ETest {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to seed meal plan into Room: ${e.message}", e)
         }
+    }
+
+    /**
+     * Inserts a minimal synthetic meal plan into Room so HomeViewModel
+     * finds data and doesn't trigger a slow Gemini AI generation call.
+     * Used as a fallback when backend seeding fails or returns no plan.
+     */
+    private fun insertSyntheticTestMealPlan() {
+        val today = java.time.LocalDate.now()
+        val weekStart = today.with(java.time.DayOfWeek.MONDAY)
+        val weekEnd = weekStart.plusDays(6)
+        val planId = UUID.randomUUID().toString()
+        val now = System.currentTimeMillis()
+
+        val mealPlanEntity = MealPlanEntity(
+            id = planId,
+            weekStartDate = weekStart.toString(),
+            weekEndDate = weekEnd.toString(),
+            createdAt = now,
+            updatedAt = now,
+            isSynced = true
+        )
+
+        val mealTypes = listOf("breakfast", "lunch", "dinner", "snacks")
+        val recipes = mapOf(
+            "breakfast" to "Masala Chai",
+            "lunch" to "Dal Fry",
+            "dinner" to "Paneer Butter Masala",
+            "snacks" to "Samosa"
+        )
+
+        val items = mutableListOf<MealPlanItemEntity>()
+        val todayStr = today.toString()
+        val dayName = today.dayOfWeek.name.lowercase()
+            .replaceFirstChar { it.uppercase() }
+
+        for (mealType in mealTypes) {
+            items.add(
+                MealPlanItemEntity(
+                    id = UUID.randomUUID().toString(),
+                    mealPlanId = planId,
+                    date = todayStr,
+                    dayName = dayName,
+                    mealType = mealType,
+                    recipeId = UUID.randomUUID().toString(),
+                    recipeName = recipes[mealType] ?: "Test Recipe",
+                    recipeImageUrl = null,
+                    prepTimeMinutes = 20,
+                    calories = 200,
+                    dietaryTags = listOf("vegetarian"),
+                    isLocked = false,
+                    order = 0
+                )
+            )
+        }
+
+        runBlocking {
+            mealPlanDao.replaceMealPlan(mealPlanEntity, items, emptyList())
+        }
+        Log.i(TAG, "Inserted synthetic test meal plan: $planId (${items.size} items for $todayStr)")
     }
 
     /**

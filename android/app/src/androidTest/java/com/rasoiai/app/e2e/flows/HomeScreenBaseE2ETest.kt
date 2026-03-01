@@ -51,7 +51,8 @@ abstract class HomeScreenBaseE2ETest : BaseE2ETest() {
             homeRobot.assertMealCardDisplayed(MealType.BREAKFAST, timeoutMillis = timeoutMillis)
             Log.i(TAG, "Meal data loaded successfully")
         } catch (e: Exception) {
-            Log.w(TAG, "Meal data may not have loaded: ${e.message}")
+            Log.w(TAG, "Meal data failed to load: ${e.message}")
+            throw AssertionError("Meal data did not load within ${timeoutMillis}ms", e)
         }
     }
 

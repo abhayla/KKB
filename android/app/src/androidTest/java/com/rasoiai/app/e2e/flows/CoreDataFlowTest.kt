@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
 import com.rasoiai.app.e2e.base.BaseE2ETest
 import com.rasoiai.app.e2e.base.waitUntilNodeWithTagExists
 import com.rasoiai.app.e2e.base.waitUntilNodeWithTextExists
@@ -57,24 +58,20 @@ class CoreDataFlowTest : BaseE2ETest() {
      */
     @Test
     fun coreFlow_authToGrocery_completesSuccessfully() {
-        try {
-            // ==================== STEP 1: AUTH ====================
-            step1_verifyAuthScreen()
+        // ==================== STEP 1: AUTH ====================
+        step1_verifyAuthScreen()
 
-            // ==================== STEP 2: SIGN IN & NAVIGATE TO ONBOARDING ====================
-            step2_signInAndNavigateToOnboarding()
+        // ==================== STEP 2: SIGN IN & NAVIGATE TO ONBOARDING ====================
+        step2_signInAndNavigateToOnboarding()
 
-            // ==================== STEP 3: COMPLETE ONBOARDING ====================
-            step3_completeOnboarding()
+        // ==================== STEP 3: COMPLETE ONBOARDING ====================
+        step3_completeOnboarding()
 
-            // ==================== STEP 4: WAIT FOR GENERATION ====================
-            step4_waitForGeneration()
+        // ==================== STEP 4: WAIT FOR GENERATION ====================
+        step4_waitForGeneration()
 
-            // ==================== STEP 5: VERIFY HOME ====================
-            step5_verifyHome()
-        } catch (e: Throwable) {
-            android.util.Log.w("CoreDataFlowTest", "coreFlow_authToGrocery_completesSuccessfully: ${e.message}")
-        }
+        // ==================== STEP 5: VERIFY HOME ====================
+        step5_verifyHome()
     }
 
     private fun step1_verifyAuthScreen() {
@@ -88,7 +85,9 @@ class CoreDataFlowTest : BaseE2ETest() {
     }
 
     private fun step2_signInAndNavigateToOnboarding() {
-        // Tap Phone Auth button (uses FakePhoneAuthClient)
+        // Enter phone number and tap Send OTP (uses FakePhoneAuthClient)
+        composeTestRule.onNodeWithTag(TestTags.PHONE_NUMBER_FIELD)
+            .performTextInput("1111111111")
         composeTestRule.onNodeWithTag(TestTags.SEND_OTP_BUTTON).performClick()
 
         // Wait for onboarding screen
