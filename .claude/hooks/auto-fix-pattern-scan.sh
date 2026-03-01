@@ -23,7 +23,7 @@ if ! printf '%s' "$CMD" | grep -qiE "(pytest|gradlew.*(test|Test)|fix-loop|refle
     exit 0
 fi
 
-FIX_PATTERNS_FILE=$(ls -1 "$HOME"/.claude/projects/*VibeCoding-KKB/memory/fix-patterns.md 2>/dev/null | head -1)
+FIX_PATTERNS_FILE=$(ls -1 "$HOME"/.claude/projects/*KKB/memory/fix-patterns.md 2>/dev/null | head -1)
 if [ ! -f "$FIX_PATTERNS_FILE" ]; then exit 0; fi
 
 # Scan for auto-fix eligible entries and check if fixes have been applied

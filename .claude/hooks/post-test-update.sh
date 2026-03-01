@@ -43,7 +43,7 @@ elif [ "$RESULT" = "fail" ]; then
     TS_DETAIL=$(date -Iseconds 2>/dev/null || date +"%Y-%m-%dT%H:%M:%S")
     # Write command to temp file to avoid shell expansion issues in Python
     local cmd_tmp
-    cmd_tmp=$(mktemp 2>/dev/null || echo "/tmp/hook_tfp_cmd_$$.txt")
+    cmd_tmp=$(mktemp 2>/dev/null || echo ".claude/.tmp_hook_tfp_cmd_$$.txt")
     printf '%s' "$CMD" | head -c 200 > "$cmd_tmp"
     python -c "
 import json, os, sys, tempfile
@@ -81,7 +81,7 @@ append_test_run_evidence "$CMD" "$TARGET" "$RESULT"
 
 TS=$(date +%Y%m%d-%H%M%S 2>/dev/null || echo "$$")
 # Use temp file for command text to avoid shell expansion issues
-EJ_CMD_TMP=$(mktemp 2>/dev/null || echo "/tmp/hook_ej_cmd_$$.txt")
+EJ_CMD_TMP=$(mktemp 2>/dev/null || echo ".claude/.tmp_hook_ej_cmd_$$.txt")
 printf '%s' "$CMD" | head -c 200 > "$EJ_CMD_TMP"
 EJ=$(python -c "
 import json, sys

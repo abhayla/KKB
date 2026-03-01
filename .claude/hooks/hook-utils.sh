@@ -21,7 +21,7 @@ parse_hook_input() {
 
     # Write raw input to temp file (safe for any content — no echo/printf mangling)
     local tmpfile
-    tmpfile=$(mktemp 2>/dev/null || echo "/tmp/hook_input_$$.json")
+    tmpfile=$(mktemp 2>/dev/null || echo ".claude/.tmp_hook_input_$$.json")
     printf '%s' "$HOOK_RAW_INPUT" > "$tmpfile"
 
     # Single Python call parses JSON once, outputs shell-safe variable assignments
@@ -195,7 +195,7 @@ get_tool_output() {
     # Uses temp file to avoid echo/printf issues with large/special-char content.
     if [ -z "$HOOK_RAW_INPUT" ]; then echo ""; return; fi
     local tmpfile
-    tmpfile=$(mktemp 2>/dev/null || echo "/tmp/hook_output_$$.json")
+    tmpfile=$(mktemp 2>/dev/null || echo ".claude/.tmp_hook_output_$$.json")
     printf '%s' "$HOOK_RAW_INPUT" > "$tmpfile"
     python -c "
 import json, sys

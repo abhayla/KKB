@@ -106,7 +106,7 @@ with open('$WORKFLOW_STATE_FILE') as f:
     d = json.load(f)
 runs = d.get('evidence', {}).get('testRuns', [])
 if runs:
-    runs[-1]['independentVerification'] = {'rerunResult': '$RERUN_RESULT', 'consistent': $CONSISTENT}
+    runs[-1]['independentVerification'] = {'rerunResult': '$RERUN_RESULT', 'consistent': True if '$CONSISTENT' == 'true' else False}
 fd, tmp = tempfile.mkstemp(dir='.claude')
 with os.fdopen(fd, 'w') as f:
     json.dump(d, f, indent=2)

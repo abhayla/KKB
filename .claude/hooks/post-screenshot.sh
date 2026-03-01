@@ -114,8 +114,8 @@ d['screenshotsCaptured'].append({
     'timestamp': '$TIMESTAMP',
     'source': '$SCREENSHOT_SOURCE',
     'type': '$SCREENSHOT_TYPE',
-    'validated': $FILE_VALID,
-    'fileSize': $FILE_SIZE
+    'validated': True if '$FILE_VALID' == 'true' else False,
+    'fileSize': int('$FILE_SIZE') if '$FILE_SIZE'.isdigit() else 0
 })
 
 # Update step6_screenshots before/after paths
