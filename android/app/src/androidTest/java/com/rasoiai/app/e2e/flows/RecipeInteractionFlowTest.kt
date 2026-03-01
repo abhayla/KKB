@@ -181,6 +181,8 @@ class RecipeInteractionFlowTest : BaseE2ETest() {
         homeRobot.navigateToHome()
         homeRobot.waitForHomeScreen()
         homeRobot.waitForMealListToLoad()
+        // Re-select Monday — day selection may reset after navigation
+        homeRobot.selectDay(DayOfWeek.MONDAY)
         // Extra settle time to clear any leftover snackbar state from previous navigation
         Thread.sleep(2000)
 
@@ -190,9 +192,18 @@ class RecipeInteractionFlowTest : BaseE2ETest() {
             homeRobot.waitForAddRecipeGridLoaded()
             homeRobot.selectFirstRecipeFromAddRecipeGrid()
             Thread.sleep(5000)
+            // Wait for meal list to reload after add sheet closes
+            homeRobot.waitForHomeScreen()
+            homeRobot.waitForMealListToLoad()
+            // Re-select Monday after add sheet closes
+            homeRobot.selectDay(DayOfWeek.MONDAY)
+            waitFor(1000)
         }
 
-        homeRobot.tapAddRecipeButton(MealType.DINNER)
+        // Ensure meal list is loaded before attempting to tap breakfast card
+        // Use BREAKFAST (always at top) to avoid scroll-related flakiness with DINNER
+        homeRobot.waitForMealListToLoad()
+        homeRobot.tapAddRecipeButton(MealType.BREAKFAST)
         homeRobot.assertAddRecipeSheetDisplayed()
         homeRobot.tapAddRecipeFavoritesTab()
 
