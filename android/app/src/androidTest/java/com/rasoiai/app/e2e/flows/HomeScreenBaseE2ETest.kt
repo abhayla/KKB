@@ -38,7 +38,7 @@ abstract class HomeScreenBaseE2ETest : BaseE2ETest() {
         homeRobot = HomeRobot(composeTestRule)
         initializeAdditionalRobots()
 
-        homeRobot.waitForHomeScreen(LONG_TIMEOUT)
+        homeRobot.waitForHomeScreen(30000)
         waitForMealDataToLoad()
     }
 

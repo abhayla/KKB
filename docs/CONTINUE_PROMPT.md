@@ -27,7 +27,7 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 route
 | 2-item pairing logic | DONE | Default 2 items per slot |
 | INCLUDE/EXCLUDE rules | DONE | Full tracking across week |
 | Android Compose UI | DONE | 18+ screens implemented |
-| E2E Test Suite | DONE | 67+ tests passing |
+| E2E Test Suite | DONE | ~125 tests in 23 files (consolidated from 33 files) |
 | UI Tests | DONE | 750+ tests |
 | Photo Attachment | DONE | Issue #13 - Gemini Vision |
 | Items per Meal Dialog | DONE | Issue #16 - Settings |
@@ -66,6 +66,7 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 route
 | Pre-Prod: Encrypted Tokens | DONE | SecureTokenStorage with AES256-GCM |
 | Dependency Fixes | DONE | Hilt 2.56.1, Room 2.8.1, JUnit Platform Launcher |
 | Phone Auth Migration | DONE | Google OAuth → Firebase Phone OTP (backend + Android + tests + docs) |
+| E2E Suite Consolidation | DONE | 33 files → 23 files, -34 duplicates, +9 gap tests, 7 tiers |
 
 ---
 
@@ -73,6 +74,7 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 route
 
 | Session | Milestone |
 |---------|-----------|
+| 44 | E2E test suite consolidation: 33→23 files, removed 34 duplicates, added 9 gap-filling tests, merged Home Screen (6→1), FullJourney (2→1), RecipeRules (4→3), RecipeInteraction (3→1) |
 | 43 | Pre-production hardening: 24 items (config security, GDPR, rate limiting, token rotation, security headers, DB indexes, cleanup service, cert pinning, accessibility) |
 | 42 | Data module test fixes (15 failures), workflow hook enforcement (`testFailuresPending` gate) |
 | 41 | ADB new-user-journey flow (79/79 PASS), recipe ID 500 bug fix |
@@ -81,6 +83,6 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 route
 
 ---
 
-*Last Updated: February 27, 2026*
-*Pre-production hardening complete (24 items). ~538 backend tests (43 files). ~580 Android unit tests. 67+ E2E tests. 750+ UI tests.*
+*Last Updated: March 1, 2026*
+*E2E suite consolidated (23 files, ~125 tests). ~538 backend tests (43 files). ~580 Android unit tests. 750+ UI tests.*
 *~44 API endpoints across 13 routers. 3,580 recipes. ~525 requirements across 12 screen files. Room DB v11.*

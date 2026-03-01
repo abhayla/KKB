@@ -63,7 +63,7 @@ cd android
 | 1 | Auth & Login | ✅ PASSED | 18 | 18 | 0 | AuthScreenTest.kt |
 | 2 | Onboarding (5 steps) | ✅ PASSED | 41 | 41 | 0 | OnboardingScreenTest.kt |
 | 3 | Meal Plan Generation | ⬜ PENDING | - | - | - | No dedicated test file |
-| 4 | Home Screen | ✅ PASSED | 22 | 22 | 0 | HomeScreenTest.kt |
+| 4 | Home Screen | ✅ PASSED | 50 | 50 | 0 | HomeScreenComprehensiveTest.kt |
 | 5 | Grocery Screen | ⬜ PENDING | 4 | - | - | |
 | 6 | Chat Screen | ⬜ PENDING | 4 | - | - | |
 | 7 | Favorites Screen | ⬜ PENDING | 3 | - | - | |

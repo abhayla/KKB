@@ -212,12 +212,7 @@ com.rasoiai.app.e2e.flows.MealPlanAIVerificationTest
 ### Group 7: `home` — Home Screen E2E
 
 ```
-com.rasoiai.app.e2e.flows.HomeScreenTest,
-com.rasoiai.app.e2e.flows.HomeScreenActionsTest,
-com.rasoiai.app.e2e.flows.HomeScreenButtonsTest,
-com.rasoiai.app.e2e.flows.HomeScreenLockingTest,
-com.rasoiai.app.e2e.flows.HomeScreenComprehensiveTest,
-com.rasoiai.app.e2e.flows.HomeScreenRealAuthTest
+com.rasoiai.app.e2e.flows.HomeScreenComprehensiveTest
 ```
 
 ### Group 8: `grocery` — Grocery Flow
@@ -236,15 +231,14 @@ com.rasoiai.app.e2e.flows.ChatFlowTest
 
 ```
 com.rasoiai.app.e2e.flows.FavoritesFlowTest,
-com.rasoiai.app.e2e.flows.AutoFavoriteOnAddRecipeTest
+com.rasoiai.app.e2e.flows.RecipeInteractionFlowTest
 ```
 
 ### Group 11: `recipe-rules` — Recipe Rules
 
 ```
 com.rasoiai.app.e2e.flows.RecipeRulesFlowTest,
-com.rasoiai.app.e2e.flows.SharmaRecipeRulesVerificationTest,
-com.rasoiai.app.e2e.flows.AddChaiToBreakfastTest
+com.rasoiai.app.e2e.flows.SharmaRecipeRulesVerificationTest
 ```
 
 ### Group 12: `cooking-stats-settings` — Cooking, Stats, Settings, Pantry, Family
@@ -261,10 +255,9 @@ com.rasoiai.app.e2e.flows.FamilyProfileFlowTest
 
 ```
 com.rasoiai.app.e2e.flows.CoreDataFlowTest,
-com.rasoiai.app.e2e.flows.FullUserJourneyTest,
+com.rasoiai.app.e2e.flows.FullJourneyFlowTest,
 com.rasoiai.app.e2e.flows.OfflineFlowTest,
 com.rasoiai.app.e2e.flows.EdgeCasesTest,
-com.rasoiai.app.e2e.flows.MealTypeFilterTest,
 com.rasoiai.app.e2e.performance.PerformanceTest
 ```
 
@@ -488,7 +481,7 @@ Group  3: validation              ->  1/1  passed (0 fixes)
 Group  4: auth                    ->  1/1  passed (0 fixes)
 Group  5: onboarding              ->  3/3  passed (1 fix: OnboardingFlowTest fixed 1x — group restarted 1 time)
 Group  6: meal-generation         ->  1/1  passed (0 fixes)
-Group  7: home                    ->  6/6  passed (2 fixes: HomeScreenTest fixed 2x, HomeScreenActionsTest fixed 1x — group restarted 3 times)
+Group  7: home                    ->  1/1  passed (consolidated: 6 files → HomeScreenComprehensiveTest)
 Group  8: grocery                 ->  1/1  passed (0 fixes)
 Group  9: chat                    ->  1/1  passed (0 fixes)
 Group 10: favorites               ->  2/2  passed (0 fixes)

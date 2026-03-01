@@ -6,8 +6,8 @@ This document serves as the single source of truth for tracking functional requi
 
 | ID | Requirement | GitHub Issue | Android E2E Test | Backend Test | Status |
 |----|-------------|--------------|------------------|--------------|--------|
-| FR-001 | Recipe search returns results from database | TBD | [`AddChaiToBreakfastTest.kt`](../../android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/AddChaiToBreakfastTest.kt) | [`test_recipe_search.py`](../../backend/tests/test_recipe_search.py) | ✅ |
-| FR-002 | Auto-add recipe to favorites from Suggestions tab | [#40](https://github.com/abhayla/KKB/issues/40) | [`AutoFavoriteOnAddRecipeTest.kt`](../../android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/AutoFavoriteOnAddRecipeTest.kt) | N/A (Android-only) | ✅ |
+| FR-001 | Recipe search returns results from database | TBD | [`RecipeInteractionFlowTest.kt`](../../android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/RecipeInteractionFlowTest.kt) | [`test_recipe_search.py`](../../backend/tests/test_recipe_search.py) | ✅ |
+| FR-002 | Auto-add recipe to favorites from Suggestions tab | [#40](https://github.com/abhayla/KKB/issues/40) | [`RecipeInteractionFlowTest.kt`](../../android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/RecipeInteractionFlowTest.kt) | N/A (Android-only) | ✅ |
 | FR-003 | First-time vs returning user navigation (ONB-036) | [#41](https://github.com/abhayla/KKB/issues/41) | [`OnboardingNavigationTest.kt`](../../android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/OnboardingNavigationTest.kt) | N/A (Android-only) | ✅ |
 | FR-004 | MealPlanGenerationFlowTest fixes + diet conflict warnings | [#42](https://github.com/abhayla/KKB/issues/42) | [`MealPlanGenerationFlowTest.kt`](../../android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/MealPlanGenerationFlowTest.kt) | N/A (Android-only) | ✅ |
 | FR-005 | Family Profile Data Persistence (Onboarding & Settings) | [#44](https://github.com/abhayla/KKB/issues/44) | [`FamilyProfileFlowTest.kt`](../../android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/FamilyProfileFlowTest.kt) | N/A (Android-only) | ✅ |

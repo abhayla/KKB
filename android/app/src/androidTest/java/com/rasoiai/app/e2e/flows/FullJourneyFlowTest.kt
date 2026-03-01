@@ -14,10 +14,15 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.rasoiai.app.e2e.robots.AuthRobot
+import com.rasoiai.app.e2e.robots.ChatRobot
+import com.rasoiai.app.e2e.robots.FavoritesRobot
+import com.rasoiai.app.e2e.robots.GroceryRobot
 import com.rasoiai.app.e2e.robots.HomeRobot
 import com.rasoiai.app.e2e.robots.OnboardingRobot
+import com.rasoiai.app.e2e.robots.RecipeDetailRobot
 import com.rasoiai.app.e2e.robots.RecipeRulesRobot
 import com.rasoiai.app.e2e.robots.SettingsRobot
+import com.rasoiai.app.e2e.robots.StatsRobot
 import com.rasoiai.app.e2e.util.BackendTestHelper
 import com.rasoiai.app.presentation.common.TestTags
 import com.rasoiai.domain.model.MealType
@@ -54,6 +59,11 @@ class FullJourneyFlowTest : BaseE2ETest() {
     private lateinit var homeRobot: HomeRobot
     private lateinit var recipeRulesRobot: RecipeRulesRobot
     private lateinit var settingsRobot: SettingsRobot
+    private lateinit var groceryRobot: GroceryRobot
+    private lateinit var chatRobot: ChatRobot
+    private lateinit var favoritesRobot: FavoritesRobot
+    private lateinit var statsRobot: StatsRobot
+    private lateinit var recipeDetailRobot: RecipeDetailRobot
 
     private val family = TestDataFactory.sharmaFamily
     private var artifactDir: File? = null
@@ -78,6 +88,11 @@ class FullJourneyFlowTest : BaseE2ETest() {
         homeRobot = HomeRobot(composeTestRule)
         recipeRulesRobot = RecipeRulesRobot(composeTestRule)
         settingsRobot = SettingsRobot(composeTestRule)
+        groceryRobot = GroceryRobot(composeTestRule)
+        chatRobot = ChatRobot(composeTestRule)
+        favoritesRobot = FavoritesRobot(composeTestRule)
+        statsRobot = StatsRobot(composeTestRule)
+        recipeDetailRobot = RecipeDetailRobot(composeTestRule)
         artifactDir = File(context.getExternalFilesDir(null), "full_journey")
         artifactDir?.mkdirs()
     }
@@ -91,6 +106,14 @@ class FullJourneyFlowTest : BaseE2ETest() {
         step5_recipeRules(authToken)
         val mealPlan2 = step6_mealGeneration2(authToken)
         step7_home2(mealPlan2)
+
+        // Bonus screen-traversal phases (breadth coverage)
+        phase8_viewRecipeDetail()
+        phase9_verifyGroceryList()
+        phase10_verifyFavorites()
+        phase11_verifyChatInterface()
+        phase12_verifyStats()
+        phase13_verifySettings()
     }
 
     // ===================== Step 1: Authentication =====================
@@ -797,6 +820,95 @@ class FullJourneyFlowTest : BaseE2ETest() {
 
         Log.i(TAG, "Step 7 complete: all hard constraints pass on plan 2")
         Log.i(TAG, "=== FULL JOURNEY COMPLETE ===")
+    }
+
+    // ===================== Bonus Phases: Screen Traversal =====================
+
+    private fun phase8_viewRecipeDetail() {
+        Log.i(TAG, "=== Phase 8: Recipe Detail ===")
+        homeRobot.waitForHomeScreen(30000)
+
+        homeRobot.tapMealCard(MealType.BREAKFAST)
+        Thread.sleep(500)
+
+        recipeDetailRobot.assertRecipeDetailScreenDisplayed()
+        recipeDetailRobot.assertIngredientsListDisplayed()
+        recipeDetailRobot.assertInstructionsListDisplayed()
+        Log.i(TAG, "Recipe detail displayed with ingredients and instructions")
+
+        uiDevice.pressBack()
+        Thread.sleep(500)
+        homeRobot.waitForHomeScreen(SHORT_TIMEOUT)
+        Log.i(TAG, "Phase 8 complete")
+    }
+
+    private fun phase9_verifyGroceryList() {
+        Log.i(TAG, "=== Phase 9: Grocery List ===")
+        homeRobot.navigateToGrocery()
+        Thread.sleep(500)
+
+        groceryRobot.assertGroceryScreenDisplayed()
+        groceryRobot.assertCommonCategoriesDisplayed()
+        Log.i(TAG, "Grocery screen displayed with categories")
+
+        homeRobot.navigateToHome()
+        homeRobot.waitForHomeScreen(SHORT_TIMEOUT)
+        Log.i(TAG, "Phase 9 complete")
+    }
+
+    private fun phase10_verifyFavorites() {
+        Log.i(TAG, "=== Phase 10: Favorites ===")
+        homeRobot.navigateToFavorites()
+        Thread.sleep(500)
+
+        favoritesRobot.assertFavoritesScreenDisplayed()
+        Log.i(TAG, "Favorites screen displayed")
+
+        homeRobot.navigateToHome()
+        homeRobot.waitForHomeScreen(SHORT_TIMEOUT)
+        Log.i(TAG, "Phase 10 complete")
+    }
+
+    private fun phase11_verifyChatInterface() {
+        Log.i(TAG, "=== Phase 11: Chat ===")
+        homeRobot.navigateToChat()
+        Thread.sleep(500)
+
+        chatRobot.assertChatScreenDisplayed()
+        chatRobot.assertInputFieldDisplayed()
+        Log.i(TAG, "Chat screen displayed with input field")
+
+        homeRobot.navigateToHome()
+        homeRobot.waitForHomeScreen(SHORT_TIMEOUT)
+        Log.i(TAG, "Phase 11 complete")
+    }
+
+    private fun phase12_verifyStats() {
+        Log.i(TAG, "=== Phase 12: Stats ===")
+        homeRobot.navigateToStats()
+        Thread.sleep(500)
+
+        statsRobot.assertStatsScreenDisplayed()
+        statsRobot.assertStreakDisplayed()
+        Log.i(TAG, "Stats screen displayed with streak")
+
+        homeRobot.navigateToHome()
+        homeRobot.waitForHomeScreen(SHORT_TIMEOUT)
+        Log.i(TAG, "Phase 12 complete")
+    }
+
+    private fun phase13_verifySettings() {
+        Log.i(TAG, "=== Phase 13: Settings ===")
+        homeRobot.navigateToSettings()
+        Thread.sleep(500)
+
+        settingsRobot.assertSettingsScreenDisplayed()
+        settingsRobot.assertProfileSectionDisplayed()
+        Log.i(TAG, "Settings screen displayed with profile section")
+
+        uiDevice.pressBack()
+        Thread.sleep(500)
+        Log.i(TAG, "Phase 13 complete — FULL JOURNEY WITH SCREEN TRAVERSAL COMPLETE")
     }
 
     // ===================== Utility Methods =====================

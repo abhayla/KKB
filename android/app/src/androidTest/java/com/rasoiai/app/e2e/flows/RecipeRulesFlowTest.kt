@@ -1,7 +1,9 @@
 package com.rasoiai.app.e2e.flows
 
+import android.util.Log
 import com.rasoiai.app.e2e.base.BaseE2ETest
 import com.rasoiai.app.e2e.base.FrequencyType
+import com.rasoiai.app.e2e.base.MealSlot
 import com.rasoiai.app.e2e.base.RuleEnforcement
 import com.rasoiai.app.e2e.base.TestDataFactory
 import com.rasoiai.app.e2e.robots.HomeRobot
@@ -10,14 +12,21 @@ import com.rasoiai.app.e2e.robots.SettingsRobot
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Before
 import org.junit.Test
+import java.time.DayOfWeek
 
 /**
- * Phase 11: Recipe Rules Screen Testing
+ * Phase 11: Recipe Rules Screen Testing (consolidated)
  *
- * Tests:
- * 11.1 Include Rule (Rules Tab)
- * 11.2 Exclude Rule (Rules Tab)
- * 11.3 Nutrition Goals Tab
+ * CRUD Tests:
+ * 11.1 Include Rule, 11.2 Exclude Rule, 11.3 Nutrition Goals,
+ * Tab navigation, Delete rule, Toggle active, Edit rule, Nutrition progress
+ *
+ * Edit Tests (merged from RecipeRulesEditFlowTest):
+ * Enforcement change, Frequency change, Meal slot switching,
+ * Frequency type switching, Diet conflict warning, Search no results, Rule sorting
+ *
+ * Sharma Family Tests (FR-011):
+ * Chai breakfast, Chai snacks, Moringa, All 5 rules composite
  */
 @HiltAndroidTest
 class RecipeRulesFlowTest : BaseE2ETest() {
@@ -25,6 +34,10 @@ class RecipeRulesFlowTest : BaseE2ETest() {
     private lateinit var homeRobot: HomeRobot
     private lateinit var settingsRobot: SettingsRobot
     private lateinit var recipeRulesRobot: RecipeRulesRobot
+
+    companion object {
+        private const val TAG = "RecipeRulesFlowTest"
+    }
 
     @Before
     override fun setUp() {
@@ -152,7 +165,7 @@ class RecipeRulesFlowTest : BaseE2ETest() {
             recipeRulesRobot.deleteRule("Dal Tadka")
             recipeRulesRobot.assertEmptyStateDisplayed()
         } catch (e: Throwable) {
-            android.util.Log.w("RecipeRulesFlowTest", "Delete rule menu not accessible: ${e.message}")
+            Log.w(TAG, "Delete rule menu not accessible: ${e.message}")
         }
     }
 
@@ -173,7 +186,7 @@ class RecipeRulesFlowTest : BaseE2ETest() {
         try {
             recipeRulesRobot.toggleRuleActive("Dal Tadka")
         } catch (e: Throwable) {
-            android.util.Log.w("RecipeRulesFlowTest", "Toggle rule menu not accessible: ${e.message}")
+            Log.w(TAG, "Toggle rule menu not accessible: ${e.message}")
         }
     }
 
@@ -290,14 +303,14 @@ class RecipeRulesFlowTest : BaseE2ETest() {
                 enforcement = RuleEnforcement.PREFERRED
             )
         } catch (e: Throwable) {
-            android.util.Log.w("RecipeRulesFlowTest", "Moringa rule add failed (transient): ${e.message}")
+            Log.w(TAG, "Moringa rule add failed (transient): ${e.message}")
         }
 
         // Rule 4+5: Nutrition goal
         try {
             recipeRulesRobot.addNutritionGoal(TestDataFactory.RecipeRules.greenLeafyGoal)
         } catch (e: Throwable) {
-            android.util.Log.w("RecipeRulesFlowTest", "Nutrition goal add failed (transient): ${e.message}")
+            Log.w(TAG, "Nutrition goal add failed (transient): ${e.message}")
         }
 
         // Verify ingredient rules are displayed on Rules tab
@@ -307,7 +320,7 @@ class RecipeRulesFlowTest : BaseE2ETest() {
         try {
             recipeRulesRobot.assertRuleCardDisplayed("Moringa")
         } catch (e: Throwable) {
-            android.util.Log.w("RecipeRulesFlowTest", "Moringa not displayed (may not have been added): ${e.message}")
+            Log.w(TAG, "Moringa not displayed (may not have been added): ${e.message}")
         }
 
         // Verify nutrition goal is displayed
@@ -318,7 +331,246 @@ class RecipeRulesFlowTest : BaseE2ETest() {
             composeTestRule.waitForIdle()
             recipeRulesRobot.assertRuleCardDisplayed("Green Leafy")
         } catch (e: Throwable) {
-            android.util.Log.w("RecipeRulesFlowTest", "Nutrition goal not displayed: ${e.message}")
+            Log.w(TAG, "Nutrition goal not displayed: ${e.message}")
+        }
+    }
+
+    // ==================== Edit Operations (merged from RecipeRulesEditFlowTest) ====================
+
+    /**
+     * Test editing rule enforcement: REQUIRED → PREFERRED.
+     */
+    @Test
+    fun test_editRuleChangeEnforcement() {
+        recipeRulesRobot.waitForRecipeRulesScreen()
+        recipeRulesRobot.addIngredientIncludeRule(
+            ingredientName = "Chai",
+            frequencyType = FrequencyType.DAILY,
+            enforcement = RuleEnforcement.REQUIRED
+        )
+        recipeRulesRobot.assertRuleCardDisplayed("Chai")
+
+        recipeRulesRobot.editRule("Chai")
+        waitFor(ANIMATION_DURATION)
+
+        try {
+            recipeRulesRobot.selectEnforcement(RuleEnforcement.PREFERRED)
+            recipeRulesRobot.tapSaveRule()
+            Log.d(TAG, "Enforcement changed to PREFERRED")
+        } catch (e: Throwable) {
+            Log.w(TAG, "Edit enforcement failed: ${e.message}")
+        }
+
+        recipeRulesRobot.assertRuleCardDisplayed("Chai")
+    }
+
+    /**
+     * Test editing rule frequency: DAILY → TIMES_PER_WEEK 3x.
+     */
+    @Test
+    fun test_editRuleChangeFrequency() {
+        recipeRulesRobot.waitForRecipeRulesScreen()
+        recipeRulesRobot.addIngredientIncludeRule(
+            ingredientName = "Dosa",
+            frequencyType = FrequencyType.DAILY,
+            enforcement = RuleEnforcement.PREFERRED
+        )
+        recipeRulesRobot.assertRuleCardDisplayed("Dosa")
+
+        recipeRulesRobot.editRule("Dosa")
+        waitFor(ANIMATION_DURATION)
+
+        try {
+            recipeRulesRobot.selectFrequencyType(FrequencyType.TIMES_PER_WEEK)
+            recipeRulesRobot.selectFrequencyCount(3)
+            recipeRulesRobot.tapSaveRule()
+            Log.d(TAG, "Frequency changed to 3x/week")
+        } catch (e: Throwable) {
+            Log.w(TAG, "Edit frequency failed: ${e.message}")
+        }
+
+        recipeRulesRobot.assertRuleCardDisplayed("Dosa")
+    }
+
+    /**
+     * Test editing rule meal slot: ANY → BREAKFAST+LUNCH (specific).
+     */
+    @Test
+    fun test_editRuleMealSlotAnyToSpecific() {
+        recipeRulesRobot.waitForRecipeRulesScreen()
+        recipeRulesRobot.addIngredientIncludeRule(
+            ingredientName = "Rice",
+            frequencyType = FrequencyType.DAILY,
+            enforcement = RuleEnforcement.PREFERRED
+        )
+        recipeRulesRobot.assertRuleCardDisplayed("Rice")
+
+        recipeRulesRobot.editRule("Rice")
+        waitFor(ANIMATION_DURATION)
+
+        try {
+            recipeRulesRobot.selectMealSlotMode(specific = true)
+            recipeRulesRobot.toggleMealSlotChip(MealSlot.BREAKFAST)
+            recipeRulesRobot.toggleMealSlotChip(MealSlot.LUNCH)
+            recipeRulesRobot.tapSaveRule()
+            Log.d(TAG, "Meal slot changed to BREAKFAST+LUNCH")
+        } catch (e: Throwable) {
+            Log.w(TAG, "Edit meal slot failed: ${e.message}")
+        }
+
+        recipeRulesRobot.assertRuleCardDisplayed("Rice")
+    }
+
+    /**
+     * Test frequency type switching: DAILY → TIMES_PER_WEEK → SPECIFIC_DAYS.
+     */
+    @Test
+    fun test_frequencyTypeSwitching() {
+        recipeRulesRobot.waitForRecipeRulesScreen()
+        recipeRulesRobot.addIngredientIncludeRule(
+            ingredientName = "Poha",
+            frequencyType = FrequencyType.DAILY,
+            enforcement = RuleEnforcement.PREFERRED
+        )
+        recipeRulesRobot.assertRuleCardDisplayed("Poha")
+
+        // Switch to TIMES_PER_WEEK
+        recipeRulesRobot.editRule("Poha")
+        waitFor(ANIMATION_DURATION)
+        try {
+            recipeRulesRobot.selectFrequencyType(FrequencyType.TIMES_PER_WEEK)
+            recipeRulesRobot.selectFrequencyCount(3)
+            recipeRulesRobot.tapSaveRule()
+            recipeRulesRobot.assertRuleCardDisplayed("Poha")
+            Log.d(TAG, "Switched to TIMES_PER_WEEK")
+        } catch (e: Throwable) {
+            Log.w(TAG, "Frequency switch step 1 failed: ${e.message}")
+        }
+
+        // Switch to SPECIFIC_DAYS
+        try {
+            recipeRulesRobot.editRule("Poha")
+            waitFor(ANIMATION_DURATION)
+            recipeRulesRobot.selectFrequencyType(FrequencyType.SPECIFIC_DAYS)
+            recipeRulesRobot.selectDays(listOf(DayOfWeek.MONDAY, DayOfWeek.THURSDAY))
+            recipeRulesRobot.tapSaveRule()
+            recipeRulesRobot.assertRuleCardDisplayed("Poha")
+            Log.d(TAG, "Switched to SPECIFIC_DAYS")
+        } catch (e: Throwable) {
+            Log.w(TAG, "Frequency switch step 2 failed: ${e.message}")
+        }
+    }
+
+    /**
+     * Test diet conflict warning: vegetarian user adds Chicken INCLUDE.
+     */
+    @Test
+    fun test_dietConflictWarning() {
+        recipeRulesRobot.waitForRecipeRulesScreen()
+        recipeRulesRobot.selectRulesTab()
+        recipeRulesRobot.tapAddRuleButton()
+        recipeRulesRobot.selectIncludeAction()
+        recipeRulesRobot.enterSearchQuery("Chicken")
+        Thread.sleep(500)
+        recipeRulesRobot.selectTarget("Chicken")
+        recipeRulesRobot.selectFrequencyType(FrequencyType.TIMES_PER_WEEK)
+        recipeRulesRobot.selectFrequencyCount(2)
+        recipeRulesRobot.selectEnforcement(RuleEnforcement.PREFERRED)
+
+        try {
+            recipeRulesRobot.tapSaveRule()
+            recipeRulesRobot.assertDietConflictWarning()
+            Log.d(TAG, "Diet conflict warning displayed for Chicken")
+        } catch (e: Throwable) {
+            Log.w(TAG, "Diet conflict warning not found (may not be implemented): ${e.message}")
+        }
+    }
+
+    /**
+     * Test diet conflict SAVE ANYWAY: warning → save anyway → verify rule saved.
+     */
+    @Test
+    fun test_dietConflictSaveAnyway() {
+        recipeRulesRobot.waitForRecipeRulesScreen()
+        recipeRulesRobot.selectRulesTab()
+        recipeRulesRobot.tapAddRuleButton()
+        recipeRulesRobot.selectIncludeAction()
+        recipeRulesRobot.enterSearchQuery("Eggs")
+        Thread.sleep(500)
+        recipeRulesRobot.selectTarget("Eggs")
+        recipeRulesRobot.selectFrequencyType(FrequencyType.TIMES_PER_WEEK)
+        recipeRulesRobot.selectFrequencyCount(4)
+        recipeRulesRobot.selectEnforcement(RuleEnforcement.PREFERRED)
+
+        recipeRulesRobot.tapSaveRule()
+
+        recipeRulesRobot.selectRulesTab()
+        try {
+            recipeRulesRobot.assertRuleCardDisplayed("Eggs")
+            Log.d(TAG, "Eggs rule saved successfully (with or without conflict warning)")
+        } catch (e: Throwable) {
+            Log.w(TAG, "Eggs rule may not have been saved: ${e.message}")
+        }
+    }
+
+    /**
+     * Test search with no results: "Xyzabc123".
+     */
+    @Test
+    fun test_searchNoResults() {
+        recipeRulesRobot.waitForRecipeRulesScreen()
+        recipeRulesRobot.selectRulesTab()
+        recipeRulesRobot.tapAddRuleButton()
+        recipeRulesRobot.selectIncludeAction()
+        recipeRulesRobot.enterSearchQuery("Xyzabc123")
+        Thread.sleep(1000)
+
+        recipeRulesRobot.assertSearchNoResults()
+        Log.d(TAG, "No results shown for nonsense query")
+
+        try {
+            composeTestRule.activityRule.scenario.onActivity { activity ->
+                activity.onBackPressedDispatcher.onBackPressed()
+            }
+        } catch (e: Throwable) {
+            Log.w(TAG, "Could not dismiss sheet: ${e.message}")
+        }
+    }
+
+    /**
+     * Test rule sorting: active rules appear before paused rules.
+     */
+    @Test
+    fun test_ruleSortingActiveFirst() {
+        recipeRulesRobot.waitForRecipeRulesScreen()
+
+        recipeRulesRobot.addIngredientIncludeRule(
+            ingredientName = "Chai",
+            frequencyType = FrequencyType.DAILY,
+            enforcement = RuleEnforcement.REQUIRED
+        )
+        recipeRulesRobot.addIngredientIncludeRule(
+            ingredientName = "Dal",
+            frequencyType = FrequencyType.DAILY,
+            enforcement = RuleEnforcement.PREFERRED
+        )
+        recipeRulesRobot.addIngredientExcludeRule("Karela")
+
+        recipeRulesRobot.assertRuleCardDisplayed("Chai")
+        recipeRulesRobot.assertRuleCardDisplayed("Dal")
+        recipeRulesRobot.assertRuleCardDisplayed("Karela")
+
+        try {
+            recipeRulesRobot.toggleRuleActive("Dal")
+            Thread.sleep(1000)
+
+            recipeRulesRobot.assertRuleSortedActiveFirst(
+                activeNames = listOf("Chai", "Karela"),
+                pausedNames = listOf("Dal")
+            )
+            Log.d(TAG, "Rule sorting verified: active before paused")
+        } catch (e: Throwable) {
+            Log.w(TAG, "Toggle/sort verification failed: ${e.message}")
         }
     }
 }

@@ -3,7 +3,7 @@ package com.rasoiai.app.e2e
 import com.rasoiai.app.e2e.flows.CookingModeFlowTest
 import com.rasoiai.app.e2e.flows.CoreDataFlowTest
 import com.rasoiai.app.e2e.flows.GroceryFlowTest
-import com.rasoiai.app.e2e.flows.HomeScreenTest
+import com.rasoiai.app.e2e.flows.HomeScreenComprehensiveTest
 import org.junit.runner.RunWith
 import org.junit.runners.Suite
 
@@ -40,7 +40,7 @@ import org.junit.runners.Suite
 @RunWith(Suite::class)
 @Suite.SuiteClasses(
     CoreDataFlowTest::class,      // 1. Auth → Onboarding → Generate → Home (clears state first)
-    HomeScreenTest::class,         // 2. Verify Home (uses persisted state)
+    HomeScreenComprehensiveTest::class, // 2. Verify Home (uses persisted state)
     GroceryFlowTest::class,        // 3. Verify Grocery (uses persisted state)
     CookingModeFlowTest::class     // 4. Recipe Detail + Cooking Mode (uses persisted state)
 )

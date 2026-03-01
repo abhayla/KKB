@@ -193,8 +193,8 @@ Phase 1: AUTH ──► Phase 2: ONBOARDING (5 steps) ──► Phase 3: GENERAT
 |----------|-----------|-------|
 | Database Verification | `DatabaseVerificationTest.kt` | 18 |
 | Recipe Constraints | `RecipeConstraintTest.kt` | 22 |
-| Full User Journey | `FullUserJourneyTest.kt` | 1 |
-| E2E Flow Tests | `*FlowTest.kt` (16 files) | ~99 |
+| Full Journey (Deep) | `FullJourneyFlowTest.kt` | 1 |
+| E2E Flow Tests | `*FlowTest.kt` (23 files) | ~125 |
 | Performance Tests | `PerformanceTest.kt` | 6 |
 | Edge Cases | `EdgeCasesTest.kt` | 11 |
 | Offline Tests | `OfflineFlowTest.kt` | 7 |

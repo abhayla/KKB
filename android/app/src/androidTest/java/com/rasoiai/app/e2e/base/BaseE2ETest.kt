@@ -45,7 +45,7 @@ import kotlin.math.min
  * ## Test Suite Execution Order
  * When running via E2ETestSuite:
  * 1. CoreDataFlowTest runs first - clears state, does full auth/onboarding, persists state
- * 2. HomeScreenTest, GroceryFlowTest, etc. - inherit persisted state from real DataStore
+ * 2. HomeScreenComprehensiveTest, GroceryFlowTest, etc. - inherit persisted state from real DataStore
  *
  * ## Authentication Setup
  * Tests that need to start at Home screen should call [setUpAuthenticatedState]
@@ -526,6 +526,13 @@ abstract class BaseE2ETest {
         const val SHORT_TIMEOUT = 2000L
         const val MEDIUM_TIMEOUT = 5000L
         const val LONG_TIMEOUT = 10000L
+
+        // Feature-specific timeouts (standardized across all E2E tests)
+        const val GENERATION_TIMEOUT_MS = 60_000L
+        const val HOME_SCREEN_TIMEOUT_MS = 30_000L
+        const val MEAL_DATA_TIMEOUT_MS = 60_000L
+        const val RECIPE_DETAIL_TIMEOUT_MS = 30_000L
+        const val GEMINI_FULL_TIMEOUT_MS = 180_000L
 
         // Animation durations
         const val ANIMATION_DURATION = 300L
