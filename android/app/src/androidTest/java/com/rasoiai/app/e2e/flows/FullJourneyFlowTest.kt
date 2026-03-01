@@ -107,11 +107,14 @@ class FullJourneyFlowTest : BaseE2ETest() {
         authRobot.assertSendOtpButtonDisplayed()
         Log.i(TAG, "Auth screen displayed with Phone Auth button")
 
+        // Enter phone number (required — Send OTP button is disabled without valid 10-digit number)
+        authRobot.enterPhoneNumber()
+
         // Tap Phone Auth (FakePhoneAuthClient returns fake-firebase-token)
         authRobot.tapSendOtp()
 
-        // Wait for navigation to onboarding
-        composeTestRule.waitUntilNodeWithTagExists(TestTags.ONBOARDING_PROGRESS_BAR, 10000)
+        // Wait for navigation to onboarding (backend auth + navigation can take a few seconds)
+        composeTestRule.waitUntilNodeWithTagExists(TestTags.ONBOARDING_PROGRESS_BAR, 15000)
         Log.i(TAG, "Navigated to onboarding after sign-in")
 
         // Deep: Read JWT from DataStore

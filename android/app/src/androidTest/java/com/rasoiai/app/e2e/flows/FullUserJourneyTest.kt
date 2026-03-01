@@ -183,6 +183,9 @@ class FullUserJourneyTest : BaseE2ETest() {
             .assertAuthScreenDisplayed()
             .assertSendOtpButtonDisplayed()
 
+        // Enter phone number (required — Send OTP button is disabled without valid 10-digit number)
+        authRobot.enterPhoneNumber()
+
         // Tap Phone Auth (uses FakePhoneAuthClient)
         authRobot.tapSendOtp()
 
