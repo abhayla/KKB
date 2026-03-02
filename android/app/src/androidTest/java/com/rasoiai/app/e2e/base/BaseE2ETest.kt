@@ -21,9 +21,14 @@ import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import com.rasoiai.domain.model.CuisineType
 import com.rasoiai.domain.model.DayOfWeek
+import com.rasoiai.domain.model.DietaryRestriction
+import com.rasoiai.domain.model.DietaryTag
 import com.rasoiai.domain.model.PrimaryDiet
 import com.rasoiai.domain.model.SpiceLevel
 import com.rasoiai.domain.model.UserPreferences
+import com.rasoiai.domain.model.FamilyMember as DomainFamilyMember
+import com.rasoiai.domain.model.MemberType as DomainMemberType
+import com.rasoiai.domain.model.SpecialDietaryNeed
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -89,6 +94,10 @@ abstract class BaseE2ETest {
 
     protected val context: Context
         get() = ApplicationProvider.getApplicationContext()
+
+    /** Active test profile — driven by `-Pandroid.testInstrumentationRunnerArguments.profile=XXX`. */
+    protected val activeProfile: FamilyTestData
+        get() = TestProfileProvider.activeProfile
 
     @Before
     open fun setUp() {
@@ -227,27 +236,83 @@ abstract class BaseE2ETest {
     }
 
     /**
-     * Creates minimal test preferences for E2E tests.
+     * Creates test preferences from the active profile.
      * This is used to mark the user as onboarded.
      */
     private fun createTestPreferences(): UserPreferences {
+        val profile = activeProfile
         return UserPreferences(
-            householdSize = 4,
-            familyMembers = emptyList(),
-            primaryDiet = PrimaryDiet.VEGETARIAN,
-            dietaryRestrictions = emptyList(),
-            cuisinePreferences = listOf(CuisineType.NORTH, CuisineType.SOUTH),
-            spiceLevel = SpiceLevel.MEDIUM,
-            dislikedIngredients = emptyList(),
-            weekdayCookingTimeMinutes = 30,
-            weekendCookingTimeMinutes = 60,
-            busyDays = listOf(DayOfWeek.MONDAY, DayOfWeek.FRIDAY),
+            householdSize = profile.householdSize,
+            familyMembers = profile.members.map { it.toDomainFamilyMember() },
+            primaryDiet = profile.primaryDiet.toPrimaryDiet(),
+            dietaryRestrictions = profile.dietaryRestrictions.mapNotNull { it.toDietaryRestriction() },
+            cuisinePreferences = profile.cuisines,
+            spiceLevel = profile.spiceLevel.toDomainSpiceLevel(),
+            dislikedIngredients = profile.dislikedIngredients,
+            weekdayCookingTimeMinutes = profile.weekdayCookingTime,
+            weekendCookingTimeMinutes = profile.weekendCookingTime,
+            busyDays = profile.busyDays.map { it.toDomainDayOfWeek() },
             itemsPerMeal = 2,
             strictAllergenMode = true,
             strictDietaryMode = true,
             allowRecipeRepeat = false
         )
     }
+
+    // ===================== Profile → Domain type mappers =====================
+
+    private fun DietaryTag.toPrimaryDiet(): PrimaryDiet = when (this) {
+        DietaryTag.VEGETARIAN -> PrimaryDiet.VEGETARIAN
+        DietaryTag.EGGETARIAN -> PrimaryDiet.EGGETARIAN
+        DietaryTag.NON_VEGETARIAN -> PrimaryDiet.NON_VEGETARIAN
+        else -> PrimaryDiet.VEGETARIAN // dietary restrictions are not primary diets
+    }
+
+    private fun DietaryTag.toDietaryRestriction(): DietaryRestriction? = when (this) {
+        DietaryTag.JAIN -> DietaryRestriction.JAIN
+        DietaryTag.SATTVIC -> DietaryRestriction.SATTVIC
+        DietaryTag.HALAL -> DietaryRestriction.HALAL
+        DietaryTag.VEGAN -> DietaryRestriction.VEGAN
+        else -> null // primary diets are not restrictions
+    }
+
+    private fun com.rasoiai.app.e2e.base.SpiceLevel.toDomainSpiceLevel(): SpiceLevel = when (this) {
+        com.rasoiai.app.e2e.base.SpiceLevel.MILD -> SpiceLevel.MILD
+        com.rasoiai.app.e2e.base.SpiceLevel.MEDIUM -> SpiceLevel.MEDIUM
+        com.rasoiai.app.e2e.base.SpiceLevel.SPICY -> SpiceLevel.SPICY
+        com.rasoiai.app.e2e.base.SpiceLevel.VERY_SPICY -> SpiceLevel.VERY_SPICY
+    }
+
+    private fun java.time.DayOfWeek.toDomainDayOfWeek(): DayOfWeek = when (this) {
+        java.time.DayOfWeek.MONDAY -> DayOfWeek.MONDAY
+        java.time.DayOfWeek.TUESDAY -> DayOfWeek.TUESDAY
+        java.time.DayOfWeek.WEDNESDAY -> DayOfWeek.WEDNESDAY
+        java.time.DayOfWeek.THURSDAY -> DayOfWeek.THURSDAY
+        java.time.DayOfWeek.FRIDAY -> DayOfWeek.FRIDAY
+        java.time.DayOfWeek.SATURDAY -> DayOfWeek.SATURDAY
+        java.time.DayOfWeek.SUNDAY -> DayOfWeek.SUNDAY
+    }
+
+    private fun FamilyMember.toDomainFamilyMember(): DomainFamilyMember = DomainFamilyMember(
+        id = java.util.UUID.randomUUID().toString(),
+        name = name,
+        type = when (type) {
+            MemberType.ADULT -> DomainMemberType.ADULT
+            MemberType.CHILD -> DomainMemberType.CHILD
+            MemberType.SENIOR -> DomainMemberType.SENIOR
+        },
+        age = age,
+        specialNeeds = healthNeeds.map { need ->
+            when (need) {
+                HealthNeed.DIABETIC -> SpecialDietaryNeed.DIABETIC
+                HealthNeed.LOW_OIL -> SpecialDietaryNeed.LOW_OIL
+                HealthNeed.LOW_SALT -> SpecialDietaryNeed.LOW_SALT
+                HealthNeed.NO_SPICY -> SpecialDietaryNeed.NO_SPICY
+                HealthNeed.HIGH_PROTEIN -> SpecialDietaryNeed.HIGH_PROTEIN
+                HealthNeed.LOW_CARB -> SpecialDietaryNeed.LOW_CARB
+            }
+        }
+    )
 
     /**
      * Clears all user state for a fresh test start.

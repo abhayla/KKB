@@ -1,7 +1,6 @@
 package com.rasoiai.app.e2e.flows
 
 import com.rasoiai.app.e2e.base.BaseE2ETest
-import com.rasoiai.app.e2e.base.TestDataFactory
 import com.rasoiai.app.e2e.robots.AuthRobot
 import com.rasoiai.app.e2e.robots.OnboardingRobot
 import com.rasoiai.domain.model.CuisineType
@@ -27,7 +26,7 @@ class OnboardingFlowTest : BaseE2ETest() {
     private lateinit var authRobot: AuthRobot
     private lateinit var onboardingRobot: OnboardingRobot
 
-    private val sharmaFamily = TestDataFactory.sharmaFamily
+    private val sharmaFamily get() = activeProfile
 
     @Before
     override fun setUp() {

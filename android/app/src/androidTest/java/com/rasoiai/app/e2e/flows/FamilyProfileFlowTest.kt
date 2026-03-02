@@ -5,7 +5,6 @@ import com.rasoiai.app.e2e.base.BaseE2ETest
 import com.rasoiai.app.e2e.base.FamilyMember
 import com.rasoiai.app.e2e.base.HealthNeed
 import com.rasoiai.app.e2e.base.MemberType
-import com.rasoiai.app.e2e.base.TestDataFactory
 import com.rasoiai.app.e2e.robots.AuthRobot
 import com.rasoiai.app.e2e.robots.HomeRobot
 import com.rasoiai.app.e2e.robots.OnboardingRobot
@@ -51,7 +50,7 @@ class FamilyProfileFlowTest : BaseE2ETest() {
     private lateinit var homeRobot: HomeRobot
     private lateinit var settingsRobot: SettingsRobot
 
-    private val sharmaFamily = TestDataFactory.sharmaFamily
+    private val sharmaFamily get() = activeProfile
 
     companion object {
         private const val TAG = "FamilyProfileFlowTest"

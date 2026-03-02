@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithText
 import com.rasoiai.app.e2e.base.BaseE2ETest
-import com.rasoiai.app.e2e.base.TestDataFactory
 import com.rasoiai.app.e2e.robots.AuthRobot
 import com.rasoiai.app.e2e.robots.HomeRobot
 import com.rasoiai.app.e2e.robots.SettingsRobot
@@ -64,7 +63,7 @@ class SettingsFlowTest : BaseE2ETest() {
         settingsRobot.waitForSettingsScreen()
         settingsRobot.assertSettingsScreenDisplayed()
         settingsRobot.assertProfileSectionDisplayed()
-        settingsRobot.assertEmailDisplayed(TestDataFactory.sharmaFamily.email)
+        settingsRobot.assertEmailDisplayed(activeProfile.email)
     }
 
     /**
@@ -73,7 +72,7 @@ class SettingsFlowTest : BaseE2ETest() {
     @Test
     fun test_9_1b_profileEmail_isVisible() {
         settingsRobot.waitForSettingsScreen()
-        settingsRobot.assertEmailDisplayed(TestDataFactory.sharmaFamily.email)
+        settingsRobot.assertEmailDisplayed(activeProfile.email)
     }
 
     // ===================== 9.2 Preference Updates =====================

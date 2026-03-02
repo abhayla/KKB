@@ -44,7 +44,11 @@ object TestDataFactory {
         dislikedIngredients = listOf("Karela", "Baingan", "Mushroom"),
         weekdayCookingTime = 30,
         weekendCookingTime = 60,
-        busyDays = listOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY)
+        busyDays = listOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY),
+        allergies = listOf(
+            AllergyTestData("Peanuts", "SEVERE"),
+            AllergyTestData("Cashews", "MILD")
+        )
     )
 
     /**
@@ -84,6 +88,96 @@ object TestDataFactory {
         weekendCookingTime = 60,
         busyDays = listOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY)
     )
+
+    /**
+     * Gupta Eggetarian family profile — South + East Indian cuisine.
+     * 4-member household with a senior, shellfish allergy.
+     */
+    val guptaEggetarian = FamilyTestData(
+        email = "e2e-test@rasoiai.test",
+        householdSize = 4,
+        primaryDiet = DietaryTag.EGGETARIAN,
+        dietaryRestrictions = emptyList(),
+        cuisines = listOf(CuisineType.SOUTH, CuisineType.EAST),
+        spiceLevel = SpiceLevel.SPICY,
+        members = listOf(
+            FamilyMember(
+                name = "Vikram",
+                type = MemberType.ADULT,
+                age = 38,
+                healthNeeds = emptyList()
+            ),
+            FamilyMember(
+                name = "Meena",
+                type = MemberType.ADULT,
+                age = 35,
+                healthNeeds = emptyList()
+            ),
+            FamilyMember(
+                name = "Aryan",
+                type = MemberType.CHILD,
+                age = 10,
+                healthNeeds = listOf(HealthNeed.NO_SPICY)
+            ),
+            FamilyMember(
+                name = "Nani",
+                type = MemberType.SENIOR,
+                age = 72,
+                healthNeeds = listOf(HealthNeed.DIABETIC, HealthNeed.LOW_SALT)
+            )
+        ),
+        dislikedIngredients = listOf("Lauki", "Turai"),
+        weekdayCookingTime = 30,
+        weekendCookingTime = 45,
+        busyDays = listOf(DayOfWeek.TUESDAY, DayOfWeek.THURSDAY),
+        allergies = listOf(
+            AllergyTestData("Shellfish", "SEVERE")
+        )
+    )
+
+    /**
+     * Patel Jain family profile — West Indian cuisine, strict Jain diet.
+     * 2-member household (couple), no allergies.
+     */
+    val patelJain = FamilyTestData(
+        email = "e2e-test@rasoiai.test",
+        householdSize = 2,
+        primaryDiet = DietaryTag.VEGETARIAN,
+        dietaryRestrictions = listOf(DietaryTag.JAIN),
+        cuisines = listOf(CuisineType.WEST),
+        spiceLevel = SpiceLevel.MILD,
+        members = listOf(
+            FamilyMember(
+                name = "Hetal",
+                type = MemberType.ADULT,
+                age = 55,
+                healthNeeds = listOf(HealthNeed.LOW_OIL)
+            ),
+            FamilyMember(
+                name = "Nirav",
+                type = MemberType.ADULT,
+                age = 58,
+                healthNeeds = listOf(HealthNeed.DIABETIC)
+            )
+        ),
+        dislikedIngredients = listOf("Karela"),
+        weekdayCookingTime = 45,
+        weekendCookingTime = 90,
+        busyDays = listOf(DayOfWeek.MONDAY),
+        allergies = emptyList()
+    )
+
+    /**
+     * Looks up a profile by its CLI key.
+     * Usage: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.profile=gupta_eggetarian`
+     */
+    fun getProfile(key: String): FamilyTestData = when (key) {
+        "sharma_veg" -> sharmaFamily
+        "sharma_nonveg" -> sharmaFamilyNonVeg
+        "gupta_eggetarian" -> guptaEggetarian
+        "patel_jain" -> patelJain
+        else -> sharmaFamily
+    }
 
     /**
      * Sample chat messages for testing
@@ -256,7 +350,9 @@ data class FamilyTestData(
     val dislikedIngredients: List<String>,
     val weekdayCookingTime: Int,
     val weekendCookingTime: Int,
-    val busyDays: List<DayOfWeek>
+    val busyDays: List<DayOfWeek>,
+    val allergies: List<AllergyTestData> = emptyList(),
+    val recipeRules: List<RecipeRuleTestData> = emptyList()
 )
 
 data class FamilyMember(
@@ -319,4 +415,9 @@ data class PantryItemTestData(
     val quantity: Double,
     val unit: String,
     val expiryDays: Int?  // Days from today, null for no expiry
+)
+
+data class AllergyTestData(
+    val ingredient: String,
+    val severity: String  // "SEVERE", "MODERATE", "MILD"
 )
