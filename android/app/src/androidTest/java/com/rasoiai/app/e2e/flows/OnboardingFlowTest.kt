@@ -284,11 +284,15 @@ class OnboardingFlowTest : BaseE2ETest() {
             onboardingRobot.addFamilyMember(member)
         }
         onboardingRobot.tapNext()
+        composeTestRule.waitForIdle()
+        Thread.sleep(500) // Wait for navigation transition
     }
 
     private fun completeStep2() {
         onboardingRobot.selectDietaryRestriction(DietaryTag.SATTVIC)
         onboardingRobot.tapNext()
+        composeTestRule.waitForIdle()
+        Thread.sleep(500) // Wait for navigation transition
     }
 
     private fun completeStep3() {
@@ -296,6 +300,8 @@ class OnboardingFlowTest : BaseE2ETest() {
         onboardingRobot.selectCuisine(CuisineType.SOUTH)
         onboardingRobot.selectSpiceLevel(sharmaFamily.spiceLevel)
         onboardingRobot.tapNext()
+        composeTestRule.waitForIdle()
+        Thread.sleep(500) // Wait for navigation transition
     }
 
     private fun completeStep4() {
@@ -303,5 +309,7 @@ class OnboardingFlowTest : BaseE2ETest() {
             onboardingRobot.selectDislikedIngredient(ingredient)
         }
         onboardingRobot.tapNext()
+        composeTestRule.waitForIdle()
+        Thread.sleep(500) // Wait for navigation transition
     }
 }

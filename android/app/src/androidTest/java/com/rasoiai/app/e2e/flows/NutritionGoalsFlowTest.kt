@@ -57,6 +57,7 @@ class NutritionGoalsFlowTest : BaseE2ETest() {
         recipeRulesRobot.addNutritionGoal(TestDataFactory.RecipeRules.proteinGoal)
 
         recipeRulesRobot.selectNutritionTab()
+        Thread.sleep(1000) // Wait for tab content to render
         recipeRulesRobot.assertRuleCardDisplayed("protein")
         recipeRulesRobot.assertNutritionGoalProgress("protein", "0/7")
     }
@@ -70,6 +71,7 @@ class NutritionGoalsFlowTest : BaseE2ETest() {
         recipeRulesRobot.addNutritionGoal(TestDataFactory.RecipeRules.citrusGoal)
 
         recipeRulesRobot.selectNutritionTab()
+        Thread.sleep(1000) // Wait for tab content to render
         recipeRulesRobot.assertRuleCardDisplayed("Citrus")
     }
 
@@ -81,6 +83,7 @@ class NutritionGoalsFlowTest : BaseE2ETest() {
     fun test_editNutritionGoalTarget() {
         recipeRulesRobot.addNutritionGoal(TestDataFactory.RecipeRules.greenLeafyGoal)
         recipeRulesRobot.selectNutritionTab()
+        Thread.sleep(1000) // Wait for tab content to render
         recipeRulesRobot.assertRuleCardDisplayed("Green leafy")
 
         // Tap to edit
@@ -104,6 +107,7 @@ class NutritionGoalsFlowTest : BaseE2ETest() {
     fun test_deleteNutritionGoal() {
         recipeRulesRobot.addNutritionGoal(TestDataFactory.RecipeRules.ironGoal)
         recipeRulesRobot.selectNutritionTab()
+        Thread.sleep(1000) // Wait for tab content to render
         recipeRulesRobot.assertRuleCardDisplayed("Iron")
 
         try {
@@ -122,6 +126,7 @@ class NutritionGoalsFlowTest : BaseE2ETest() {
     fun test_toggleGoalEnforcement() {
         recipeRulesRobot.addNutritionGoal(TestDataFactory.RecipeRules.fiberGoal)
         recipeRulesRobot.selectNutritionTab()
+        Thread.sleep(1000) // Wait for tab content to render
         recipeRulesRobot.assertRuleCardDisplayed("Fiber")
 
         // Tap to edit and change enforcement
@@ -147,6 +152,7 @@ class NutritionGoalsFlowTest : BaseE2ETest() {
         recipeRulesRobot.addNutritionGoal(TestDataFactory.RecipeRules.ironGoal)
 
         recipeRulesRobot.selectNutritionTab()
+        Thread.sleep(1000) // Wait for tab content to render
         recipeRulesRobot.assertRuleCardDisplayed("protein")
         recipeRulesRobot.assertRuleCardDisplayed("Citrus")
         recipeRulesRobot.assertRuleCardDisplayed("Iron")
@@ -160,6 +166,7 @@ class NutritionGoalsFlowTest : BaseE2ETest() {
         // Add GREEN_LEAFY goal
         recipeRulesRobot.addNutritionGoal(TestDataFactory.RecipeRules.greenLeafyGoal)
         recipeRulesRobot.selectNutritionTab()
+        Thread.sleep(1000) // Wait for tab content to render
         recipeRulesRobot.assertRuleCardDisplayed("Green leafy")
 
         // Try to add GREEN_LEAFY again - should show error
@@ -179,6 +186,7 @@ class NutritionGoalsFlowTest : BaseE2ETest() {
     fun test_backendPersistence() {
         recipeRulesRobot.addNutritionGoal(TestDataFactory.RecipeRules.omega3Goal)
         recipeRulesRobot.selectNutritionTab()
+        Thread.sleep(1000) // Wait for tab content to render
         recipeRulesRobot.assertRuleCardDisplayed("Omega")
 
         // Verify on backend

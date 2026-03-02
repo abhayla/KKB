@@ -1,15 +1,13 @@
 package com.rasoiai.app.e2e.robots
 
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsOn
-import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import com.rasoiai.app.e2e.base.waitUntilNodeWithTagExists
 import com.rasoiai.app.e2e.base.waitUntilNodeWithTextExists
 import com.rasoiai.app.presentation.common.TestTags
@@ -17,8 +15,51 @@ import com.rasoiai.app.presentation.common.TestTags
 /**
  * Robot for Settings screen interactions.
  * Handles profile, preferences, and notification settings.
+ *
+ * Note: Settings screen uses LazyColumn, so performScrollTo() does NOT work.
+ * All scroll operations use swipe-based scrolling via scrollToText/scrollToTag helpers.
  */
 class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
+
+    companion object {
+        private const val MAX_SCROLL_ATTEMPTS = 8
+    }
+
+    /**
+     * Scroll the Settings LazyColumn until a node with the given text is visible.
+     * LazyColumn does not support performScrollTo(), so we swipe up repeatedly.
+     */
+    private fun scrollToText(text: String, substring: Boolean = false, ignoreCase: Boolean = true) {
+        repeat(MAX_SCROLL_ATTEMPTS) {
+            val nodes = composeTestRule.onAllNodesWithText(text, substring = substring, ignoreCase = ignoreCase)
+                .fetchSemanticsNodes()
+            if (nodes.isNotEmpty()) return
+            composeTestRule.onNodeWithTag(TestTags.SETTINGS_SCREEN)
+                .performTouchInput { swipeUp() }
+            composeTestRule.waitForIdle()
+            Thread.sleep(300)
+        }
+        // Final check — let Compose assert throw a readable error if still not found
+    }
+
+    /**
+     * Scroll the Settings LazyColumn until a node with the given test tag is visible.
+     */
+    private fun scrollToTag(tag: String) {
+        repeat(MAX_SCROLL_ATTEMPTS) {
+            val nodes = composeTestRule.onNodeWithTag(tag)
+            try {
+                nodes.assertIsDisplayed()
+                return
+            } catch (_: AssertionError) {
+                // Node not rendered yet, scroll down
+            }
+            composeTestRule.onNodeWithTag(TestTags.SETTINGS_SCREEN)
+                .performTouchInput { swipeUp() }
+            composeTestRule.waitForIdle()
+            Thread.sleep(300)
+        }
+    }
 
     /**
      * Wait for settings screen to be displayed, including LazyColumn content.
@@ -86,8 +127,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Tap edit profile.
      */
     fun tapEditProfile() = apply {
+        scrollToText("Edit Profile")
         composeTestRule.onNodeWithText("Edit Profile", ignoreCase = true)
-            .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -98,8 +139,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Navigate to dietary preferences.
      */
     fun navigateToDietaryPreferences() = apply {
+        scrollToText("Dietary Preferences")
         composeTestRule.onNodeWithText("Dietary Preferences", ignoreCase = true)
-            .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -108,8 +149,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Change primary diet.
      */
     fun changePrimaryDiet(diet: String) = apply {
+        scrollToText(diet)
         composeTestRule.onNodeWithText(diet, ignoreCase = true)
-            .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -136,8 +177,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Navigate to cuisine preferences.
      */
     fun navigateToCuisinePreferences() = apply {
+        scrollToText("Cuisine Preferences")
         composeTestRule.onNodeWithText("Cuisine Preferences", ignoreCase = true)
-            .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -148,8 +189,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Navigate to cooking time settings.
      */
     fun navigateToCookingTime() = apply {
+        scrollToText("Cooking Time")
         composeTestRule.onNodeWithText("Cooking Time", ignoreCase = true)
-            .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -162,8 +203,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * This clicks the "Add family member" row.
      */
     fun navigateToFamilyMembers() = apply {
+        scrollToText("Add family member")
         composeTestRule.onNodeWithText("Add family member", ignoreCase = true)
-            .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -172,8 +213,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Assert family member name is displayed in settings.
      */
     fun assertFamilyMemberDisplayed(memberName: String) = apply {
+        scrollToText(memberName, substring = true)
         composeTestRule.onNodeWithText(memberName, substring = true)
-            .performScrollTo()
             .assertIsDisplayed()
     }
 
@@ -189,8 +230,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Navigate to recipe rules screen.
      */
     fun navigateToRecipeRules() = apply {
+        scrollToText("Recipe Rules")
         composeTestRule.onNodeWithText("Recipe Rules", ignoreCase = true)
-            .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -201,8 +242,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Navigate to notification settings.
      */
     fun navigateToNotifications() = apply {
+        scrollToText("Notifications")
         composeTestRule.onNodeWithText("Notifications", ignoreCase = true)
-            .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -211,8 +252,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Toggle meal reminders.
      */
     fun toggleMealReminders() = apply {
+        scrollToText("Meal Reminders")
         composeTestRule.onNodeWithText("Meal Reminders", ignoreCase = true)
-            .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -221,9 +262,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Assert meal reminders is on.
      */
     fun assertMealRemindersOn() = apply {
-        // Check toggle state
+        scrollToText("Meal Reminders")
         composeTestRule.onNodeWithText("Meal Reminders", ignoreCase = true)
-            .performScrollTo()
             .assertIsDisplayed()
     }
 
@@ -231,8 +271,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Toggle shopping day reminder.
      */
     fun toggleShoppingReminder() = apply {
+        scrollToText("Shopping Reminder")
         composeTestRule.onNodeWithText("Shopping Reminder", ignoreCase = true)
-            .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -243,8 +283,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Navigate to theme settings.
      */
     fun navigateToTheme() = apply {
+        scrollToText("Theme")
         composeTestRule.onNodeWithText("Theme", ignoreCase = true)
-            .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -279,8 +319,7 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Scroll to meal generation section.
      */
     fun scrollToMealGenerationSection() = apply {
-        composeTestRule.onNodeWithTag(TestTags.SETTINGS_MEAL_GENERATION_SECTION)
-            .performScrollTo()
+        scrollToTag(TestTags.SETTINGS_MEAL_GENERATION_SECTION)
         composeTestRule.waitForIdle()
     }
 
@@ -288,8 +327,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Assert meal generation section is displayed.
      */
     fun assertMealGenerationSectionDisplayed() = apply {
+        scrollToText("MEAL GENERATION")
         composeTestRule.onNodeWithText("MEAL GENERATION", ignoreCase = true)
-            .performScrollTo()
             .assertIsDisplayed()
     }
 
@@ -297,8 +336,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Assert items per meal displays the expected value.
      */
     fun assertItemsPerMealValue(expectedValue: String) = apply {
+        scrollToTag(TestTags.SETTINGS_ITEMS_PER_MEAL)
         composeTestRule.onNodeWithTag(TestTags.SETTINGS_ITEMS_PER_MEAL)
-            .performScrollTo()
             .assertIsDisplayed()
         composeTestRule.onNodeWithText(expectedValue, substring = true)
             .assertIsDisplayed()
@@ -308,8 +347,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Tap items per meal setting.
      */
     fun tapItemsPerMeal() = apply {
+        scrollToTag(TestTags.SETTINGS_ITEMS_PER_MEAL)
         composeTestRule.onNodeWithTag(TestTags.SETTINGS_ITEMS_PER_MEAL)
-            .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -318,8 +357,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Toggle strict allergen mode.
      */
     fun toggleStrictAllergenMode() = apply {
+        scrollToTag(TestTags.SETTINGS_STRICT_ALLERGEN_TOGGLE)
         composeTestRule.onNodeWithTag(TestTags.SETTINGS_STRICT_ALLERGEN_TOGGLE)
-            .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -328,10 +367,7 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Assert strict allergen mode is ON.
      */
     fun assertStrictAllergenModeOn() = apply {
-        composeTestRule.onNode(
-            hasTestTag(TestTags.SETTINGS_STRICT_ALLERGEN_TOGGLE)
-        ).performScrollTo()
-        // The toggle row contains the switch - verify by checking the text and state
+        scrollToTag(TestTags.SETTINGS_STRICT_ALLERGEN_TOGGLE)
         composeTestRule.onNodeWithText("Strict Allergen Mode", ignoreCase = true)
             .assertIsDisplayed()
     }
@@ -340,9 +376,7 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Assert strict allergen mode is OFF.
      */
     fun assertStrictAllergenModeOff() = apply {
-        composeTestRule.onNode(
-            hasTestTag(TestTags.SETTINGS_STRICT_ALLERGEN_TOGGLE)
-        ).performScrollTo()
+        scrollToTag(TestTags.SETTINGS_STRICT_ALLERGEN_TOGGLE)
         composeTestRule.onNodeWithText("Strict Allergen Mode", ignoreCase = true)
             .assertIsDisplayed()
     }
@@ -351,8 +385,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Toggle strict dietary mode.
      */
     fun toggleStrictDietaryMode() = apply {
+        scrollToTag(TestTags.SETTINGS_STRICT_DIETARY_TOGGLE)
         composeTestRule.onNodeWithTag(TestTags.SETTINGS_STRICT_DIETARY_TOGGLE)
-            .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -361,9 +395,7 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Assert strict dietary mode is ON.
      */
     fun assertStrictDietaryModeOn() = apply {
-        composeTestRule.onNode(
-            hasTestTag(TestTags.SETTINGS_STRICT_DIETARY_TOGGLE)
-        ).performScrollTo()
+        scrollToTag(TestTags.SETTINGS_STRICT_DIETARY_TOGGLE)
         composeTestRule.onNodeWithText("Strict Dietary Mode", ignoreCase = true)
             .assertIsDisplayed()
     }
@@ -372,9 +404,7 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Assert strict dietary mode is OFF.
      */
     fun assertStrictDietaryModeOff() = apply {
-        composeTestRule.onNode(
-            hasTestTag(TestTags.SETTINGS_STRICT_DIETARY_TOGGLE)
-        ).performScrollTo()
+        scrollToTag(TestTags.SETTINGS_STRICT_DIETARY_TOGGLE)
         composeTestRule.onNodeWithText("Strict Dietary Mode", ignoreCase = true)
             .assertIsDisplayed()
     }
@@ -383,8 +413,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Toggle allow recipe repeat.
      */
     fun toggleAllowRecipeRepeat() = apply {
+        scrollToTag(TestTags.SETTINGS_ALLOW_REPEAT_TOGGLE)
         composeTestRule.onNodeWithTag(TestTags.SETTINGS_ALLOW_REPEAT_TOGGLE)
-            .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -393,9 +423,7 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Assert allow recipe repeat is ON.
      */
     fun assertAllowRecipeRepeatOn() = apply {
-        composeTestRule.onNode(
-            hasTestTag(TestTags.SETTINGS_ALLOW_REPEAT_TOGGLE)
-        ).performScrollTo()
+        scrollToTag(TestTags.SETTINGS_ALLOW_REPEAT_TOGGLE)
         composeTestRule.onNodeWithText("Allow Recipe Repeat", ignoreCase = true)
             .assertIsDisplayed()
     }
@@ -404,9 +432,7 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Assert allow recipe repeat is OFF.
      */
     fun assertAllowRecipeRepeatOff() = apply {
-        composeTestRule.onNode(
-            hasTestTag(TestTags.SETTINGS_ALLOW_REPEAT_TOGGLE)
-        ).performScrollTo()
+        scrollToTag(TestTags.SETTINGS_ALLOW_REPEAT_TOGGLE)
         composeTestRule.onNodeWithText("Allow Recipe Repeat", ignoreCase = true)
             .assertIsDisplayed()
     }
@@ -417,8 +443,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Tap sign out.
      */
     fun tapSignOut() = apply {
+        scrollToText("Sign Out")
         composeTestRule.onNodeWithText("Sign Out", ignoreCase = true)
-            .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -445,8 +471,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Navigate to about section.
      */
     fun navigateToAbout() = apply {
+        scrollToText("About")
         composeTestRule.onNodeWithText("About", ignoreCase = true)
-            .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -455,8 +481,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Assert app version is displayed.
      */
     fun assertAppVersionDisplayed() = apply {
+        scrollToText("Version", substring = true)
         composeTestRule.onNodeWithText("Version", substring = true, ignoreCase = true)
-            .performScrollTo()
             .assertIsDisplayed()
     }
 
@@ -466,8 +492,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Navigate to disliked ingredients.
      */
     fun navigateToDislikedIngredients() = apply {
+        scrollToText("Disliked Ingredients")
         composeTestRule.onNodeWithText("Disliked Ingredients", ignoreCase = true)
-            .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -476,8 +502,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Navigate to spice level.
      */
     fun navigateToSpiceLevel() = apply {
+        scrollToText("Spice Level")
         composeTestRule.onNodeWithText("Spice Level", ignoreCase = true)
-            .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -486,8 +512,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Navigate to units & measurements.
      */
     fun navigateToUnitsAndMeasurements() = apply {
+        scrollToText("Units & Measurements")
         composeTestRule.onNodeWithText("Units & Measurements", ignoreCase = true)
-            .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -498,8 +524,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Assert meal preferences section is displayed.
      */
     fun assertMealPreferencesSectionDisplayed() = apply {
+        scrollToText("MEAL PREFERENCES")
         composeTestRule.onNodeWithText("MEAL PREFERENCES", ignoreCase = true)
-            .performScrollTo()
             .assertIsDisplayed()
     }
 
@@ -507,8 +533,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Assert app settings section is displayed.
      */
     fun assertAppSettingsSectionDisplayed() = apply {
+        scrollToText("APP SETTINGS")
         composeTestRule.onNodeWithText("APP SETTINGS", ignoreCase = true)
-            .performScrollTo()
             .assertIsDisplayed()
     }
 
@@ -516,8 +542,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Assert social section is displayed.
      */
     fun assertSocialSectionDisplayed() = apply {
+        scrollToText("SOCIAL")
         composeTestRule.onNodeWithText("SOCIAL", ignoreCase = true)
-            .performScrollTo()
             .assertIsDisplayed()
     }
 
@@ -525,8 +551,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Assert support section is displayed.
      */
     fun assertSupportSectionDisplayed() = apply {
+        scrollToText("SUPPORT")
         composeTestRule.onNodeWithText("SUPPORT", ignoreCase = true)
-            .performScrollTo()
             .assertIsDisplayed()
     }
 
@@ -534,8 +560,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Assert family section is displayed.
      */
     fun assertFamilySectionDisplayed() = apply {
+        scrollToText("FAMILY")
         composeTestRule.onNodeWithText("FAMILY", ignoreCase = true)
-            .performScrollTo()
             .assertIsDisplayed()
     }
 
@@ -579,8 +605,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Tap items per meal setting.
      */
     fun tapItemsPerMealSetting() = apply {
+        scrollToTag(TestTags.SETTINGS_ITEMS_PER_MEAL)
         composeTestRule.onNodeWithTag(TestTags.SETTINGS_ITEMS_PER_MEAL)
-            .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -608,8 +634,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Assert a specific setting item is displayed.
      */
     fun assertSettingItemDisplayed(settingName: String) = apply {
+        scrollToText(settingName)
         composeTestRule.onNodeWithText(settingName, ignoreCase = true)
-            .performScrollTo()
             .assertIsDisplayed()
     }
 
@@ -617,8 +643,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Tap a specific setting item.
      */
     fun tapSettingItem(settingName: String) = apply {
+        scrollToText(settingName)
         composeTestRule.onNodeWithText(settingName, ignoreCase = true)
-            .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
     }

@@ -73,10 +73,14 @@ class FullJourneyFlowTest : BaseE2ETest() {
 
     // Non-vegetarian keywords to detect in recipe names
     private val nonVegKeywords = listOf(
-        "chicken", "mutton", "lamb", "fish", "prawn", "shrimp", "egg",
+        "chicken", "mutton", "lamb", "fish", "prawn", "shrimp",
         "meat", "pork", "beef", "keema", "tikka chicken", "butter chicken",
-        "tandoori chicken", "fish fry", "egg curry", "omelette", "scrambled egg"
+        "tandoori chicken", "fish fry", "egg curry", "omelette", "scrambled egg",
+        "egg bhurji", "egg masala", "fried egg", "boiled egg", "egg rice"
     )
+
+    // Words that contain "egg" but are vegetarian (false positive exclusions)
+    private val nonVegExclusions = listOf("eggplant", "eggless")
 
     private val dislikedItems = listOf("karela", "baingan", "mushroom")
 
@@ -461,8 +465,12 @@ class FullJourneyFlowTest : BaseE2ETest() {
             val recipeName = item.optString("recipe_name", "").lowercase()
             for (keyword in nonVegKeywords) {
                 if (recipeName.contains(keyword)) {
-                    nonVegFound.add("$dayName/$slot: ${item.optString("recipe_name")} (keyword: $keyword)")
-                    break
+                    // Check for false positives (eggplant, eggless, etc.)
+                    val isFalsePositive = nonVegExclusions.any { recipeName.contains(it) }
+                    if (!isFalsePositive) {
+                        nonVegFound.add("$dayName/$slot: ${item.optString("recipe_name")} (keyword: $keyword)")
+                        break
+                    }
                 }
             }
         }
@@ -733,8 +741,12 @@ class FullJourneyFlowTest : BaseE2ETest() {
             val recipeName = item.optString("recipe_name", "").lowercase()
             for (keyword in nonVegKeywords) {
                 if (recipeName.contains(keyword)) {
-                    nonVegFound.add("$dayName/$slot: ${item.optString("recipe_name")} (keyword: $keyword)")
-                    break
+                    // Check for false positives (eggplant, eggless, etc.)
+                    val isFalsePositive = nonVegExclusions.any { recipeName.contains(it) }
+                    if (!isFalsePositive) {
+                        nonVegFound.add("$dayName/$slot: ${item.optString("recipe_name")} (keyword: $keyword)")
+                        break
+                    }
                 }
             }
         }

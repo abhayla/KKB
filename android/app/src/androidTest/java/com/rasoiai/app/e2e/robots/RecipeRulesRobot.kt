@@ -628,8 +628,8 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
     }
 
     /**
-     * Select food category.
-     * Handles multiple matches by using UiAutomator which is more reliable with multiple text matches.
+     * Select food category from the ExposedDropdownMenuBox.
+     * Must first open the dropdown by clicking the trigger field, then select the category.
      */
     fun selectFoodCategory(category: FoodCategory) = apply {
         // Must match displayName from domain FoodCategory enum
@@ -647,26 +647,58 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
         Log.d(TAG, "Selecting food category: $categoryText")
 
         // Wait for bottom sheet to fully open
-        Thread.sleep(300)
+        Thread.sleep(500)
         composeTestRule.waitForIdle()
 
-        // Use UiAutomator for more reliable clicking when there might be multiple matches
+        // Step 1: Open the category dropdown by clicking the trigger field
+        // The ExposedDropdownMenuBox has an OutlinedTextField showing "Select category..."
+        Log.d(TAG, "Opening food category dropdown...")
+        val triggerNodes = composeTestRule.onAllNodesWithText("Select category", substring = true, ignoreCase = true)
+            .fetchSemanticsNodes()
+        if (triggerNodes.isNotEmpty()) {
+            composeTestRule.onAllNodesWithText("Select category", substring = true, ignoreCase = true)[0]
+                .performClick()
+            Log.d(TAG, "Clicked dropdown trigger via Compose")
+        } else {
+            // Fallback: try UiAutomator for the dropdown trigger
+            val triggerElement = uiDevice.findObject(UiSelector().textContains("Select category"))
+            if (triggerElement.waitForExists(3000)) {
+                triggerElement.click()
+                Log.d(TAG, "Clicked dropdown trigger via UiAutomator")
+            } else {
+                // The field might already show a previously selected category — try clicking "Food Category:" label area
+                Log.d(TAG, "Dropdown trigger not found with 'Select category', trying UiAutomator className")
+                val fieldElement = uiDevice.findObject(UiSelector().className("android.widget.EditText"))
+                if (fieldElement.waitForExists(3000)) {
+                    fieldElement.click()
+                    Log.d(TAG, "Clicked EditText field as dropdown trigger")
+                }
+            }
+        }
+
+        // Step 2: Wait for dropdown menu to expand and render items
+        Thread.sleep(800)
+        composeTestRule.waitForIdle()
+
+        // Step 3: Find and click the category in the expanded dropdown menu
+        Log.d(TAG, "Searching for category '$categoryText' in dropdown menu...")
+        val nodes = composeTestRule.onAllNodesWithText(categoryText, substring = true, ignoreCase = true)
+            .fetchSemanticsNodes()
+        Log.d(TAG, "Found ${nodes.size} nodes with text '$categoryText' via Compose")
+        if (nodes.isNotEmpty()) {
+            composeTestRule.onAllNodesWithText(categoryText, substring = true, ignoreCase = true)[0]
+                .performClick()
+            composeTestRule.waitForIdle()
+            return@apply
+        }
+
+        // Fallback to UiAutomator with longer wait
         val categoryElement = uiDevice.findObject(UiSelector().textContains(categoryText))
-        if (categoryElement.waitForExists(3000)) {
+        if (categoryElement.waitForExists(5000)) {
             Log.d(TAG, "Found category '$categoryText' via UiAutomator, clicking")
             categoryElement.click()
         } else {
-            // Fallback to Compose - use onAllNodes to handle multiple matches
-            val nodes = composeTestRule.onAllNodesWithText(categoryText, substring = true, ignoreCase = true)
-                .fetchSemanticsNodes()
-            Log.d(TAG, "Found ${nodes.size} nodes with text '$categoryText' via Compose")
-            if (nodes.isNotEmpty()) {
-                // Click using UiAutomator coordinates since performScrollTo fails with multiple nodes
-                composeTestRule.onAllNodesWithText(categoryText, substring = true, ignoreCase = true)[0]
-                    .performClick()
-            } else {
-                throw AssertionError("Could not find category '$categoryText'")
-            }
+            throw AssertionError("Could not find category '$categoryText' in dropdown menu")
         }
         composeTestRule.waitForIdle()
     }
