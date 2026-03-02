@@ -8,8 +8,10 @@
 # Non-blocking (always exits 0) — logs warnings to workflow state.
 # =============================================================================
 
-source "$(dirname "$0")/hook-utils.sh"
-parse_hook_input
+trap 'exit 0' ERR
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/hook-utils.sh" 2>/dev/null || exit 0
+parse_hook_input || exit 0
 
 # Only trigger on Bash tool
 if [ "$HOOK_TOOL_NAME" != "Bash" ]; then exit 0; fi

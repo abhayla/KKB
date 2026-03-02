@@ -5,9 +5,10 @@
 # Reads JSON from stdin. Exit 0 = allow, Exit 2 = block with message.
 # =============================================================================
 
+trap 'exit 0' ERR
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-source "$SCRIPT_DIR/hook-utils.sh"
-parse_hook_input
+source "$SCRIPT_DIR/hook-utils.sh" 2>/dev/null || exit 0
+parse_hook_input || exit 0
 
 if [ -z "$HOOK_TOOL_NAME" ]; then exit 0; fi
 
