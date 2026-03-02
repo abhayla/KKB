@@ -79,7 +79,7 @@
           {
             "type": "command",
             "command": "bash .claude/hooks/log-workflow.sh",
-            "timeout": 5
+            "timeout": 15
           }
         ]
       },
@@ -99,7 +99,7 @@
           {
             "type": "command",
             "command": "bash .claude/hooks/log-workflow.sh",
-            "timeout": 5
+            "timeout": 15
           },
           {
             "type": "command",
@@ -114,7 +114,7 @@
           {
             "type": "command",
             "command": "bash .claude/hooks/log-workflow.sh",
-            "timeout": 5
+            "timeout": 15
           },
           {
             "type": "command",
@@ -129,7 +129,7 @@
           {
             "type": "command",
             "command": "bash .claude/hooks/log-workflow.sh",
-            "timeout": 5
+            "timeout": 15
           },
           {
             "type": "command",

@@ -250,7 +250,7 @@ append_test_run_evidence() {
     if [ ! -f "$WORKFLOW_STATE_FILE" ]; then return 1; fi
     # Write command to temp file to avoid shell expansion issues in Python
     local cmd_tmp
-    cmd_tmp=$(mktemp 2>/dev/null || echo "/tmp/hook_cmd_$$.txt")
+    cmd_tmp=$(mktemp 2>/dev/null || echo ".claude/.tmp_hook_cmd_$$.txt")
     printf '%s' "$cmd" | head -c 200 > "$cmd_tmp"
     python -c "
 import json, os, tempfile, sys

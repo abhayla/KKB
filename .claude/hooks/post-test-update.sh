@@ -42,7 +42,6 @@ elif [ "$RESULT" = "fail" ]; then
     # Store failure details for gate enforcement
     TS_DETAIL=$(date -Iseconds 2>/dev/null || date +"%Y-%m-%dT%H:%M:%S")
     # Write command to temp file to avoid shell expansion issues in Python
-    local cmd_tmp
     cmd_tmp=$(mktemp 2>/dev/null || echo ".claude/.tmp_hook_tfp_cmd_$$.txt")
     printf '%s' "$CMD" | head -c 200 > "$cmd_tmp"
     python -c "

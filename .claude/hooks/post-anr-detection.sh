@@ -33,13 +33,15 @@ if [ "$ANR_DETECTED" = "true" ]; then
     STATE_FILE=".claude/workflow-state.json"
     if [ -f "$STATE_FILE" ]; then
         python -c "
-import json
+import json, os, tempfile
 with open('$STATE_FILE') as f:
     d = json.load(f)
 d['testFailuresPending'] = True
 d.setdefault('evidence', {})['anr_detected'] = True
-with open('$STATE_FILE', 'w') as f:
+fd, tmp = tempfile.mkstemp(dir=os.path.dirname('$STATE_FILE'), suffix='.tmp')
+with os.fdopen(fd, 'w') as f:
     json.dump(d, f, indent=2)
+os.replace(tmp, '$STATE_FILE')
 print('ANR DETECTED: testFailuresPending set to true. MUST invoke /fix-loop.')
 " 2>/dev/null
     fi

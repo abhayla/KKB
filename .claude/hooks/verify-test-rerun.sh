@@ -73,7 +73,11 @@ fi
 if [ -z "$RERUN_CMD" ]; then exit 0; fi
 
 # Re-run with timeout
-RERUN_OUTPUT=$(timeout $RERUN_TIMEOUT bash -c "$RERUN_CMD" 2>&1) || true
+if command -v timeout &>/dev/null; then
+    RERUN_OUTPUT=$(timeout $RERUN_TIMEOUT bash -c "$RERUN_CMD" 2>&1) || true
+else
+    RERUN_OUTPUT=$(bash -c "$RERUN_CMD" 2>&1) || true
+fi
 RC=$?
 if [ "$RC" -eq 124 ]; then
     log_event "VERIFY_RERUN_TIMEOUT" "target=$TARGET"; exit 0
