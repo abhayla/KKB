@@ -149,8 +149,8 @@ class CoreDataFlowTest : BaseE2ETest() {
             // Wait for generating screen
             composeTestRule.waitUntilNodeWithTagExists(TestTags.GENERATING_SCREEN, 10000)
 
-            // Wait for home screen (generation may take 4-45s via Gemini AI)
-            composeTestRule.waitUntilNodeWithTagExists(TestTags.HOME_SCREEN, 120000)
+            // Wait for home screen (generation may take 4-45s+ via Gemini AI, 180s total)
+            composeTestRule.waitUntilNodeWithTagExists(TestTags.HOME_SCREEN, 180000)
         }
     }
 

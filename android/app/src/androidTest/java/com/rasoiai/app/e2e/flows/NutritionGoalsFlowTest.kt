@@ -57,8 +57,8 @@ class NutritionGoalsFlowTest : BaseE2ETest() {
         recipeRulesRobot.addNutritionGoal(TestDataFactory.RecipeRules.proteinGoal)
 
         recipeRulesRobot.selectNutritionTab()
-        recipeRulesRobot.assertRuleCardDisplayed("Protein")
-        recipeRulesRobot.assertNutritionGoalProgress("Protein", "0/7")
+        recipeRulesRobot.assertRuleCardDisplayed("protein")
+        recipeRulesRobot.assertNutritionGoalProgress("protein", "0/7")
     }
 
     /**
@@ -81,10 +81,10 @@ class NutritionGoalsFlowTest : BaseE2ETest() {
     fun test_editNutritionGoalTarget() {
         recipeRulesRobot.addNutritionGoal(TestDataFactory.RecipeRules.greenLeafyGoal)
         recipeRulesRobot.selectNutritionTab()
-        recipeRulesRobot.assertRuleCardDisplayed("Green Leafy")
+        recipeRulesRobot.assertRuleCardDisplayed("Green leafy")
 
         // Tap to edit
-        recipeRulesRobot.tapRuleCard("Green Leafy")
+        recipeRulesRobot.tapRuleCard("Green leafy")
         waitFor(ANIMATION_DURATION)
 
         // Change target (select new count)
@@ -147,7 +147,7 @@ class NutritionGoalsFlowTest : BaseE2ETest() {
         recipeRulesRobot.addNutritionGoal(TestDataFactory.RecipeRules.ironGoal)
 
         recipeRulesRobot.selectNutritionTab()
-        recipeRulesRobot.assertRuleCardDisplayed("Protein")
+        recipeRulesRobot.assertRuleCardDisplayed("protein")
         recipeRulesRobot.assertRuleCardDisplayed("Citrus")
         recipeRulesRobot.assertRuleCardDisplayed("Iron")
     }
@@ -160,7 +160,7 @@ class NutritionGoalsFlowTest : BaseE2ETest() {
         // Add GREEN_LEAFY goal
         recipeRulesRobot.addNutritionGoal(TestDataFactory.RecipeRules.greenLeafyGoal)
         recipeRulesRobot.selectNutritionTab()
-        recipeRulesRobot.assertRuleCardDisplayed("Green Leafy")
+        recipeRulesRobot.assertRuleCardDisplayed("Green leafy")
 
         // Try to add GREEN_LEAFY again - should show error
         try {

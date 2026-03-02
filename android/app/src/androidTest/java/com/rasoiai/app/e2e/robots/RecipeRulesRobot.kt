@@ -632,15 +632,17 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
      * Handles multiple matches by using UiAutomator which is more reliable with multiple text matches.
      */
     fun selectFoodCategory(category: FoodCategory) = apply {
+        // Must match displayName from domain FoodCategory enum
+        // UI renders: "${category.emoji} ${category.displayName}"
         val categoryText = when (category) {
-            FoodCategory.GREEN_LEAFY -> "Green Leafy"
-            FoodCategory.CITRUS_VITAMIN_C -> "Citrus/Vitamin C"
-            FoodCategory.IRON_RICH -> "Iron Rich"
-            FoodCategory.HIGH_PROTEIN -> "High Protein"
-            FoodCategory.CALCIUM_RICH -> "Calcium Rich"
-            FoodCategory.FIBER_RICH -> "Fiber Rich"
-            FoodCategory.OMEGA_3 -> "Omega-3"
-            FoodCategory.ANTIOXIDANT -> "Antioxidant"
+            FoodCategory.GREEN_LEAFY -> "Green leafy vegetables"
+            FoodCategory.CITRUS_VITAMIN_C -> "Citrus/Vitamin C foods"
+            FoodCategory.IRON_RICH -> "Iron-rich foods"
+            FoodCategory.HIGH_PROTEIN -> "High protein foods"
+            FoodCategory.CALCIUM_RICH -> "Calcium-rich foods"
+            FoodCategory.FIBER_RICH -> "Fiber-rich foods"
+            FoodCategory.OMEGA_3 -> "Omega-3 rich foods"
+            FoodCategory.ANTIOXIDANT -> "Antioxidant-rich foods"
         }
         Log.d(TAG, "Selecting food category: $categoryText")
 

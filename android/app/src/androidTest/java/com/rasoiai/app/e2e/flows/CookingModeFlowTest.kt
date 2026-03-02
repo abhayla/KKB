@@ -73,6 +73,7 @@ class CookingModeFlowTest : BaseE2ETest() {
             ) {
                 homeRobot.navigateToRecipeDetail(MealType.BREAKFAST)
                 recipeDetailRobot.waitForRecipeContent(45000)
+                recipeDetailRobot.waitForRecipeDetailScreen(30000)
             }
         } catch (e: Throwable) {
             android.util.Log.w("CookingModeFlowTest", "Recipe detail load failed in setUp: ${e.message}")
@@ -81,6 +82,7 @@ class CookingModeFlowTest : BaseE2ETest() {
                 recipeDetailRobot.goBack()
                 homeRobot.selectDay(java.time.DayOfWeek.TUESDAY)
                 homeRobot.navigateToRecipeDetail(MealType.LUNCH)
+                recipeDetailRobot.waitForRecipeContent(45000)
                 recipeDetailRobot.waitForRecipeDetailScreen(30000)
             } catch (e2: Throwable) {
                 android.util.Log.w("CookingModeFlowTest", "Retry also failed: ${e2.message}")

@@ -297,7 +297,7 @@ class MealPlanAIVerificationTest : BaseE2ETest() {
     private fun phase3_generateAndCapture(token: String): JSONObject {
         Log.i(TAG, "=== Phase 3: Generate Meal Plan + Capture Output ===")
 
-        val maxAttempts = 3
+        val maxAttempts = 5
         for (attempt in 1..maxAttempts) {
             Log.i(TAG, "Generation attempt $attempt/$maxAttempts")
             val startTime = System.currentTimeMillis()
@@ -315,8 +315,9 @@ class MealPlanAIVerificationTest : BaseE2ETest() {
 
             Log.w(TAG, "Attempt $attempt failed after ${elapsed}ms")
             if (attempt < maxAttempts) {
-                Log.i(TAG, "Waiting 10s before retry...")
-                Thread.sleep(10_000)
+                val backoffSec = attempt * 5L
+                Log.i(TAG, "Waiting ${backoffSec}s before retry...")
+                Thread.sleep(backoffSec * 1000)
             }
         }
 

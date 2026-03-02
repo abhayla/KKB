@@ -3,6 +3,7 @@ package com.rasoiai.app.e2e.robots
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -20,12 +21,34 @@ import com.rasoiai.app.presentation.common.TestTags
 class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
 
     /**
-     * Wait for settings screen to be displayed.
+     * Wait for settings screen to be displayed, including LazyColumn content.
+     * The LazyColumn is hidden behind an `if (uiState.isLoading)` gate,
+     * so we must poll for a content element that only exists after loading.
      */
-    fun waitForSettingsScreen(timeoutMillis: Long = 5000) = apply {
+    fun waitForSettingsScreen(timeoutMillis: Long = 10000) = apply {
         composeTestRule.waitUntilNodeWithTagExists(TestTags.SETTINGS_SCREEN, timeoutMillis)
-        // Also wait for content to load (title appears)
+        // Wait for title (TopAppBar)
         composeTestRule.waitUntilNodeWithTextExists("Settings", timeoutMillis)
+        // Wait for LazyColumn content to actually load (behind isLoading gate)
+        waitForSettingsContentLoaded(timeoutMillis)
+    }
+
+    /**
+     * Poll for LazyColumn content that only appears after the ViewModel
+     * finishes loading (isLoading = false). Looks for "Profile" or "Sign Out"
+     * text which always exist inside the LazyColumn.
+     */
+    private fun waitForSettingsContentLoaded(timeoutMillis: Long = 10000) {
+        val startTime = System.currentTimeMillis()
+        while ((System.currentTimeMillis() - startTime) < timeoutMillis) {
+            val profileNodes = composeTestRule.onAllNodesWithText("Profile", substring = true, ignoreCase = true)
+                .fetchSemanticsNodes()
+            if (profileNodes.isNotEmpty()) return
+            val signOutNodes = composeTestRule.onAllNodesWithText("Sign Out", substring = true, ignoreCase = true)
+                .fetchSemanticsNodes()
+            if (signOutNodes.isNotEmpty()) return
+            Thread.sleep(200)
+        }
     }
 
     /**

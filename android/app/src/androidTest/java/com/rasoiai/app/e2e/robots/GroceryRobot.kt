@@ -2,6 +2,7 @@ package com.rasoiai.app.e2e.robots
 
 import android.util.Log
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
@@ -24,10 +25,11 @@ import com.rasoiai.app.presentation.common.TestTags
 class GroceryRobot(private val composeTestRule: ComposeContentTestRule) {
 
     /**
-     * Wait for grocery screen to be displayed.
-     * Uses exponential backoff for better reliability.
+     * Wait for grocery screen to be displayed, including LazyColumn content.
+     * The LazyColumn is hidden behind an `if (uiState.isLoading)` gate,
+     * so we poll for a content element that only exists after loading.
      */
-    fun waitForGroceryScreen(timeoutMillis: Long = 5000) = apply {
+    fun waitForGroceryScreen(timeoutMillis: Long = 10000) = apply {
         composeTestRule.waitUntilWithBackoff(
             tag = TestTags.GROCERY_SCREEN,
             timeoutMillis = timeoutMillis,
@@ -35,6 +37,31 @@ class GroceryRobot(private val composeTestRule: ComposeContentTestRule) {
             maxPollMs = 500,
             backoffMultiplier = 1.5
         )
+        // Wait for LazyColumn content to load (behind isLoading gate)
+        waitForGroceryContentLoaded(timeoutMillis)
+    }
+
+    /**
+     * Poll for LazyColumn content that only appears after the ViewModel
+     * finishes loading. Looks for "Share via WhatsApp" button or category tags.
+     */
+    private fun waitForGroceryContentLoaded(timeoutMillis: Long = 10000) {
+        val startTime = System.currentTimeMillis()
+        while ((System.currentTimeMillis() - startTime) < timeoutMillis) {
+            // Check for WhatsApp share button (always present in loaded grocery list)
+            try {
+                val shareNodes = composeTestRule.onAllNodesWithText("Share via WhatsApp", substring = true, ignoreCase = true)
+                    .fetchSemanticsNodes()
+                if (shareNodes.isNotEmpty()) return
+            } catch (_: Exception) { }
+            // Check for any category header (grocery list always has at least one)
+            try {
+                val itemNodes = composeTestRule.onAllNodesWithText("items", substring = true, ignoreCase = true)
+                    .fetchSemanticsNodes()
+                if (itemNodes.isNotEmpty()) return
+            } catch (_: Exception) { }
+            Thread.sleep(200)
+        }
     }
 
     /**
