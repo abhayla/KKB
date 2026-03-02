@@ -24,28 +24,28 @@ parse_hook_input() {
     tmpfile=$(mktemp 2>/dev/null || echo ".claude/.tmp_hook_input_$$.json")
     printf '%s' "$HOOK_RAW_INPUT" > "$tmpfile"
 
-    # Single Python call parses JSON once, outputs shell-safe variable assignments
-    eval "$(python -c "
+    # Parse JSON via Python, write results to separate files (NOT eval — eval breaks
+    # when tool_input contains bash code with single quotes, because Python repr()
+    # switches to double-quote strings which bash interprets as code)
+    python -c "
 import json, sys
 try:
     with open(sys.argv[1]) as f:
         d = json.load(f)
-    tn = d.get('tool_name', '')
-    ti = json.dumps(d.get('tool_input', {}))
-    # Use repr() for shell-safe quoting (handles quotes, backslashes, newlines)
-    print('HOOK_TOOL_NAME=' + repr(str(tn)))
-    print('HOOK_TOOL_INPUT=' + repr(str(ti)))
+    with open(sys.argv[1] + '.name', 'w') as f:
+        f.write(d.get('tool_name', ''))
+    with open(sys.argv[1] + '.input', 'w') as f:
+        f.write(json.dumps(d.get('tool_input', {})))
 except Exception:
-    print(\"HOOK_TOOL_NAME=''\")
-    print(\"HOOK_TOOL_INPUT='{}'\")
-" "$tmpfile" 2>/dev/null)" || {
-        HOOK_TOOL_NAME=""
-        HOOK_TOOL_INPUT="{}"
-    }
+    pass
+" "$tmpfile" 2>/dev/null
 
-    # tool_output is too large for eval — hooks that need it read HOOK_RAW_INPUT directly
+    HOOK_TOOL_NAME=$(cat "${tmpfile}.name" 2>/dev/null) || HOOK_TOOL_NAME=""
+    HOOK_TOOL_INPUT=$(cat "${tmpfile}.input" 2>/dev/null) || HOOK_TOOL_INPUT="{}"
+
+    # tool_output is too large for file passing — hooks that need it read HOOK_RAW_INPUT directly
     HOOK_TOOL_OUTPUT=""
-    rm -f "$tmpfile" 2>/dev/null
+    rm -f "$tmpfile" "${tmpfile}.name" "${tmpfile}.input" 2>/dev/null
 }
 
 extract_input_field() {
@@ -414,7 +414,11 @@ parse_skill_outcome() {
     # Sets shell variables: SKILL_OUTCOME, SKILL_ISSUES_FOUND, SKILL_ISSUES_RESOLVED,
     # SKILL_FIXES (JSON array), SKILL_UNRESOLVED (JSON array)
     local output="$1"
-    eval "$(python -c "
+    local tmpfile
+    tmpfile=$(mktemp 2>/dev/null || echo ".claude/.tmp_skill_outcome_$$.json")
+
+    # Write results to a JSON file (NOT eval — eval breaks on single quotes in content)
+    python -c "
 import re, json, sys
 
 output = sys.stdin.read()
@@ -440,7 +444,7 @@ issues_resolved = int(resolved_m.group(1)) if resolved_m else 0
 
 # Extract fixes applied (file:line patterns)
 fixes = []
-for m in re.finditer(r'\[([^\]]+?):(\d+)\]\s*[-—]\s*(.+)', output):
+for m in re.finditer(r'\[([^\]]+?):(\d+)\]\s*[-\u2014]\s*(.+)', output):
     fixes.append({'file': m.group(1), 'line': int(m.group(2)), 'description': m.group(3).strip()[:200]})
 
 # Extract unresolved items
@@ -458,12 +462,32 @@ for line in output.split('\n'):
         elif line.strip() == '' or line.startswith('#'):
             in_unresolved = False
 
-print(f\"SKILL_OUTCOME='{outcome}'\")
-print(f\"SKILL_ISSUES_FOUND={issues_found}\")
-print(f\"SKILL_ISSUES_RESOLVED={issues_resolved}\")
-print(f\"SKILL_FIXES='{json.dumps(fixes)}'\")
-print(f\"SKILL_UNRESOLVED='{json.dumps(unresolved)}'\")
-" <<< "$output" 2>/dev/null)"
+result = {
+    'outcome': outcome,
+    'issues_found': issues_found,
+    'issues_resolved': issues_resolved,
+    'fixes': json.dumps(fixes),
+    'unresolved': json.dumps(unresolved)
+}
+with open(sys.argv[1], 'w') as f:
+    json.dump(result, f)
+" "$tmpfile" <<< "$output" 2>/dev/null
+
+    # Read results from file (safe — no eval)
+    if [ -f "$tmpfile" ]; then
+        SKILL_OUTCOME=$(python -c "import json;d=json.load(open('$tmpfile'));print(d.get('outcome','UNKNOWN'))" 2>/dev/null)
+        SKILL_ISSUES_FOUND=$(python -c "import json;d=json.load(open('$tmpfile'));print(d.get('issues_found',0))" 2>/dev/null)
+        SKILL_ISSUES_RESOLVED=$(python -c "import json;d=json.load(open('$tmpfile'));print(d.get('issues_resolved',0))" 2>/dev/null)
+        SKILL_FIXES=$(python -c "import json;d=json.load(open('$tmpfile'));print(d.get('fixes','[]'))" 2>/dev/null)
+        SKILL_UNRESOLVED=$(python -c "import json;d=json.load(open('$tmpfile'));print(d.get('unresolved','[]'))" 2>/dev/null)
+    else
+        SKILL_OUTCOME="UNKNOWN"
+        SKILL_ISSUES_FOUND=0
+        SKILL_ISSUES_RESOLVED=0
+        SKILL_FIXES="[]"
+        SKILL_UNRESOLVED="[]"
+    fi
+    rm -f "$tmpfile" 2>/dev/null
 }
 
 format_issue_body() {
