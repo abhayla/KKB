@@ -174,7 +174,7 @@ PYTHONPATH=. python scripts/cleanup_user.py
 | G7 | Verify dietary_type appears in prompt | "Primary Diet: VEGETARIAN" visible in AI prompt logs | API |
 | G8 | Verify nutrition_goals appear in prompt | Active nutrition goals listed with weekly targets | API |
 
-### Contradictions C34-C41 (Family Safety)
+### Contradictions C34-C37 (Family Safety)
 
 | Contradiction | Setup | Expected Behavior | Type |
 |---------------|-------|-------------------|------|

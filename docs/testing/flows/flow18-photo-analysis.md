@@ -87,18 +87,18 @@ else:
 "
 ```
 
-### Phase F: Contradictions C40-C42 (Steps 19-25)
+### Phase F: Contradictions F18-C40-F18-C42 (Steps 19-25)
 
 | Step | Action | Expected | Type | Screenshot | Validation |
 |------|--------|----------|------|------------|------------|
-| F1 | **C40:** Upload non-food image (e.g., landscape photo) | Push `test-landscape.jpg` via ADB, select from gallery | API | — | — |
+| F1 | **F18-C40:** Upload non-food image (e.g., landscape photo) | Push `test-landscape.jpg` via ADB, select from gallery | API | — | — |
 | F2 | Tap "Gallery" → select non-food image | Analysis starts | UI | — | — |
 | F3 | Wait for analysis | Error message: "No food detected" or "Could not identify ingredients" | UI | `flow18_c40_nonfood.png` | HARD |
 | F4 | Dismiss error | Return to Pantry, no items added | UI | — | HARD |
-| F5 | **C41:** Upload very low-quality/blurry food image | Push `test-blurry-food.jpg`, select from gallery | API | — | — |
+| F5 | **F18-C41:** Upload very low-quality/blurry food image | Push `test-blurry-food.jpg`, select from gallery | API | — | — |
 | F6 | Wait for analysis | Either identifies with low confidence OR error "Image quality too low" | UI | `flow18_c41_blurry.png` | — |
 | F7 | Dismiss results | Return to Pantry | UI | — | — |
-| F8 | **C42:** Upload image with 10+ ingredients (complex dish) | Push `test-complex-dish.jpg` (e.g., thali), select | API | — | — |
+| F8 | **F18-C42:** Upload image with 10+ ingredients (complex dish) | Push `test-complex-dish.jpg` (e.g., thali), select | API | — | — |
 | F9 | Wait for analysis (may take longer) | Identifies multiple ingredients (at least 5) | UI | `flow18_c42_complex.png` | — |
 | F10 | Verify all identified items listed | Scrollable list of ingredients | UI | — | HARD |
 | F11 | Tap "Add All" or select specific items | Items added to pantry | UI | — | — |
@@ -149,6 +149,6 @@ No `validate_meal_plan.py` checkpoints — validation is photo analysis-focused:
 
 | ID | Description | Steps | Expected Outcome | Type |
 |----|-------------|-------|------------------|------|
-| C40 | Non-food image upload | F1-F4 | Error message, no items added | UI |
-| C41 | Low-quality image upload | F5-F7 | Low confidence or error | UI |
-| C42 | Complex dish with 10+ ingredients | F8-F11 | All ingredients identified and listed | UI |
+| F18-C40 | Non-food image upload | F1-F4 | Error message, no items added | UI |
+| F18-C41 | Low-quality image upload | F5-F7 | Low confidence or error | UI |
+| F18-C42 | Complex dish with 10+ ingredients | F8-F11 | All ingredients identified and listed | UI |

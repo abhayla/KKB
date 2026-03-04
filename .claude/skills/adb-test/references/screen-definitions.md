@@ -52,13 +52,15 @@ Follow navigation path from `adb-test-definitions.md`. Use ADB taps. Wait 1-2s a
 
 **E4. Screenshot + AI Visual Analysis**
 
-Capture: `$ADB exec-out screencap -p > $SCREENSHOT_DIR/adb-test_{screen}_{timestamp}.png`
+Capture: `$ADB exec-out screencap -p > docs/testing/screenshots/adb-test_{screen}_{timestamp}.png`
 
 Validate with Pattern 12. If BLANK_SUSPECT: wake device, retry (max 2 retries). If still blank -> `visual_verified=false`.
 
 If `visual_verified=true`: Read screenshot with Read tool, analyze layout, alignment, data, colors, empty states.
 
 If `visual_verified=false`: Skip visual analysis, log warning. Screen CANNOT be PASS unless ALL elements verified via XML AND all interactions pass.
+
+> **Screen mode vs Flow mode:** `/verify-screenshots` is NOT required per-screenshot in screen mode. Screen mode uses the Pre-Classification Gate (E5.7) for pass/fail determination. `/verify-screenshots` is only BLOCKING per-UI-step in flow mode (see flow-definitions.md G3).
 
 **E5. Interactive Testing**
 
@@ -109,6 +111,30 @@ Rules:
 - If `visual_verified=false`: Question 3 is NO. Screen CAN still pass if 1,2,4,5,6 are YES.
 - An "observation" IS an issue — no category for "noted behavior".
 - You MUST NOT proceed to E6 without completing this gate.
+
+**Gate artifact (MANDATORY):** Write gate answers to a JSON file before classifying:
+```bash
+cat > docs/testing/reports/screen-{screen_name}-gate.json << 'EOF'
+{
+  "screen": "{screen_name}",
+  "timestamp": "{ISO timestamp}",
+  "gate_result": "PASS_ELIGIBLE|ISSUE_FOUND",
+  "questions": {
+    "anr_clear": true,
+    "all_elements_found": true,
+    "all_interactions_passed": true,
+    "screenshot_verified": true,
+    "zero_crashes": true,
+    "zero_app_errors": true,
+    "no_unexpected_behavior": true
+  },
+  "element_count": "{found}/{total}",
+  "interaction_count": "{passed}/{total}",
+  "screenshot_path": "docs/testing/screenshots/adb-test_{screen}_{timestamp}.png"
+}
+EOF
+```
+This file serves as commit evidence for the `verify-evidence-artifacts.sh` hook (see HOOK LIMITATIONS in SKILL.md).
 
 **E5.8. Backend API Bug Detection (during flow steps)**
 
@@ -189,6 +215,8 @@ Before assuming a code bug, check if the test definition is outdated:
 
 > **ENFORCEMENT GATE:** Hooks track whether you invoke `/fix-loop` via the Skill tool. If you fix issues inline without using the Skill tool, the `log-workflow.sh` hook will NOT record a `fixLoopInvoked` event, and if fixes are applied, the `verify-evidence-artifacts.sh` hook will **block your commit**. You MUST use `Skill("fix-loop")`.
 
+> **ADB HOOK LIMITATION:** In ADB sessions, `post-test-update.sh` does NOT auto-set `testFailuresPending` because ADB commands are not recognized as test commands. The `validate-workflow-step.sh` hook will NOT block inline fixes. **Protocol compliance is the SOLE enforcement mechanism** — you MUST invoke `/fix-loop` via the Skill tool for every ISSUE_FOUND, even though hooks cannot enforce it.
+
 **MANDATORY: Use the Skill tool** to invoke `/fix-loop`. Do NOT read fix-loop.md and follow it inline — you MUST invoke it as a Skill.
 
 Invoke: `skill: "fix-loop"` with these arguments:
@@ -219,6 +247,16 @@ Wait for Home, navigate back to screen under test.
 **Step F4: Retest** (caller responsibility)
 
 Repeat full screen protocol (E1-E6.5) for this screen.
+
+**Structured retest result (MANDATORY):** After each retest, record the outcome:
+```
+Retest [{screen_name}] attempt {N}/3 for issue {issue_id}:
+  - Gate result: PASS_ELIGIBLE | ISSUE_FOUND
+  - Issue status: RESOLVED | STILL_FAILING | NEW_ISSUE
+  - Fix applied: {file:line — brief description} | None
+  - Screenshot: docs/testing/screenshots/adb-test_{screen}_{timestamp}.png
+```
+This structured output ensures fix-loop iterations are traceable in session logs.
 
 **Step F5: Per-Issue Increment**
 - Issue RESOLVED and others remain -> next OPEN issue (reset attempt counter)

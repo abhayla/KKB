@@ -54,7 +54,27 @@ case "$ACTIVE_CMD" in
             fi
         fi
         ;;
-    "adb-test"|"run-e2e")
+    "adb-test")
+        FLC=$(get_state_field ".skillInvocations.fixLoopCount"); FLC=${FLC:-0}
+        if [ "$FLC" -gt 0 ]; then
+            PI=$(get_state_field ".skillInvocations.postFixPipelineInvoked")
+            if [ "$PI" != "true" ] && [ "$PI" != "True" ]; then
+                MISSING="$MISSING  - /post-fix-pipeline not invoked (fixes applied)\n"
+            fi
+        fi
+        # ADB tests don't populate testRuns[] — check for flow reports or screen gate files instead
+        HAS_EVIDENCE="false"
+        if ls docs/testing/reports/flow*.md 1>/dev/null 2>&1; then
+            HAS_EVIDENCE="true"
+        fi
+        if ls docs/testing/reports/screen-*-gate.json 1>/dev/null 2>&1; then
+            HAS_EVIDENCE="true"
+        fi
+        if [ "$HAS_EVIDENCE" = "false" ]; then
+            MISSING="$MISSING  - No ADB test evidence found (no flow reports or screen gate files)\n"
+        fi
+        ;;
+    "run-e2e")
         FLC=$(get_state_field ".skillInvocations.fixLoopCount"); FLC=${FLC:-0}
         if [ "$FLC" -gt 0 ]; then
             PI=$(get_state_field ".skillInvocations.postFixPipelineInvoked")

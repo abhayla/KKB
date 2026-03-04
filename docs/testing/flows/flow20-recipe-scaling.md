@@ -100,19 +100,19 @@ else:
 | E4 | Verify Rice quantity is 1 cup (scaled value, not original 2 cups) | Grocery item shows "1 cup" | UI | — | HARD |
 | E5 | Navigate back to Home | Home screen | UI | — | — |
 
-### Phase F: Contradictions C40-C42 (Steps 24-35)
+### Phase F: Contradictions F20-C40-F20-C42 (Steps 24-35)
 
 | Step | Action | Expected | Type | Screenshot | Validation |
 |------|--------|----------|------|------------|------------|
 | F1 | Open same recipe again | Recipe Detail loads | UI | — | — |
-| F2 | **C40:** Set servings to 1 (minimum) | Servings selector allows minimum value | UI | — | HARD |
+| F2 | **F20-C40:** Set servings to 1 (minimum) | Servings selector allows minimum value | UI | — | HARD |
 | F3 | Verify ingredients show fractional values | Rice=0.5 cups ("1/2 cup"), Oil=0.25 tbsp ("1/4 tbsp"), Salt=0.125 tsp ("1/8 tsp") | UI | `flow20_c40_servings_1.png` | HARD |
 | F4 | Verify no "0" quantities or negative values | All ingredients have positive quantities | UI | — | HARD |
-| F5 | **C41:** Set servings to 12 (maximum or very large) | Servings selector allows large value | UI | — | HARD |
+| F5 | **F20-C41:** Set servings to 12 (maximum or very large) | Servings selector allows large value | UI | — | HARD |
 | F6 | Verify ingredients show large quantities | Rice=6 cups (12/4 * 2), Oil=3 tbsp, Salt=1.5 tsp | UI | `flow20_c41_servings_12.png` | HARD |
 | F7 | Verify no integer overflow or display issues | All quantities displayed correctly (not "NaN" or overflow) | UI | — | HARD |
 | F8 | Scroll through entire ingredient list | All ingredients scaled, no missing items | UI | — | HARD |
-| F9 | **C42:** Reset servings to original (4) | Servings value changes to 4 | UI | — | HARD |
+| F9 | **F20-C42:** Reset servings to original (4) | Servings value changes to 4 | UI | — | HARD |
 | F10 | Verify ingredients return to baseline | Rice=2 cups, Oil=1 tbsp, Salt=0.5 tsp (matches Phase B) | UI | `flow20_c42_reset.png` | HARD |
 
 ### Backend API Cross-Validation: Edge Case Scaling
@@ -211,6 +211,6 @@ No `validate_meal_plan.py` checkpoints — validation is recipe scaling-focused:
 
 | ID | Description | Steps | Expected Outcome | Type |
 |----|-------------|-------|------------------|------|
-| C40 | Servings = 1 (minimum) | F2-F4 | Fractional quantities handled (e.g., "1/2 cup", "1/4 tsp") | UI |
-| C41 | Servings = 12 (maximum) | F5-F8 | Large quantities display correctly, no overflow | UI |
-| C42 | Reset servings to original | F9-F10 | Ingredients return to baseline values | UI |
+| F20-C40 | Servings = 1 (minimum) | F2-F4 | Fractional quantities handled (e.g., "1/2 cup", "1/4 tsp") | UI |
+| F20-C41 | Servings = 12 (maximum) | F5-F8 | Large quantities display correctly, no overflow | UI |
+| F20-C42 | Reset servings to original | F9-F10 | Ingredients return to baseline values | UI |

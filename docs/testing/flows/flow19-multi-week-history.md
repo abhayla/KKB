@@ -142,16 +142,16 @@ else:
 "
 ```
 
-### Phase H: Contradictions C43-C45 (Steps 34-42)
+### Phase H: Contradictions F19-C43-F19-C45 (Steps 34-42)
 
 | Step | Action | Expected | Type | Screenshot | Validation |
 |------|--------|----------|------|------------|------------|
-| H1 | **C43:** Rapidly tap Previous/Next Week arrows 10 times | UI handles rapid navigation without crash | UI | — | HARD |
+| H1 | **F19-C43:** Rapidly tap Previous/Next Week arrows 10 times | UI handles rapid navigation without crash | UI | — | HARD |
 | H2 | Verify Home screen still functional | No crashes, correct week displayed | UI | `flow19_c43_rapid.png` | HARD |
-| H3 | **C44:** Navigate to week 4 weeks in the past | Tap Previous Week 4 times | UI | — | — |
+| H3 | **F19-C44:** Navigate to week 4 weeks in the past | Tap Previous Week 4 times | UI | — | — |
 | H4 | Verify very old week loads (if plan exists) | Historical plan loads OR empty state | UI | `flow19_c44_old_week.png` | — |
 | H5 | Tap "Back to This Week" | Returns to current week | UI | — | HARD |
-| H6 | **C45:** Navigate to week 4 weeks in the future | Tap Next Week 4 times | UI | — | — |
+| H6 | **F19-C45:** Navigate to week 4 weeks in the future | Tap Next Week 4 times | UI | — | — |
 | H7 | Verify very future week shows empty state | "No meal plan" or generate option | UI | `flow19_c45_future_week.png` | HARD |
 | H8 | Tap "Back to This Week" | Returns to current week | UI | — | HARD |
 | H9 | Run crash/ANR detection (Pattern 9) | No crashes during rapid navigation | API | — | HARD |
@@ -200,6 +200,6 @@ No `validate_meal_plan.py` checkpoints — validation is multi-week navigation-f
 
 | ID | Description | Steps | Expected Outcome | Type |
 |----|-------------|-------|------------------|------|
-| C43 | Rapid week navigation | H1-H2 | No crash, UI stable | UI |
-| C44 | Navigate to very old week (4 weeks past) | H3-H5 | Historical plan loads or empty state | UI |
-| C45 | Navigate to very future week (4 weeks ahead) | H6-H8 | Empty state with generate option | UI |
+| F19-C43 | Rapid week navigation | H1-H2 | No crash, UI stable | UI |
+| F19-C44 | Navigate to very old week (4 weeks past) | H3-H5 | Historical plan loads or empty state | UI |
+| F19-C45 | Navigate to very future week (4 weeks ahead) | H6-H8 | Empty state with generate option | UI |

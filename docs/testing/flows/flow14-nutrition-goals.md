@@ -105,23 +105,23 @@
 | D7 | Tap on a high-protein recipe → Recipe Detail | Recipe shows protein-rich ingredients | UI |
 | D8 | Verify recipe tags include "High Protein" (if tagging exists) | Tag present (optional) | UI |
 
-### Phase E: Contradictions C36-C37
+### Phase E: Contradictions F14-C36-F14-C37
 
 | Contradiction | Setup | Action | Expected Behavior | Type |
 |---------------|-------|--------|-------------------|------|
-| **C36**: Impossible target | User has 1 nutrition goal | Add goal: Protein 50 servings/week (7 days × max 3 meals = 21 servings) | System shows warning: "Target exceeds weekly meal count" OR AI does best effort + explains in chat | UI |
-| **C37**: Duplicate goal category | Protein goal already exists (12/week) | Add another goal: Protein 8/week | System returns 409 Conflict: "Nutrition goal for PROTEIN already exists" | UI |
+| **F14-C36**: Impossible target | User has 1 nutrition goal | Add goal: Protein 50 servings/week (7 days × max 3 meals = 21 servings) | System shows warning: "Target exceeds weekly meal count" OR AI does best effort + explains in chat | UI |
+| **F14-C37**: Duplicate goal category | Protein goal already exists (12/week) | Add another goal: Protein 8/week | System returns 409 Conflict: "Nutrition goal for PROTEIN already exists" | UI |
 
 ## Contradictions Summary
 
 | ID | Contradiction | Fix Strategy |
 |----|---------------|--------------|
-| C36 | Impossible target (50 protein servings in 21 meals) | Frontend validation: warn if target > 21 (7 days × 3 meals). Backend: AI does best effort, no error. |
-| C37 | Duplicate goal category | Backend unique constraint on (user_id, category). Return 409 with message. |
+| F14-C36 | Impossible target (50 protein servings in 21 meals) | Frontend validation: warn if target > 21 (7 days × 3 meals). Backend: AI does best effort, no error. |
+| F14-C37 | Duplicate goal category | Backend unique constraint on (user_id, category). Return 409 with message. |
 
 ## Fix Strategy
 
-**For C36 (Impossible target):**
+**For F14-C36 (Impossible target):**
 - Android: `NutritionGoalsViewModel` validates target before save
 - Check: `if (targetServings > 21 && timeframe == WEEKLY)` → show warning dialog
 - Warning: "Weekly meal plan has max 21 meals (7 days × 3). Target 50 servings may not be achievable."
@@ -129,7 +129,7 @@
 - Backend: AI prompt includes goal → Gemini does best effort → response includes note: "Targeted 50 protein servings, achieved 21 (maximum possible)"
 - No 400 error, graceful handling
 
-**For C37 (Duplicate goal category):**
+**For F14-C37 (Duplicate goal category):**
 - Backend: `nutrition_goals` table has unique constraint: `UNIQUE(user_id, category)`
 - `nutrition_goals_service.py` catches `IntegrityError` on insert
 - Return 409 Conflict: `{"detail": "Nutrition goal for category 'PROTEIN' already exists. Please edit the existing goal."}`

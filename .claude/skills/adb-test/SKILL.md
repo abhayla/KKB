@@ -4,7 +4,7 @@ description: >
   Autonomous Android E2E testing via ADB (uiautomator dump, screencap, input tap).
   Self-healing fix loops, dropdown API fallback (Pattern 14), GitHub issue auto-filing.
   Use when testing app screens without Compose framework, debugging emulator UI,
-  or validating user flows manually. Supports 12 screens and 21 flows.
+  or validating user flows manually. Supports 24 screens and 21 flows.
 allowed-tools: "Bash Read Grep Glob Skill"
 argument-hint: "[screen|flow|all-flows|all-flows-from <name>]"
 ---
@@ -15,7 +15,7 @@ Test app screens via ADB (uiautomator dump, screencap, input tap) — fully auto
 
 **Target screen:** $ARGUMENTS
 
-If `$ARGUMENTS` is empty, test ALL 12 screens sequentially. If a screen name is provided (e.g., `home`, `grocery`), test only that screen. If a flow name is provided (e.g., `new-user-journey`), test that user journey flow.
+If `$ARGUMENTS` is empty, test ALL 24 screens sequentially. If a screen name is provided (e.g., `home`, `grocery`), test only that screen. If a flow name is provided (e.g., `new-user-journey`), test that user journey flow.
 
 **Valid screen names:** `auth-flow`, `home`, `grocery`, `chat`, `favorites`, `stats`, `settings`, `notifications`, `recipe-detail`, `cooking-mode`, `pantry`, `recipe-rules`
 
@@ -28,7 +28,7 @@ If `$ARGUMENTS` is empty, test ALL 12 screens sequentially. If a screen name is 
 2. If `$ARGUMENTS` matches a valid flow name — run flow execution protocol (see `references/flow-definitions.md`)
 3. If `$ARGUMENTS` is `all-flows` — run all 21 flows sequentially (flow01 - flow21)
 4. If `$ARGUMENTS` is `all-flows-from <name>` — run flows from the specified flow onwards
-5. If `$ARGUMENTS` is empty — run all 12 screen tests
+5. If `$ARGUMENTS` is empty — run all 24 screen tests
 
 ---
 
@@ -58,6 +58,8 @@ LOG_DIR = .claude/logs/adb-test
 APP_PACKAGE = com.rasoiai.app
 APP_ACTIVITY = com.rasoiai.app.MainActivity
 ```
+
+> **Literal paths:** Command templates in screen-definitions.md and flow-definitions.md use literal `docs/testing/screenshots` instead of `$SCREENSHOT_DIR` to ensure `post-screenshot.sh` can extract and process paths correctly. The `$SCREENSHOT_DIR` variable is defined here for reference only.
 
 **Read `docs/testing/adb-patterns.md` for the 14 reusable ADB interaction patterns** (UI dump, screenshot, tap, text input, back press, parse bounds, find element, scroll/redump, crash/ANR detection, keyboard dismiss, system dialog detection, screenshot validation, logcat capture, dropdown/popup interaction).
 
@@ -192,14 +194,38 @@ Before prerequisites, initialize the workflow tracking state:
 
 ```bash
 python -c "
-import json, os
+import json, os, tempfile
 state_file = '.claude/workflow-state.json'
 if os.path.exists(state_file):
     with open(state_file) as f:
         d = json.load(f)
-    d['activeCommand'] = 'adb-test'
-    with open(state_file, 'w') as f:
-        json.dump(d, f, indent=2)
+else:
+    d = {}
+
+# Set active command
+d['activeCommand'] = 'adb-test'
+
+# Clear flags that would false-block ADB sessions
+d['testFailuresPending'] = False
+d['fixLoopInvestigating'] = False
+d['visualIssuesPending'] = False
+
+# Clear screenshot and evidence state for fresh session
+d['screenshotsCaptured'] = []
+d.setdefault('evidence', {})['testRuns'] = []
+
+# Clear verify-screenshots flag
+d.setdefault('skillInvocations', {})['verifyScreenshotsInvoked'] = False
+
+# Preserve fixLoopCount (cumulative tracking across sessions)
+# d.get('skillInvocations', {}).get('fixLoopCount') — intentionally NOT cleared
+
+# Atomic write
+fd, tmp = tempfile.mkstemp(dir='.claude')
+with os.fdopen(fd, 'w') as f:
+    json.dump(d, f, indent=2)
+os.replace(tmp, state_file)
+print('Session state initialized for adb-test')
 "
 ```
 
@@ -401,12 +427,25 @@ flow_start_time = now()
 | Gate 1: Screenshot Verification | Cannot proceed to next UI step until `/verify-screenshots` returns | Blocks flow progression |
 | Gate 2: Fix-Loop Invocation | Cannot proceed past any FAIL without `/fix-loop` | Blocks flow progression |
 | Gate 3: Flow Halt | UNRESOLVED after 3 retries = STOP flow entirely | Remaining steps = NOT_RUN |
-| Gate 4: Report Completeness | Report cannot be saved if any of (a)-(c) are violated | Report blocked |
+| Gate 4: Report Completeness | Report cannot be saved if any of (a)-(d) are violated | Report blocked |
 
 **Gate 4 conditions (report CANNOT be saved if):**
 - (a) Any UI step has `screenshot_verified = "No"` (except NOT_RUN steps)
 - (b) Any step has `skill_should_trigger ≠ skill_actually_triggered` (except NOT_RUN steps)
 - (c) `step_results[]` has fewer entries than total steps in flow definition
+- (d) Any step has `step_type` in `step_results[]` that does not match the Type column in the flow definition (e.g., step defined as `UI` but recorded as `API`)
+
+### HOOK LIMITATIONS (ADB Sessions)
+
+> **CRITICAL:** ADB commands (`adb exec-out`, `input tap`, `uiautomator dump`) do NOT trigger the standard hook enforcement chain. The `is_test_command()` function in `hook-utils.sh` recognizes `pytest`, `./gradlew test`, and similar — but NOT ADB commands. This means:
+>
+> 1. **`post-test-update.sh` will NOT auto-record** ADB test results in `evidence.testRuns[]`. The skill must write evidence artifacts (flow reports, screen gate files) directly.
+> 2. **`verify-test-rerun.sh` will NOT re-run** ADB tests. Protocol compliance (invoking `/fix-loop` on every FAIL) is the SOLE enforcement mechanism.
+> 3. **`validate-workflow-step.sh` will NOT block** code edits based on ADB test failures. The `testFailuresPending` flag must be managed manually in SESSION INITIALIZATION.
+> 4. **`verify-evidence-artifacts.sh` checks for** flow reports (`docs/testing/reports/flow*.md`) or screen gate files (`docs/testing/reports/screen-*-gate.json`) instead of `testRuns[]` for `adb-test` sessions.
+> 5. **Screenshot paths using `$SCREENSHOT_DIR`** are resolved by `post-screenshot.sh`, but command templates should use literal `docs/testing/screenshots` to avoid edge cases.
+>
+> **Consequence:** Protocol compliance is enforced by the skill definition itself, not by hooks. Skipping `/fix-loop` on a FAIL or skipping `/verify-screenshots` on a UI step is a protocol violation that hooks cannot catch.
 
 ### Post-Run Pipeline
 
@@ -456,7 +495,7 @@ Screen  2: home             -> PASS (1 fix, 2 iterations)
 ...
 Screen 12: recipe-rules     -> PASS (0 fixes)
 --------------------------------------------------------------------
-TOTAL: X/12 passed | X fixes | X iterations | X blocked | X unresolved
+TOTAL: X/24 passed | X fixes | X iterations | X blocked | X unresolved
 ====================================================================
 
 Fixes Applied:
@@ -531,3 +570,6 @@ This captures the session outcomes into structured learning logs and updates mem
 | `cooking-mode` | Recipe detail | No | Step navigation, complete |
 | `pantry` | Settings link | Room | Add item (or empty) |
 | `recipe-rules` | Settings link | Yes | Tabs, add rule, delete |
+
+
+api-performance-testing - uses Locust

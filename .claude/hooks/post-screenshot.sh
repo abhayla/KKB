@@ -46,7 +46,12 @@ case "$TOOL_NAME" in
     # Extract actual output file path from redirect (> path.png)
     SCREENSHOT_PATH=$(printf '%s' "$CMD" | grep -oE '>\s*[^ ]+\.png' | sed 's/^>\s*//')
 
-    # If path contains shell variables ($), clear it
+    # Resolve known shell variables before the unresolved-variable check
+    if [ -n "$SCREENSHOT_PATH" ]; then
+      SCREENSHOT_PATH=$(printf '%s' "$SCREENSHOT_PATH" | sed 's|\$SCREENSHOT_DIR|docs/testing/screenshots|g')
+    fi
+
+    # If path still contains unresolved shell variables ($), clear it
     if [ -n "$SCREENSHOT_PATH" ] && printf '%s' "$SCREENSHOT_PATH" | grep -qF '$'; then
       SCREENSHOT_PATH=""
     fi

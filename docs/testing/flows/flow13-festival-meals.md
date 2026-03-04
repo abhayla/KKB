@@ -74,12 +74,12 @@
 | C7 | Verify recipe instructions mention "vrat" or "fasting" | Special notes included | UI |
 | C8 | Check Home screen for festival badge/label on relevant days | "Navratri" badge visible on meal cards | UI |
 
-### Phase D: Contradictions C34-C35
+### Phase D: Contradictions F13-C34-F13-C35
 
 | Contradiction | Setup | Action | Expected Behavior | Type |
 |---------------|-------|--------|-------------------|------|
-| **C34**: Non-veg user on fasting day | User pref: non-vegetarian, Navratri fasting day | Generate plan for fasting day | Fasting rules override user diet (veg Sattvic meals) OR AI explains conflict | UI |
-| **C35**: INCLUDE non-veg on fasting day | Navratri fasting day | Add recipe rule: INCLUDE "Chicken Curry" LUNCH on fasting date | System shows warning: "Cannot include non-veg on fasting day" OR AI skips rule | UI |
+| **F13-C34**: Non-veg user on fasting day | User pref: non-vegetarian, Navratri fasting day | Generate plan for fasting day | Fasting rules override user diet (veg Sattvic meals) OR AI explains conflict | UI |
+| **F13-C35**: INCLUDE non-veg on fasting day | Navratri fasting day | Add recipe rule: INCLUDE "Chicken Curry" LUNCH on fasting date | System shows warning: "Cannot include non-veg on fasting day" OR AI skips rule | UI |
 
 ### Phase E: Verify Home Screen Festival Display
 
@@ -95,18 +95,18 @@
 
 | ID | Contradiction | Fix Strategy |
 |----|---------------|--------------|
-| C34 | Non-veg user preference vs fasting day rules | Fasting rules override user diet (festival takes precedence) |
-| C35 | INCLUDE non-veg rule on fasting day | System blocks rule creation OR AI skips rule with explanation |
+| F13-C34 | Non-veg user preference vs fasting day rules | Fasting rules override user diet (festival takes precedence) |
+| F13-C35 | INCLUDE non-veg rule on fasting day | System blocks rule creation OR AI skips rule with explanation |
 
 ## Fix Strategy
 
-**For C34 (Non-veg user on fasting day):**
+**For F13-C34 (Non-veg user on fasting day):**
 - Backend: `ai_meal_service.py` checks if meal date matches `festivals.is_fasting_day = true`
 - AI prompt: "Date 2026-04-10 is Navratri (fasting). Override user non-veg preference → Sattvic veg only"
 - Gemini generates veg Sattvic meals regardless of user dietary_type
 - Optional: Show snackbar on Home screen: "Fasting rules applied for Navratri"
 
-**For C35 (INCLUDE non-veg on fasting day):**
+**For F13-C35 (INCLUDE non-veg on fasting day):**
 - Backend: `recipe_rules_service.py` validates rule before insert
 - Check: If `enforcement.specific_date` matches festival fasting day + rule is INCLUDE + recipe has non-veg tag → return 400
 - Error message: "Cannot include non-vegetarian items on fasting day (Navratri: 2026-04-10)"

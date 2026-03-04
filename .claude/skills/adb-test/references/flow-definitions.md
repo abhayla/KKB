@@ -72,12 +72,12 @@ For each step in the flow definition:
 3. **Read step's Action column** and execute using appropriate ADB pattern (UI) or curl/script (API)
 4. **Dump UI and verify Expected column** — determine PASS/FAIL
 5. **Capture evidence:**
-   - **UI steps (Type=UI):** `$ADB exec-out screencap -p > $SCREENSHOT_DIR/flow{N}_{step_id}.png`
+   - **UI steps (Type=UI):** `$ADB exec-out screencap -p > docs/testing/screenshots/flow{N}_{step_id}.png`
      - Every UI step gets a unique screenshot — no reuse, no skipping
    - **API steps (Type=API):** Save request JSON + response JSON to `$EVIDENCE_DIR/{step_id}_request.json` and `{step_id}_response.json`
 6. **BLOCKING: Invoke `/verify-screenshots`** for each UI screenshot:
    ```
-   Skill("verify-screenshots", args="path=$SCREENSHOT_DIR/flow{N}_{step_id}.png expected='{Expected column text}'")
+   Skill("verify-screenshots", args="path=docs/testing/screenshots/flow{N}_{step_id}.png expected='{Expected column text}'")
    ```
    DO NOT proceed to next step until verification completes.
    Record verification result (PASSED/ISSUES_FOUND) in `step_results[]`.
@@ -111,6 +111,12 @@ For each step in the flow definition:
 | `retry_count` | 0 = first attempt passed, 1-3 = retries before result |
 
 13. **Also append API calls** to `api_evidence[]` with method, endpoint, request body, response status, response summary
+
+**Per-flow verification count check (MANDATORY):** After the last step completes (or flow halts), verify:
+```
+verify_screenshot_invocations == count of UI steps executed (not NOT_RUN)
+```
+If the count does not match, log a protocol violation warning in the report. This catches cases where `/verify-screenshots` was skipped for a UI step.
 
 Between phases: `Phase {X} Complete: {N}/{total} steps passed`
 
@@ -159,6 +165,8 @@ A step **fails** when:
 **"Behavioral deviation" includes:** AI not performing expected actions, missing conflict detection, data not persisting as expected.
 
 > **CRITICAL: ALL failures — including SOFT FAILs (validation exit 2, warnings, minor deviations) — MUST trigger `/fix-loop`. There is NO category of failure that skips fix-loop. No exceptions.**
+
+> **Exit code override:** If a validation script or ADB command returns a non-zero exit code that the shell interprets differently (e.g., `grep` returns 1 for "no match"), the step result is determined by the **Expected column**, not the raw exit code. However, validation scripts (`validate_meal_plan.py`) always use exit 0 = PASS, exit 1 = HARD FAIL, exit 2 = SOFT FAIL — these are authoritative.
 
 **Recording per step:**
 - `skill_should_trigger` = Yes for ANY failure (FAIL or UNRESOLVED), No for PASS
