@@ -26,6 +26,8 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import com.rasoiai.app.e2e.base.clickTextWithRetry
 import com.rasoiai.app.e2e.base.clickWithRetry
+import com.rasoiai.app.e2e.base.isNodeWithTagDisplayed
+import com.rasoiai.app.e2e.base.isNodeWithTextDisplayed
 import com.rasoiai.app.e2e.base.waitForNetworkContent
 import com.rasoiai.app.e2e.base.waitForSheetText
 import com.rasoiai.app.e2e.base.waitUntilNodeWithTagExists
@@ -1492,10 +1494,8 @@ class HomeRobot(private val composeTestRule: ComposeContentTestRule) {
         val startTime = System.currentTimeMillis()
 
         while ((System.currentTimeMillis() - startTime) < timeoutMillis) {
-            // Check for grid with recipes
-            val gridNodes = composeTestRule.onAllNodesWithTag(TestTags.ADD_RECIPE_GRID, useUnmergedTree = true)
-                .fetchSemanticsNodes()
-            if (gridNodes.isNotEmpty()) {
+            // Check for grid with recipes — use assertIsDisplayed to verify visibility
+            if (composeTestRule.isNodeWithTagDisplayed(TestTags.ADD_RECIPE_GRID)) {
                 Log.d("HomeRobot", "Add Recipe grid found with recipes")
                 return true
             }
@@ -1506,9 +1506,7 @@ class HomeRobot(private val composeTestRule: ComposeContentTestRule) {
                 "No recipes available"
             )
             for (text in emptyStateTexts) {
-                val emptyNodes = composeTestRule.onAllNodesWithText(text, useUnmergedTree = true)
-                    .fetchSemanticsNodes()
-                if (emptyNodes.isNotEmpty()) {
+                if (composeTestRule.isNodeWithTextDisplayed(text)) {
                     Log.d("HomeRobot", "Add Recipe empty state found: $text")
                     return false
                 }
@@ -1524,9 +1522,7 @@ class HomeRobot(private val composeTestRule: ComposeContentTestRule) {
      * Check if the Add Recipe grid has items (recipes available).
      */
     fun hasAddRecipeGridItems(): Boolean {
-        val gridNodes = composeTestRule.onAllNodesWithTag(TestTags.ADD_RECIPE_GRID, useUnmergedTree = true)
-            .fetchSemanticsNodes()
-        return gridNodes.isNotEmpty()
+        return composeTestRule.isNodeWithTagDisplayed(TestTags.ADD_RECIPE_GRID)
     }
 
     /**

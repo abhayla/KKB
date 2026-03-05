@@ -137,7 +137,7 @@ class RecipeDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(RecipeDetailUiState(lockState = lockState))
     val uiState: StateFlow<RecipeDetailUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = Channel<RecipeDetailNavigationEvent>()
+    private val _navigationEvent = Channel<RecipeDetailNavigationEvent>(Channel.BUFFERED)
     val navigationEvent: Flow<RecipeDetailNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     init {

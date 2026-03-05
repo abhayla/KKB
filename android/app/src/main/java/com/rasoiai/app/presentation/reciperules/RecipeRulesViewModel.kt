@@ -167,7 +167,7 @@ class RecipeRulesViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(RecipeRulesUiState())
     val uiState: StateFlow<RecipeRulesUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = Channel<RecipeRulesNavigationEvent>()
+    private val _navigationEvent = Channel<RecipeRulesNavigationEvent>(Channel.BUFFERED)
     val navigationEvent: Flow<RecipeRulesNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     // Cached user preferences for diet conflict checking

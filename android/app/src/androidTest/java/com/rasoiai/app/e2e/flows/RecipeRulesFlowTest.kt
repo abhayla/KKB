@@ -1,6 +1,7 @@
 package com.rasoiai.app.e2e.flows
 
 import android.util.Log
+
 import com.rasoiai.app.e2e.base.BaseE2ETest
 import com.rasoiai.app.e2e.base.FrequencyType
 import com.rasoiai.app.e2e.base.MealSlot
@@ -45,17 +46,27 @@ class RecipeRulesFlowTest : BaseE2ETest() {
         // Skip meal plan generation — Recipe Rules tests don't need meal plan data.
         // This avoids Gemini-induced SocketTimeoutException in setUp().
         setUpAuthenticatedStateWithoutMealPlan()
+        Log.d(TAG, "setUp: authenticated state set up (without meal plan)")
         clearRecipeRulesAndGoals()  // Prevent duplicate detection from prior runs
+        Log.d(TAG, "setUp: recipe rules and goals cleared")
 
         homeRobot = HomeRobot(composeTestRule)
         settingsRobot = SettingsRobot(composeTestRule)
         recipeRulesRobot = RecipeRulesRobot(composeTestRule)
 
         // Navigate to recipe rules screen: Home → Settings → Recipe Rules
+        Log.d(TAG, "setUp: waiting for home screen...")
         homeRobot.waitForHomeScreen(30000)
+        Log.d(TAG, "setUp: home screen visible, navigating to settings...")
         homeRobot.navigateToSettings()
+        Log.d(TAG, "setUp: navigated to settings, waiting for settings screen...")
         settingsRobot.waitForSettingsScreen()
+        Log.d(TAG, "setUp: navigating to recipe rules...")
         settingsRobot.navigateToRecipeRules()
+        Log.d(TAG, "setUp: waiting for recipe rules screen...")
+
+        recipeRulesRobot.waitForRecipeRulesScreen(15000)
+        Log.d(TAG, "setUp: Recipe Rules screen is displayed!")
     }
 
     /**

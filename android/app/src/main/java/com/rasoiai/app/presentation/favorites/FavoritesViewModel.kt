@@ -103,7 +103,7 @@ class FavoritesViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(FavoritesUiState())
     val uiState: StateFlow<FavoritesUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = Channel<FavoritesNavigationEvent>()
+    private val _navigationEvent = Channel<FavoritesNavigationEvent>(Channel.BUFFERED)
     val navigationEvent: Flow<FavoritesNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     private val _snackbarEvent = Channel<FavoritesSnackbarEvent>()

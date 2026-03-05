@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.rasoiai.app.e2e.base.clickWithRetry
+import com.rasoiai.app.e2e.base.isNodeWithTextDisplayed
 import com.rasoiai.app.e2e.base.waitForNetworkContent
 import com.rasoiai.app.e2e.base.waitUntilNodeWithTagExists
 import com.rasoiai.app.e2e.base.waitUntilWithBackoff
@@ -50,15 +51,11 @@ class GroceryRobot(private val composeTestRule: ComposeContentTestRule) {
         while ((System.currentTimeMillis() - startTime) < timeoutMillis) {
             // Check for WhatsApp share button (always present in loaded grocery list)
             try {
-                val shareNodes = composeTestRule.onAllNodesWithText("Share via WhatsApp", substring = true, ignoreCase = true)
-                    .fetchSemanticsNodes()
-                if (shareNodes.isNotEmpty()) return
+                if (composeTestRule.isNodeWithTextDisplayed("Share via WhatsApp", substring = true, ignoreCase = true)) return
             } catch (_: Exception) { }
             // Check for any category header (grocery list always has at least one)
             try {
-                val itemNodes = composeTestRule.onAllNodesWithText("items", substring = true, ignoreCase = true)
-                    .fetchSemanticsNodes()
-                if (itemNodes.isNotEmpty()) return
+                if (composeTestRule.isNodeWithTextDisplayed("items", substring = true, ignoreCase = true)) return
             } catch (_: Exception) { }
             Thread.sleep(200)
         }

@@ -120,10 +120,31 @@ class OnboardingRobot(private val composeTestRule: ComposeContentTestRule) {
                 .performClick()
         }
 
-        // Save
-        composeTestRule.onNodeWithTag(TestTags.MEMBER_SAVE_BUTTON).performClick()
+        // Save — scroll to ensure save button is visible, then click
+        Log.d(TAG, "About to click Save button for ${member.name}")
+        composeTestRule.onNodeWithTag(TestTags.MEMBER_SAVE_BUTTON)
+            .performScrollTo()
+            .performClick()
         composeTestRule.waitForIdle()
-        Log.i(TAG, "Family member added: ${member.name}")
+        Thread.sleep(800) // Wait for bottom sheet dismiss animation
+        composeTestRule.waitForIdle()
+
+        // Verify member was actually added by waiting for their name in the tree
+        try {
+            composeTestRule.waitUntilNodeWithTextExists(member.name, 3000)
+            Log.i(TAG, "Family member added and verified: ${member.name}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Family member ${member.name} NOT found after save! Bottom sheet may not have saved.")
+            // Log the semantic tree for debugging
+            try {
+                val tree = composeTestRule.onNodeWithTag(TestTags.FAMILY_MEMBERS_LIST)
+                    .fetchSemanticsNode().toString()
+                Log.e(TAG, "Family members list node: $tree")
+            } catch (ignored: Exception) {
+                Log.e(TAG, "Could not find family members list node")
+            }
+            throw AssertionError("Failed to add family member ${member.name}: member not found after save", e)
+        }
     }
 
     /**
@@ -221,7 +242,7 @@ class OnboardingRobot(private val composeTestRule: ComposeContentTestRule) {
      * Assert family member is displayed in the list.
      */
     fun assertFamilyMemberDisplayed(name: String) = apply {
-        composeTestRule.onNodeWithText(name).assertIsDisplayed()
+        composeTestRule.onNodeWithText(name).performScrollTo().assertIsDisplayed()
     }
 
     /**
@@ -238,14 +259,18 @@ class OnboardingRobot(private val composeTestRule: ComposeContentTestRule) {
      * Edit an existing family member.
      */
     fun tapEditFamilyMember(index: Int) = apply {
-        composeTestRule.onNodeWithTag("${TestTags.FAMILY_MEMBER_EDIT_PREFIX}$index").performClick()
+        composeTestRule.onNodeWithTag("${TestTags.FAMILY_MEMBER_EDIT_PREFIX}$index")
+            .performScrollTo()
+            .performClick()
     }
 
     /**
      * Delete a family member.
      */
     fun tapDeleteFamilyMember(index: Int) = apply {
-        composeTestRule.onNodeWithTag("${TestTags.FAMILY_MEMBER_DELETE_PREFIX}$index").performClick()
+        composeTestRule.onNodeWithTag("${TestTags.FAMILY_MEMBER_DELETE_PREFIX}$index")
+            .performScrollTo()
+            .performClick()
     }
 
     // ===================== Step 2: Dietary Preferences =====================

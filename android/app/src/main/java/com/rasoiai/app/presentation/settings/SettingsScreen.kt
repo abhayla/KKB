@@ -290,7 +290,7 @@ internal fun SettingsScreenContent(
                 )
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().testTag(TestTags.SETTINGS_LAZY_COLUMN),
                     contentPadding = PaddingValues(vertical = spacing.md)
                 ) {
                     // Profile Section
@@ -354,6 +354,7 @@ internal fun SettingsScreenContent(
                                 ),
                                 SettingsItem(
                                     title = "Recipe Rules",
+                                    testTag = TestTags.SETTINGS_RECIPE_RULES,
                                     onClick = onRecipeRulesClick
                                 ),
                                 SettingsItem(

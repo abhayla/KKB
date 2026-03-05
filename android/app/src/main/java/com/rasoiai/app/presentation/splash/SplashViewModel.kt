@@ -43,7 +43,7 @@ class SplashViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(SplashUiState())
     val uiState: StateFlow<SplashUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = Channel<SplashNavigationEvent>()
+    private val _navigationEvent = Channel<SplashNavigationEvent>(Channel.BUFFERED)
     val navigationEvent: Flow<SplashNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     val isOnline: StateFlow<Boolean> = networkMonitor.isOnline

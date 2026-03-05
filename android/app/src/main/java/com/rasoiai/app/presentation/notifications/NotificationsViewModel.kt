@@ -97,7 +97,7 @@ class NotificationsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(NotificationsUiState())
     val uiState: StateFlow<NotificationsUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = Channel<NotificationsNavigationEvent>()
+    private val _navigationEvent = Channel<NotificationsNavigationEvent>(Channel.BUFFERED)
     val navigationEvent: Flow<NotificationsNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     init {

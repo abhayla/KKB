@@ -126,7 +126,7 @@ class GroceryViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(GroceryUiState())
     val uiState: StateFlow<GroceryUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = Channel<GroceryNavigationEvent>()
+    private val _navigationEvent = Channel<GroceryNavigationEvent>(Channel.BUFFERED)
     val navigationEvent: Flow<GroceryNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     init {

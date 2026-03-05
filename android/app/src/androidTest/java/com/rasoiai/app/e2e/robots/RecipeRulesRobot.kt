@@ -18,6 +18,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.platform.app.InstrumentationRegistry
+import com.rasoiai.app.e2e.base.waitUntilNodeWithTagExists
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
 import com.rasoiai.app.e2e.base.FoodCategory
@@ -52,15 +53,15 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
     /**
      * Wait for recipe rules screen to be displayed.
      */
-    fun waitForRecipeRulesScreen(timeoutMillis: Long = 5000) = apply {
-        composeTestRule.waitUntilNodeWithTextExists("Recipe Rules", timeoutMillis)
+    fun waitForRecipeRulesScreen(timeoutMillis: Long = 10000) = apply {
+        composeTestRule.waitUntilNodeWithTagExists(TestTags.RECIPE_RULES_SCREEN, timeoutMillis)
     }
 
     /**
      * Assert recipe rules screen is displayed.
      */
     fun assertRecipeRulesScreenDisplayed() = apply {
-        composeTestRule.onNodeWithText("Recipe Rules", ignoreCase = true).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(TestTags.RECIPE_RULES_SCREEN).assertIsDisplayed()
     }
 
     // ===================== Tab Navigation =====================

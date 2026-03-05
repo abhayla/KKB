@@ -161,7 +161,7 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = Channel<HomeNavigationEvent>()
+    private val _navigationEvent = Channel<HomeNavigationEvent>(Channel.BUFFERED)
     val navigationEvent: Flow<HomeNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     init {

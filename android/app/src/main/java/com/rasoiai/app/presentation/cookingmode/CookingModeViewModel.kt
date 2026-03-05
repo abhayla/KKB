@@ -106,7 +106,7 @@ class CookingModeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(CookingModeUiState())
     val uiState: StateFlow<CookingModeUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = Channel<CookingModeNavigationEvent>()
+    private val _navigationEvent = Channel<CookingModeNavigationEvent>(Channel.BUFFERED)
     val navigationEvent: Flow<CookingModeNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     private var timerJob: Job? = null

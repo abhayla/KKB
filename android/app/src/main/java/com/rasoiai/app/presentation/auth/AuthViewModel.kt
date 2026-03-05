@@ -58,7 +58,7 @@ class AuthViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = Channel<AuthNavigationEvent>()
+    private val _navigationEvent = Channel<AuthNavigationEvent>(Channel.BUFFERED)
     val navigationEvent: Flow<AuthNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     private var countdownJob: Job? = null

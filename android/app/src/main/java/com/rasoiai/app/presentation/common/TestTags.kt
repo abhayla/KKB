@@ -218,6 +218,8 @@ object TestTags {
     const val SETTINGS_FAMILY_SECTION = "settings_family_section"
     const val SETTINGS_MEAL_PREFERENCES_SECTION = "settings_meal_preferences_section"
     const val SETTINGS_APP_SETTINGS_SECTION = "settings_app_settings_section"
+    const val SETTINGS_RECIPE_RULES = "settings_recipe_rules"
+    const val SETTINGS_LAZY_COLUMN = "settings_lazy_column"
 
     // Achievements Screen
     const val ACHIEVEMENTS_SCREEN = "achievements_screen"

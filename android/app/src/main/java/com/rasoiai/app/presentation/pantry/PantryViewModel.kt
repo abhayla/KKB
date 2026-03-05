@@ -73,7 +73,7 @@ class PantryViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(PantryUiState())
     val uiState: StateFlow<PantryUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = Channel<PantryNavigationEvent>()
+    private val _navigationEvent = Channel<PantryNavigationEvent>(Channel.BUFFERED)
     val navigationEvent: Flow<PantryNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     init {

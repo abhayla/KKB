@@ -77,6 +77,7 @@ fun SettingsSection(
                     SettingsItemRow(
                         title = item.title,
                         value = item.value,
+                        testTag = item.testTag,
                         onClick = item.onClick
                     )
 

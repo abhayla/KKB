@@ -67,7 +67,7 @@ class ChatViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = Channel<ChatNavigationEvent>()
+    private val _navigationEvent = Channel<ChatNavigationEvent>(Channel.BUFFERED)
     val navigationEvent: Flow<ChatNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     init {

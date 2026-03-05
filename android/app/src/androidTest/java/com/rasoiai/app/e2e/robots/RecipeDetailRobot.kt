@@ -15,6 +15,8 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
 import android.util.Log
+import com.rasoiai.app.e2e.base.isNodeWithTagDisplayed
+import com.rasoiai.app.e2e.base.isNodeWithTextDisplayed
 import com.rasoiai.app.e2e.base.waitUntilNodeWithTagExists
 import com.rasoiai.app.presentation.common.TestTags
 
@@ -61,24 +63,21 @@ class RecipeDetailRobot(private val composeTestRule: ComposeContentTestRule) {
             composeTestRule.waitForIdle()
 
             // Check if either ingredients list OR start cooking button is visible
-            // These indicate recipe data has loaded
-            val ingredientsNodes = composeTestRule.onAllNodesWithTag(TestTags.RECIPE_INGREDIENTS_LIST)
-                .fetchSemanticsNodes()
-            val startCookingNodes = composeTestRule.onAllNodesWithTag(TestTags.RECIPE_START_COOKING_BUTTON)
-                .fetchSemanticsNodes()
+            // These indicate recipe data has loaded — use assertIsDisplayed to avoid
+            // false positives from pre-composed nodes in LazyColumn
+            val ingredientsVisible = composeTestRule.isNodeWithTagDisplayed(TestTags.RECIPE_INGREDIENTS_LIST)
+            val startCookingVisible = composeTestRule.isNodeWithTagDisplayed(TestTags.RECIPE_START_COOKING_BUTTON)
 
-            if (ingredientsNodes.isNotEmpty() || startCookingNodes.isNotEmpty()) {
+            if (ingredientsVisible || startCookingVisible) {
                 contentFound = true
                 Log.d("RecipeDetailRobot", "Recipe content loaded after ${System.currentTimeMillis() - startTime}ms " +
-                    "(ingredients: ${ingredientsNodes.size}, startCooking: ${startCookingNodes.size})")
+                    "(ingredients: $ingredientsVisible, startCooking: $startCookingVisible)")
             } else {
                 // Check for error state (recipe not found)
-                val errorNodes = composeTestRule.onAllNodesWithText("Recipe not found", substring = true)
-                    .fetchSemanticsNodes()
-                val failedNodes = composeTestRule.onAllNodesWithText("Failed to load", substring = true)
-                    .fetchSemanticsNodes()
+                val errorVisible = composeTestRule.isNodeWithTextDisplayed("Recipe not found", substring = true)
+                val failedVisible = composeTestRule.isNodeWithTextDisplayed("Failed to load", substring = true)
 
-                if (errorNodes.isNotEmpty() || failedNodes.isNotEmpty()) {
+                if (errorVisible || failedVisible) {
                     errorFound = true
                     Log.e("RecipeDetailRobot", "Recipe load error detected after ${System.currentTimeMillis() - startTime}ms")
                 } else {

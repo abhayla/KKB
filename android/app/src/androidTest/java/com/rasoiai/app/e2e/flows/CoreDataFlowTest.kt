@@ -101,7 +101,21 @@ class CoreDataFlowTest : BaseE2ETest() {
         composeTestRule.onNodeWithText("1 of 5", substring = true).assertIsDisplayed()
 
         // Dismiss any soft keyboard that may be lingering from auth screen
-        androidx.test.espresso.Espresso.closeSoftKeyboard()
+        // Use UiDevice.pressBack() is risky (may navigate away), use UiDevice instead
+        try {
+            val uiDevice = androidx.test.uiautomator.UiDevice.getInstance(
+                androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+            )
+            // Check if keyboard is visible before trying to dismiss
+            val keyboardVisible = uiDevice.findObject(
+                androidx.test.uiautomator.UiSelector().packageName("com.google.android.inputmethod.latin")
+            )?.exists() ?: false
+            if (keyboardVisible) {
+                androidx.test.espresso.Espresso.closeSoftKeyboard()
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("CoreDataFlowTest", "closeSoftKeyboard failed (non-fatal): ${e.message}")
+        }
         Thread.sleep(500) // Allow keyboard dismiss to settle
 
         // Select household size (default is 0 / "Select family size" — button is disabled until selected)

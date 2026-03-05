@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.rasoiai.app.e2e.base.BaseE2ETest
+import com.rasoiai.app.e2e.base.isNodeWithTextDisplayed
 import com.rasoiai.app.e2e.robots.GroceryRobot
 import com.rasoiai.app.e2e.robots.HomeRobot
 import com.rasoiai.app.e2e.util.PerformanceTracker
@@ -248,10 +249,9 @@ class GroceryFlowTest : BaseE2ETest() {
             groceryRobot.tapAddCustomItemButton()
             waitFor(ANIMATION_DURATION)
 
-            composeTestRule.onAllNodesWithText("Add Custom Item", ignoreCase = true)
-                .fetchSemanticsNodes().isNotEmpty().let { found ->
-                    assert(found) { "Expected 'Add Custom Item' dialog to be displayed" }
-                }
+            assert(composeTestRule.isNodeWithTextDisplayed("Add Custom Item", ignoreCase = true)) {
+                "Expected 'Add Custom Item' dialog to be displayed"
+            }
         } catch (e: Throwable) {
             Log.w("GroceryFlowTest", "Add custom item button not reachable — at bottom of LazyColumn: ${e.message}")
         }

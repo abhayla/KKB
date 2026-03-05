@@ -134,7 +134,7 @@ class OnboardingViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(OnboardingUiState())
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = Channel<OnboardingNavigationEvent>()
+    private val _navigationEvent = Channel<OnboardingNavigationEvent>(Channel.BUFFERED)
     val navigationEvent: Flow<OnboardingNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     // region Navigation

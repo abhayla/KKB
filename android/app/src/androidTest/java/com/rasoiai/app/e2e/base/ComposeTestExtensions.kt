@@ -451,3 +451,56 @@ fun ComposeContentTestRule.waitForSheetText(
     Thread.sleep(animationDelayMs)
     waitUntilTextWithBackoff(text, timeoutMillis, initialPollMs = 50, maxPollMs = 200)
 }
+
+// ============================================================
+// Visibility-Aware Helpers
+// ============================================================
+// Unlike fetchSemanticsNodes().isNotEmpty(), these check that a node
+// is actually DISPLAYED on screen (not just pre-composed in a LazyColumn).
+
+/**
+ * Check if a node with the given test tag is actually visible on screen.
+ * Returns false if the node exists only in the semantics tree but is not displayed.
+ */
+fun ComposeContentTestRule.isNodeWithTagDisplayed(tag: String): Boolean = try {
+    onNodeWithTag(tag).assertIsDisplayed()
+    true
+} catch (_: AssertionError) { false }
+
+/**
+ * Check if a node with the given text is actually visible on screen.
+ */
+fun ComposeContentTestRule.isNodeWithTextDisplayed(
+    text: String,
+    substring: Boolean = false,
+    ignoreCase: Boolean = false
+): Boolean = try {
+    onNodeWithText(text, substring = substring, ignoreCase = ignoreCase).assertIsDisplayed()
+    true
+} catch (_: AssertionError) { false }
+
+/**
+ * Wait until a node with the given test tag is actually displayed on screen.
+ */
+fun ComposeContentTestRule.waitUntilNodeWithTagIsDisplayed(
+    tag: String,
+    timeoutMillis: Long = 5000
+) {
+    waitUntil(timeoutMillis) {
+        isNodeWithTagDisplayed(tag)
+    }
+}
+
+/**
+ * Wait until a node with the given text is actually displayed on screen.
+ */
+fun ComposeContentTestRule.waitUntilNodeWithTextIsDisplayed(
+    text: String,
+    timeoutMillis: Long = 5000,
+    substring: Boolean = false,
+    ignoreCase: Boolean = false
+) {
+    waitUntil(timeoutMillis) {
+        isNodeWithTextDisplayed(text, substring = substring, ignoreCase = ignoreCase)
+    }
+}

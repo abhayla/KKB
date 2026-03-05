@@ -113,7 +113,7 @@ class SettingsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = Channel<SettingsNavigationEvent>()
+    private val _navigationEvent = Channel<SettingsNavigationEvent>(Channel.BUFFERED)
     val navigationEvent: Flow<SettingsNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     init {

@@ -77,6 +77,30 @@ UI → ViewModel → UseCase → Repository
 - `data/local/mapper/EntityMappers.kt` - Room Entity ↔ Domain
 - `data/remote/mapper/DtoMappers.kt` - API DTO → Domain & Entity
 
+### Backend Structure
+
+```
+backend/app/
+├── ai/            # Claude chat (tool calling) + Gemini meal generation + photo analysis
+├── api/v1/        # 13 routers across 12 files (~44 endpoints). Swagger at /docs (DEBUG=true only)
+├── cache/         # recipe_cache.py — warmed on startup, non-fatal
+├── config.py      # Pydantic Settings (env vars, JWT secret required, usage limits)
+├── core/          # firebase.py (auth + DEBUG bypass), security.py, exceptions.py
+├── db/            # postgres.py (3 model import blocks), database.py
+├── main.py        # FastAPI app, Sentry init, SecurityHeadersMiddleware, rate limiting
+├── models/        # SQLAlchemy ORM (13 files)
+├── repositories/  # Data access (5 files)
+├── schemas/       # Pydantic request/response DTOs
+└── services/      # Business logic (20 files)
+```
+
+**5-location model import rule (CRITICAL):** When adding a new SQLAlchemy model, ALL of these must be updated or tests/migrations silently fail:
+1. `app/models/your_model.py` — define the model
+2. `app/models/__init__.py` — re-export
+3. `app/db/postgres.py` — import in `init_db()`, `create_tables()`, AND `drop_tables()` (3 blocks)
+4. `tests/conftest.py` — import so SQLite creates the table
+5. Generate Alembic migration
+
 ## Patterns
 
 ### ViewModel Pattern
@@ -105,6 +129,16 @@ Repositories read from Room (source of truth), fetch from API when online. Mutat
 ./gradlew lint
 ./gradlew installDebug
 ./gradlew clean && ./gradlew assembleDebug  # Fix strange build issues
+
+# E2E tests (requires running emulator + backend at localhost:8000 with DEBUG=true)
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.flows.FullUserJourneyTest  # Single E2E
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.package=com.rasoiai.app.e2e.flows  # All E2E flows
+
+# Customer journey suites (14 suites: J01-J14, group E2E tests by user scenario)
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.journeys.J01_FirstTimeUserSuite
 ```
 
 ### Backend (run from `backend/`)
@@ -197,6 +231,33 @@ Detailed content is in path-scoped rules (auto-loaded when working on matching f
 | Design system, Compose patterns | `.claude/rules/compose-ui.md` |
 
 Key test commands: `PYTHONPATH=. pytest` (backend) | `./gradlew test` (Android) | `./gradlew :app:connectedDebugAndroidTest` (E2E)
+
+### Backend Test Fixtures (Quick Reference)
+
+All standard fixtures live in `backend/tests/conftest.py`. Do NOT duplicate in subdirectories.
+
+| Fixture | Auth | Use when |
+|---------|------|----------|
+| `client` | Pre-authenticated (`get_current_user` → `test_user`) | Most tests — authenticated endpoint calls |
+| `unauthenticated_client` | No auth override | Testing 401 responses |
+| `authenticated_client` | Real JWT in `Authorization: Bearer` header | Testing actual JWT verification flow |
+| `db_session` | N/A | Direct service/repository unit tests |
+
+For custom setups (e.g., two users): use `make_api_client()` from `tests/api/conftest.py`. Services that call `async_session_maker` directly (e.g., `auth_service.py`) must also be patched — see `backend/tests/CLAUDE.md` for details.
+
+### E2E Test Architecture
+
+E2E tests use **real backend + fake phone auth only**. `FakePhoneAuthClient` sends `"fake-firebase-token"` → backend (`DEBUG=true`) accepts it → returns real JWT. All API calls hit real PostgreSQL.
+
+| File | Purpose |
+|------|---------|
+| `e2e/base/BaseE2ETest.kt` | Base class with Hilt setup, auth state helpers |
+| `e2e/di/FakePhoneAuthClient.kt` | Bypasses Firebase Phone Auth |
+| `e2e/robots/` | Robot pattern (HomeRobot, GroceryRobot, etc.) |
+| `e2e/journeys/` | 14 customer journey suites (J01-J14) grouping 23 test files |
+| `presentation/common/TestTags.kt` | All semantic test tags for UI elements |
+
+**E2E backend URL:** `http://10.0.2.2:8000` (Android emulator maps `10.0.2.2` → host `localhost`).
 
 ## Troubleshooting
 
@@ -534,5 +595,7 @@ Path-specific context files loaded automatically when working in these directori
 | Technical Design | `docs/design/RasoiAI Technical Design.md` |
 | Workflow Rules | `docs/rules/Claude Code Enforced Workflow Rules.md` |
 | E2E Testing Guide | `docs/testing/E2E-Testing-Prompt.md` |
+| Customer Journey Suites | `docs/testing/Customer-Journey-Test-Suites.md` |
 | Functional Requirements | `docs/testing/Functional-Requirement-Rule.md` |
+| Meal Generation Config | `docs/design/Meal-Generation-Config-Architecture.md` |
 | Session Context | `docs/CONTINUE_PROMPT.md` |

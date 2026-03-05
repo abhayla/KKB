@@ -1,13 +1,17 @@
 package com.rasoiai.app.e2e.robots
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
+import com.rasoiai.app.e2e.base.isNodeWithTextDisplayed
 import com.rasoiai.app.e2e.base.waitUntilNodeWithTagExists
 import com.rasoiai.app.e2e.base.waitUntilNodeWithTextExists
 import com.rasoiai.app.presentation.common.TestTags
@@ -26,30 +30,52 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
     }
 
     /**
-     * Scroll the Settings LazyColumn until a node with the given text is visible.
+     * Scroll the Settings LazyColumn until a node with the given text is visible ON SCREEN.
      * LazyColumn does not support performScrollTo(), so we swipe up repeatedly.
+     *
+     * IMPORTANT: Uses assertIsDisplayed() instead of just fetchSemanticsNodes().
+     * LazyColumn pre-composes items beyond the viewport, so semantics nodes exist
+     * even for off-screen items. assertIsDisplayed() checks actual visibility.
      */
     private fun scrollToText(text: String, substring: Boolean = false, ignoreCase: Boolean = true) {
+        // First try: use performScrollToNode (reliable for LazyColumn)
+        try {
+            composeTestRule.onNodeWithTag(TestTags.SETTINGS_LAZY_COLUMN)
+                .performScrollToNode(hasText(text, substring = substring, ignoreCase = ignoreCase))
+            return
+        } catch (_: Exception) {
+            // Fallback to swipe-based scrolling
+        }
         repeat(MAX_SCROLL_ATTEMPTS) {
-            val nodes = composeTestRule.onAllNodesWithText(text, substring = substring, ignoreCase = ignoreCase)
-                .fetchSemanticsNodes()
-            if (nodes.isNotEmpty()) return
+            try {
+                composeTestRule.onNodeWithText(text, substring = substring, ignoreCase = ignoreCase)
+                    .assertIsDisplayed()
+                return
+            } catch (_: AssertionError) {
+                // Node not visible yet — scroll down
+            }
             composeTestRule.onNodeWithTag(TestTags.SETTINGS_SCREEN)
                 .performTouchInput { swipeUp() }
             composeTestRule.waitForIdle()
             Thread.sleep(300)
         }
-        // Final check — let Compose assert throw a readable error if still not found
     }
 
     /**
      * Scroll the Settings LazyColumn until a node with the given test tag is visible.
      */
     private fun scrollToTag(tag: String) {
+        // First try: use performScrollToNode (reliable for LazyColumn)
+        try {
+            composeTestRule.onNodeWithTag(TestTags.SETTINGS_LAZY_COLUMN)
+                .performScrollToNode(hasTestTag(tag))
+            return
+        } catch (_: Exception) {
+            // Fallback to swipe-based scrolling
+        }
         repeat(MAX_SCROLL_ATTEMPTS) {
-            val nodes = composeTestRule.onNodeWithTag(tag)
             try {
-                nodes.assertIsDisplayed()
+                composeTestRule.onNodeWithTag(tag).assertIsDisplayed()
                 return
             } catch (_: AssertionError) {
                 // Node not rendered yet, scroll down
@@ -82,12 +108,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
     private fun waitForSettingsContentLoaded(timeoutMillis: Long = 10000) {
         val startTime = System.currentTimeMillis()
         while ((System.currentTimeMillis() - startTime) < timeoutMillis) {
-            val profileNodes = composeTestRule.onAllNodesWithText("Profile", substring = true, ignoreCase = true)
-                .fetchSemanticsNodes()
-            if (profileNodes.isNotEmpty()) return
-            val signOutNodes = composeTestRule.onAllNodesWithText("Sign Out", substring = true, ignoreCase = true)
-                .fetchSemanticsNodes()
-            if (signOutNodes.isNotEmpty()) return
+            if (composeTestRule.isNodeWithTextDisplayed("Profile", substring = true, ignoreCase = true)) return
+            if (composeTestRule.isNodeWithTextDisplayed("Sign Out", substring = true, ignoreCase = true)) return
             Thread.sleep(200)
         }
     }
@@ -230,8 +252,10 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Navigate to recipe rules screen.
      */
     fun navigateToRecipeRules() = apply {
-        scrollToText("Recipe Rules")
-        composeTestRule.onNodeWithText("Recipe Rules", ignoreCase = true)
+        composeTestRule.onNodeWithTag(TestTags.SETTINGS_LAZY_COLUMN)
+            .performScrollToNode(hasTestTag(TestTags.SETTINGS_RECIPE_RULES))
+        composeTestRule.onNodeWithTag(TestTags.SETTINGS_RECIPE_RULES)
+            .assertIsDisplayed()
             .performClick()
         composeTestRule.waitForIdle()
     }

@@ -28,12 +28,13 @@ Run through your final plan with me section by section for approval before imple
 
 ***
 
-  Test Summary Requirements:                                                                                                                                 
-  1. Test all 5 data flows as documented in flow-7-complete-data-flow.md
-  2. Test method: Both backend API (curl) AND Flutter app UI                                                                                 3. Test data: largeFamily (8 members, 3 allergies: dairy/peanuts/gluten)
-  4. Pantry test: Use a sample photo from the internet to test Vision AI
-  5. Meal plan: Generate only once, reuse for subsequent flow tests
-  6. Fix and retest loop: If any issue found, fix it and retest until pass
+Test Summary Requirements:                                                                                                                                 
+1. Test all 5 data flows as documented in flow-7-complete-data-flow.md
+2. Test method: Both backend API (curl) AND Flutter app UI                                                                                 
+3. Test data: largeFamily (8 members, 3 allergies: dairy/peanuts/gluten)
+4. Pantry test: Use a sample photo from the internet to test Vision AI
+5. Meal plan: Generate only once, reuse for subsequent flow tests
+6. Fix and retest loop: If any issue found, fix it and retest until pass
 
 Run HomeScreenTest E2E tests
 
@@ -201,3 +202,17 @@ I have acess to VPS server also and I can run a session of Claude code on the VP
       355 +| J12 | Offline and Error Resilience | 2 |                                                                                
       356 +| J13 | Returning User Quick Check | 3 |                                                                                  
       357 +| J14 | AI Chat and Recipe Discovery | 3 |
+
+  ┌───────┬─────────┬─────────────────────────────────────────────────┐
+  │ Order │ Journey │                       Why                       │
+  ├───────┼─────────┼─────────────────────────────────────────────────┤
+  │  1st  │ J13     │ Simplest authenticated flow (4 steps, 2 robots) │
+  ├───────┼─────────┼─────────────────────────────────────────────────┤
+  │  2nd  │ J12     │ Adds day selector navigation (4 steps, 1 robot) │
+  ├───────┼─────────┼─────────────────────────────────────────────────┤
+  │  3rd  │ J04     │ Adds recipe detail screen (5 steps, 2 robots)   │
+  ├───────┼─────────┼─────────────────────────────────────────────────┤
+  │  4th  │ J06     │ Adds cooking mode (5 steps, 3 robots)           │
+  ├───────┼─────────┼─────────────────────────────────────────────────┤
+  │  5th  │ J01     │ Tests new-user auth + onboarding path           │
+  └───────┴─────────┴─────────────────────────────────────────────────┘

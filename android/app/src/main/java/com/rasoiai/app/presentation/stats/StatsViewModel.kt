@@ -78,7 +78,7 @@ class StatsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(StatsUiState())
     val uiState: StateFlow<StatsUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = Channel<StatsNavigationEvent>()
+    private val _navigationEvent = Channel<StatsNavigationEvent>(Channel.BUFFERED)
     val navigationEvent: Flow<StatsNavigationEvent> = _navigationEvent.receiveAsFlow()
 
     init {
