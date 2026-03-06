@@ -10,6 +10,7 @@ import com.rasoiai.domain.repository.PantryRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import android.database.sqlite.SQLiteConstraintException
 import timber.log.Timber
 import java.time.LocalDate
 import java.util.UUID
@@ -75,6 +76,9 @@ class PantryRepositoryImpl @Inject constructor(
             Timber.i("Added pantry item: ${item.name} (${item.category.displayName})")
 
             Result.success(item)
+        } catch (e: SQLiteConstraintException) {
+            Timber.w(e, "Constraint violation adding pantry item")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to add pantry item")
             Result.failure(e)
@@ -105,6 +109,9 @@ class PantryRepositoryImpl @Inject constructor(
             Timber.i("Added ${pantryItems.size} items from scan")
 
             Result.success(pantryItems)
+        } catch (e: SQLiteConstraintException) {
+            Timber.w(e, "Constraint violation adding scanned items")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to add items from scan")
             Result.failure(e)
@@ -116,6 +123,9 @@ class PantryRepositoryImpl @Inject constructor(
             pantryDao.updateItem(item.toEntity())
             Timber.d("Updated pantry item: ${item.name}")
             Result.success(item)
+        } catch (e: SQLiteConstraintException) {
+            Timber.w(e, "Constraint violation updating pantry item")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to update pantry item")
             Result.failure(e)
@@ -127,6 +137,9 @@ class PantryRepositoryImpl @Inject constructor(
             pantryDao.deleteItem(itemId)
             Timber.d("Removed pantry item: $itemId")
             Result.success(Unit)
+        } catch (e: SQLiteConstraintException) {
+            Timber.w(e, "Constraint violation removing pantry item")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to remove pantry item")
             Result.failure(e)
@@ -138,6 +151,9 @@ class PantryRepositoryImpl @Inject constructor(
             val count = pantryDao.deleteExpiredItems()
             Timber.i("Removed $count expired pantry items")
             Result.success(count)
+        } catch (e: SQLiteConstraintException) {
+            Timber.w(e, "Constraint violation removing expired items")
+            Result.failure(e)
         } catch (e: Exception) {
             Timber.e(e, "Failed to remove expired items")
             Result.failure(e)
