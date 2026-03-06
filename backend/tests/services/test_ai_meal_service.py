@@ -885,9 +885,30 @@ def test_enforce_rules_still_removes_actual_sweets():
     ), "Sweet Lassi should be removed (contains 'sweet')"
 
 
-def test_meal_plan_schema_is_disabled():
-    """Gemini 2.5 Flash rejects response_schema for meal plans ('too many states').
-    Schema is set to None; structure is enforced by prompt + post-validation."""
+def test_meal_plan_schema_is_enabled():
+    """MEAL_PLAN_SCHEMA is a minimal flat dict passed as response_json_schema.
+
+    Uses short property names (n, t, c, tags, cal / d, dn, b, l, di, s) to stay
+    well under Gemini's complexity limit that causes the 'too many states' error.
+    The prompt explains the abbreviations so the AI knows what to emit.
+    """
     from app.services.ai_meal_service import MEAL_PLAN_SCHEMA
 
-    assert MEAL_PLAN_SCHEMA is None
+    assert MEAL_PLAN_SCHEMA is not None, "Schema must be set — not None"
+    assert isinstance(MEAL_PLAN_SCHEMA, dict), "Schema must be a plain dict"
+    assert MEAL_PLAN_SCHEMA.get("type") == "OBJECT"
+    assert "days" in MEAL_PLAN_SCHEMA.get("properties", {})
+
+    # Verify short slot keys are used (not the verbose long names)
+    day_props = MEAL_PLAN_SCHEMA["properties"]["days"]["items"]["properties"]
+    assert "b" in day_props, "breakfast must use short key 'b'"
+    assert "l" in day_props, "lunch must use short key 'l'"
+    assert "di" in day_props, "dinner must use short key 'di'"
+    assert "s" in day_props, "snacks must use short key 's'"
+    assert "d" in day_props, "date must use short key 'd'"
+    assert "dn" in day_props, "day_name must use short key 'dn'"
+
+    # Verify item-level short keys
+    item_props = day_props["b"]["items"]["properties"]
+    assert "n" in item_props, "recipe_name must use short key 'n'"
+    assert "t" in item_props, "prep_time_minutes must use short key 't'"

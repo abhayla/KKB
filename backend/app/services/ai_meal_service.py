@@ -48,12 +48,44 @@ def _keyword_match(keyword: str, text: str) -> bool:
     return bool(re.search(r"\b" + re.escape(keyword) + r"\b", text))
 
 
-from google.genai import types as genai_types
+# Minimal flat schema using short property names to avoid Gemini's "too many states"
+# error. Long property names and deeply nested structures trigger this error.
+# Short keys: d=date, dn=day_name, b=breakfast, l=lunch, di=dinner, s=snacks.
+# Per-item short keys: n=recipe_name, t=prep_time_minutes, tags=dietary_tags, c=category.
+# The prompt explains these abbreviations so the AI knows what to emit.
+_MEAL_ITEM_SCHEMA = {
+    "type": "OBJECT",
+    "properties": {
+        "n": {"type": "STRING"},
+        "t": {"type": "INTEGER"},
+        "tags": {"type": "STRING"},
+        "c": {"type": "STRING"},
+        "cal": {"type": "INTEGER"},
+    },
+    "required": ["n", "t"],
+}
 
-# NOTE: response_schema was tested but Gemini 2.5 Flash rejects even minimal
-# schemas for meal plan generation ("too many states" error). The prompt +
-# response_mime_type="application/json" + post-validation is sufficient.
-MEAL_PLAN_SCHEMA = None
+MEAL_PLAN_SCHEMA = {
+    "type": "OBJECT",
+    "properties": {
+        "days": {
+            "type": "ARRAY",
+            "items": {
+                "type": "OBJECT",
+                "properties": {
+                    "d": {"type": "STRING"},
+                    "dn": {"type": "STRING"},
+                    "b": {"type": "ARRAY", "items": _MEAL_ITEM_SCHEMA},
+                    "l": {"type": "ARRAY", "items": _MEAL_ITEM_SCHEMA},
+                    "di": {"type": "ARRAY", "items": _MEAL_ITEM_SCHEMA},
+                    "s": {"type": "ARRAY", "items": _MEAL_ITEM_SCHEMA},
+                },
+                "required": ["d", "dn", "b", "l", "di", "s"],
+            },
+        }
+    },
+    "required": ["days"],
+}
 
 
 # ==============================================================================
@@ -758,9 +790,25 @@ class AIMealService:
 8. {repeat_text}
 
 ## OUTPUT FORMAT
-Return valid JSON with exactly 7 days. Each day has 4 slots (breakfast, lunch, dinner, snacks).
-Each slot has exactly {prefs.items_per_meal} items. Each item needs: recipe_name, prep_time_minutes, dietary_tags (array), category, calories (int), ingredients (array of {{name, quantity, unit, category}}), nutrition ({{protein_g, carbs_g, fat_g, fiber_g}}).
-Use authentic Indian dish names (e.g., "Aloo Paratha", "Masala Chai", "Dal Tadka").
+Return valid JSON with exactly 7 days using these SHORT property names to keep the response compact:
+
+Day-level keys: d=date (YYYY-MM-DD), dn=day_name, b=breakfast, l=lunch, di=dinner, s=snacks.
+Item-level keys: n=recipe_name, t=prep_time_minutes (integer), tags=dietary_tags (comma-separated string), c=category, cal=calories (integer).
+
+Example structure:
+{{
+  "days": [
+    {{
+      "d": "2026-02-09", "dn": "Monday",
+      "b": [{{"n": "Aloo Paratha", "t": 25, "tags": "vegetarian", "c": "paratha", "cal": 300}}, {{"n": "Masala Chai", "t": 10, "tags": "vegetarian", "c": "chai", "cal": 50}}],
+      "l": [...],
+      "di": [...],
+      "s": [...]
+    }}
+  ]
+}}
+
+Each slot must have exactly {prefs.items_per_meal} items. Use authentic Indian dish names (e.g., "Aloo Paratha", "Masala Chai", "Dal Tadka").
 
 Generate the complete 7-day meal plan now:"""
 
@@ -794,14 +842,14 @@ Generate the complete 7-day meal plan now:"""
                 if context is not None:
                     # Use metadata-aware version for tracking
                     response, metadata = await generate_text_with_metadata(
-                        prompt, response_schema=MEAL_PLAN_SCHEMA
+                        prompt, response_json_schema=MEAL_PLAN_SCHEMA
                     )
                     context.token_usage = metadata
                     context.model_name = metadata.get("model_name")
                     context.retry_count = attempt
                 else:
                     response = await generate_text(
-                        prompt, response_schema=MEAL_PLAN_SCHEMA
+                        prompt, response_json_schema=MEAL_PLAN_SCHEMA
                     )
 
                 # Basic validation - ensure it's valid JSON
@@ -849,11 +897,20 @@ Generate the complete 7-day meal plan now:"""
                 f"Expected 7 days, got {len(days) if isinstance(days, list) else 'not a list'}"
             )
 
+        # Slot name mapping: long key -> short key fallback
+        slot_aliases = {
+            "breakfast": "b",
+            "lunch": "l",
+            "dinner": "di",
+            "snacks": "s",
+        }
+
         for i, day in enumerate(days):
-            for slot in ["breakfast", "lunch", "dinner", "snacks"]:
-                if slot not in day:
+            for slot, short_key in slot_aliases.items():
+                # Accept either the long key ("breakfast") or short key ("b")
+                if slot not in day and short_key not in day:
                     raise ValueError(f"Day {i} missing '{slot}' field")
-                items = day[slot]
+                items = day.get(slot) or day.get(short_key, [])
                 if not isinstance(items, list) or len(items) < 2:
                     raise ValueError(
                         f"Day {i} {slot} should have 2 items, got {len(items) if isinstance(items, list) else 'not a list'}"
@@ -883,19 +940,43 @@ Generate the complete 7-day meal plan now:"""
         current_date = week_start_date
 
         for day_data in data.get("days", []):
-            # Parse meal items for each slot
+            # Parse meal items for each slot.
+            # Handles both the short-key format emitted when MEAL_PLAN_SCHEMA is active
+            # (n, t, tags, c, cal) and the legacy long-key format (recipe_name,
+            # prep_time_minutes, dietary_tags, category, calories) for backward
+            # compatibility with existing tests and any fallback responses.
             def parse_items(items_data: list) -> list[MealItem]:
                 items = []
                 for item in items_data:
+                    # recipe_name: prefer long key, fall back to short key "n"
+                    recipe_name = item.get("recipe_name") or item.get("n", "Unknown")
+                    # prep_time_minutes: prefer long key, fall back to short key "t"
+                    prep_time = item.get("prep_time_minutes") or item.get("t", 30)
+                    # dietary_tags: long key returns a list; short key "tags" is a
+                    # comma-separated string — convert to list in that case
+                    raw_tags = item.get("dietary_tags")
+                    if raw_tags is None:
+                        raw_tags = item.get("tags", "")
+                    if isinstance(raw_tags, str):
+                        dietary_tags = [
+                            t.strip() for t in raw_tags.split(",") if t.strip()
+                        ]
+                    else:
+                        dietary_tags = list(raw_tags) if raw_tags else []
+                    # category: prefer long key, fall back to short key "c"
+                    category = item.get("category") or item.get("c", "other")
+                    # calories: prefer long key, fall back to short key "cal"
+                    calories = item.get("calories") or item.get("cal", 0)
+
                     items.append(
                         MealItem(
                             id=str(uuid.uuid4()),
-                            recipe_name=item.get("recipe_name", "Unknown"),
-                            prep_time_minutes=item.get("prep_time_minutes", 30),
-                            dietary_tags=item.get("dietary_tags", []),
-                            category=item.get("category", "other"),
+                            recipe_name=recipe_name,
+                            prep_time_minutes=int(prep_time),
+                            dietary_tags=dietary_tags,
+                            category=category,
                             is_locked=False,
-                            calories=item.get("calories", 0),
+                            calories=int(calories),
                             ingredients=item.get("ingredients"),
                             nutrition=item.get("nutrition"),
                             instructions=item.get("instructions"),
@@ -913,14 +994,19 @@ Generate the complete 7-day meal plan now:"""
                     "special_foods": f.get("special_foods", []),
                 }
 
+            # Slot names: short-key format uses b/l/di/s; long-key uses full names
             days.append(
                 DayMeals(
                     date=current_date.isoformat(),
                     day_name=current_date.strftime("%A"),
-                    breakfast=parse_items(day_data.get("breakfast", [])),
-                    lunch=parse_items(day_data.get("lunch", [])),
-                    dinner=parse_items(day_data.get("dinner", [])),
-                    snacks=parse_items(day_data.get("snacks", [])),
+                    breakfast=parse_items(
+                        day_data.get("breakfast") or day_data.get("b", [])
+                    ),
+                    lunch=parse_items(day_data.get("lunch") or day_data.get("l", [])),
+                    dinner=parse_items(
+                        day_data.get("dinner") or day_data.get("di", [])
+                    ),
+                    snacks=parse_items(day_data.get("snacks") or day_data.get("s", [])),
                     festival=festival,
                 )
             )

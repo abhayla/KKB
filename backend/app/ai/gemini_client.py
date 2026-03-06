@@ -113,6 +113,7 @@ async def generate_text(
     temperature: float = 0.8,
     max_output_tokens: int = 65536,
     response_schema=None,
+    response_json_schema: dict = None,
 ) -> str:
     """Generate text using Gemini 2.5 Flash.
 
@@ -121,6 +122,8 @@ async def generate_text(
         temperature: Sampling temperature (0.0-1.0, higher = more creative)
         max_output_tokens: Maximum tokens in response
         response_schema: Optional google.genai.types.Schema for structured output
+        response_json_schema: Optional plain dict schema (avoids "too many states" error
+            that affects complex genai.types.Schema objects)
 
     Returns:
         Generated text (JSON format when response_mime_type is set)
@@ -147,6 +150,7 @@ async def generate_text(
             max_output_tokens=max_output_tokens,
             response_mime_type="application/json",
             response_schema=response_schema,
+            response_json_schema=response_json_schema,
         )
 
         response = await client.aio.models.generate_content(
@@ -170,6 +174,7 @@ async def generate_text_with_metadata(
     temperature: float = 0.8,
     max_output_tokens: int = 65536,
     response_schema=None,
+    response_json_schema: dict = None,
 ) -> tuple[str, dict]:
     """Generate text and return (text, metadata) with token usage.
 
@@ -180,6 +185,8 @@ async def generate_text_with_metadata(
         temperature: Sampling temperature (0.0-1.0, higher = more creative)
         max_output_tokens: Maximum tokens in response
         response_schema: Optional google.genai.types.Schema for structured output
+        response_json_schema: Optional plain dict schema (avoids "too many states" error
+            that affects complex genai.types.Schema objects)
 
     Returns:
         Tuple of (response_text, metadata_dict)
@@ -201,6 +208,7 @@ async def generate_text_with_metadata(
             max_output_tokens=max_output_tokens,
             response_mime_type="application/json",
             response_schema=response_schema,
+            response_json_schema=response_json_schema,
         )
 
         response = await client.aio.models.generate_content(
