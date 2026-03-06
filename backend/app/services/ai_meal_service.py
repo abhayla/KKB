@@ -236,7 +236,7 @@ class AIMealService:
 
             for member_name, forbidden_keywords in forbidden_map.items():
                 for keyword in forbidden_keywords:
-                    if keyword in target:
+                    if _keyword_match(keyword, target):
                         report.append(
                             {
                                 "rule_target": rule.get("target", ""),

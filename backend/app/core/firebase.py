@@ -59,7 +59,13 @@ def verify_firebase_token(id_token: str) -> dict:
         suffix = id_token.removeprefix("fake-firebase-token").lstrip("-")
         uid = f"fake-user-{suffix}" if suffix else "fake-user-id"
         name = suffix.replace("-", " ").title() if suffix else "E2E Test User"
-        phone_suffix = hash(suffix) % 9000000000 + 1000000000 if suffix else 1111111111
+        import hashlib
+
+        phone_suffix = (
+            int(hashlib.md5(suffix.encode()).hexdigest(), 16) % 9000000000 + 1000000000
+            if suffix
+            else 1111111111
+        )
         logger.info(f"E2E Test: Using fake Firebase token for testing (uid={uid})")
         return {
             "uid": uid,
