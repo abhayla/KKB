@@ -162,8 +162,9 @@ async def generate(
             start_time=t_start,
         )
 
-        # Generate meal plan using the AI service (with 120s timeout)
-        # Gemini calls regularly take 45-90s; 60s was too aggressive
+        # Generate meal plan using the AI service (with 180s timeout)
+        # With response_json_schema, single attempt ~30-40s. 180s allows
+        # for 1 retry + exponential backoff (3 max retries × ~40s + delays).
         ai_service = AIMealService()
         try:
             generated_plan = await asyncio.wait_for(
@@ -172,11 +173,11 @@ async def generate(
                     week_start_date=week_start,
                     context=gen_context,
                 ),
-                timeout=120,
+                timeout=180,
             )
         except asyncio.TimeoutError:
-            logger.error(f"Meal generation timed out after 120s for user {user_id}")
-            gen_context.error_message = "Timeout after 120s"
+            logger.error(f"Meal generation timed out after 180s for user {user_id}")
+            gen_context.error_message = "Timeout after 180s"
             gen_context.ai_done_time = time.monotonic()
             try:
                 from app.services.generation_tracker import (
