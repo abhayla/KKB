@@ -400,7 +400,7 @@ class MealGenHeavyUser(HttpUser):
         # 2. Add family members
         for member in prefs.get("family_members", []):
             self.client.post(
-                "/api/v1/users/family-members",
+                "/api/v1/family-members",
                 json={
                     "name": member["name"],
                     "age_group": member.get("type", "adult").lower(),
@@ -408,7 +408,7 @@ class MealGenHeavyUser(HttpUser):
                     "dietary_restrictions": [],
                 },
                 headers=self.auth_headers,
-                name="/api/v1/users/family-members [SETUP]",
+                name="/api/v1/family-members [SETUP]",
             )
 
         # 3. Add recipe rules (stored under preferences in the profile)
