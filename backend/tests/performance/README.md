@@ -60,7 +60,7 @@ locust -f tests/performance/locustfile.py CRUDOnlyUser --headless -u 50 -r 5 -t 
 | Health check | <50ms | <100ms | <200ms |
 | CRUD reads | <200ms | <500ms | <1s |
 | Recipe search | <300ms | <800ms | <2s |
-| Meal generation | <30s | <60s | <120s |
+| Meal generation | <60s | <90s | <120s |
 
 ## Validation
 
