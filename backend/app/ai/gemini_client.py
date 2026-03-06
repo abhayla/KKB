@@ -112,6 +112,7 @@ async def generate_text(
     prompt: str,
     temperature: float = 0.8,
     max_output_tokens: int = 65536,
+    response_schema=None,
 ) -> str:
     """Generate text using Gemini 2.5 Flash.
 
@@ -119,6 +120,7 @@ async def generate_text(
         prompt: The prompt to send to Gemini
         temperature: Sampling temperature (0.0-1.0, higher = more creative)
         max_output_tokens: Maximum tokens in response
+        response_schema: Optional google.genai.types.Schema for structured output
 
     Returns:
         Generated text (JSON format when response_mime_type is set)
@@ -144,6 +146,7 @@ async def generate_text(
             temperature=temperature,
             max_output_tokens=max_output_tokens,
             response_mime_type="application/json",
+            response_schema=response_schema,
         )
 
         response = await client.aio.models.generate_content(
@@ -166,10 +169,17 @@ async def generate_text_with_metadata(
     prompt: str,
     temperature: float = 0.8,
     max_output_tokens: int = 65536,
+    response_schema=None,
 ) -> tuple[str, dict]:
     """Generate text and return (text, metadata) with token usage.
 
     Same as generate_text but also returns usage metadata from the response.
+
+    Args:
+        prompt: The prompt to send to Gemini
+        temperature: Sampling temperature (0.0-1.0, higher = more creative)
+        max_output_tokens: Maximum tokens in response
+        response_schema: Optional google.genai.types.Schema for structured output
 
     Returns:
         Tuple of (response_text, metadata_dict)
@@ -190,6 +200,7 @@ async def generate_text_with_metadata(
             temperature=temperature,
             max_output_tokens=max_output_tokens,
             response_mime_type="application/json",
+            response_schema=response_schema,
         )
 
         response = await client.aio.models.generate_content(
