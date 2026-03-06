@@ -24,14 +24,12 @@ Prerequisites:
 
 import json
 import logging
-import os
 import random
 import time
 from datetime import date, timedelta
 from pathlib import Path
 
 from locust import HttpUser, between, events, task
-from locust.runners import MasterRunner
 
 logger = logging.getLogger("rasoiai.perf")
 
@@ -48,7 +46,9 @@ def load_profiles() -> list[dict]:
         with open(PROFILES_PATH) as f:
             return json.load(f)
     # Fallback: single default profile
-    return [{"name": "Default", "firebase_token": "fake-firebase-token", "preferences": {}}]
+    return [
+        {"name": "Default", "firebase_token": "fake-firebase-token", "preferences": {}}
+    ]
 
 
 TEST_PROFILES = load_profiles()
@@ -76,7 +76,9 @@ def on_test_stop(environment, **kwargs):
         print(f"  Errors:              {_generation_errors}")
         print(f"  Timeouts (504):      {_generation_timeouts}")
         print(f"  Avg latency:         {avg_latency:.0f}ms ({avg_latency/1000:.1f}s)")
-        print(f"  Success rate:        {(1 - _generation_errors / _generation_count) * 100:.1f}%")
+        print(
+            f"  Success rate:        {(1 - _generation_errors / _generation_count) * 100:.1f}%"
+        )
         print(
             f"  Est. Gemini calls:   {_generation_count} "
             f"(~${_generation_count * 0.002:.2f} at ~2000 tokens/call)"
@@ -131,7 +133,10 @@ def validate_allergens(response_data: dict, allergens: list[str]) -> tuple[bool,
                 name_lower = item.get("recipe_name", "").lower()
                 for allergen in allergen_set:
                     if allergen in name_lower:
-                        return False, f"Allergen '{allergen}' found in '{item['recipe_name']}'"
+                        return (
+                            False,
+                            f"Allergen '{allergen}' found in '{item['recipe_name']}'",
+                        )
     return True, ""
 
 
@@ -289,7 +294,9 @@ class RasoiAIUser(HttpUser):
                         return
 
                     # Allergen validation (if profile has allergies)
-                    prefs = self._profile.get("preferences", {}) if self._profile else {}
+                    prefs = (
+                        self._profile.get("preferences", {}) if self._profile else {}
+                    )
                     allergens = [a["ingredient"] for a in prefs.get("allergies", [])]
                     if allergens:
                         is_safe, error = validate_allergens(data, allergens)
@@ -350,15 +357,77 @@ class MealGenHeavyUser(HttpUser):
     _profile: dict | None = None
 
     def on_start(self):
-        """Authenticate on spawn."""
+        """Authenticate on spawn, then seed preferences and recipe rules."""
         self._profile = random.choice(TEST_PROFILES)
         resp = self.client.post(
             "/api/v1/auth/firebase",
-            json={"firebase_token": self._profile.get("firebase_token", "fake-firebase-token")},
+            json={
+                "firebase_token": self._profile.get(
+                    "firebase_token", "fake-firebase-token"
+                )
+            },
             name="/api/v1/auth/firebase [MealGen]",
         )
         if resp.status_code == 200:
             self._token = resp.json().get("access_token")
+            self._seed_profile()
+
+    def _seed_profile(self):
+        """Seed preferences, family members, and recipe rules from test profile."""
+        if not self._token or not self._profile:
+            return
+
+        prefs = self._profile.get("preferences", {})
+
+        # 1. Update preferences
+        self.client.put(
+            "/api/v1/users/preferences",
+            json={
+                "household_size": prefs.get("household_size", 4),
+                "primary_diet": prefs.get("primary_diet"),
+                "dietary_restrictions": prefs.get("dietary_restrictions", []),
+                "cuisine_preferences": prefs.get("cuisine_preferences", []),
+                "disliked_ingredients": prefs.get("dislikes", []),
+                "spice_level": prefs.get("spice_level", "medium"),
+                "busy_days": prefs.get("busy_days", []),
+                "weekday_cooking_time": prefs.get("weekday_cooking_time", 30),
+                "weekend_cooking_time": prefs.get("weekend_cooking_time", 60),
+            },
+            headers=self.auth_headers,
+            name="/api/v1/users/preferences [SETUP]",
+        )
+
+        # 2. Add family members
+        for member in prefs.get("family_members", []):
+            self.client.post(
+                "/api/v1/users/family-members",
+                json={
+                    "name": member["name"],
+                    "age_group": member.get("type", "adult").lower(),
+                    "health_conditions": member.get("special_needs", []),
+                    "dietary_restrictions": [],
+                },
+                headers=self.auth_headers,
+                name="/api/v1/users/family-members [SETUP]",
+            )
+
+        # 3. Add recipe rules (stored under preferences in the profile)
+        for rule in prefs.get("recipe_rules", []):
+            self.client.post(
+                "/api/v1/recipe-rules",
+                json={
+                    "target_type": rule.get("target_type", "INGREDIENT"),
+                    "action": rule["action"],
+                    "target_name": rule["target_name"],
+                    "frequency_type": rule["frequency_type"],
+                    "frequency_count": rule.get("frequency_count"),
+                    "frequency_days": rule.get("frequency_days"),
+                    "meal_slot": rule.get("meal_slot"),
+                    "enforcement": rule.get("enforcement", "REQUIRED"),
+                },
+                headers=self.auth_headers,
+                name="/api/v1/recipe-rules [SETUP]",
+            )
 
     @property
     def auth_headers(self) -> dict:
@@ -408,7 +477,9 @@ class MealGenHeavyUser(HttpUser):
                         _generation_errors += 1
                         return
 
-                    prefs = self._profile.get("preferences", {}) if self._profile else {}
+                    prefs = (
+                        self._profile.get("preferences", {}) if self._profile else {}
+                    )
                     allergens = [a["ingredient"] for a in prefs.get("allergies", [])]
                     if allergens:
                         safe, err = validate_allergens(data, allergens)
