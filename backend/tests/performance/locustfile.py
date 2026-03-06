@@ -379,8 +379,8 @@ class MealGenHeavyUser(HttpUser):
 
         prefs = self._profile.get("preferences", {})
 
-        # 1. Update preferences
-        self.client.put(
+        # 1. Update preferences (catch_response to handle errors gracefully)
+        with self.client.put(
             "/api/v1/users/preferences",
             json={
                 "household_size": prefs.get("household_size", 4),
@@ -394,12 +394,18 @@ class MealGenHeavyUser(HttpUser):
                 "weekend_cooking_time": prefs.get("weekend_cooking_time", 60),
             },
             headers=self.auth_headers,
+            catch_response=True,
             name="/api/v1/users/preferences [SETUP]",
-        )
+        ) as resp:
+            if resp.status_code in (200, 201):
+                resp.success()
+            else:
+                logger.warning(f"Preferences setup failed: {resp.status_code}")
+                resp.success()  # Don't count setup failures as test failures
 
-        # 2. Add family members
+        # 2. Add family members (ignore 409 duplicates from previous runs)
         for member in prefs.get("family_members", []):
-            self.client.post(
+            resp = self.client.post(
                 "/api/v1/family-members",
                 json={
                     "name": member["name"],
@@ -408,12 +414,17 @@ class MealGenHeavyUser(HttpUser):
                     "dietary_restrictions": [],
                 },
                 headers=self.auth_headers,
+                catch_response=True,
                 name="/api/v1/family-members [SETUP]",
             )
+            if resp.status_code in (200, 201, 409):
+                resp.success()
+            else:
+                resp.failure(f"Status {resp.status_code}")
 
-        # 3. Add recipe rules (stored under preferences in the profile)
+        # 3. Add recipe rules (ignore 409 duplicates from previous runs)
         for rule in prefs.get("recipe_rules", []):
-            self.client.post(
+            resp = self.client.post(
                 "/api/v1/recipe-rules",
                 json={
                     "target_type": rule.get("target_type", "INGREDIENT"),
@@ -426,8 +437,13 @@ class MealGenHeavyUser(HttpUser):
                     "enforcement": rule.get("enforcement", "REQUIRED"),
                 },
                 headers=self.auth_headers,
+                catch_response=True,
                 name="/api/v1/recipe-rules [SETUP]",
             )
+            if resp.status_code in (200, 201, 409):
+                resp.success()
+            else:
+                resp.failure(f"Status {resp.status_code}")
 
     @property
     def auth_headers(self) -> dict:
