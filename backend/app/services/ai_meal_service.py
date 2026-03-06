@@ -806,32 +806,9 @@ class AIMealService:
 8. {repeat_text}
 
 ## OUTPUT FORMAT
-Return ONLY valid JSON (no markdown, no explanation).
-Each item must include: recipe_name, prep_time_minutes, dietary_tags, category, calories, ingredients, nutrition.
-{{
-  "days": [
-    {{
-      "date": "YYYY-MM-DD",
-      "day_name": "Monday",
-      "breakfast": [
-        {{"recipe_name": "Aloo Paratha", "prep_time_minutes": 25, "dietary_tags": ["vegetarian"], "category": "paratha", "calories": 350, "ingredients": [{{"name": "Wheat Flour", "quantity": 2, "unit": "cup", "category": "grains"}}, {{"name": "Potato", "quantity": 3, "unit": "medium", "category": "vegetables"}}, {{"name": "Ghee", "quantity": 2, "unit": "tbsp", "category": "dairy"}}], "nutrition": {{"protein_g": 8, "carbs_g": 45, "fat_g": 15, "fiber_g": 3}}}},
-        {{"recipe_name": "Masala Chai", "prep_time_minutes": 10, "dietary_tags": ["vegetarian"], "category": "chai", "calories": 80, "ingredients": [{{"name": "Tea Leaves", "quantity": 2, "unit": "tsp", "category": "other"}}, {{"name": "Milk", "quantity": 1, "unit": "cup", "category": "dairy"}}], "nutrition": {{"protein_g": 3, "carbs_g": 10, "fat_g": 3, "fiber_g": 0}}}}
-      ],
-      "lunch": [
-        {{"recipe_name": "Dal Tadka", "prep_time_minutes": 30, "dietary_tags": ["vegetarian", "vegan"], "category": "dal", "calories": 250, "ingredients": [{{"name": "Toor Dal", "quantity": 1, "unit": "cup", "category": "pulses"}}, {{"name": "Ghee", "quantity": 2, "unit": "tbsp", "category": "dairy"}}], "nutrition": {{"protein_g": 12, "carbs_g": 35, "fat_g": 8, "fiber_g": 6}}}},
-        {{"recipe_name": "Jeera Rice", "prep_time_minutes": 20, "dietary_tags": ["vegetarian", "vegan"], "category": "rice", "calories": 200, "ingredients": [{{"name": "Basmati Rice", "quantity": 1, "unit": "cup", "category": "grains"}}, {{"name": "Cumin Seeds", "quantity": 1, "unit": "tsp", "category": "spices"}}], "nutrition": {{"protein_g": 4, "carbs_g": 40, "fat_g": 3, "fiber_g": 1}}}}
-      ],
-      "dinner": [
-        {{"recipe_name": "Paneer Butter Masala", "prep_time_minutes": 30, "dietary_tags": ["vegetarian"], "category": "curry", "calories": 350, "ingredients": [{{"name": "Paneer", "quantity": 250, "unit": "g", "category": "dairy"}}, {{"name": "Tomato", "quantity": 3, "unit": "medium", "category": "vegetables"}}], "nutrition": {{"protein_g": 18, "carbs_g": 12, "fat_g": 25, "fiber_g": 2}}}},
-        {{"recipe_name": "Butter Naan", "prep_time_minutes": 15, "dietary_tags": ["vegetarian"], "category": "naan", "calories": 260, "ingredients": [{{"name": "Maida", "quantity": 2, "unit": "cup", "category": "grains"}}, {{"name": "Butter", "quantity": 2, "unit": "tbsp", "category": "dairy"}}], "nutrition": {{"protein_g": 7, "carbs_g": 40, "fat_g": 8, "fiber_g": 1}}}}
-      ],
-      "snacks": [
-        {{"recipe_name": "Samosa", "prep_time_minutes": 20, "dietary_tags": ["vegetarian"], "category": "snack", "calories": 250, "ingredients": [{{"name": "Maida", "quantity": 1, "unit": "cup", "category": "grains"}}, {{"name": "Potato", "quantity": 2, "unit": "medium", "category": "vegetables"}}], "nutrition": {{"protein_g": 4, "carbs_g": 30, "fat_g": 12, "fiber_g": 2}}}},
-        {{"recipe_name": "Masala Chai", "prep_time_minutes": 10, "dietary_tags": ["vegetarian"], "category": "chai", "calories": 80, "ingredients": [{{"name": "Tea Leaves", "quantity": 2, "unit": "tsp", "category": "other"}}, {{"name": "Milk", "quantity": 1, "unit": "cup", "category": "dairy"}}], "nutrition": {{"protein_g": 3, "carbs_g": 10, "fat_g": 3, "fiber_g": 0}}}}
-      ]
-    }}
-  ]
-}}
+Return valid JSON with exactly 7 days. Each day has 4 slots (breakfast, lunch, dinner, snacks).
+Each slot has exactly {prefs.items_per_meal} items. Each item needs: recipe_name, prep_time_minutes, dietary_tags (array), category, calories (int), ingredients (array of {{name, quantity, unit, category}}), nutrition ({{protein_g, carbs_g, fat_g, fiber_g}}).
+Use authentic Indian dish names (e.g., "Aloo Paratha", "Masala Chai", "Dal Tadka").
 
 Generate the complete 7-day meal plan now:"""
 
@@ -864,12 +841,16 @@ Generate the complete 7-day meal plan now:"""
 
                 if context is not None:
                     # Use metadata-aware version for tracking
-                    response, metadata = await generate_text_with_metadata(prompt, response_schema=MEAL_PLAN_SCHEMA)
+                    response, metadata = await generate_text_with_metadata(
+                        prompt, response_schema=MEAL_PLAN_SCHEMA
+                    )
                     context.token_usage = metadata
                     context.model_name = metadata.get("model_name")
                     context.retry_count = attempt
                 else:
-                    response = await generate_text(prompt, response_schema=MEAL_PLAN_SCHEMA)
+                    response = await generate_text(
+                        prompt, response_schema=MEAL_PLAN_SCHEMA
+                    )
 
                 # Basic validation - ensure it's valid JSON
                 self._validate_response_structure(response)
