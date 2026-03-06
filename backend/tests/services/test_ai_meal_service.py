@@ -885,15 +885,9 @@ def test_enforce_rules_still_removes_actual_sweets():
     ), "Sweet Lassi should be removed (contains 'sweet')"
 
 
-def test_meal_plan_schema_has_required_structure():
+def test_meal_plan_schema_is_disabled():
+    """Gemini 2.5 Flash rejects response_schema for meal plans ('too many states').
+    Schema is set to None; structure is enforced by prompt + post-validation."""
     from app.services.ai_meal_service import MEAL_PLAN_SCHEMA
 
-    # Schema must exist and be a google.genai Schema
-    assert MEAL_PLAN_SCHEMA is not None
-    assert MEAL_PLAN_SCHEMA.type == "OBJECT"
-    assert "days" in MEAL_PLAN_SCHEMA.properties
-
-    day_schema = MEAL_PLAN_SCHEMA.properties["days"].items
-    assert day_schema is not None
-    for slot in ["breakfast", "lunch", "dinner", "snacks"]:
-        assert slot in day_schema.properties, f"Missing required slot: {slot}"
+    assert MEAL_PLAN_SCHEMA is None

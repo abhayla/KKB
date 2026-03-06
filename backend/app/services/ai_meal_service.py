@@ -50,69 +50,10 @@ def _keyword_match(keyword: str, text: str) -> bool:
 
 from google.genai import types as genai_types
 
-# Schema for Gemini structured output — enforces all 4 meal slots per day
-_MEAL_ITEM_SCHEMA = genai_types.Schema(
-    type="OBJECT",
-    required=["recipe_name", "prep_time_minutes", "dietary_tags", "category"],
-    properties={
-        "recipe_name": genai_types.Schema(type="STRING"),
-        "prep_time_minutes": genai_types.Schema(type="INTEGER"),
-        "dietary_tags": genai_types.Schema(
-            type="ARRAY", items=genai_types.Schema(type="STRING")
-        ),
-        "category": genai_types.Schema(type="STRING"),
-        "calories": genai_types.Schema(type="INTEGER"),
-        "ingredients": genai_types.Schema(
-            type="ARRAY",
-            items=genai_types.Schema(
-                type="OBJECT",
-                properties={
-                    "name": genai_types.Schema(type="STRING"),
-                    "quantity": genai_types.Schema(type="NUMBER"),
-                    "unit": genai_types.Schema(type="STRING"),
-                    "category": genai_types.Schema(type="STRING"),
-                },
-            ),
-        ),
-        "nutrition": genai_types.Schema(
-            type="OBJECT",
-            properties={
-                "protein_g": genai_types.Schema(type="NUMBER"),
-                "carbs_g": genai_types.Schema(type="NUMBER"),
-                "fat_g": genai_types.Schema(type="NUMBER"),
-                "fiber_g": genai_types.Schema(type="NUMBER"),
-            },
-        ),
-    },
-)
-
-_MEAL_SLOT_SCHEMA = genai_types.Schema(
-    type="ARRAY", items=_MEAL_ITEM_SCHEMA, min_items=2
-)
-
-MEAL_PLAN_SCHEMA = genai_types.Schema(
-    type="OBJECT",
-    required=["days"],
-    properties={
-        "days": genai_types.Schema(
-            type="ARRAY",
-            min_items=7,
-            max_items=7,
-            items=genai_types.Schema(
-                type="OBJECT",
-                required=["date", "day_name", "breakfast", "lunch", "dinner", "snacks"],
-                properties={
-                    "date": genai_types.Schema(type="STRING"),
-                    "day_name": genai_types.Schema(type="STRING"),
-                    "breakfast": _MEAL_SLOT_SCHEMA,
-                    "lunch": _MEAL_SLOT_SCHEMA,
-                    "dinner": _MEAL_SLOT_SCHEMA,
-                    "snacks": _MEAL_SLOT_SCHEMA,
-                },
-            ),
-        ),
-    },
-)
+# NOTE: response_schema was tested but Gemini 2.5 Flash rejects even minimal
+# schemas for meal plan generation ("too many states" error). The prompt +
+# response_mime_type="application/json" + post-validation is sufficient.
+MEAL_PLAN_SCHEMA = None
 
 
 # ==============================================================================
