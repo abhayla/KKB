@@ -405,7 +405,7 @@ class MealGenHeavyUser(HttpUser):
 
         # 2. Add family members (ignore 409 duplicates from previous runs)
         for member in prefs.get("family_members", []):
-            resp = self.client.post(
+            with self.client.post(
                 "/api/v1/family-members",
                 json={
                     "name": member["name"],
@@ -416,15 +416,15 @@ class MealGenHeavyUser(HttpUser):
                 headers=self.auth_headers,
                 catch_response=True,
                 name="/api/v1/family-members [SETUP]",
-            )
-            if resp.status_code in (200, 201, 409):
-                resp.success()
-            else:
-                resp.failure(f"Status {resp.status_code}")
+            ) as resp:
+                if resp.status_code in (200, 201, 409):
+                    resp.success()
+                else:
+                    resp.failure(f"Status {resp.status_code}")
 
         # 3. Add recipe rules (ignore 409 duplicates from previous runs)
         for rule in prefs.get("recipe_rules", []):
-            resp = self.client.post(
+            with self.client.post(
                 "/api/v1/recipe-rules",
                 json={
                     "target_type": rule.get("target_type", "INGREDIENT"),
@@ -439,11 +439,11 @@ class MealGenHeavyUser(HttpUser):
                 headers=self.auth_headers,
                 catch_response=True,
                 name="/api/v1/recipe-rules [SETUP]",
-            )
-            if resp.status_code in (200, 201, 409):
-                resp.success()
-            else:
-                resp.failure(f"Status {resp.status_code}")
+            ) as resp:
+                if resp.status_code in (200, 201, 409):
+                    resp.success()
+                else:
+                    resp.failure(f"Status {resp.status_code}")
 
     @property
     def auth_headers(self) -> dict:
