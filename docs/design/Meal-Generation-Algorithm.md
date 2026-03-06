@@ -21,7 +21,7 @@ This document describes the implementation of RasoiAI's AI-powered meal plan gen
 | Retry with exponential backoff | ✅ Implemented | 3 attempts max |
 | JSON response validation | ✅ Implemented | Structure validation |
 
-**Test Coverage:** 22 unit tests
+**Test Coverage:** 25 unit tests + 6 schema tests + 14 generation tracker tests
 
 ---
 
@@ -218,12 +218,16 @@ async def _generate_with_retry(self, prompt: str, max_retries: int = 3) -> str:
 
 **Gemini Configuration:**
 ```python
-generation_config = genai.GenerationConfig(
+config = types.GenerateContentConfig(
     temperature=0.8,                    # Creative but consistent
     max_output_tokens=65536,            # Enough for full week with detailed recipes
     response_mime_type="application/json",  # Structured output
+    response_json_schema=MEAL_PLAN_SCHEMA,  # Enforced JSON structure (short keys)
+    thinking_config=types.ThinkingConfig(thinking_budget=0),  # Disabled — adds latency, schema already constrains
 )
 ```
+
+**Structured Output (Short Keys):** Gemini 2.5 Flash rejects complex `response_schema` with "too many states for serving" error. The workaround uses `response_json_schema` (plain dict) with abbreviated property names: `d`=date, `dn`=day_name, `b`=breakfast, `l`=lunch, `di`=dinner, `s`=snacks, `n`=recipe_name, `t`=prep_time, `tags`=dietary_tags, `c`=category, `cal`=calories. The prompt explains the abbreviations to the AI, and the parser handles both short and long key formats.
 
 ---
 
@@ -469,15 +473,23 @@ GeneratedMealPlan(
 - Validates JSON structure before accepting
 - Fails with ServiceUnavailableError after all retries
 
-### Decision #5: JSON Response Mode
+### Decision #5: JSON Response Mode with Schema Enforcement
 
-**Approach:** Use Gemini's `response_mime_type="application/json"` for structured output.
+**Approach:** Use Gemini's `response_json_schema` (plain dict) for structured output with enforced schema.
 
 **Benefits:**
-- Guaranteed valid JSON format
-- Easier parsing
-- Consistent structure
+- Guaranteed valid JSON format with correct structure
+- Schema enforcement prevents missing fields
+- Short property keys avoid Gemini's "too many states" limitation
 - No need to extract JSON from text
+
+**Note:** `response_schema` (typed `genai.types.Schema`) was rejected by Gemini 2.5 Flash for complex meal plan schemas. Using `response_json_schema` (plain dict) with abbreviated keys is the working solution.
+
+### Decision #6: Generation Tracker (Structured Logging)
+
+**Approach:** Per-call JSON logging via `generation_tracker.py` for debugging meal generation.
+
+**Output:** `logs/MEAL_PLAN-{timestamp}-{microseconds}.json` with 4 sections: prompt, Gemini response, post-processing, and client response. Includes timing breakdown (AI duration, save duration, total) and token usage.
 
 ---
 
@@ -500,20 +512,26 @@ GeneratedMealPlan(
 
 ### Test Coverage
 
-| Test Class | Tests | Purpose |
-|------------|-------|---------|
-| TestPromptBuilding | 7 | Verify prompt includes all preferences |
-| TestResponseParsing | 3 | Verify JSON parsing to dataclasses |
-| TestValidation | 5 | Verify structure validation |
-| TestEnforcement | 4 | Verify post-processing rules |
-| TestIntegration | 3 | Full flow with mocked Gemini |
+| Test File | Test Class | Tests | Purpose |
+|-----------|------------|-------|---------|
+| `test_ai_meal_service.py` | TestPromptBuilding | 7 | Verify prompt includes all preferences |
+| `test_ai_meal_service.py` | TestResponseParsing | 3 | Verify JSON parsing to dataclasses |
+| `test_ai_meal_service.py` | TestValidation | 5 | Verify structure validation |
+| `test_ai_meal_service.py` | TestEnforcement | 4 | Verify post-processing rules |
+| `test_ai_meal_service.py` | TestIntegration | 6 | Full flow with mocked Gemini |
+| `test_gemini_schema.py` | — | 6 | Schema parameter forwarding to Gemini |
+| `test_generation_tracker.py` | TestMealGenerationContext | 4 | Dataclass init, timing properties |
+| `test_generation_tracker.py` | TestEmitStructuredLog | 7 | JSON file emission, 4-section structure |
+| `test_generation_tracker.py` | TestFullPipelineTracking | 3 | End-to-end context population |
 
 ### Test Script
 
 ```bash
 cd backend
 source venv/Scripts/activate  # Windows
-PYTHONPATH=. pytest tests/test_ai_meal_service.py -v
+PYTHONPATH=. pytest tests/services/test_ai_meal_service.py -v
+PYTHONPATH=. pytest tests/test_gemini_schema.py -v
+PYTHONPATH=. pytest tests/test_generation_tracker.py -v
 ```
 
 ### Validation Test (Tabular)
@@ -536,9 +554,10 @@ Tests the Sharma Family profile with constraints:
 
 | Metric | Value |
 |--------|-------|
-| Gemini API call | ~5-90 seconds (typically 45-70s) |
+| Gemini API call | ~30-40 seconds (with `response_json_schema` + `thinking_budget=0`) |
 | Post-AI DB writes | ~1.1 seconds (optimized from ~35-65s) |
-| Total generation | ~45-90 seconds |
+| Total generation | ~35-50 seconds |
+| Endpoint timeout | 180 seconds (allows 1 retry + backoff) |
 | Retry overhead | +1-4 seconds per retry |
 | Post-processing | <100ms |
 
@@ -560,11 +579,13 @@ Tests the Sharma Family profile with constraints:
 | Issue | Solution |
 |-------|----------|
 | Gemini 404 error | Check model name (`gemini-2.5-flash`), verify API key |
+| "Too many states for serving" | Use `response_json_schema` (plain dict) with SHORT property keys, not `response_schema` |
 | Empty response | Retry logic handles this; check prompt size |
 | Invalid JSON | Validate response structure; retry automatically |
 | Missing items after enforcement | AI included allergen; post-processing removed it |
 | INCLUDE rule not satisfied | Check prompt format; AI may have misunderstood |
+| Generation timeout | Endpoint timeout is 180s; check `logs/MEAL_PLAN-*.json` for timing breakdown |
 
 ---
 
-*Last updated: February 2026 - Migrated to Gemini-powered AI generation*
+*Last updated: March 2026 - Added structured output (response_json_schema with short keys), generation tracker, thinking disabled*

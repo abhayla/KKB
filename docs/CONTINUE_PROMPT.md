@@ -11,7 +11,7 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 route
 **Test Results:**
 | Platform | Tests | Status |
 |----------|-------|--------|
-| Backend | ~538 (43 files) | PASS |
+| Backend | ~559 (46 files) | PASS |
 | Android Unit | ~580 | PASS |
 | Android UI | 750+ | PASS |
 | Android E2E | 67+ | PASS |
@@ -68,6 +68,10 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 route
 | Phone Auth Migration | DONE | Google OAuth → Firebase Phone OTP (backend + Android + tests + docs) |
 | E2E Suite Consolidation | DONE | 33 files → 23 files, -34 duplicates, +9 gap tests, 7 tiers |
 | Customer Journey Suites | DONE | 14 journey-based @Suite classes grouping 23 E2E test files |
+| Gemini Structured Output | DONE | response_json_schema with short keys, thinking disabled |
+| Generation Tracker | DONE | Per-call JSON logging (logs/MEAL_PLAN-*.json) with timing + tokens |
+| Multi-User Load Testing | DONE | fake-firebase-token-{suffix}, Locust profiles, raised DEBUG rate limits |
+| Meal Gen Performance | DONE | 180s timeout, ~35s generation (was ~90s), response_json_schema |
 
 ---
 
@@ -75,6 +79,7 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 route
 
 | Session | Milestone |
 |---------|-----------|
+| 46+ | Gemini structured output (response_json_schema + short keys), generation tracker, meal gen performance (180s timeout, ~35s gen), multi-user load testing |
 | 45 | Customer journey test suites: 14 JUnit @Suite classes (J01-J14), 100% test file coverage, documentation |
 | 44 | E2E test suite consolidation: 33→23 files, removed 34 duplicates, added 9 gap-filling tests, merged Home Screen (6→1), FullJourney (2→1), RecipeRules (4→3), RecipeInteraction (3→1) |
 | 43 | Pre-production hardening: 24 items (config security, GDPR, rate limiting, token rotation, security headers, DB indexes, cleanup service, cert pinning, accessibility) |
@@ -85,6 +90,6 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 route
 
 ---
 
-*Last Updated: March 1, 2026*
-*E2E suite: 23 files, ~125 tests, 14 customer journey suites. ~538 backend tests (43 files). ~580 Android unit tests. 750+ UI tests.*
+*Last Updated: March 6, 2026*
+*E2E suite: 23 files, ~125 tests, 14 customer journey suites. ~559 backend tests (46 files). ~580 Android unit tests. 750+ UI tests.*
 *~44 API endpoints across 13 routers. 3,580 recipes. ~525 requirements across 12 screen files. Room DB v11.*

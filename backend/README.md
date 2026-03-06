@@ -72,24 +72,27 @@ backend/
 │   ├── repositories/            # Data access layer
 │   ├── schemas/                 # Pydantic schemas
 │   ├── services/                # Business logic
-│   │   ├── meal_generation_service.py  # 2-item pairing logic
+│   │   ├── ai_meal_service.py         # Gemini AI meal generation (structured output)
+│   │   ├── generation_tracker.py      # Per-call JSON logging for meal gen debugging
+│   │   ├── meal_generation_service.py # 2-item pairing logic
 │   │   ├── preference_update_service.py # INCLUDE/EXCLUDE rules
 │   │   └── config_service.py    # YAML config management
-│   └── ai/                      # Claude integration
-│       ├── chat_assistant.py    # Tool calling orchestration
+│   └── ai/                      # Claude + Gemini AI integration
+│       ├── chat_assistant.py    # Claude tool calling orchestration
+│       ├── gemini_client.py     # Gemini 2.5 Flash API wrapper (structured output)
 │       └── tools/               # Chat tool definitions
 ├── config/                      # YAML configuration files
 │   ├── meal_generation.yaml     # Pairing rules, meal structure
 │   └── reference_data/          # Ingredients, dishes, cuisines
 ├── scripts/                     # Utility scripts
-├── tests/                       # Test suite (~447 tests, 35 files)
+├── tests/                       # Test suite (~559 tests, 46 files)
 └── requirements.txt
 ```
 
 ## Testing
 
 ```bash
-# Run all tests (~351 total)
+# Run all tests (~559 total)
 PYTHONPATH=. pytest
 
 # Run with coverage

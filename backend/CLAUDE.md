@@ -22,7 +22,7 @@ alembic revision --autogenerate -m "description"  # New migration
 
 ```
 app/
-├── ai/            # Claude + Gemini clients, prompts, tools
+├── ai/            # Claude + Gemini clients (gemini_client.py: structured output with response_json_schema), prompts, tools
 ├── api/v1/        # 12 router files (~44 endpoints)
 ├── cache/         # recipe_cache.py (warmed on startup, non-fatal)
 ├── config.py      # Pydantic Settings (JWT secret required, DEBUG=false default, CORS=[] default, usage limits)
@@ -32,7 +32,7 @@ app/
 ├── models/        # SQLAlchemy ORM (13 files, incl. usage_log, refresh_token)
 ├── repositories/  # Data access (5 files)
 ├── schemas/       # Pydantic request/response
-└── services/      # Business logic (20 files, incl. cleanup, usage_limit, user_deletion)
+└── services/      # Business logic (21 files, incl. ai_meal_service, generation_tracker, cleanup, usage_limit, user_deletion)
 ```
 
 ## Stale Cache

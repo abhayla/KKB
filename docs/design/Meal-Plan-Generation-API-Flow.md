@@ -61,7 +61,7 @@ POST /api/v1/meal-plans/generate
   │ ✅ Phase 13: Background Catalog (fire-and-forget)  0s*      │
   │   Phase 14: Build HTTP Response (in-memory)      ~0s        │
   │                   │                                          │
-  │     asyncio.wait_for(timeout=120s) wraps all phases          │
+  │     asyncio.wait_for(timeout=180s) wraps all phases          │
   └───────────────────┼──────────────────────────────────────────┘
                       ▼
 HTTP 200 OK + MealPlanResponse JSON

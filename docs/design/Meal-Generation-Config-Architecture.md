@@ -662,9 +662,10 @@ The meal generation now uses **Google Gemini AI** to generate recipe names freel
    ├── Festival context
    └── Pairing guidance from config
 
-4. Call Gemini 2.0 Flash API
+4. Call Gemini 2.5 Flash API
    │
-   ├── JSON response mode (response_mime_type="application/json")
+   ├── Structured output (response_json_schema with short keys)
+   ├── Thinking disabled (thinking_budget=0)
    ├── Retry with exponential backoff (3 attempts)
    └── Validate response structure (7 days, 4 slots each)
 

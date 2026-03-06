@@ -269,7 +269,7 @@ E2E tests use **real backend + fake phone auth only**. `FakePhoneAuthClient` sen
 | KSP/Hilt errors | Run `./gradlew clean :app:kspDebugKotlin` |
 | Backend import errors | Run from backend dir: `cd backend && PYTHONPATH=. pytest` |
 | MissingGreenlet errors | SQLAlchemy async requires `selectinload()` for eager loading |
-| Meal generation timeout | Migrated to `google-genai` SDK with native async (`client.aio`). AI takes 4-7 seconds; E2E tests use 30-second timeout. Old `google-generativeai` SDK blocked uvicorn event loop. |
+| Meal generation timeout | Migrated to `google-genai` SDK with native async (`client.aio`). Endpoint timeout 180s. AI takes ~30-40s with `response_json_schema` + `thinking_budget=0`. E2E tests use 30-second timeout. Structured logging in `logs/MEAL_PLAN-*.json`. |
 | Room DB not found | Run `./gradlew clean` then rebuild - schema may have changed |
 | Test flakiness | Use `waitUntil {}` in E2E tests; check `RetryUtils.kt` for patterns |
 | Screenshot processing errors | Use PNG, limit to 1280x720, avoid `fullPage` on long pages. Auto-resized by `post-screenshot-resize.sh` hook (max 1800px). Batch fix: `python .claude/hooks/resize_screenshot.py --all` |
@@ -570,9 +570,9 @@ Workflow state is tracked in `.claude/workflow-state.json` (extended schema with
 
 ## Claude Code Configuration
 
-The `.claude/` directory contains: `agents/` (11 agents), `knowledge.db` (pattern library), `skills/` (12 slash commands), `hooks/` (12 hooks — see table above), `rules/` (5 path-scoped rule files), `logs/` (session logs).
+The `.claude/` directory contains: `agents/` (11 agents), `knowledge.db` (pattern library), `skills/` (14 slash commands), `hooks/` (12 hooks — see table above), `rules/` (5 path-scoped rule files), `logs/` (session logs).
 
-**Skills:** `/adb-test`, `/auto-verify`, `/fix-issue`, `/fix-loop`, `/implement`, `/post-fix-pipeline`, `/reflect`, `/run-e2e`, `/db-migrate`, `/deploy`, `/sync-check`, `/verify-screenshots`
+**Skills:** `/adb-test`, `/auto-verify`, `/fix-issue`, `/fix-loop`, `/implement`, `/post-fix-pipeline`, `/reflect`, `/run-e2e`, `/db-migrate`, `/deploy`, `/sync-check`, `/verify-screenshots`, `/generate-meal`, `/gemini-api`
 
 **MCP Servers** (`.mcp.json`): Playwright (`@anthropic-ai/mcp-server-playwright`) for web screenshots, ADB (`adb-mcp`) for Android emulator automation.
 
