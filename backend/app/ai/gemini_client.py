@@ -145,12 +145,15 @@ async def generate_text(
         from google.genai import types
 
         # Configure generation for JSON output
+        # Disable thinking (thinking_budget=0) for structured output —
+        # schema already constrains format, thinking just adds latency
         config = types.GenerateContentConfig(
             temperature=temperature,
             max_output_tokens=max_output_tokens,
             response_mime_type="application/json",
             response_schema=response_schema,
             response_json_schema=response_json_schema,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
         )
 
         response = await client.aio.models.generate_content(
@@ -207,6 +210,7 @@ async def generate_text_with_metadata(
             temperature=temperature,
             max_output_tokens=max_output_tokens,
             response_mime_type="application/json",
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
             response_schema=response_schema,
             response_json_schema=response_json_schema,
         )
