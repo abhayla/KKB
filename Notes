@@ -216,3 +216,9 @@ I have acess to VPS server also and I can run a session of Claude code on the VP
   ├───────┼─────────┼─────────────────────────────────────────────────┤
   │  5th  │ J01     │ Tests new-user auth + onboarding path           │
   └───────┴─────────┴─────────────────────────────────────────────────┘
+
+Changes
+Add setting to allow meal planning at family level or at each individual family member level. Add this setting on onboarding screen on family member screen
+Allow Individual Family member selection from a drop down list.
+Add one screen for Recipe Rules
+Allow meal preference at each family member level
