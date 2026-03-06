@@ -22,8 +22,12 @@ from typing import Any, Optional
 
 from sqlalchemy import select
 
-from app.ai.gemini_client import generate_text
+from app.ai.gemini_client import (
+    generate_text,
+    generate_text_with_metadata,
+)  # noqa: F401
 from app.core.exceptions import ServiceUnavailableError
+from app.services.generation_tracker import MealGenerationContext  # noqa: F401
 from app.db.postgres import async_session_maker
 from app.models.recipe_rule import NutritionGoal, RecipeRule
 from app.repositories.user_repository import UserRepository
@@ -181,12 +185,14 @@ class AIMealService:
         self,
         user_id: str,
         week_start_date: date,
+        context: Optional[MealGenerationContext] = None,
     ) -> GeneratedMealPlan:
         """Generate a 7-day meal plan using Gemini AI.
 
         Args:
             user_id: User ID to generate plan for
             week_start_date: Start date of the week (usually Monday)
+            context: Optional tracking context for observability
 
         Returns:
             GeneratedMealPlan with 7 days of AI-generated meals
@@ -199,6 +205,21 @@ class AIMealService:
         # Load user preferences (cached for reuse by endpoint)
         prefs = await self._load_user_preferences(user_id)
         self.last_preferences = prefs
+
+        # Snapshot preferences for tracking
+        if context is not None:
+            context.preferences_snapshot = {
+                "dietary_tags": prefs.dietary_tags,
+                "cuisine_preferences": prefs.cuisine_preferences,
+                "allergies": prefs.allergies,
+                "dislikes": prefs.dislikes,
+                "weekday_cooking_time": prefs.weekday_cooking_time,
+                "weekend_cooking_time": prefs.weekend_cooking_time,
+                "busy_days": prefs.busy_days,
+                "include_rules_count": len(prefs.include_rules),
+                "exclude_rules_count": len(prefs.exclude_rules),
+                "family_size": prefs.family_size,
+            }
 
         # Filter INCLUDE rules that conflict with family member constraints
         filtered_include_rules, rules_filtered_report = self._filter_conflicting_rules(
@@ -219,8 +240,18 @@ class AIMealService:
 
         logger.debug(f"Prompt length: {len(prompt)} characters")
 
+        # Record prompt for tracking
+        if context is not None:
+            context.prompt_text = prompt
+
         # Generate with retry
-        response_text = await self._generate_with_retry(prompt, max_retries=3)
+        response_text = await self._generate_with_retry(
+            prompt, max_retries=3, context=context
+        )
+
+        # Record response for tracking
+        if context is not None:
+            context.response_text = response_text
 
         # Parse response
         plan = self._parse_response(
@@ -231,7 +262,12 @@ class AIMealService:
         )
 
         # Post-process: enforce rules
-        plan = self._enforce_rules(plan, prefs)
+        plan = self._enforce_rules(plan, prefs, context=context)
+
+        # Record rules applied and full enforced plan for tracking
+        if context is not None:
+            context.rules_applied = plan.rules_applied
+            context.enforced_plan_data = self._plan_to_dict(plan)
 
         logger.info(
             f"Generated meal plan: {plan.week_start_date} to {plan.week_end_date}, "
@@ -735,12 +771,18 @@ Generate the complete 7-day meal plan now:"""
 
         return prompt
 
-    async def _generate_with_retry(self, prompt: str, max_retries: int = 3) -> str:
+    async def _generate_with_retry(
+        self,
+        prompt: str,
+        max_retries: int = 3,
+        context: Optional[MealGenerationContext] = None,
+    ) -> str:
         """Generate meal plan with retry logic.
 
         Args:
             prompt: The prompt to send to Gemini
             max_retries: Maximum number of retry attempts
+            context: Optional tracking context for observability
 
         Returns:
             Raw response text from Gemini
@@ -753,7 +795,15 @@ Generate the complete 7-day meal plan now:"""
         for attempt in range(max_retries):
             try:
                 logger.info(f"Gemini generation attempt {attempt + 1}/{max_retries}")
-                response = await generate_text(prompt)
+
+                if context is not None:
+                    # Use metadata-aware version for tracking
+                    response, metadata = await generate_text_with_metadata(prompt)
+                    context.token_usage = metadata
+                    context.model_name = metadata.get("model_name")
+                    context.retry_count = attempt
+                else:
+                    response = await generate_text(prompt)
 
                 # Basic validation - ensure it's valid JSON
                 self._validate_response_structure(response)
@@ -767,6 +817,9 @@ Generate the complete 7-day meal plan now:"""
             except Exception as e:
                 last_error = e
                 logger.warning(f"Attempt {attempt + 1} failed: {e}")
+
+            if context is not None:
+                context.retry_count = attempt + 1
 
             if attempt < max_retries - 1:
                 wait_time = 2**attempt  # 1s, 2s, 4s
@@ -893,6 +946,7 @@ Generate the complete 7-day meal plan now:"""
         self,
         plan: GeneratedMealPlan,
         prefs: UserPreferences,
+        context: Optional[MealGenerationContext] = None,
     ) -> GeneratedMealPlan:
         """Post-process to enforce rules that AI might have missed.
 
@@ -976,6 +1030,15 @@ Generate the complete 7-day meal plan now:"""
                         logger.warning(
                             f"Removed {item.recipe_name} from {day.date} {slot}: contains allergen"
                         )
+                        if context is not None:
+                            context.items_removed.append(
+                                {
+                                    "recipe": item.recipe_name,
+                                    "date": day.date,
+                                    "slot": slot,
+                                    "reason": "allergen",
+                                }
+                            )
                         continue
 
                     # Check EXCLUDE rules
@@ -984,6 +1047,15 @@ Generate the complete 7-day meal plan now:"""
                         logger.warning(
                             f"Removed {item.recipe_name} from {day.date} {slot}: matches EXCLUDE rule"
                         )
+                        if context is not None:
+                            context.items_removed.append(
+                                {
+                                    "recipe": item.recipe_name,
+                                    "date": day.date,
+                                    "slot": slot,
+                                    "reason": "exclude_rule",
+                                }
+                            )
                         continue
 
                     filtered_items.append(item)
@@ -1044,6 +1116,15 @@ Generate the complete 7-day meal plan now:"""
                                         f"Removed {item.recipe_name} from {day.date} {slot}: "
                                         f"unsafe for {member_name} (contains '{keyword}')"
                                     )
+                                    if context is not None:
+                                        context.items_removed.append(
+                                            {
+                                                "recipe": item.recipe_name,
+                                                "date": day.date,
+                                                "slot": slot,
+                                                "reason": f"family_constraint:{member_name}",
+                                            }
+                                        )
                                     is_unsafe = True
                                     break
                             if is_unsafe:
@@ -1055,3 +1136,10 @@ Generate the complete 7-day meal plan now:"""
                     setattr(day, slot, safe_items)
 
         return plan
+
+    @staticmethod
+    def _plan_to_dict(plan: GeneratedMealPlan) -> dict:
+        """Serialize GeneratedMealPlan to a JSON-compatible dict."""
+        from dataclasses import asdict
+
+        return asdict(plan)

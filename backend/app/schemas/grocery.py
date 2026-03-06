@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class GroceryItemResponse(BaseModel):
@@ -17,8 +17,7 @@ class GroceryItemResponse(BaseModel):
     is_checked: bool = False
     is_in_pantry: bool = False
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GroceryCategoryResponse(BaseModel):
@@ -38,8 +37,7 @@ class GroceryListResponse(BaseModel):
     total_items: int
     checked_items: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GroceryItemUpdate(BaseModel):

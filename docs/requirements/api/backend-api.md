@@ -31,6 +31,28 @@
 | API-025 | `/api/v1/notifications/fcm-token` | DELETE | Unregister FCM token | Implemented | `test_notification_api.py` |
 | API-026 | `/api/v1/notifications/{id}/read` | PUT | Mark notification read | Implemented | `test_notification_api.py` |
 | API-027 | `/api/v1/notifications/{id}` | DELETE | Delete notification | Implemented | `test_notification_api.py` |
+| API-028 | `/api/v1/auth/logout` | POST | Invalidate refresh token | Implemented | `test_auth.py` |
+| API-029 | `/api/v1/family-members` | GET | List family members | Implemented | `test_family_members_api.py` |
+| API-030 | `/api/v1/family-members` | POST | Add family member | Implemented | `test_family_members_api.py` |
+| API-031 | `/api/v1/family-members/{id}` | PUT | Update family member | Implemented | `test_family_members_api.py` |
+| API-032 | `/api/v1/family-members/{id}` | DELETE | Delete family member | Implemented | `test_family_members_api.py` |
+| API-033 | `/api/v1/recipe-rules` | GET | List recipe rules | Implemented | `test_recipe_rules_api.py` |
+| API-034 | `/api/v1/recipe-rules` | POST | Create recipe rule | Implemented | `test_recipe_rules_api.py` |
+| API-035 | `/api/v1/recipe-rules/{id}` | GET | Get recipe rule | Implemented | `test_recipe_rules_api.py` |
+| API-036 | `/api/v1/recipe-rules/{id}` | PUT | Update recipe rule | Implemented | `test_recipe_rules_api.py` |
+| API-037 | `/api/v1/recipe-rules/{id}` | DELETE | Delete recipe rule | Implemented | `test_recipe_rules_api.py` |
+| API-038 | `/api/v1/recipe-rules/sync` | POST | Sync rules from Android | Implemented | `test_recipe_rules_api.py` |
+| API-039 | `/api/v1/nutrition-goals` | GET | List nutrition goals | Implemented | `test_recipe_rules_api.py` |
+| API-040 | `/api/v1/nutrition-goals` | POST | Create nutrition goal | Implemented | `test_recipe_rules_api.py` |
+| API-041 | `/api/v1/nutrition-goals/{id}` | GET | Get nutrition goal | Implemented | `test_recipe_rules_api.py` |
+| API-042 | `/api/v1/nutrition-goals/{id}` | PUT | Update nutrition goal | Implemented | `test_recipe_rules_api.py` |
+| API-043 | `/api/v1/nutrition-goals/{id}` | DELETE | Delete nutrition goal | Implemented | `test_recipe_rules_api.py` |
+| API-044 | `/api/v1/photos/analyze` | POST | Analyze food photo | Implemented | `test_chat_api.py` |
+| API-045 | `/api/v1/recipes/{id}/rate` | POST | Rate a recipe | Implemented | Various |
+| API-046 | `/api/v1/recipes/ai-catalog/search` | GET | Search AI recipe catalog | Implemented | `test_ai_recipe_catalog.py` |
+| API-047 | `/api/v1/recipes/suggest-from-pantry` | POST | Suggest recipes from pantry | Implemented | Various |
+| API-048 | `/api/v1/users/me` | DELETE | Delete account (GDPR) | Implemented | `test_auth.py` |
+| API-049 | `/api/v1/users/me/export` | GET | Export user data (GDPR) | Implemented | `test_auth.py` |
 
 ---
 
@@ -59,7 +81,7 @@
   "access_token": "string",
   "refresh_token": "string",
   "token_type": "bearer",
-  "expires_in": 3600,
+  "expires_in": 604800,
   "user": {
     "id": "string",
     "email": "string",
@@ -78,7 +100,7 @@
 
 **Notes:**
 - Accepts `fake-firebase-token` in debug mode for testing
-- Token expires in 1 hour by default
+- Access token expires in 7 days (10080 minutes) by default
 
 ---
 
@@ -104,7 +126,7 @@
 {
   "access_token": "string",
   "token_type": "bearer",
-  "expires_in": 3600
+  "expires_in": 604800
 }
 ```
 
@@ -275,7 +297,7 @@
 **AI Integration:**
 - Uses MealGenerationService with config-driven pairing
 - Respects items_per_meal preference (1-4 items)
-- Typical generation time: 4-7 seconds
+- Typical generation time: 45-90 seconds (Gemini AI + DB writes)
 
 ---
 
@@ -991,8 +1013,8 @@ Authorization: Bearer <access_token>
 ```
 
 **Token Expiration:**
-- Access token: 1 hour
-- Refresh token: 30 days
+- Access token: 10080 minutes (7 days)
+- Refresh token: 30 days (opaque, with reuse detection)
 
 **Test Mode:**
 - Backend accepts `fake-firebase-token` when `DEBUG=true`
@@ -1020,9 +1042,12 @@ All endpoints return consistent error format:
 
 | Endpoint Type | Limit |
 |---------------|-------|
-| AI Generation | 10/hour |
-| Chat Messages | 60/minute |
-| Other | 100/minute |
+| AI Generation | 5/hour |
+| Chat Messages | 30/minute |
+| Chat Image | 10/hour |
+| Auth Firebase | 10/minute |
+| Auth Refresh | 20/minute |
+| Photo Analyze | 10/hour |
 
 ---
 
@@ -1039,6 +1064,10 @@ All endpoints return consistent error format:
 | Chat | `backend/app/api/v1/endpoints/chat.py` |
 | Stats | `backend/app/api/v1/endpoints/stats.py` |
 | Notifications | `backend/app/api/v1/endpoints/notifications.py` |
+| Recipe Rules | `backend/app/api/v1/endpoints/recipe_rules.py` |
+| Nutrition Goals | `backend/app/api/v1/endpoints/recipe_rules.py` (separate router) |
+| Family Members | `backend/app/api/v1/endpoints/family_members.py` |
+| Photos | `backend/app/api/v1/endpoints/photos.py` |
 
 ## Test Files
 
@@ -1055,7 +1084,7 @@ All endpoints return consistent error format:
 | Notification Service | `backend/tests/test_notification_service.py` | 19 |
 | Notification API | `backend/tests/test_notification_api.py` | 10 |
 
-**Total Backend Tests: 170**
+**Total Backend Tests: ~539 (43 files)**
 
 ---
 

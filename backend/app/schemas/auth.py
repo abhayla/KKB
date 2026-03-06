@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 if TYPE_CHECKING:
     from app.schemas.user import UserPreferencesDto
@@ -19,8 +19,7 @@ class UserResponseForAuth(BaseModel):
     is_onboarded: bool
     preferences: Optional["UserPreferencesDto"] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AuthRequest(BaseModel):
@@ -38,8 +37,7 @@ class AuthResponse(BaseModel):
     expires_in: int  # seconds
     user: UserResponseForAuth
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RefreshTokenRequest(BaseModel):

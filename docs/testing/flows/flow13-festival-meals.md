@@ -98,6 +98,8 @@
 | F13-C34 | Non-veg user preference vs fasting day rules | Fasting rules override user diet (festival takes precedence) |
 | F13-C35 | INCLUDE non-veg rule on fasting day | System blocks rule creation OR AI skips rule with explanation |
 
+> **Current implementation note:** These contradictions are handled by the AI prompt — fasting context (special foods, avoided foods) is passed to Gemini, which generates appropriate meals. There is no dedicated backend validation endpoint that enforces fasting-day constraints; the AI is trusted to respect them, with post-processing enforcement for allergens and EXCLUDE rules only.
+
 ## Fix Strategy
 
 **For F13-C34 (Non-veg user on fasting day):**

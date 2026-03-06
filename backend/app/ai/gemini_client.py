@@ -3,7 +3,6 @@
 import base64
 import logging
 import re
-from typing import Optional
 
 from app.config import settings
 
@@ -38,9 +37,7 @@ def get_gemini_client():
 
 
 async def analyze_food_image(
-    image_base64: str,
-    media_type: str = "image/jpeg",
-    prompt: str = None
+    image_base64: str, media_type: str = "image/jpeg", prompt: str = None
 ) -> dict:
     """Analyze a food image using Gemini Vision.
 
@@ -57,7 +54,7 @@ async def analyze_food_image(
     if not client:
         return {
             "message": "AI vision service is not configured. Please try again later.",
-            "recipe_suggestions": []
+            "recipe_suggestions": [],
         }
 
     default_prompt = """You are RasoiAI, a friendly and knowledgeable Indian cooking assistant.
@@ -92,18 +89,22 @@ Format your response in a conversational, easy-to-read way."""
             contents=[prompt or default_prompt, image_part],
         )
 
-        response_text = response.text if response.text else "I couldn't analyze that image. Please try with a clearer food photo."
+        response_text = (
+            response.text
+            if response.text
+            else "I couldn't analyze that image. Please try with a clearer food photo."
+        )
 
         return {
             "message": response_text,
-            "recipe_suggestions": _extract_recipe_suggestions(response_text)
+            "recipe_suggestions": _extract_recipe_suggestions(response_text),
         }
 
     except Exception as e:
         logger.error(f"Gemini Vision error: {e}")
         return {
             "message": "I had trouble analyzing that image. Please try again with a clearer food photo, or ask me any cooking question!",
-            "recipe_suggestions": []
+            "recipe_suggestions": [],
         }
 
 
@@ -131,7 +132,9 @@ async def generate_text(
     client = get_gemini_client()
 
     if not client:
-        raise ServiceUnavailableError("Gemini AI service not configured. Set GOOGLE_AI_API_KEY.")
+        raise ServiceUnavailableError(
+            "Gemini AI service not configured. Set GOOGLE_AI_API_KEY."
+        )
 
     try:
         from google.genai import types
@@ -159,6 +162,60 @@ async def generate_text(
         raise
 
 
+async def generate_text_with_metadata(
+    prompt: str,
+    temperature: float = 0.8,
+    max_output_tokens: int = 65536,
+) -> tuple[str, dict]:
+    """Generate text and return (text, metadata) with token usage.
+
+    Same as generate_text but also returns usage metadata from the response.
+
+    Returns:
+        Tuple of (response_text, metadata_dict)
+    """
+    from app.core.exceptions import ServiceUnavailableError
+
+    client = get_gemini_client()
+
+    if not client:
+        raise ServiceUnavailableError(
+            "Gemini AI service not configured. Set GOOGLE_AI_API_KEY."
+        )
+
+    try:
+        from google.genai import types
+
+        config = types.GenerateContentConfig(
+            temperature=temperature,
+            max_output_tokens=max_output_tokens,
+            response_mime_type="application/json",
+        )
+
+        response = await client.aio.models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt,
+            config=config,
+        )
+
+        if not response.text:
+            raise ValueError("Empty response from Gemini")
+
+        metadata = {"model_name": MODEL_NAME}
+        if hasattr(response, "usage_metadata") and response.usage_metadata:
+            um = response.usage_metadata
+            metadata["prompt_tokens"] = getattr(um, "prompt_token_count", None)
+            metadata["completion_tokens"] = getattr(um, "candidates_token_count", None)
+            metadata["total_tokens"] = getattr(um, "total_token_count", None)
+            metadata["thinking_tokens"] = getattr(um, "thoughts_token_count", None)
+
+        return response.text, metadata
+
+    except Exception as e:
+        logger.error(f"Gemini text generation failed: {e}")
+        raise
+
+
 def _extract_recipe_suggestions(text: str) -> list:
     """Extract recipe names from response text.
 
@@ -169,12 +226,40 @@ def _extract_recipe_suggestions(text: str) -> list:
 
     # Common Indian dishes to look for
     common_dishes = [
-        "dal", "paneer", "biryani", "curry", "masala", "tikka",
-        "samosa", "dosa", "idli", "paratha", "roti", "naan",
-        "chana", "aloo", "bhaji", "pakora", "raita", "chutney",
-        "halwa", "kheer", "gulab jamun", "ladoo", "barfi",
-        "palak", "bhindi", "gobi", "matar", "rajma", "chole",
-        "korma", "vindaloo", "tandoori", "kebab", "pulao"
+        "dal",
+        "paneer",
+        "biryani",
+        "curry",
+        "masala",
+        "tikka",
+        "samosa",
+        "dosa",
+        "idli",
+        "paratha",
+        "roti",
+        "naan",
+        "chana",
+        "aloo",
+        "bhaji",
+        "pakora",
+        "raita",
+        "chutney",
+        "halwa",
+        "kheer",
+        "gulab jamun",
+        "ladoo",
+        "barfi",
+        "palak",
+        "bhindi",
+        "gobi",
+        "matar",
+        "rajma",
+        "chole",
+        "korma",
+        "vindaloo",
+        "tandoori",
+        "kebab",
+        "pulao",
     ]
 
     text_lower = text.lower()
@@ -182,7 +267,7 @@ def _extract_recipe_suggestions(text: str) -> list:
     for dish in common_dishes:
         if dish in text_lower:
             # Try to find the full dish name (e.g., "Palak Paneer" not just "paneer")
-            pattern = rf'\b\w*\s*{dish}\s*\w*\b'
+            pattern = rf"\b\w*\s*{dish}\s*\w*\b"
             matches = re.findall(pattern, text_lower)
             for match in matches[:3]:  # Limit to first 3 matches
                 cleaned = match.strip().title()

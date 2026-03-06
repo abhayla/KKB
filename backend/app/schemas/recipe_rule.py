@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 def _normalize_upper(v: str | None) -> str | None:
@@ -40,7 +40,9 @@ class RecipeRuleCreate(BaseModel):
     )
     is_active: bool = Field(default=True)
 
-    @field_validator("target_type", "action", "frequency_type", "enforcement", mode="before")
+    @field_validator(
+        "target_type", "action", "frequency_type", "enforcement", mode="before"
+    )
     @classmethod
     def normalize_enum_upper(cls, v: str) -> str:
         return v.strip().upper() if v else v
@@ -65,7 +67,9 @@ class RecipeRuleUpdate(BaseModel):
     meal_slot: Optional[str] = None
     is_active: Optional[bool] = None
 
-    @field_validator("target_type", "action", "frequency_type", "enforcement", mode="before")
+    @field_validator(
+        "target_type", "action", "frequency_type", "enforcement", mode="before"
+    )
     @classmethod
     def normalize_enum_upper(cls, v: str | None) -> str | None:
         return _normalize_upper(v)
@@ -95,8 +99,7 @@ class RecipeRuleResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ==================== Nutrition Goal Schemas ====================
@@ -108,7 +111,9 @@ class NutritionGoalCreate(BaseModel):
     food_category: str = Field(
         ..., description="Food category: LEAFY_GREENS, PROTEIN, FERMENTED, etc."
     )
-    weekly_target: int = Field(default=3, ge=1, le=14, description="Weekly target (1-14)")
+    weekly_target: int = Field(
+        default=3, ge=1, le=14, description="Weekly target (1-14)"
+    )
     enforcement: str = Field(default="PREFERRED", description="REQUIRED or PREFERRED")
     is_active: bool = Field(default=True)
 
@@ -137,8 +142,7 @@ class NutritionGoalResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ==================== Sync Schemas ====================
@@ -160,7 +164,9 @@ class RecipeRuleSyncItem(BaseModel):
     is_active: bool = True
     local_updated_at: datetime  # Client's timestamp for conflict resolution
 
-    @field_validator("target_type", "action", "frequency_type", "enforcement", mode="before")
+    @field_validator(
+        "target_type", "action", "frequency_type", "enforcement", mode="before"
+    )
     @classmethod
     def normalize_enum_upper(cls, v: str) -> str:
         return v.strip().upper() if v else v

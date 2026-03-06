@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class IngredientDto(BaseModel):
@@ -17,8 +17,7 @@ class IngredientDto(BaseModel):
     is_optional: bool = False
     substitute_for: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class InstructionDto(BaseModel):
@@ -30,8 +29,7 @@ class InstructionDto(BaseModel):
     timer_required: bool = False
     tips: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class NutritionDto(BaseModel):
@@ -45,8 +43,7 @@ class NutritionDto(BaseModel):
     sugar: int = 0  # grams
     sodium: int = 0  # mg
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RecipeResponse(BaseModel):
@@ -67,8 +64,7 @@ class RecipeResponse(BaseModel):
     instructions: list[InstructionDto]
     nutrition: Optional[NutritionDto] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RecipeSearchParams(BaseModel):
@@ -98,15 +94,16 @@ class AiRecipeCatalogResponse(BaseModel):
     nutrition: Optional[dict] = None
     usage_count: int = 1
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RecipeRatingRequest(BaseModel):
     """Request to rate a recipe."""
 
     rating: float = Field(..., ge=1.0, le=5.0, description="Rating from 1.0 to 5.0")
-    feedback: Optional[str] = Field(None, max_length=1000, description="Optional feedback text")
+    feedback: Optional[str] = Field(
+        None, max_length=1000, description="Optional feedback text"
+    )
 
 
 class RecipeRatingResponse(BaseModel):
@@ -119,8 +116,7 @@ class RecipeRatingResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RecipeCreate(BaseModel):

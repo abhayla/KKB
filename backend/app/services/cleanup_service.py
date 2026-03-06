@@ -11,7 +11,7 @@ from sqlalchemy import delete, select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.chat import ChatMessage
-from app.models.meal_plan import MealPlan, MealPlanItem
+from app.models.meal_plan import MealPlan
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +38,7 @@ async def delete_old_chat_messages(
 
     # Count first for logging
     count_result = await db.execute(
-        select(func.count(ChatMessage.id)).where(
-            ChatMessage.created_at < cutoff
-        )
+        select(func.count(ChatMessage.id)).where(ChatMessage.created_at < cutoff)
     )
     count = count_result.scalar() or 0
 
@@ -48,9 +46,7 @@ async def delete_old_chat_messages(
         logger.info("No old chat messages to delete (cutoff: %s)", cutoff.isoformat())
         return 0
 
-    await db.execute(
-        delete(ChatMessage).where(ChatMessage.created_at < cutoff)
-    )
+    await db.execute(delete(ChatMessage).where(ChatMessage.created_at < cutoff))
     await db.commit()
 
     logger.info(
@@ -92,9 +88,7 @@ async def delete_inactive_meal_plans(
     count = count_result.scalar() or 0
 
     if count == 0:
-        logger.info(
-            "No inactive meal plans to delete (cutoff: %s)", cutoff.isoformat()
-        )
+        logger.info("No inactive meal plans to delete (cutoff: %s)", cutoff.isoformat())
         return 0
 
     await db.execute(
@@ -130,6 +124,5 @@ async def run_all_cleanups(db: AsyncSession) -> dict[str, int]:
 
     results["chat_messages"] = await delete_old_chat_messages(db)
     results["inactive_meal_plans"] = await delete_inactive_meal_plans(db)
-
     logger.info("Cleanup complete: %s", results)
     return results

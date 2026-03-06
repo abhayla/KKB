@@ -220,7 +220,7 @@ async def _generate_with_retry(self, prompt: str, max_retries: int = 3) -> str:
 ```python
 generation_config = genai.GenerationConfig(
     temperature=0.8,                    # Creative but consistent
-    max_output_tokens=8192,             # Enough for full week
+    max_output_tokens=65536,            # Enough for full week with detailed recipes
     response_mime_type="application/json",  # Structured output
 )
 ```
@@ -492,7 +492,7 @@ GeneratedMealPlan(
 | Cooking time | Filter by prep_time_minutes | AI estimates, prompt guidance |
 | Pairing logic | Code-driven category lookup | AI decides pairs |
 | Festival handling | Not implemented | Context in prompt |
-| Complexity | ~1100 lines | ~660 lines |
+| Complexity | ~1100 lines | ~1057 lines |
 
 ---
 
@@ -536,8 +536,9 @@ Tests the Sharma Family profile with constraints:
 
 | Metric | Value |
 |--------|-------|
-| Gemini API call | ~3-5 seconds |
-| Total generation | ~4-7 seconds |
+| Gemini API call | ~5-90 seconds (typically 45-70s) |
+| Post-AI DB writes | ~1.1 seconds (optimized from ~35-65s) |
+| Total generation | ~45-90 seconds |
 | Retry overhead | +1-4 seconds per retry |
 | Post-processing | <100ms |
 

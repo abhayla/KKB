@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class NotificationActionData(BaseModel):
@@ -19,18 +19,23 @@ class NotificationResponse(BaseModel):
     """Single notification response."""
 
     id: str
-    type: str = Field(..., description="Type: festival_reminder, meal_plan_update, shopping_reminder, recipe_suggestion, streak_milestone")
+    type: str = Field(
+        ...,
+        description="Type: festival_reminder, meal_plan_update, shopping_reminder, recipe_suggestion, streak_milestone",
+    )
     title: str
     body: str
     image_url: Optional[str] = None
-    action_type: Optional[str] = Field(None, description="Action: open_recipe, open_meal_plan, open_grocery, open_stats, none")
+    action_type: Optional[str] = Field(
+        None,
+        description="Action: open_recipe, open_meal_plan, open_grocery, open_stats, none",
+    )
     action_data: Optional[NotificationActionData] = None
     is_read: bool = False
     created_at: str
     expires_at: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class NotificationsListResponse(BaseModel):

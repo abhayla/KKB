@@ -66,10 +66,11 @@ Onboarding → DataStore → Generation API → PostgreSQL → Room Cache → Ho
                         │
                         ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           GENERATION SCREEN (4 Steps)                           │
+│                         MEAL PLAN GENERATION (4 Steps)                          │
+│              (Embedded in OnboardingViewModel or HomeViewModel)                  │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
-│   GenerationViewModel                                                           │
+│   Generation Progress (shown in Onboarding completion or Home regenerate)       │
 │   ┌─────────────────────────────────────────────────────────────────────┐      │
 │   │  Step 1: "Analyzing your preferences..."      ████░░░░░░  25%       │      │
 │   │  Step 2: "Checking upcoming festivals..."     ████████░░  50%       │      │
@@ -82,6 +83,7 @@ Onboarding → DataStore → Generation API → PostgreSQL → Room Cache → Ho
 │   │  POST /api/v1/meal-plans/generate                                    │      │
 │   │  Body: { "week_start_date": "2026-01-26" }                          │      │
 │   │  Headers: Authorization: Bearer <JWT>                                │      │
+│   │  Typical time: 45-90 seconds (Gemini AI + DB writes)                │      │
 │   └─────────────────────────────────────────────────────────────────────┘      │
 │                       │                                                         │
 └───────────────────────┼─────────────────────────────────────────────────────────┘
@@ -408,7 +410,7 @@ data class MealPlanResponse(
 | Layer | File | Purpose |
 |-------|------|---------|
 | **Presentation** | `OnboardingViewModel.kt` | Collects 5-step preferences |
-| **Presentation** | `GenerationViewModel.kt` | Shows generation progress |
+| **Presentation** | `OnboardingViewModel.kt` / `HomeViewModel.kt` | Generation progress (no separate GenerationViewModel) |
 | **Presentation** | `HomeViewModel.kt` | Displays/manages meal plan |
 | **Domain** | `MealPlan.kt` | Core business models |
 | **Domain** | `MealPlanRepository.kt` | Repository interface |

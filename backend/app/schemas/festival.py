@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class FestivalResponse(BaseModel):
@@ -19,8 +19,7 @@ class FestivalResponse(BaseModel):
     special_foods: Optional[list[str]] = None
     avoided_foods: Optional[list[str]] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UpcomingFestivalResponse(BaseModel):
@@ -33,5 +32,4 @@ class UpcomingFestivalResponse(BaseModel):
     is_fasting_day: bool
     special_foods: Optional[list[str]] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

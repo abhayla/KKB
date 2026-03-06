@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class FestivalDto(BaseModel):
@@ -13,8 +13,7 @@ class FestivalDto(BaseModel):
     is_fasting_day: bool
     suggested_dishes: Optional[list[str]] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MealItemDto(BaseModel):
@@ -30,8 +29,7 @@ class MealItemDto(BaseModel):
     order: int
     dietary_tags: list[str]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MealsByTypeDto(BaseModel):
@@ -42,8 +40,7 @@ class MealsByTypeDto(BaseModel):
     dinner: list[MealItemDto] = Field(default_factory=list)
     snacks: list[MealItemDto] = Field(default_factory=list)
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MealPlanDayDto(BaseModel):
@@ -54,8 +51,7 @@ class MealPlanDayDto(BaseModel):
     meals: MealsByTypeDto
     festival: Optional[FestivalDto] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MealPlanResponse(BaseModel):
@@ -68,8 +64,7 @@ class MealPlanResponse(BaseModel):
     created_at: str  # ISO datetime
     updated_at: str  # ISO datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GenerateMealPlanRequest(BaseModel):

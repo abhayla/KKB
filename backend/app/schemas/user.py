@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class UserPreferencesDto(BaseModel):
@@ -24,8 +24,7 @@ class UserPreferencesDto(BaseModel):
     strict_dietary_mode: bool = True
     allow_recipe_repeat: bool = False
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserPreferencesUpdate(BaseModel):
@@ -58,8 +57,7 @@ class UserResponse(BaseModel):
     is_onboarded: bool
     preferences: Optional[UserPreferencesDto] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FamilyMemberCreate(BaseModel):
@@ -89,8 +87,7 @@ class FamilyMemberResponse(BaseModel):
     dietary_restrictions: list[str] = Field(default_factory=list)
     health_conditions: list[str] = Field(default_factory=list)
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FamilyMembersListResponse(BaseModel):

@@ -135,7 +135,10 @@ async def generate(
     - Pairing rules from config (by cuisine and meal type)
     """
     import time
-    import traceback
+
+    from app.services.generation_tracker import (  # noqa: F811
+        MealGenerationContext,
+    )
 
     try:
         t_start = time.monotonic()
@@ -149,6 +152,15 @@ async def generate(
             week_start = date.today()
             week_start = week_start - timedelta(days=week_start.weekday())
 
+        # Create tracking context
+        trigger_source = request.headers.get("X-Trigger-Source", "api")
+        gen_context = MealGenerationContext(
+            user_id=user_id,
+            week_start_date=week_start.isoformat(),
+            trigger_source=trigger_source,
+            start_time=t_start,
+        )
+
         # Generate meal plan using the AI service (with 120s timeout)
         # Gemini calls regularly take 45-90s; 60s was too aggressive
         ai_service = AIMealService()
@@ -157,16 +169,28 @@ async def generate(
                 ai_service.generate_meal_plan(
                     user_id=user_id,
                     week_start_date=week_start,
+                    context=gen_context,
                 ),
                 timeout=120,
             )
         except asyncio.TimeoutError:
             logger.error(f"Meal generation timed out after 120s for user {user_id}")
+            gen_context.error_message = "Timeout after 120s"
+            gen_context.ai_done_time = time.monotonic()
+            try:
+                from app.services.generation_tracker import (
+                    emit_structured_log as _emit,
+                )
+
+                _emit(gen_context)
+            except Exception:
+                pass
             raise HTTPException(
                 status_code=504,
                 detail="Meal generation timed out. Please try again.",
             )
         t_ai_done = time.monotonic()
+        gen_context.ai_done_time = t_ai_done
 
         # Reuse preferences cached by AIMealService (avoids duplicate DB call)
         from app.db.postgres import async_session_maker
@@ -284,11 +308,40 @@ async def generate(
             f"post-ai={t_end - t_ai_done:.1f}s"
         )
 
-        return _build_response_from_firestore(created_plan)
+        # Update tracking context with final state
+        gen_context.meal_plan_id = created_plan.get("id")
+        gen_context.items_generated = total_items
+        gen_context.save_done_time = t_save_done
+        gen_context.success = True
+
+        # Build response and capture for tracking
+        response = _build_response_from_firestore(created_plan)
+        gen_context.client_response_data = response.model_dump()
+
+        # Write tracking data to per-call JSON file
+        from app.services.generation_tracker import emit_structured_log
+
+        emit_structured_log(gen_context)
+
+        return response
     except HTTPException:
         raise  # Re-raise HTTP exceptions (like 504 timeout) as-is
     except Exception as e:
         logger.error("Error generating meal plan", exc_info=True)
+
+        # Track failed generation
+        try:
+            gen_context.error_message = str(e)
+            gen_context.ai_done_time = gen_context.ai_done_time or time.monotonic()
+
+            from app.services.generation_tracker import (
+                emit_structured_log as emit_log,
+            )
+
+            emit_log(gen_context)
+        except Exception:
+            logger.warning("Failed to track generation error", exc_info=True)
+
         raise HTTPException(
             status_code=500,
             detail="Meal plan generation failed. Please try again.",

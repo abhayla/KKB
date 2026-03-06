@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ChatMessageRequest(BaseModel):
@@ -17,17 +17,15 @@ class ChatImageRequest(BaseModel):
     message: str = Field(
         default="Please analyze this food image",
         max_length=500,
-        description="Optional message to accompany the image"
+        description="Optional message to accompany the image",
     )
     image_base64: str = Field(
-        ...,
-        min_length=100,
-        description="Base64 encoded image data"
+        ..., min_length=100, description="Base64 encoded image data"
     )
     media_type: str = Field(
         default="image/jpeg",
         pattern=r"^image/(jpeg|png|webp)$",
-        description="Image MIME type"
+        description="Image MIME type",
     )
 
 
@@ -41,8 +39,7 @@ class ChatMessageResponse(BaseModel):
     created_at: str  # ISO datetime
     recipe_suggestions: Optional[list[str]] = None  # Recipe IDs if applicable
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ChatResponse(BaseModel):
@@ -59,5 +56,4 @@ class ChatHistoryResponse(BaseModel):
     messages: list[ChatMessageResponse]
     total_count: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

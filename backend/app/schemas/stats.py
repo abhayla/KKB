@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CookingStreakResponse(BaseModel):
@@ -15,8 +15,7 @@ class CookingStreakResponse(BaseModel):
     streak_start_date: Optional[str] = None
     days_this_week: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DailyCookingRecord(BaseModel):
@@ -41,8 +40,7 @@ class AchievementResponse(BaseModel):
     unlocked_at: Optional[str] = None
     progress: float = 0.0  # 0.0 to 1.0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CuisineBreakdown(BaseModel):
@@ -65,8 +63,7 @@ class MonthlyStatsResponse(BaseModel):
     daily_records: list[DailyCookingRecord] = Field(default_factory=list)
     achievements_unlocked: list[AchievementResponse] = Field(default_factory=list)
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LogCookingRequest(BaseModel):

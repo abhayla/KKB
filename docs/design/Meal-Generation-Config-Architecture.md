@@ -10,21 +10,21 @@ This document defines the complete configuration architecture for RasoiAI's meal
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        FIRESTORE                                │
+│                        POSTGRESQL                                │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  system_config/meal_generation     (Global - Admin managed)     │
+│  system_config table               (Global - Admin managed)     │
 │  ├── meal_structure: {items_per_slot: 2}                       │
 │  ├── pairing_rules: {by_cuisine: {...}, by_meal_type: {...}}   │
 │  ├── recipe_categories: ["dal", "rice", ...]                   │
 │  └── rule_behaviors: {include: "adds_to_pair", ...}            │
 │                                                                 │
-│  reference_data/                   (Global - Static lists)      │
+│  Reference tables                  (Global - Static lists)      │
 │  ├── common_ingredients: [{name, aliases, category}, ...]      │
 │  ├── common_dishes: [{name, pairs_with, meal_type}, ...]       │
 │  └── cuisines: [{id, name, typical_pairings}, ...]             │
 │                                                                 │
-│  users/{user_id}/preferences       (Per-user - Chat managed)    │
+│  user_preferences table            (Per-user - Chat managed)    │
 │  ├── recipe_rules: [INCLUDE/EXCLUDE rules]                     │
 │  ├── allergies: [{ingredient, severity}]                       │
 │  ├── dislikes: [ingredients]                                   │
@@ -33,7 +33,7 @@ This document defines the complete configuration architecture for RasoiAI's meal
 │  ├── busy_days: ["MONDAY", "WEDNESDAY"]                        │
 │  └── last_change: {data, timestamp}  ← For undo                │
 │                                                                 │
-│  recipes/{recipe_id}               (Recipe database)            │
+│  recipes table                     (Recipe database)            │
 │  ├── name, ingredients, instructions, ...                      │
 │  └── category: "dal"               ← For pairing               │
 │                                                                 │
@@ -89,9 +89,9 @@ This document defines the complete configuration architecture for RasoiAI's meal
 
 ---
 
-## PostgreSQL Collections
+## PostgreSQL Tables
 
-### 1. `system_config/meal_generation` (Global)
+### 1. `system_config` table — `meal_generation` key (Global)
 
 Admin-managed configuration for meal generation logic.
 
@@ -176,9 +176,9 @@ Admin-managed configuration for meal generation logic.
 }
 ```
 
-### 2. `reference_data/` (Global Static Lists)
+### 2. Reference Data Tables (Global Static Lists)
 
-#### `reference_data/common_ingredients`
+#### Common Ingredients
 
 ```json
 {
@@ -212,7 +212,7 @@ Admin-managed configuration for meal generation logic.
 }
 ```
 
-#### `reference_data/common_dishes`
+#### Common Dishes
 
 ```json
 {
@@ -242,7 +242,7 @@ Admin-managed configuration for meal generation logic.
 }
 ```
 
-#### `reference_data/cuisines`
+#### Cuisines
 
 ```json
 {
@@ -273,7 +273,7 @@ Admin-managed configuration for meal generation logic.
 }
 ```
 
-### 3. `users/{user_id}/preferences` (Per-User)
+### 3. `user_preferences` + `recipe_rules` tables (Per-User)
 
 User-specific configuration, managed via Chat.
 
@@ -343,9 +343,9 @@ User-specific configuration, managed via Chat.
 }
 ```
 
-### 4. `recipes/{recipe_id}` (Recipe Database)
+### 4. `recipes` table (Recipe Database)
 
-Add `category` field for pairing rules.
+Includes `category` field for pairing rules.
 
 ```json
 {
@@ -717,30 +717,32 @@ async def generate_meal_plan(self, user_id: str, week_start_date: date) -> Gener
 ## Implementation Checklist
 
 ### Phase 1: Database Setup
-- [ ] Create `system_config/meal_generation` document
-- [ ] Create `reference_data/` collections
-- [ ] Add `category` field to all recipes
-- [ ] Create sync script for config files
+- [x] Create `system_config` table with `meal_generation` key
+- [x] Create reference data tables
+- [x] Add `category` field to all recipes
+- [x] Create sync script for config files (`scripts/sync_config_postgres.py`)
 
 ### Phase 2: Backend Updates
-- [ ] Update meal generation to use system config
-- [ ] Implement pairing logic
-- [ ] Add 2-item per slot support
-- [ ] Handle INCLUDE/EXCLUDE rule behaviors
+- [x] Update meal generation to use system config
+- [x] Implement pairing logic (advisory — included in AI prompt, not enforced via database lookups)
+- [x] Add 2-item per slot support
+- [x] Handle INCLUDE/EXCLUDE rule behaviors
 
 ### Phase 3: Chat Integration
-- [ ] Define LLM function schemas
-- [ ] Implement chat command handlers
-- [ ] Add confirmation flow
-- [ ] Implement undo functionality
-- [ ] Add conflict detection
+- [x] Define LLM function schemas (Claude tool calling)
+- [x] Implement chat command handlers
+- [x] Add confirmation flow
+- [x] Implement undo functionality
+- [x] Add conflict detection (family safety check on INCLUDE rules via `force` parameter)
 
 ### Phase 4: Testing
-- [ ] Test pairing rules by cuisine
-- [ ] Test INCLUDE/EXCLUDE behaviors
-- [ ] Test conflict resolution
-- [ ] Test undo functionality
-- [ ] Test chat natural language understanding
+- [x] Test pairing rules by cuisine
+- [x] Test INCLUDE/EXCLUDE behaviors
+- [ ] Test conflict resolution (INCLUDE vs EXCLUDE — currently delegated to LLM chat flow)
+- [x] Test undo functionality
+- [x] Test chat natural language understanding
+
+> **Note on pairing rules:** Pairing rules are **advisory** — they are included in the Gemini AI prompt as guidance, not enforced via database lookups or code-driven category matching. The AI uses them to generate complementary meal pairs.
 
 ---
 
