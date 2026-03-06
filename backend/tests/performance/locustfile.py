@@ -597,8 +597,9 @@ class CRUDOnlyUser(HttpUser):
 
     @task(3)
     def get_stats(self):
+        month = date.today().strftime("%Y-%m")
         with self.client.get(
-            "/api/v1/stats/monthly",
+            f"/api/v1/stats/monthly?month={month}",
             headers=self.auth_headers,
             catch_response=True,
             name="/api/v1/stats/monthly [CRUD]",
