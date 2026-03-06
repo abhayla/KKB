@@ -15,6 +15,7 @@ Key features:
 import asyncio
 import json
 import logging
+import re
 import uuid
 from dataclasses import dataclass, field
 from datetime import date, timedelta
@@ -36,6 +37,16 @@ from app.services.family_constraints import get_family_forbidden_keywords
 from app.services.festival_service import get_festivals_for_date_range
 
 logger = logging.getLogger(__name__)
+
+
+def _keyword_match(keyword: str, text: str) -> bool:
+    """Check if keyword appears as a whole word in text.
+
+    Uses word-boundary matching to avoid false positives like
+    'unsweetened' matching 'sweet'.
+    """
+    return bool(re.search(r"\b" + re.escape(keyword) + r"\b", text))
+
 
 from google.genai import types as genai_types
 
@@ -1072,7 +1083,9 @@ Generate the complete 7-day meal plan now:"""
                     name_lower = item.recipe_name.lower()
 
                     # Check allergens
-                    has_allergen = any(allergen in name_lower for allergen in allergens)
+                    has_allergen = any(
+                        _keyword_match(allergen, name_lower) for allergen in allergens
+                    )
                     if has_allergen:
                         logger.warning(
                             f"Removed {item.recipe_name} from {day.date} {slot}: contains allergen"
@@ -1089,7 +1102,9 @@ Generate the complete 7-day meal plan now:"""
                         continue
 
                     # Check EXCLUDE rules
-                    is_excluded = any(excl in name_lower for excl in day_excludes)
+                    is_excluded = any(
+                        _keyword_match(excl, name_lower) for excl in day_excludes
+                    )
                     if is_excluded:
                         logger.warning(
                             f"Removed {item.recipe_name} from {day.date} {slot}: matches EXCLUDE rule"
@@ -1127,7 +1142,7 @@ Generate the complete 7-day meal plan now:"""
                 for slot in slots:
                     items = getattr(day, slot, [])
                     for item in items:
-                        if target in item.recipe_name.lower():
+                        if _keyword_match(target, item.recipe_name.lower()):
                             count += 1
 
             if count < times_needed:
@@ -1158,7 +1173,9 @@ Generate the complete 7-day meal plan now:"""
                         is_unsafe = False
                         for member_name, forbidden_keywords in forbidden_map.items():
                             for keyword in forbidden_keywords:
-                                if keyword in name_lower or keyword in ingredient_text:
+                                if _keyword_match(
+                                    keyword, name_lower
+                                ) or _keyword_match(keyword, ingredient_text):
                                     logger.warning(
                                         f"Removed {item.recipe_name} from {day.date} {slot}: "
                                         f"unsafe for {member_name} (contains '{keyword}')"
