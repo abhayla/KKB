@@ -37,6 +37,72 @@ from app.services.festival_service import get_festivals_for_date_range
 
 logger = logging.getLogger(__name__)
 
+from google.genai import types as genai_types
+
+# Schema for Gemini structured output — enforces all 4 meal slots per day
+_MEAL_ITEM_SCHEMA = genai_types.Schema(
+    type="OBJECT",
+    required=["recipe_name", "prep_time_minutes", "dietary_tags", "category"],
+    properties={
+        "recipe_name": genai_types.Schema(type="STRING"),
+        "prep_time_minutes": genai_types.Schema(type="INTEGER"),
+        "dietary_tags": genai_types.Schema(
+            type="ARRAY", items=genai_types.Schema(type="STRING")
+        ),
+        "category": genai_types.Schema(type="STRING"),
+        "calories": genai_types.Schema(type="INTEGER"),
+        "ingredients": genai_types.Schema(
+            type="ARRAY",
+            items=genai_types.Schema(
+                type="OBJECT",
+                properties={
+                    "name": genai_types.Schema(type="STRING"),
+                    "quantity": genai_types.Schema(type="NUMBER"),
+                    "unit": genai_types.Schema(type="STRING"),
+                    "category": genai_types.Schema(type="STRING"),
+                },
+            ),
+        ),
+        "nutrition": genai_types.Schema(
+            type="OBJECT",
+            properties={
+                "protein_g": genai_types.Schema(type="NUMBER"),
+                "carbs_g": genai_types.Schema(type="NUMBER"),
+                "fat_g": genai_types.Schema(type="NUMBER"),
+                "fiber_g": genai_types.Schema(type="NUMBER"),
+            },
+        ),
+    },
+)
+
+_MEAL_SLOT_SCHEMA = genai_types.Schema(
+    type="ARRAY", items=_MEAL_ITEM_SCHEMA, min_items=2
+)
+
+MEAL_PLAN_SCHEMA = genai_types.Schema(
+    type="OBJECT",
+    required=["days"],
+    properties={
+        "days": genai_types.Schema(
+            type="ARRAY",
+            min_items=7,
+            max_items=7,
+            items=genai_types.Schema(
+                type="OBJECT",
+                required=["date", "day_name", "breakfast", "lunch", "dinner", "snacks"],
+                properties={
+                    "date": genai_types.Schema(type="STRING"),
+                    "day_name": genai_types.Schema(type="STRING"),
+                    "breakfast": _MEAL_SLOT_SCHEMA,
+                    "lunch": _MEAL_SLOT_SCHEMA,
+                    "dinner": _MEAL_SLOT_SCHEMA,
+                    "snacks": _MEAL_SLOT_SCHEMA,
+                },
+            ),
+        ),
+    },
+)
+
 
 # ==============================================================================
 # DATA CLASSES
@@ -798,12 +864,12 @@ Generate the complete 7-day meal plan now:"""
 
                 if context is not None:
                     # Use metadata-aware version for tracking
-                    response, metadata = await generate_text_with_metadata(prompt)
+                    response, metadata = await generate_text_with_metadata(prompt, response_schema=MEAL_PLAN_SCHEMA)
                     context.token_usage = metadata
                     context.model_name = metadata.get("model_name")
                     context.retry_count = attempt
                 else:
-                    response = await generate_text(prompt)
+                    response = await generate_text(prompt, response_schema=MEAL_PLAN_SCHEMA)
 
                 # Basic validation - ensure it's valid JSON
                 self._validate_response_structure(response)

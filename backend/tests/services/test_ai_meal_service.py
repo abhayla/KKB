@@ -574,3 +574,22 @@ class TestIntegration:
                 await service.generate_meal_plan("test-user", week_start)
 
             assert mock_generate.call_count == 3
+
+
+# ==============================================================================
+# SCHEMA TESTS
+# ==============================================================================
+
+
+def test_meal_plan_schema_has_required_structure():
+    from app.services.ai_meal_service import MEAL_PLAN_SCHEMA
+
+    # Schema must exist and be a google.genai Schema
+    assert MEAL_PLAN_SCHEMA is not None
+    assert MEAL_PLAN_SCHEMA.type == "OBJECT"
+    assert "days" in MEAL_PLAN_SCHEMA.properties
+
+    day_schema = MEAL_PLAN_SCHEMA.properties["days"].items
+    assert day_schema is not None
+    for slot in ["breakfast", "lunch", "dinner", "snacks"]:
+        assert slot in day_schema.properties, f"Missing required slot: {slot}"
