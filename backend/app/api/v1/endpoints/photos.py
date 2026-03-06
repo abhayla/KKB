@@ -5,6 +5,7 @@ from typing import Any
 from fastapi import APIRouter, File, Request, UploadFile
 
 from app.api.deps import CurrentUser
+from app.config import settings
 from app.core.rate_limit import limiter
 from app.services.photo_analysis_service import analyze_food_photo
 
@@ -19,7 +20,7 @@ MAGIC_BYTES = {
 
 
 @router.post("/analyze")
-@limiter.limit("10/hour")
+@limiter.limit("100/hour" if settings.debug else "10/hour")
 async def analyze_photo(
     request: Request,
     current_user: CurrentUser,

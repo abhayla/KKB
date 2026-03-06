@@ -10,6 +10,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request
 
 from app.api.deps import CurrentUser
+from app.config import settings
 from app.core.rate_limit import limiter
 from app.core.exceptions import NotFoundError
 from app.repositories.meal_plan_repository import MealPlanRepository
@@ -113,7 +114,7 @@ def _build_response_from_firestore(plan: dict[str, Any]) -> MealPlanResponse:
 
 
 @router.post("/generate", response_model=MealPlanResponse)
-@limiter.limit("5/hour")
+@limiter.limit("500/hour" if settings.debug else "5/hour")
 async def generate(
     request: Request,
     gen_request: GenerateMealPlanRequest,
