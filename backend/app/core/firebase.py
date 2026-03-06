@@ -54,15 +54,19 @@ def verify_firebase_token(id_token: str) -> dict:
     """
     global _firebase_app
 
-    # E2E Test mode: accept fake-firebase-token from Android tests
-    if settings.debug and id_token == "fake-firebase-token":
-        logger.info("E2E Test: Using fake Firebase token for testing")
+    # E2E Test mode: accept fake-firebase-token and fake-firebase-token-{suffix}
+    if settings.debug and id_token.startswith("fake-firebase-token"):
+        suffix = id_token.removeprefix("fake-firebase-token").lstrip("-")
+        uid = f"fake-user-{suffix}" if suffix else "fake-user-id"
+        name = suffix.replace("-", " ").title() if suffix else "E2E Test User"
+        phone_suffix = hash(suffix) % 9000000000 + 1000000000 if suffix else 1111111111
+        logger.info(f"E2E Test: Using fake Firebase token for testing (uid={uid})")
         return {
-            "uid": "fake-user-id",
-            "email": "e2e-test@rasoiai.test",
-            "name": "E2E Test User",
+            "uid": uid,
+            "email": f"{suffix or 'e2e-test'}@rasoiai.test",
+            "name": name or "E2E Test User",
             "picture": None,
-            "phone_number": "+911111111111",
+            "phone_number": f"+91{phone_suffix}",
         }
 
     # Development mode: mock Firebase verification

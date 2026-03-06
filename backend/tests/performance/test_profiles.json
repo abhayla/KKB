@@ -1,7 +1,7 @@
 [
   {
     "name": "Sharma Family (Vegetarian)",
-    "firebase_token": "fake-firebase-token",
+    "firebase_token": "fake-firebase-token-sharma",
     "preferences": {
       "primary_diet": "vegetarian",
       "dietary_restrictions": ["sattvic"],
@@ -20,12 +20,35 @@
         {"name": "Ramesh", "age": 45, "type": "ADULT", "special_needs": ["DIABETIC", "LOW_OIL"]},
         {"name": "Sunita", "age": 42, "type": "ADULT", "special_needs": ["LOW_SALT"]},
         {"name": "Aarav", "age": 12, "type": "CHILD", "special_needs": ["NO_SPICY"]}
+      ],
+      "recipe_rules": [
+        {
+          "target_name": "Chai",
+          "action": "INCLUDE",
+          "target_type": "INGREDIENT",
+          "frequency_type": "DAILY",
+          "meal_slot": "BREAKFAST"
+        },
+        {
+          "target_name": "Dal",
+          "action": "INCLUDE",
+          "target_type": "INGREDIENT",
+          "frequency_type": "TIMES_PER_WEEK",
+          "frequency_count": 4,
+          "meal_slot": "LUNCH"
+        },
+        {
+          "target_name": "Mushroom",
+          "action": "EXCLUDE",
+          "target_type": "INGREDIENT",
+          "frequency_type": "NEVER"
+        }
       ]
     }
   },
   {
     "name": "Gupta Family (Eggetarian)",
-    "firebase_token": "fake-firebase-token",
+    "firebase_token": "fake-firebase-token-gupta",
     "preferences": {
       "primary_diet": "eggetarian",
       "dietary_restrictions": [],
@@ -44,12 +67,28 @@
         {"name": "Priya", "age": 47, "type": "ADULT", "special_needs": ["HIGH_PROTEIN"]},
         {"name": "Rohit", "age": 22, "type": "ADULT", "special_needs": ["HIGH_PROTEIN"]},
         {"name": "Neha", "age": 18, "type": "ADULT", "special_needs": []}
+      ],
+      "recipe_rules": [
+        {
+          "target_name": "Egg",
+          "action": "INCLUDE",
+          "target_type": "INGREDIENT",
+          "frequency_type": "TIMES_PER_WEEK",
+          "frequency_count": 4,
+          "meal_slot": "BREAKFAST"
+        },
+        {
+          "target_name": "Pork",
+          "action": "EXCLUDE",
+          "target_type": "INGREDIENT",
+          "frequency_type": "NEVER"
+        }
       ]
     }
   },
   {
     "name": "Reddy Family (South Indian)",
-    "firebase_token": "fake-firebase-token",
+    "firebase_token": "fake-firebase-token-reddy",
     "preferences": {
       "primary_diet": "vegetarian",
       "dietary_restrictions": [],
@@ -64,12 +103,30 @@
       "family_members": [
         {"name": "Venkat", "age": 35, "type": "ADULT", "special_needs": []},
         {"name": "Lakshmi", "age": 33, "type": "ADULT", "special_needs": []}
+      ],
+      "recipe_rules": [
+        {
+          "target_name": "Dosa",
+          "action": "INCLUDE",
+          "target_type": "INGREDIENT",
+          "frequency_type": "TIMES_PER_WEEK",
+          "frequency_count": 3,
+          "meal_slot": "BREAKFAST"
+        },
+        {
+          "target_name": "Idli",
+          "action": "INCLUDE",
+          "target_type": "INGREDIENT",
+          "frequency_type": "TIMES_PER_WEEK",
+          "frequency_count": 2,
+          "meal_slot": "BREAKFAST"
+        }
       ]
     }
   },
   {
     "name": "Khan Family (Non-Veg)",
-    "firebase_token": "fake-firebase-token",
+    "firebase_token": "fake-firebase-token-khan",
     "preferences": {
       "primary_diet": "non_vegetarian",
       "dietary_restrictions": ["halal"],
@@ -89,12 +146,28 @@
         {"name": "Ahmed", "age": 28, "type": "ADULT", "special_needs": []},
         {"name": "Zara", "age": 25, "type": "ADULT", "special_needs": []},
         {"name": "Dadi", "age": 78, "type": "SENIOR", "special_needs": ["SOFT_FOOD", "LOW_SALT"]}
+      ],
+      "recipe_rules": [
+        {
+          "target_name": "Chicken",
+          "action": "INCLUDE",
+          "target_type": "INGREDIENT",
+          "frequency_type": "TIMES_PER_WEEK",
+          "frequency_count": 3,
+          "meal_slot": "DINNER"
+        },
+        {
+          "target_name": "Beef",
+          "action": "EXCLUDE",
+          "target_type": "INGREDIENT",
+          "frequency_type": "NEVER"
+        }
       ]
     }
   },
   {
     "name": "Jain Family (Strict Jain)",
-    "firebase_token": "fake-firebase-token",
+    "firebase_token": "fake-firebase-token-jain",
     "preferences": {
       "primary_diet": "vegetarian",
       "dietary_restrictions": ["jain"],
@@ -110,6 +183,26 @@
         {"name": "Hemant", "age": 40, "type": "ADULT", "special_needs": []},
         {"name": "Meena", "age": 38, "type": "ADULT", "special_needs": []},
         {"name": "Tanvi", "age": 8, "type": "CHILD", "special_needs": ["NO_SPICY"]}
+      ],
+      "recipe_rules": [
+        {
+          "target_name": "Onion",
+          "action": "EXCLUDE",
+          "target_type": "INGREDIENT",
+          "frequency_type": "NEVER"
+        },
+        {
+          "target_name": "Garlic",
+          "action": "EXCLUDE",
+          "target_type": "INGREDIENT",
+          "frequency_type": "NEVER"
+        },
+        {
+          "target_name": "Potato",
+          "action": "EXCLUDE",
+          "target_type": "INGREDIENT",
+          "frequency_type": "NEVER"
+        }
       ]
     }
   }
