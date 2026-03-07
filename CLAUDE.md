@@ -145,10 +145,12 @@ Repositories read from Room (source of truth), fetch from API when online. Mutat
 
 ```bash
 source venv/bin/activate         # Linux/Mac/Git Bash
+pip install -r requirements.txt  # Install/update dependencies
 uvicorn app.main:app --reload    # Dev server → http://localhost:8000/docs
 PYTHONPATH=. pytest              # All tests
 PYTHONPATH=. pytest tests/test_auth.py -v                    # Single file
 PYTHONPATH=. pytest tests/test_preference_service.py::test_add_include_rule -v  # Single test
+PYTHONPATH=. pytest --cov=app    # Tests with coverage report
 alembic upgrade head             # Run migrations
 alembic revision --autogenerate -m "description"  # New migration
 PYTHONPATH=. pytest --collect-only -q             # Count all tests
