@@ -12,8 +12,7 @@ import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.recipe_rule import NutritionGoal, RecipeRule
-from app.models.user import User
+from app.models.user import FamilyMember, User
 
 from tests.factories import make_user, make_preferences
 from tests.api.conftest import make_api_client
@@ -35,7 +34,9 @@ async def test_user(db_session: AsyncSession) -> User:
 
 
 @pytest_asyncio.fixture
-async def authenticated_client(db_session: AsyncSession, test_user: User) -> AsyncClient:
+async def authenticated_client(
+    db_session: AsyncSession, test_user: User
+) -> AsyncClient:
     """Authenticated test client using shared make_api_client."""
     async with make_api_client(db_session, test_user) as c:
         yield c
@@ -89,6 +90,81 @@ async def test_create_recipe_rule(authenticated_client: AsyncClient):
     assert data["is_active"] is True
     assert "id" in data
     assert "created_at" in data
+
+
+@pytest.mark.asyncio
+async def test_create_rule_returns_force_override_field(
+    authenticated_client: AsyncClient,
+):
+    """Test that GET response includes force_override: false by default."""
+    create_response = await authenticated_client.post(
+        "/api/v1/recipe-rules",
+        json={
+            "target_type": "INGREDIENT",
+            "action": "INCLUDE",
+            "target_name": "Coriander",
+            "frequency_type": "DAILY",
+            "enforcement": "REQUIRED",
+            "is_active": True,
+        },
+    )
+
+    assert create_response.status_code == 201
+    data = create_response.json()
+    assert "force_override" in data
+    assert data["force_override"] is False
+
+    # Also verify on GET
+    rule_id = data["id"]
+    get_response = await authenticated_client.get(f"/api/v1/recipe-rules/{rule_id}")
+    assert get_response.status_code == 200
+    assert get_response.json()["force_override"] is False
+
+
+@pytest.mark.asyncio
+async def test_create_rule_409_conflict_structure(
+    db_session: AsyncSession, authenticated_client: AsyncClient, test_user: User
+):
+    """Test that INCLUDE rule conflicting with family health returns 409 with structured body."""
+    # Create a diabetic family member
+    member = FamilyMember(
+        id="fm-api-test-001",
+        user_id=test_user.id,
+        name="TestDadaji",
+        age_group="senior",
+        dietary_restrictions=[],
+        health_conditions=["diabetic"],
+    )
+    db_session.add(member)
+    await db_session.commit()
+
+    # Create INCLUDE rule for a sweet item — should conflict
+    response = await authenticated_client.post(
+        "/api/v1/recipe-rules",
+        json={
+            "target_type": "RECIPE",
+            "action": "INCLUDE",
+            "target_name": "Gulab Jamun",
+            "frequency_type": "WEEKLY",
+            "frequency_count": 1,
+            "enforcement": "REQUIRED",
+            "is_active": True,
+        },
+    )
+
+    assert response.status_code == 409
+    data = response.json()
+    assert data["conflict_type"] == "family_safety"
+    assert "conflict_details" in data
+    assert isinstance(data["conflict_details"], list)
+    assert len(data["conflict_details"]) >= 1
+
+    detail = data["conflict_details"][0]
+    assert "member_name" in detail
+    assert "condition" in detail
+    assert "keyword" in detail
+    assert "rule_target" in detail
+    assert detail["member_name"] == "TestDadaji"
 
 
 @pytest.mark.asyncio
@@ -400,9 +476,7 @@ async def test_delete_nutrition_goal(authenticated_client: AsyncClient):
     goal_id = create_response.json()["id"]
 
     # Delete the goal
-    response = await authenticated_client.delete(
-        f"/api/v1/nutrition-goals/{goal_id}"
-    )
+    response = await authenticated_client.delete(f"/api/v1/nutrition-goals/{goal_id}")
 
     assert response.status_code == 204
 

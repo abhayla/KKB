@@ -112,7 +112,12 @@ data class RecipeRulesUiState(
 
     // Diet conflict warning (Issue #42)
     val conflictWarning: String? = null,
-    val hasConflict: Boolean = false
+    val hasConflict: Boolean = false,
+
+    // Family safety conflict dialog
+    val showConflictDialog: Boolean = false,
+    val pendingConflictDetails: List<com.rasoiai.domain.model.ConflictDetail> = emptyList(),
+    val pendingConflictRule: RecipeRule? = null
 ) {
     /**
      * Rules sorted: active first (newest first), then paused (newest first).
@@ -600,10 +605,22 @@ class RecipeRulesViewModel @Inject constructor(
                 Timber.i("Rule saved: ${rule.targetName}")
             }.onFailure { e ->
                 Timber.e(e, "Failed to save rule")
-                if (e is com.rasoiai.domain.model.DuplicateRuleException) {
-                    _uiState.update { it.copy(errorMessage = "A rule for ${rule.targetName} at ${rule.mealSlotsDisplayText} already exists") }
-                } else {
-                    _uiState.update { it.copy(errorMessage = "Failed to save rule") }
+                when (e) {
+                    is com.rasoiai.domain.model.FamilyConflictException -> {
+                        _uiState.update {
+                            it.copy(
+                                showConflictDialog = true,
+                                pendingConflictDetails = e.conflictDetails,
+                                pendingConflictRule = rule
+                            )
+                        }
+                    }
+                    is com.rasoiai.domain.model.DuplicateRuleException -> {
+                        _uiState.update { it.copy(errorMessage = "A rule for ${rule.targetName} at ${rule.mealSlotsDisplayText} already exists") }
+                    }
+                    else -> {
+                        _uiState.update { it.copy(errorMessage = "Failed to save rule") }
+                    }
                 }
             }
         }
@@ -679,6 +696,36 @@ class RecipeRulesViewModel @Inject constructor(
                     Timber.e(e, "Failed to toggle nutrition goal enforcement")
                     _uiState.update { it.copy(errorMessage = "Failed to update goal enforcement") }
                 }
+        }
+    }
+
+    // endregion
+
+    // region Force Override
+
+    fun confirmForceOverride() {
+        val pendingRule = _uiState.value.pendingConflictRule ?: return
+        dismissConflictDialog()
+        viewModelScope.launch {
+            val overriddenRule = pendingRule.copy(forceOverride = true)
+            val result = repository.createRule(overriddenRule).map { Unit }
+            result.onSuccess {
+                dismissAddRuleSheet()
+                Timber.i("Rule saved with force override: ${overriddenRule.targetName}")
+            }.onFailure { e ->
+                Timber.e(e, "Failed to save rule with force override")
+                _uiState.update { it.copy(errorMessage = "Failed to save rule") }
+            }
+        }
+    }
+
+    fun dismissConflictDialog() {
+        _uiState.update {
+            it.copy(
+                showConflictDialog = false,
+                pendingConflictDetails = emptyList(),
+                pendingConflictRule = null
+            )
         }
     }
 

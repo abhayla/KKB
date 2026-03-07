@@ -38,6 +38,7 @@
 | API-032 | `/api/v1/family-members/{id}` | DELETE | Delete family member | Implemented | `test_family_members_api.py` |
 | API-033 | `/api/v1/recipe-rules` | GET | List recipe rules | Implemented | `test_recipe_rules_api.py` |
 | API-034 | `/api/v1/recipe-rules` | POST | Create recipe rule | Implemented | `test_recipe_rules_api.py` |
+| API-034a | `/api/v1/recipe-rules` | POST | 409 Conflict: family safety conflict with ConflictDetail | Implemented | `test_recipe_rule_family_conflict.py` |
 | API-035 | `/api/v1/recipe-rules/{id}` | GET | Get recipe rule | Implemented | `test_recipe_rules_api.py` |
 | API-036 | `/api/v1/recipe-rules/{id}` | PUT | Update recipe rule | Implemented | `test_recipe_rules_api.py` |
 | API-037 | `/api/v1/recipe-rules/{id}` | DELETE | Delete recipe rule | Implemented | `test_recipe_rules_api.py` |

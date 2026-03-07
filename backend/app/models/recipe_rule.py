@@ -36,9 +36,7 @@ class RecipeRule(Base, TimestampMixin):
     target_type: Mapped[str] = mapped_column(
         String(20), nullable=False
     )  # RECIPE, INGREDIENT, MEAL_SLOT
-    action: Mapped[str] = mapped_column(
-        String(10), nullable=False
-    )  # INCLUDE, EXCLUDE
+    action: Mapped[str] = mapped_column(String(10), nullable=False)  # INCLUDE, EXCLUDE
     target_id: Mapped[Optional[str]] = mapped_column(
         String(255), nullable=True
     )  # Recipe ID (optional)
@@ -70,6 +68,9 @@ class RecipeRule(Base, TimestampMixin):
     sync_status: Mapped[str] = mapped_column(
         String(20), default="SYNCED", nullable=False
     )  # SYNCED, PENDING, CONFLICT
+    force_override: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )  # True when user explicitly overrode family safety conflict
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="recipe_rules")

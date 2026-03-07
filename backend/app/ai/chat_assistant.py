@@ -203,6 +203,7 @@ async def _execute_tool(
                 times_per_week=tool_input.get("times_per_week"),
                 meal_slots=tool_input.get("meal_slots"),
                 reason=tool_input.get("reason"),
+                force_override=tool_input.get("force_override", False),
             )
 
         elif tool_name == "update_allergy":

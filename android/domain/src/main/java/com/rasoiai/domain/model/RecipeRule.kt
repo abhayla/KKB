@@ -18,6 +18,7 @@ data class RecipeRule(
     val enforcement: RuleEnforcement,
     val mealSlots: List<MealType> = emptyList(),
     val isActive: Boolean = true,
+    val forceOverride: Boolean = false,
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val updatedAt: LocalDateTime = LocalDateTime.now()
 ) {

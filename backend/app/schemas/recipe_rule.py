@@ -13,6 +13,26 @@ def _normalize_upper(v: str | None) -> str | None:
     return v
 
 
+# ==================== Conflict Response Schemas ====================
+
+
+class ConflictDetail(BaseModel):
+    """Detail about a single family safety conflict."""
+
+    member_name: str
+    condition: str
+    keyword: str
+    rule_target: str
+
+
+class ConflictResponse(BaseModel):
+    """Structured 409 response for family safety conflicts."""
+
+    detail: str
+    conflict_type: str = "family_safety"
+    conflict_details: list[ConflictDetail]
+
+
 # ==================== Recipe Rule Schemas ====================
 
 
@@ -39,6 +59,9 @@ class RecipeRuleCreate(BaseModel):
         None, description="Meal slot: BREAKFAST, LUNCH, DINNER, SNACKS"
     )
     is_active: bool = Field(default=True)
+    force_override: bool = Field(
+        default=False, description="Override family safety conflict"
+    )
 
     @field_validator(
         "target_type", "action", "frequency_type", "enforcement", mode="before"
@@ -96,6 +119,7 @@ class RecipeRuleResponse(BaseModel):
     meal_slot: Optional[str] = None
     is_active: bool
     sync_status: str
+    force_override: bool = False
     created_at: datetime
     updated_at: datetime
 
@@ -162,6 +186,7 @@ class RecipeRuleSyncItem(BaseModel):
     enforcement: str = "REQUIRED"
     meal_slot: Optional[str] = None
     is_active: bool = True
+    force_override: bool = False
     local_updated_at: datetime  # Client's timestamp for conflict resolution
 
     @field_validator(

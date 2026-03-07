@@ -19,6 +19,7 @@ This document serves as the single source of truth for tracking functional requi
 | FR-011 | Sharma family Recipe Rules E2E test suite | [#48](https://github.com/abhayla/KKB/issues/48) | [`RecipeRulesFlowTest.kt`](../../android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/RecipeRulesFlowTest.kt) | [`test_sharma_recipe_rules.py`](../../backend/tests/test_sharma_recipe_rules.py) | ✅ |
 | FR-012 | Recipe Rules duplicate prevention & case normalization | [#49](https://github.com/abhayla/KKB/issues/49) | N/A (DAO + ViewModel) | [`test_recipe_rules_dedup.py`](../../backend/tests/test_recipe_rules_dedup.py) | ✅ |
 | FR-013 | Sync missing preferences + Family Members CRUD endpoint | [#50](https://github.com/abhayla/KKB/issues/50) | N/A (backend-only) | [`test_family_members_api.py`](../../backend/tests/test_family_members_api.py) | ✅ |
+| FR-014 | Recipe Rules force override for family safety conflicts | TBD | `RecipeRulesViewModelTest.kt` | [`test_recipe_rule_family_conflict.py`](../../backend/tests/services/test_recipe_rule_family_conflict.py) | ✅ |
 
 **Status Legend:**
 - ✅ Implemented and tested

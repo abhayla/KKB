@@ -35,6 +35,9 @@
 | RULE-029 | Weekly Target Input | Set frequency | Implemented | `RecipeRulesScreenTest.kt` |
 | RULE-030 | AI Recipe Catalog Search | AI-powered recipe search | Implemented | `test_ai_recipe_catalog.py`, `RecipeRulesFlowTest.kt` |
 | RULE-031 | Sharma Family E2E | All 5 Sharma rules create/list/verify | Implemented | `test_sharma_recipe_rules.py`, `RecipeRulesFlowTest.kt` |
+| RULE-032 | Force Override Dialog | Show conflict details when INCLUDE rule conflicts with family health | Implemented | `RecipeRulesViewModelTest.kt`, `test_recipe_rule_family_conflict.py` |
+| RULE-033 | Override Badge | Show "Override" badge on rules with force_override=true | Implemented | `RuleCard.kt` |
+| RULE-034 | Force Override Persistence | force_override survives sync roundtrip | Implemented | `test_recipe_rule_family_conflict.py` |
 
 ---
 

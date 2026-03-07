@@ -104,6 +104,25 @@ fun RuleCard(
                     // Enforcement Badge
                     EnforcementBadge(enforcement = rule.enforcement)
 
+                    // Force Override Badge
+                    if (rule.forceOverride && rule.action == RuleAction.INCLUDE) {
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    color = MaterialTheme.colorScheme.errorContainer,
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                .testTag("override_badge")
+                        ) {
+                            Text(
+                                text = "Override",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
+
                     // Active Status
                     Text(
                         text = if (rule.isActive) "● Active" else "○ Paused",

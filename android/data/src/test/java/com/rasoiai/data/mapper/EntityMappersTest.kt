@@ -529,6 +529,39 @@ class EntityMappersTest {
             assertEquals(FrequencyType.NEVER, domain.frequency.type)
             assertEquals(RuleEnforcement.REQUIRED, domain.enforcement)
             assertTrue(domain.isActive)
+            assertFalse(domain.forceOverride)
+        }
+
+        @Test
+        @DisplayName("Should roundtrip forceOverride through entity mapping")
+        fun `should roundtrip forceOverride through entity mapping`() {
+            // Given - entity with forceOverride = true
+            val entity = RecipeRuleEntity(
+                id = "rule-override",
+                type = "ingredient",
+                action = "include",
+                targetId = "gulab-jamun",
+                targetName = "Gulab Jamun",
+                frequencyType = "daily",
+                frequencyCount = null,
+                frequencyDays = null,
+                enforcement = "required",
+                mealSlots = null,
+                isActive = true,
+                forceOverride = true,
+                createdAt = "2026-01-27T10:00:00",
+                updatedAt = "2026-01-27T10:00:00"
+            )
+
+            // When - entity -> domain -> entity
+            val domain = entity.toDomain()
+            val roundTripped = domain.toEntity()
+
+            // Then
+            assertTrue(domain.forceOverride)
+            assertEquals(RuleAction.INCLUDE, domain.action)
+            assertTrue(roundTripped.forceOverride)
+            assertEquals("rule-override", roundTripped.id)
         }
 
         @Test

@@ -357,6 +357,7 @@ def _enforce_rules(self, plan: GeneratedMealPlan, prefs: UserPreferences) -> Gen
 | EXCLUDE SPECIFIC_DAYS | Removed on specified days only |
 | Dislikes | Included in prompt (AI avoids) |
 | INCLUDE rules | Included in prompt (AI generates) |
+| INCLUDE (force_override) | Bypasses family conflict filter, kept in generation |
 
 ---
 

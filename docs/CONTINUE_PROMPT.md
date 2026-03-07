@@ -6,12 +6,12 @@ Use this prompt to start a new conversation/context and continue the project fro
 
 ## Current State: Pre-Production Hardened (24 Security Items Complete)
 
-Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 routers). Android app with Compose UI, Hilt DI, Room DB v11. Full E2E tests passing with real API calls. All 18 Settings sub-screens implemented. **Pre-production hardening complete: 24 items across 3 batches.**
+Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 routers). Android app with Compose UI, Hilt DI, Room DB v12. Full E2E tests passing with real API calls. All 18 Settings sub-screens implemented. **Pre-production hardening complete: 24 items across 3 batches.**
 
 **Test Results:**
 | Platform | Tests | Status |
 |----------|-------|--------|
-| Backend | ~559 (46 files) | PASS |
+| Backend | ~580 (46 files) | PASS |
 | Android Unit | ~580 | PASS |
 | Android UI | 750+ | PASS |
 | Android E2E | 67+ | PASS |
@@ -51,7 +51,8 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 route
 | Stats Share | DONE | Issue #25 - Share cooking stats |
 | Chat Context | DONE | Issue #30 - Contextual chat |
 | Recipe Rating | DONE | Backend endpoint for recipe ratings |
-| Room DB v11 | DONE | meal_plan_items PK fix, known ingredients seed |
+| Room DB v12 | DONE | meal_plan_items PK fix, known ingredients seed, force_override field |
+| Force Override | DONE | force_override field, 409 conflict response, ForceOverrideDialog, Room v12 |
 | Pre-Prod: Config Security | DONE | JWT secret required, DEBUG=false, sql_echo, CORS hardened |
 | Pre-Prod: GDPR Compliance | DONE | DELETE /me, GET /me/export, soft delete |
 | Pre-Prod: Rate Limiting | DONE | slowapi per-endpoint limits |
@@ -91,5 +92,5 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 route
 ---
 
 *Last Updated: March 6, 2026*
-*E2E suite: 23 files, ~125 tests, 14 customer journey suites. ~559 backend tests (46 files). ~580 Android unit tests. 750+ UI tests.*
-*~44 API endpoints across 13 routers. 3,580 recipes. ~525 requirements across 12 screen files. Room DB v11.*
+*E2E suite: 23 files, ~125 tests, 14 customer journey suites. ~580 backend tests (46 files). ~580 Android unit tests. 750+ UI tests.*
+*~44 API endpoints across 13 routers. 3,580 recipes. ~525 requirements across 12 screen files. Room DB v12.*

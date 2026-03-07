@@ -1204,4 +1204,160 @@ class RecipeRulesViewModelTest {
             }
         }
     }
+
+    @Nested
+    @DisplayName("Force Override")
+    inner class ForceOverride {
+
+        @Test
+        @DisplayName("FamilyConflictException should show conflict dialog")
+        fun `FamilyConflictException should show conflict dialog`() = runTest {
+            val conflictDetails = listOf(
+                com.rasoiai.domain.model.ConflictDetail(
+                    memberName = "Ramesh",
+                    condition = "DIABETIC",
+                    keyword = "sugar",
+                    ruleTarget = "Gulab Jamun"
+                )
+            )
+            val exception = com.rasoiai.domain.model.FamilyConflictException(
+                message = "Family safety conflict",
+                conflictDetails = conflictDetails
+            )
+            coEvery { mockRepository.createRule(any()) } returns Result.failure(exception)
+
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial
+                testDispatcher.scheduler.advanceUntilIdle()
+                expectMostRecentItem() // After load
+
+                // Set up rule form state to enable save
+                viewModel.updateAction(RuleAction.INCLUDE)
+                viewModel.selectSearchResult(
+                    SearchResultItem.IngredientItem("Gulab Jamun")
+                )
+
+                testDispatcher.scheduler.advanceUntilIdle()
+                expectMostRecentItem()
+
+                viewModel.saveRule()
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                val state = expectMostRecentItem()
+                assertTrue(state.showConflictDialog)
+                assertEquals(1, state.pendingConflictDetails.size)
+                assertEquals("Ramesh", state.pendingConflictDetails[0].memberName)
+                assertEquals("DIABETIC", state.pendingConflictDetails[0].condition)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("confirmForceOverride should retry with forceOverride=true")
+        fun `confirmForceOverride should retry with forceOverride true`() = runTest {
+            val conflictDetails = listOf(
+                com.rasoiai.domain.model.ConflictDetail(
+                    memberName = "Ramesh",
+                    condition = "DIABETIC",
+                    keyword = "sugar",
+                    ruleTarget = "Gulab Jamun"
+                )
+            )
+            val exception = com.rasoiai.domain.model.FamilyConflictException(
+                message = "Family safety conflict",
+                conflictDetails = conflictDetails
+            )
+            // First call fails with conflict, second call (with forceOverride) succeeds
+            coEvery { mockRepository.createRule(match { !it.forceOverride }) } returns Result.failure(exception)
+            coEvery { mockRepository.createRule(match { it.forceOverride }) } returns Result.success(
+                RecipeRule(
+                    id = "new-rule",
+                    type = RuleType.INGREDIENT,
+                    action = RuleAction.INCLUDE,
+                    targetId = "ingredient-gulab-jamun",
+                    targetName = "Gulab Jamun",
+                    frequency = RuleFrequency.DAILY,
+                    enforcement = RuleEnforcement.REQUIRED,
+                    isActive = true,
+                    forceOverride = true
+                )
+            )
+
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial
+                testDispatcher.scheduler.advanceUntilIdle()
+                expectMostRecentItem()
+
+                viewModel.updateAction(RuleAction.INCLUDE)
+                viewModel.selectSearchResult(SearchResultItem.IngredientItem("Gulab Jamun"))
+                testDispatcher.scheduler.advanceUntilIdle()
+                expectMostRecentItem()
+
+                viewModel.saveRule()
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                val conflictState = expectMostRecentItem()
+                assertTrue(conflictState.showConflictDialog)
+
+                viewModel.confirmForceOverride()
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                val finalState = expectMostRecentItem()
+                assertFalse(finalState.showConflictDialog)
+                assertNull(finalState.pendingConflictRule)
+
+                coVerify { mockRepository.createRule(match { it.forceOverride }) }
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("dismissConflictDialog should clear conflict state")
+        fun `dismissConflictDialog should clear conflict state`() = runTest {
+            val conflictDetails = listOf(
+                com.rasoiai.domain.model.ConflictDetail(
+                    memberName = "Ramesh",
+                    condition = "DIABETIC",
+                    keyword = "sugar",
+                    ruleTarget = "Gulab Jamun"
+                )
+            )
+            val exception = com.rasoiai.domain.model.FamilyConflictException(
+                message = "Family safety conflict",
+                conflictDetails = conflictDetails
+            )
+            coEvery { mockRepository.createRule(any()) } returns Result.failure(exception)
+
+            val viewModel = RecipeRulesViewModel(mockRepository, mockSettingsRepository)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial
+                testDispatcher.scheduler.advanceUntilIdle()
+                expectMostRecentItem()
+
+                viewModel.updateAction(RuleAction.INCLUDE)
+                viewModel.selectSearchResult(SearchResultItem.IngredientItem("Gulab Jamun"))
+                testDispatcher.scheduler.advanceUntilIdle()
+                expectMostRecentItem()
+
+                viewModel.saveRule()
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                val conflictState = expectMostRecentItem()
+                assertTrue(conflictState.showConflictDialog)
+
+                viewModel.dismissConflictDialog()
+
+                val finalState = awaitItem()
+                assertFalse(finalState.showConflictDialog)
+                assertTrue(finalState.pendingConflictDetails.isEmpty())
+                assertNull(finalState.pendingConflictRule)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+    }
 }

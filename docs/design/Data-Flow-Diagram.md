@@ -448,6 +448,7 @@ The backend enforces these rules during generation:
 4. **Dislikes** - Always excluded with ingredient aliases
 5. **Cooking Time** - Respects busy day and weekend limits
 6. **Dietary Tags** - Filters by vegetarian/vegan/sattvic
+7. **Force Override** - INCLUDE rules with `force_override=true` bypass family safety conflict filtering
 
 ```python
 # Example rule enforcement flow
@@ -458,4 +459,4 @@ filtered = _filter_by_exclude_rules(recipes, exclude_rules, allergies, dislikes)
 
 ---
 
-*Last updated: January 30, 2026*
+*Last updated: March 7, 2026*

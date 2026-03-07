@@ -4,7 +4,8 @@ import logging
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import JSONResponse
 from sqlalchemy import delete, func, select
 
 from app.api.deps import CurrentUser, DbSession
@@ -13,6 +14,8 @@ from app.models.recipe_rule import NutritionGoal, RecipeRule
 from app.models.user import FamilyMember
 from app.services.family_constraints import get_family_forbidden_keywords
 from app.schemas.recipe_rule import (
+    ConflictDetail,
+    ConflictResponse,
     NutritionGoalCreate,
     NutritionGoalResponse,
     NutritionGoalsListResponse,
@@ -36,6 +39,7 @@ def _ensure_tz_aware(dt: datetime | None) -> datetime | None:
         # Assume naive datetimes are UTC
         return dt.replace(tzinfo=timezone.utc)
     return dt
+
 
 def _find_constraint_source(
     member_dicts: list[dict], member_name: str, keyword: str
@@ -92,8 +96,7 @@ async def create_recipe_rule(
     db: DbSession,
     current_user: CurrentUser,
     rule: RecipeRuleCreate,
-    force: bool = Query(False, description="Skip family safety conflict check"),
-) -> RecipeRuleResponse:
+) -> RecipeRuleResponse | JSONResponse:
     """Create a new recipe rule."""
     user_id = current_user.id
 
@@ -119,7 +122,7 @@ async def create_recipe_rule(
         )
 
     # Family safety conflict check for INCLUDE rules
-    if rule.action == "INCLUDE" and not force:
+    if rule.action == "INCLUDE" and not rule.force_override:
         members_result = await db.execute(
             select(FamilyMember).where(FamilyMember.user_id == user_id)
         )
@@ -135,17 +138,37 @@ async def create_recipe_rule(
             ]
             forbidden_map = get_family_forbidden_keywords(member_dicts)
             target_lower = rule.target_name.lower()
+
+            # Collect ALL conflicts (not just the first)
+            conflicts: list[ConflictDetail] = []
             for member_name, keywords in forbidden_map.items():
                 for keyword in keywords:
                     if keyword in target_lower:
-                        raise HTTPException(
-                            status_code=status.HTTP_409_CONFLICT,
-                            detail=(
-                                f"INCLUDE rule '{rule.target_name}' conflicts with "
-                                f"{member_name}'s {_find_constraint_source(member_dicts, member_name, keyword)} "
-                                f"restriction ({keyword}). Use ?force=true to override."
-                            ),
+                        conflicts.append(
+                            ConflictDetail(
+                                member_name=member_name,
+                                condition=_find_constraint_source(
+                                    member_dicts, member_name, keyword
+                                ),
+                                keyword=keyword,
+                                rule_target=rule.target_name,
+                            )
                         )
+
+            if conflicts:
+                conflict_response = ConflictResponse(
+                    detail=(
+                        f"INCLUDE rule '{rule.target_name}' conflicts with family "
+                        f"member health/dietary restrictions. "
+                        f"Set force_override=true to override."
+                    ),
+                    conflict_type="family_safety",
+                    conflict_details=conflicts,
+                )
+                return JSONResponse(
+                    status_code=status.HTTP_409_CONFLICT,
+                    content=conflict_response.model_dump(),
+                )
 
     now = datetime.now(timezone.utc)
     new_rule = RecipeRule(
@@ -161,6 +184,7 @@ async def create_recipe_rule(
         enforcement=rule.enforcement,
         meal_slot=rule.meal_slot,
         is_active=rule.is_active,
+        force_override=rule.force_override,
         sync_status="SYNCED",
         created_at=now,
         updated_at=now,
@@ -462,6 +486,7 @@ async def sync_recipe_rules(
                 existing.enforcement = client_rule.enforcement
                 existing.meal_slot = client_rule.meal_slot
                 existing.is_active = client_rule.is_active
+                existing.force_override = client_rule.force_override
                 existing.updated_at = now
                 existing.sync_status = "SYNCED"
                 synced_rule_ids.append(client_rule.id)
@@ -472,12 +497,15 @@ async def sync_recipe_rules(
             # New rule from client - check for duplicate before inserting
             dup_query = select(RecipeRule).where(
                 RecipeRule.user_id == user_id,
-                func.upper(RecipeRule.target_name) == client_rule.target_name.strip().upper(),
+                func.upper(RecipeRule.target_name)
+                == client_rule.target_name.strip().upper(),
                 RecipeRule.action == client_rule.action,
                 RecipeRule.target_type == client_rule.target_type,
             )
             if client_rule.meal_slot is not None:
-                dup_query = dup_query.where(RecipeRule.meal_slot == client_rule.meal_slot)
+                dup_query = dup_query.where(
+                    RecipeRule.meal_slot == client_rule.meal_slot
+                )
             else:
                 dup_query = dup_query.where(RecipeRule.meal_slot.is_(None))
 
@@ -500,6 +528,7 @@ async def sync_recipe_rules(
                 enforcement=client_rule.enforcement,
                 meal_slot=client_rule.meal_slot,
                 is_active=client_rule.is_active,
+                force_override=client_rule.force_override,
                 sync_status="SYNCED",
                 created_at=now,
                 updated_at=now,

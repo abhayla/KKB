@@ -514,6 +514,7 @@ fun RecipeRuleEntity.toDomain(): RecipeRule {
         enforcement = RuleEnforcement.fromValue(enforcement),
         mealSlots = mealSlotsList,
         isActive = isActive,
+        forceOverride = forceOverride,
         createdAt = LocalDateTime.parse(createdAt, dateTimeFormatter),
         updatedAt = LocalDateTime.parse(updatedAt, dateTimeFormatter)
     )
@@ -531,6 +532,7 @@ fun RecipeRule.toEntity(syncStatus: String = "SYNCED"): RecipeRuleEntity = Recip
     enforcement = enforcement.value,
     mealSlots = if (mealSlots.isNotEmpty()) mealSlots.joinToString(",") { it.value } else null,
     isActive = isActive,
+    forceOverride = forceOverride,
     syncStatus = syncStatus,
     createdAt = createdAt.format(dateTimeFormatter),
     updatedAt = updatedAt.format(dateTimeFormatter)
@@ -751,6 +753,7 @@ fun RecipeRuleDto.toEntity(): RecipeRuleEntity = RecipeRuleEntity(
     enforcement = enforcement,
     mealSlots = mealSlot, // API sends single meal_slot, stored as comma-separated mealSlots
     isActive = isActive,
+    forceOverride = forceOverride,
     syncStatus = syncStatus,
     createdAt = createdAt,
     updatedAt = updatedAt
@@ -771,6 +774,7 @@ fun RecipeRuleEntity.toSyncItem(): RecipeRuleSyncItem = RecipeRuleSyncItem(
     enforcement = enforcement,
     mealSlot = mealSlots, // Entity stores as mealSlots, API expects meal_slot
     isActive = isActive,
+    forceOverride = forceOverride,
     localUpdatedAt = updatedAt
 )
 

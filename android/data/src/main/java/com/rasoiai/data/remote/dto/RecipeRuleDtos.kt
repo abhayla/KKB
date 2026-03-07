@@ -29,6 +29,8 @@ data class RecipeRuleDto(
     val isActive: Boolean = true,
     @SerializedName("sync_status")
     val syncStatus: String = "SYNCED",
+    @SerializedName("force_override")
+    val forceOverride: Boolean = false,
     @SerializedName("created_at")
     val createdAt: String,
     @SerializedName("updated_at")
@@ -56,7 +58,9 @@ data class RecipeRuleCreateRequest(
     @SerializedName("meal_slot")
     val mealSlot: String? = null,
     @SerializedName("is_active")
-    val isActive: Boolean = true
+    val isActive: Boolean = true,
+    @SerializedName("force_override")
+    val forceOverride: Boolean = false
 )
 
 /**
@@ -81,6 +85,29 @@ data class RecipeRuleUpdateRequest(
     val mealSlot: String? = null,
     @SerializedName("is_active")
     val isActive: Boolean? = null
+)
+
+/**
+ * A single family safety conflict detail from the API.
+ */
+data class ConflictDetailDto(
+    @SerializedName("member_name")
+    val memberName: String,
+    val condition: String,
+    val keyword: String,
+    @SerializedName("rule_target")
+    val ruleTarget: String
+)
+
+/**
+ * Structured 409 response for family safety conflicts.
+ */
+data class ConflictResponseDto(
+    val detail: String,
+    @SerializedName("conflict_type")
+    val conflictType: String,
+    @SerializedName("conflict_details")
+    val conflictDetails: List<ConflictDetailDto>
 )
 
 /**
@@ -176,6 +203,8 @@ data class RecipeRuleSyncItem(
     val mealSlot: String? = null,
     @SerializedName("is_active")
     val isActive: Boolean = true,
+    @SerializedName("force_override")
+    val forceOverride: Boolean = false,
     @SerializedName("local_updated_at")
     val localUpdatedAt: String
 )

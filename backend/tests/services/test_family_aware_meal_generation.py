@@ -158,6 +158,24 @@ class TestFamilyAwareMealGeneration:
         assert filtered[0]["target"] == "Dal Tadka"
         assert report[0]["rule_target"] == "Onion Paratha"
 
+    def test_force_override_rule_not_filtered(self, service, base_prefs, week_start):
+        """Rules with force_override=True survive family conflict filtering."""
+        base_prefs.include_rules = [
+            {"target": "Gulab Jamun", "frequency": "WEEKLY", "times_per_week": 1, "force_override": True},
+            {"target": "Rasgulla", "frequency": "WEEKLY", "times_per_week": 1},
+        ]
+        base_prefs.family_members = [
+            {"name": "Dadaji", "age_group": "senior", "health_conditions": ["diabetic"], "dietary_restrictions": []},
+        ]
+        filtered, report = service._filter_conflicting_rules(base_prefs)
+        # Gulab Jamun survives (force_override), Rasgulla filtered (sweet+diabetic)
+        targets = [r["target"] for r in filtered]
+        assert "Gulab Jamun" in targets
+        assert "Rasgulla" not in targets
+        # Report only shows Rasgulla, not Gulab Jamun
+        assert len(report) == 1
+        assert report[0]["rule_target"] == "Rasgulla"
+
 
 class TestMixedDietHousehold:
     """Test mixed-diet household detection in AI prompt."""

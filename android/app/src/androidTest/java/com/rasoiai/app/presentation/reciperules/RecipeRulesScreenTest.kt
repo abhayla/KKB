@@ -20,6 +20,9 @@ import com.rasoiai.domain.model.RuleAction
 import com.rasoiai.domain.model.RuleEnforcement
 import com.rasoiai.domain.model.RuleFrequency
 import com.rasoiai.domain.model.RuleType
+import com.rasoiai.app.presentation.reciperules.components.ForceOverrideDialog
+import com.rasoiai.app.presentation.reciperules.components.RuleCard
+import com.rasoiai.domain.model.ConflictDetail
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -341,6 +344,61 @@ class RecipeRulesScreenTest {
         val sorted = uiState.sortedRules
         assert(sorted.first().isActive) { "Active rules should come first" }
         assert(!sorted.last().isActive) { "Paused rules should come last" }
+    }
+
+    // endregion
+
+    // region Phase 11.9: Force Override Tests
+
+    @Test
+    fun force_override_dialog_displays_when_showConflictDialog_true() {
+        val conflictDetails = listOf(
+            ConflictDetail(
+                memberName = "Dadaji",
+                condition = "diabetic",
+                keyword = "sugar",
+                ruleTarget = "Gulab Jamun"
+            )
+        )
+
+        composeTestRule.setContent {
+            RasoiAITheme {
+                ForceOverrideDialog(
+                    conflictDetails = conflictDetails,
+                    onConfirm = {},
+                    onDismiss = {}
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithTag("conflict_dialog_title").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Family Safety Conflict").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Dadaji", substring = true).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Override & Save").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Cancel").assertIsDisplayed()
+    }
+
+    @Test
+    fun override_badge_shown_on_force_override_rule() {
+        val rule = createTestRecipeRule(
+            id = "override_rule",
+            action = RuleAction.INCLUDE,
+            targetName = "Gulab Jamun"
+        ).copy(forceOverride = true)
+
+        composeTestRule.setContent {
+            RasoiAITheme {
+                RuleCard(
+                    rule = rule,
+                    onEdit = {},
+                    onToggleActive = {},
+                    onDelete = {}
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithTag("override_badge").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Override").assertIsDisplayed()
     }
 
     // endregion

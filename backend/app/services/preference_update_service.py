@@ -102,6 +102,7 @@ class PreferenceUpdateService:
         times_per_week: Optional[int] = None,
         meal_slots: Optional[list[str]] = None,
         reason: Optional[str] = None,
+        force_override: bool = False,
     ) -> UpdateResult:
         """Add, remove, or modify a recipe rule.
 
@@ -157,6 +158,7 @@ class PreferenceUpdateService:
             "meal_slot": meal_slots or ["BREAKFAST", "LUNCH", "DINNER", "SNACKS"],
             "reason": reason,
             "is_active": True,
+            "force_override": force_override,
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
 

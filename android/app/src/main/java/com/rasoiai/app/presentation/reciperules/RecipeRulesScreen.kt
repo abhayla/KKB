@@ -39,6 +39,7 @@ import com.rasoiai.app.presentation.reciperules.components.AddNutritionGoalSheet
 import com.rasoiai.app.presentation.reciperules.components.AddRuleBottomSheet
 import com.rasoiai.app.presentation.reciperules.components.AddRuleButton
 import com.rasoiai.app.presentation.reciperules.components.DeleteConfirmationDialog
+import com.rasoiai.app.presentation.reciperules.components.ForceOverrideDialog
 import com.rasoiai.app.presentation.reciperules.components.EmptyRulesState
 import com.rasoiai.app.presentation.reciperules.components.NutritionGoalCard
 import com.rasoiai.app.presentation.reciperules.components.RuleCard
@@ -133,6 +134,15 @@ fun RecipeRulesScreen(
                 ?: "",
             onConfirm = viewModel::confirmDelete,
             onDismiss = viewModel::dismissDeleteConfirmation
+        )
+    }
+
+    // Force Override Conflict Dialog
+    if (uiState.showConflictDialog) {
+        ForceOverrideDialog(
+            conflictDetails = uiState.pendingConflictDetails,
+            onConfirm = viewModel::confirmForceOverride,
+            onDismiss = viewModel::dismissConflictDialog
         )
     }
 }

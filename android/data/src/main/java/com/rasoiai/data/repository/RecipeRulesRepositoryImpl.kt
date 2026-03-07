@@ -160,10 +160,37 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                         frequencyDays = newRule.frequency.specificDays?.joinToString(",") { it.name },
                         enforcement = newRule.enforcement.value,
                         mealSlot = if (newRule.mealSlots.isNotEmpty()) newRule.mealSlots.joinToString(",") { it.value } else null,
-                        isActive = newRule.isActive
+                        isActive = newRule.isActive,
+                        forceOverride = newRule.forceOverride
                     )
-                    apiService.createRecipeRule(request)
-                    Timber.i("Synced rule to backend: ${newRule.id}")
+                    val response = apiService.createRecipeRule(request)
+                    if (response.isSuccessful) {
+                        Timber.i("Synced rule to backend: ${newRule.id}")
+                    } else if (response.code() == 409) {
+                        // Check if it's a family safety conflict
+                        val errorBody = response.errorBody()?.string()
+                        if (errorBody != null && errorBody.contains("family_safety")) {
+                            // Delete the locally saved rule since it was rejected
+                            recipeRulesDao.deleteRule(newRule.id)
+                            val conflictResponse = com.google.gson.Gson().fromJson(
+                                errorBody,
+                                com.rasoiai.data.remote.dto.ConflictResponseDto::class.java
+                            )
+                            return Result.failure(
+                                com.rasoiai.domain.model.FamilyConflictException(
+                                    message = conflictResponse.detail,
+                                    conflictDetails = conflictResponse.conflictDetails.map {
+                                        com.rasoiai.domain.model.ConflictDetail(
+                                            memberName = it.memberName,
+                                            condition = it.condition,
+                                            keyword = it.keyword,
+                                            ruleTarget = it.ruleTarget
+                                        )
+                                    }
+                                )
+                            )
+                        }
+                    }
                 } catch (e: IOException) {
                     val nowStr = now.format(dateTimeFormatter)
                     recipeRulesDao.updateRuleSyncStatus(newRule.id, SyncStatus.PENDING, nowStr)

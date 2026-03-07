@@ -204,6 +204,11 @@ class AIMealService:
         report = []
 
         for rule in prefs.include_rules:
+            # Force-overridden rules survive filtering
+            if rule.get("force_override", False):
+                filtered.append(rule)
+                continue
+
             target = rule.get("target", "").lower()
             conflict_found = False
 
@@ -385,6 +390,7 @@ class AIMealService:
                                 else ["breakfast", "lunch", "dinner", "snacks"]
                             ),
                             "enforcement": rule.enforcement,
+                            "force_override": rule.force_override,
                         }
                     )
 

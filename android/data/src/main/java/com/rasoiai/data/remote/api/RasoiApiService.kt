@@ -185,7 +185,7 @@ interface RasoiApiService {
     suspend fun getRecipeRules(): RecipeRulesListResponse
 
     @POST("api/v1/recipe-rules")
-    suspend fun createRecipeRule(@Body rule: RecipeRuleCreateRequest): RecipeRuleDto
+    suspend fun createRecipeRule(@Body rule: RecipeRuleCreateRequest): retrofit2.Response<RecipeRuleDto>
 
     @GET("api/v1/recipe-rules/{id}")
     suspend fun getRecipeRuleById(@Path("id") id: String): RecipeRuleDto

@@ -48,6 +48,10 @@ PREFERENCE_TOOLS = [
                 "reason": {
                     "type": "string",
                     "description": "Optional reason for the rule (e.g., 'health', 'preference', 'allergy')"
+                },
+                "force_override": {
+                    "type": "boolean",
+                    "description": "Set true ONLY after warning the user about family health conflicts and getting explicit confirmation."
                 }
             },
             "required": ["action", "rule_type", "target"]
@@ -184,6 +188,9 @@ CONFIG_CHAT_SYSTEM_PROMPT = """You are RasoiAI, a friendly and knowledgeable Ind
   - "I'm allergic to X" → ADD allergy
   - "Show my settings" → show_config
 
+- When adding an INCLUDE rule, check if any family member has a health condition that conflicts.
+  If so, WARN the user first and ask for confirmation before setting force_override=true.
+  Never set force_override=true without the user's explicit consent.
 - After making changes, summarize what was changed
 - If a recipe is locked, explain that it cannot be modified
 - If no meal plan exists, suggest generating one
