@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Technical design: @docs/design/RasoiAI Technical Design.md
 - Data flow: @docs/design/Data-Flow-Diagram.md
 - Meal generation: @docs/design/Meal-Generation-Algorithm.md
-- Workflow rules: @docs/rules/Claude Code Enforced Workflow Rules.md
+- Workflow rules: @.claude/rules/workflow.md
 - E2E testing guide: @docs/testing/E2E-Testing-Prompt.md
 - Functional requirements: @docs/testing/Functional-Requirement-Rule.md
 
@@ -82,7 +82,7 @@ UI → ViewModel → UseCase → Repository
 ```
 backend/app/
 ├── ai/            # Claude chat (tool calling) + Gemini meal generation + photo analysis
-├── api/v1/        # 13 routers across 12 files (~44 endpoints). Swagger at /docs (DEBUG=true only)
+├── api/v1/        # 13+ routers across 12+ files (~62 endpoints). Swagger at /docs (DEBUG=true only)
 ├── cache/         # recipe_cache.py — warmed on startup, non-fatal
 ├── config.py      # Pydantic Settings (env vars, JWT secret required, usage limits)
 ├── core/          # firebase.py (auth + DEBUG bypass), security.py, exceptions.py
@@ -288,31 +288,62 @@ E2E tests use **real backend + fake phone auth only**. `FakePhoneAuthClient` sen
 
 ## VPS Deployment
 
-This project's development VPS is **544934-ABHAYVPS** (Windows Server 2022, IP `103.118.16.189`). All deployment happens from `C:\Apps\`. VPS documentation lives at `C:\Apps\shared\docs\` — **do NOT modify files in `C:\Apps\shared\`**.
+See `docs/VPS-Deployment.md` for full VPS details (544934-ABHAYVPS, Windows Server 2022, PM2 + Nginx + Cloudflare). Do NOT modify files in `C:\Apps\shared\`.
 
-| Component | Version |
-|-----------|---------|
-| Node.js | v24.1.0 |
-| PM2 | 6.0.13 |
-| Nginx | 1.26.2 |
-| PostgreSQL | 16.8 |
-| Redis | Port 6379 |
+## Generic Rules for Claude
 
-**Architecture:** Internet → Cloudflare (HTTPS) → Nginx (port 80, reverse proxy) → PM2 apps (ports 3001-3004, 8000).
+<!-- ========================================================== -->
+<!-- PROTECTED SECTION - DO NOT MODIFY                          -->
+<!-- These rules are carefully crafted and tested.              -->
+<!-- Do NOT condense, rewrite, reorganize, or "improve" them.   -->
+<!-- Do NOT remove content even if it appears redundant.        -->
+<!-- Any /init or optimization request must SKIP this section.  -->
+<!-- Authority: Project owner directive (2026-03-08)            -->
+<!-- ========================================================== -->
 
-**Key VPS commands (PowerShell):**
-```powershell
-pm2 ls                                    # List all apps
-pm2 logs <app-name> --lines 100           # View logs
-pm2 restart <app-name> && pm2 save        # Restart + persist state
-cd C:\Apps\nginx && .\nginx.exe -t        # Test Nginx config
-cd C:\Apps\nginx && .\nginx.exe -s reload # Reload Nginx (zero-downtime)
-netstat -ano | findstr "3001 3002 3003 3004 8000"  # Check ports
+### Session History Analysis & Automation Extraction
+
+When the user asks to analyze their workflow patterns, session history, or identify automation opportunities, follow this structured approach:
+
+**Step 1: Scrape Session Data**
+- Scan all Claude Code session transcripts (`.jsonl` files) under `~/.claude/projects/` and `~/.claude/sessions/`
+- Parse each session for: tool calls made, skills invoked, commands run, files edited, errors encountered, and user corrections
+- Group sessions by project directory and time period
+
+**Step 2: Pattern Classification**
+Categorize every recurring pattern into exactly one of these buckets:
+
+| Category | When to Use | Examples |
+|----------|-------------|---------|
+| **Skill** (`.claude/skills/`) | Repeatable multi-step workflows triggered by user command. Has a clear start/end, requires judgment, runs in the main conversation context. | `/fix-issue`, `/deploy`, `/run-e2e`, test-debug-fix cycles, release workflows |
+| **Agent** (`.claude/agents/`) | Autonomous sub-tasks that can run in isolation with their own tool access. Delegatable work that doesn't need continuous user interaction. | Code review, test runner, build validator, lint fixer, dependency auditor |
+| **Hook** (`.claude/hooks/`) | Automatic triggers on tool events (PreToolUse/PostToolUse). Enforcement gates, auto-formatting, validation checks. No user invocation needed. | Auto-format on save, block commits without tests, screenshot resize, workflow state tracking |
+| **MCP Server/Plugin** | External tool integrations that expose new capabilities via the Model Context Protocol. Bridges to third-party services or local tools. | Database queries, browser automation, Slack notifications, CI/CD status checks |
+| **CLAUDE.md Rule** | Static instructions, conventions, or constraints that should always be in context. No logic — just knowledge and directives. | File naming conventions, architecture decisions, env setup, troubleshooting tables, test fixture guides |
+
+**Step 3: Output Format**
+Present findings as a prioritized table:
+
+```
+| # | Pattern Observed | Frequency | Category | Priority | Suggested Name | Description |
+|---|-----------------|-----------|----------|----------|----------------|-------------|
+| 1 | User runs tests then fixes failures in a loop | Every session | Skill | HIGH | /fix-loop | Iterative test-fix cycle with escalation |
+| 2 | Auto-format Python after edits | Every edit | Hook | HIGH | auto-format.sh | Black + ruff on PostToolUse |
+| ... | | | | | | |
 ```
 
-**VPS documentation index:** `C:\Apps\shared\docs\README.md` — covers setup, PM2, Nginx, Cloudflare, CI/CD, monitoring, troubleshooting.
+**Step 4: Conflict Check**
+- Before recommending a new skill/agent/hook, check if one already exists (search `.claude/skills/`, `.claude/agents/`, `.claude/hooks/`)
+- If an existing automation partially covers the pattern, recommend enhancing it rather than creating a new one
+- Flag any patterns that span multiple categories (e.g., "could be a skill OR an agent") and explain the trade-off
 
-## Rules for Claude
+**Step 5: Implementation Readiness**
+For each HIGH priority recommendation, provide:
+- The exact file path where it should be created
+- A 2-3 sentence spec of what it should do
+- Dependencies on existing infrastructure
+
+## Project Rules for Claude
 
 <!-- ========================================================== -->
 <!-- PROTECTED SECTION - DO NOT MODIFY                          -->
@@ -387,194 +418,22 @@ netstat -ano | findstr "3001 3002 3003 3004 8000"  # Check ports
 
 7. **Mandatory Development Workflow (ALL Code Tasks)**:
 
-   > **Full Reference:** See `docs/rules/Claude Code Enforced Workflow Rules.md` for complete documentation.
+   7-step workflow: Requirements → Tests → Implement → Run tests → Fix loop → Screenshots → Verify & commit. Enforced by hooks (see below). No step skipping, no partial passes, no @Ignore bypasses, no commits without passing tests.
 
-   **TRIGGER - This workflow applies when user asks to:**
-   - Implement a feature
-   - Fix a bug
-   - Refactor code
-   - Make any code change (`.kt`, `.py`, `.xml` files)
-
-   **DOES NOT APPLY to:**
-   - Answering questions (no code changes)
-   - Documentation-only changes (no code)
-   - Research/exploration tasks
-
-   ---
-
-   ### THE 7-STEP WORKFLOW
-
-   **STEP 1: Update Requirement Documentation**
-
-   Before writing ANY code:
-   ```bash
-   # a) Check for existing issue
-   gh issue list --search "keyword"
-
-   # b) Create issue if none exists
-   gh issue create --title "Feature: Description"
-   ```
-   - Add requirement to `docs/requirements/screens/*.md` (BDD format)
-   - Add traceability row to `docs/testing/Functional-Requirement-Rule.md`
-
-   **Output:**
-   ```
-   ✅ Step 1 Complete:
-   - GitHub Issue: #XX (created/existing)
-   - Requirement ID: SCREEN-XXX
-   - Traceability: Added to Functional-Requirement-Rule.md
-   ```
-
-   **STEP 2: Create/Update Tests**
-
-   - Create E2E test in `app/src/androidTest/java/com/rasoiai/app/e2e/flows/`
-   - Add KDoc header: `/** Requirement: #XX - Description */`
-   - Write test methods matching acceptance criteria
-
-   **Output:**
-   ```
-   ✅ Step 2 Complete:
-   - Test file: XXXFlowTest.kt
-   - Test methods: [list]
-   ```
-
-   **STEP 3: Implement the Feature**
-
-   Write the minimum code to make tests pass.
-
-   **STEP 4: Run Functional Tests**
-
-   ```bash
-   # Android
-   ./gradlew :app:connectedDebugAndroidTest \
-     -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.flows.YourTestClass
-
-   # Backend
-   PYTHONPATH=. pytest tests/test_xxx.py -v
-   ```
-
-   **STEP 5: Fix Loop**
-
-   IF tests fail → fix code → re-run tests → repeat until ALL pass.
-
-   ⚠️ **DO NOT proceed to Step 6 until ALL tests pass**
-
-   **STEP 6: Capture Screenshots**
-
-   Platform-specific capture to `docs/testing/screenshots/`:
-   ```bash
-   # Android (ADB)
-   adb exec-out screencap -p > docs/testing/screenshots/{issue}_{feature}_before.png
-   adb exec-out screencap -p > docs/testing/screenshots/{issue}_{feature}_after.png
-   ```
-   ```javascript
-   // Web (Playwright)
-   await browser_take_screenshot({
-     filename: "docs/testing/screenshots/{issue}_{feature}_{state}.png",
-     type: "png"
-   })
-   ```
-
-   **STEP 7: Verify and Confirm**
-
-   1. Read both screenshots using Read tool
-   2. Describe the visible difference
-   3. Commit with issue reference
-
-   **Final Output:**
-   ```
-   ✅ WORKFLOW COMPLETE:
-   - GitHub Issue: #XX
-   - Requirement: SCREEN-XXX
-   - Tests: X/X passed
-   - Screenshots:
-     - Before: docs/testing/screenshots/XX_before.png
-     - After: docs/testing/screenshots/XX_after.png
-   - Verification: [describe visible change]
-
-   The feature has been implemented and all tests pass.
-   ```
-
-   ---
-
-   ### SELF-ENFORCEMENT GATES (MANDATORY)
-
-   **Claude MUST answer these in each response:**
-
-   **Pre-Implementation Gate (Before Step 3):**
-   ```
-   □ Pre-Implementation Gate:
-     - "Step 1 complete (Requirements)?" → [YES / NO - STOP]
-     - "Step 2 complete (Tests created)?" → [YES / NO - STOP]
-     - "BEFORE screenshot captured?" → [YES: path / NO - STOP]
-     - "Issue number noted?" → [YES: #___ / NO - STOP]
-   ```
-
-   **Pre-Commit Gate (Before Step 7 commit):**
-   ```
-   □ Pre-Commit Gate:
-     - "ALL tests passing?" → [YES: X/X passed / NO - STOP]
-     - "AFTER screenshot captured?" → [YES: path / NO - STOP]
-     - "Before/after compared?" → [YES: difference is ___ / NO - STOP]
-   ```
-
-   ---
-
-   ### CRITICAL RULES - NO EXCEPTIONS
-
-   - **No partial test passes**: "2 out of 3 is good enough" = VIOLATION
-   - **No @Ignore bypasses**: Marking failing tests as `@Ignore` = VIOLATION
-   - **No "fix later" excuses**: Creating issues to bypass failures = VIOLATION
-   - **No step skipping**: Each step must complete before the next
-   - **No commits without tests**: Tests MUST pass before any commit
-   - **No screenshot skipping**: Screenshots are MANDATORY for Steps 6-7, even when:
-     - "Documenting existing behavior" - STILL REQUIRES SCREENSHOTS
-     - "No code changes made" - STILL REQUIRES SCREENSHOTS
-     - "Tests already pass" - STILL REQUIRES SCREENSHOTS
-     - ADB/screenshot tools fail - MUST troubleshoot and retry, never skip
-
-   **VIOLATION = PROCESS FAILURE. No exceptions. No "I'll do it later."**
-
-   ---
-
-   ### QUICK REFERENCE
-
-   | Step | Action | Output Required |
-   |------|--------|-----------------|
-   | 1 | Update requirements | Issue #, Requirement ID |
-   | 2 | Create tests | Test file, methods |
-   | 3 | Implement | Code changes |
-   | 4 | Run tests | Pass/fail count |
-   | 5 | Fix loop | All tests passing |
-   | 6 | Screenshots | Before/after paths |
-   | 7 | Verify & commit | Visual diff, commit hash |
+   > **Full reference:** `.claude/rules/workflow.md`
+   >
+   > **Applies to:** Feature implementation, bug fixes, refactoring, any code changes (`.kt`, `.py`, `.xml`).
+   > **Does NOT apply to:** Questions, documentation-only, research/exploration.
 
 ## Workflow Enforcement Hooks
 
-The 7-step workflow (Rule #7) is enforced by shell hooks in `.claude/hooks/`. All hooks source `hook-utils.sh` for shared stdin JSON parsing and state management.
-
-| Hook | Trigger | Purpose |
-|------|---------|---------|
-| `hook-utils.sh` | (sourced) | Shared library — stdin parsing, state mgmt, test detection, evidence writing |
-| `validate-workflow-step.sh` | PreToolUse (Write/Edit/Bash) | Blocks actions if prior workflow steps are incomplete; blocks commits without pipeline; **blocks code edits when testFailuresPending** |
-| `pre-skill-fixloop-unblock.sh` | PreToolUse (Skill) | Sets `fixLoopInvestigating=true` when fix-loop is invoked, unblocking code edits during investigation |
-| `verify-evidence-artifacts.sh` | PreToolUse (Bash) | Blocks `git commit` when required evidence is missing (Skill invocations not tracked) |
-| `post-test-update.sh` | PostToolUse (Bash) | Records test results in workflow state and evidence files; **sets/clears testFailuresPending flag** |
-| `verify-test-rerun.sh` | PostToolUse (Bash) | Re-runs same test independently; **blocks** if claimed PASS but re-run FAIL |
-| `log-workflow.sh` | PostToolUse (Bash/Skill/Write/Edit) | Logs events; **tracks Skill invocations**; **clears fixLoopInvestigating on fix-loop completion** |
-| `post-anr-detection.sh` | PostToolUse (Bash) | Detects ANR patterns in Bash output; sets `testFailuresPending=true` and logs to `adb-test/anr-events.log` |
-| `post-screenshot.sh` | PostToolUse (Bash/Playwright) | Combined: auto-resize screenshots >1800px + validate file + record metadata in workflow state |
-| `auto-fix-pattern-scan.sh` | PostToolUse | Scans for common fix patterns after tool use |
-| `auto-format.sh` | PostToolUse | Auto-formats code after edits |
-| `post-skill-learning.sh` | PostToolUse (Skill) | Records skill outcomes for learning system |
-
-Workflow state is tracked in `.claude/workflow-state.json` (extended schema with `testFailuresPending`, `fixLoopInvestigating`, `visualIssuesPending`, `screenshotsCaptured`, `backendChecks`, `skillInvocations`, `evidence`, `agentDelegations`). The full hook system and enforcement logic is documented in `docs/rules/Claude Code Enforced Workflow Rules.md`.
+12 shell hooks in `.claude/hooks/` enforce the 7-step workflow (blocking edits, commits, and test claims when gates aren't met). State tracked in `.claude/workflow-state.json`. See `.claude/rules/workflow.md` for full hook documentation.
 
 ## Claude Code Configuration
 
-The `.claude/` directory contains: `agents/` (11 agents), `knowledge.db` (pattern library), `skills/` (14 slash commands), `hooks/` (12 hooks — see table above), `rules/` (5 path-scoped rule files), `logs/` (session logs).
+The `.claude/` directory contains: `agents/` (14 agents), `knowledge.db` (pattern library), `skills/` (20 slash commands), `hooks/` (12 hooks — see table above), `rules/` (5 path-scoped rule files), `logs/` (session logs).
 
-**Skills:** `/adb-test`, `/auto-verify`, `/fix-issue`, `/fix-loop`, `/implement`, `/post-fix-pipeline`, `/reflect`, `/run-e2e`, `/db-migrate`, `/deploy`, `/sync-check`, `/verify-screenshots`, `/generate-meal`, `/gemini-api`
+**Skills:** `/adb-test`, `/auto-verify`, `/claude-guardian`, `/clean-pyc`, `/continue`, `/fix-issue`, `/fix-loop`, `/implement`, `/plan-to-issues`, `/post-fix-pipeline`, `/reflect`, `/run-android-tests`, `/run-backend-tests`, `/run-e2e`, `/db-migrate`, `/deploy`, `/status`, `/sync-check`, `/strategic-architect`, `/verify-screenshots`, `/generate-meal`, `/gemini-api`
 
 **MCP Servers** (`.mcp.json`): Playwright (`@anthropic-ai/mcp-server-playwright`) for web screenshots, ADB (`adb-mcp`) for Android emulator automation.
 
@@ -595,7 +454,7 @@ Path-specific context files loaded automatically when working in these directori
 |----------|----------|
 | Requirements Index | `docs/requirements/README.md` |
 | Technical Design | `docs/design/RasoiAI Technical Design.md` |
-| Workflow Rules | `docs/rules/Claude Code Enforced Workflow Rules.md` |
+| Workflow Rules | `.claude/rules/workflow.md` |
 | E2E Testing Guide | `docs/testing/E2E-Testing-Prompt.md` |
 | Customer Journey Suites | `docs/testing/Customer-Journey-Test-Suites.md` |
 | Functional Requirements | `docs/testing/Functional-Requirement-Rule.md` |
