@@ -1,6 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from app.api.deps import CurrentUser, DbSession
+from app.config import settings
+from app.core.rate_limit import limiter
 from app.schemas.household import (
     AddMemberByPhoneRequest,
     HouseholdCreate,
@@ -52,7 +54,10 @@ def _household_response(household, member_count: int) -> HouseholdResponse:
 
 
 @router.post("", response_model=HouseholdResponse, status_code=201)
-async def create_household(body: HouseholdCreate, user: CurrentUser, db: DbSession):
+@limiter.limit("500/minute" if settings.debug else "5/minute")
+async def create_household(
+    request: Request, body: HouseholdCreate, user: CurrentUser, db: DbSession
+):
     """Create a new household. Caller becomes OWNER."""
     household = await HouseholdService.create(name=body.name, user=user, db=db)
     return _household_response(household, member_count=1)
@@ -81,7 +86,8 @@ async def update_household(
         user=user,
         db=db,
     )
-    return _household_response(household, member_count=0)
+    active_count = await HouseholdService._count_active_members(household_id, db)
+    return _household_response(household, member_count=active_count)
 
 
 @router.delete("/{household_id}", status_code=204)
@@ -104,7 +110,9 @@ async def list_members(household_id: str, user: CurrentUser, db: DbSession):
     response_model=HouseholdMemberResponse,
     status_code=201,
 )
+@limiter.limit("500/minute" if settings.debug else "10/minute")
 async def add_member(
+    request: Request,
     household_id: str,
     body: AddMemberByPhoneRequest,
     user: CurrentUser,
@@ -121,7 +129,10 @@ async def add_member(
 
 
 @router.post("/{household_id}/invite-code", response_model=InviteCodeResponse)
-async def refresh_invite_code(household_id: str, user: CurrentUser, db: DbSession):
+@limiter.limit("500/minute" if settings.debug else "5/minute")
+async def refresh_invite_code(
+    request: Request, household_id: str, user: CurrentUser, db: DbSession
+):
     """Generate/refresh invite code. Owner only."""
     code, expires_at = await HouseholdService.refresh_invite_code(
         household_id=household_id, user=user, db=db
@@ -130,7 +141,10 @@ async def refresh_invite_code(household_id: str, user: CurrentUser, db: DbSessio
 
 
 @router.post("/join", response_model=HouseholdMemberResponse, status_code=201)
-async def join_household(body: JoinHouseholdRequest, user: CurrentUser, db: DbSession):
+@limiter.limit("500/minute" if settings.debug else "10/minute")
+async def join_household(
+    request: Request, body: JoinHouseholdRequest, user: CurrentUser, db: DbSession
+):
     """Join household via invite code."""
     member = await HouseholdService.join(invite_code=body.invite_code, user=user, db=db)
     return _member_response(member)
