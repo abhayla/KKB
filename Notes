@@ -1,8 +1,12 @@
 Add this condition to Passing criteria - take screenshot after each testing, analyze the screenshot to verify it matches with the expected output. Do not pass the test until this is done. Check if you have Claude Chrome access or use it?
 
-   /plugin marketplace add anthropics/claude-code     
-     /plugin install frontend-design@claude-code-plugins
-     
+/plugin marketplace add anthropics/claude-code     
+/plugin install frontend-design@claude-code-plugins
+
+//UI UX Pro Max
+https://github.com/nextlevelbuilder/ui-ux-pro-max-skill
+
+
 claude --dangerously-skip-permissions
 
 Test Reorganization Plan from the plan file at C:\Users\Abhay\.claude\plans\adaptive-cooking-parasol.md. It has 9 batches    
@@ -222,3 +226,23 @@ Add setting to allow meal planning at family level or at each individual family 
 Allow Individual Family member selection from a drop down list.
 Add one screen for Recipe Rules
 Allow meal preference at each family member level
+
+
+  Proposed toggle screens (Family | My View):
+  - Home (already has it)
+  - Stats
+  - Grocery
+  - Favorites
+  - Recipe Rules
+  - Notifications
+
+  Proposed always-personal (no toggle needed):
+  - Chat (role-aware but always "your" conversation)
+  - Settings sub-screens like Units, Edit Profile
+  - Dietary Profiles (personal contexts like home/hostel)
+
+  Proposed always-household (no toggle, only visible when in a household):
+  - Household Settings, Household Members, Member Detail
+  - Invite Code, Transfer Ownership, Leave Household
+  - Constraint Merge dialog
+  - Guest Duration dialog
