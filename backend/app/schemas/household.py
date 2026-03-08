@@ -89,3 +89,35 @@ class HouseholdDetailResponse(BaseModel):
 class InviteCodeResponse(BaseModel):
     invite_code: str
     expires_at: datetime
+
+
+class CreateHouseholdRecipeRuleRequest(BaseModel):
+    target_type: str = Field(..., pattern="^(RECIPE|INGREDIENT|MEAL_SLOT)$")
+    action: str = Field(..., pattern="^(INCLUDE|EXCLUDE)$")
+    target_name: str = Field(..., min_length=1, max_length=255)
+    frequency_type: str = Field(
+        ..., pattern="^(DAILY|TIMES_PER_WEEK|SPECIFIC_DAYS|NEVER)$"
+    )
+    frequency_count: Optional[int] = Field(None, ge=1, le=7)
+    frequency_days: Optional[str] = Field(None, max_length=100)
+    enforcement: Optional[str] = Field("PREFERRED", pattern="^(REQUIRED|PREFERRED)$")
+    meal_slot: Optional[str] = Field(None, pattern="^(BREAKFAST|LUNCH|DINNER|SNACKS)$")
+
+
+class HouseholdRecipeRuleResponse(BaseModel):
+    id: str
+    household_id: Optional[str] = None
+    scope: str = "HOUSEHOLD"
+    target_type: str
+    action: str
+    target_name: str
+    frequency_type: str
+    frequency_count: Optional[int] = None
+    frequency_days: Optional[str] = None
+    enforcement: str
+    meal_slot: Optional[str] = None
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

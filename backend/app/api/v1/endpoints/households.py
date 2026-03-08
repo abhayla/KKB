@@ -1,13 +1,21 @@
-from fastapi import APIRouter, Request
+import uuid
+
+from fastapi import APIRouter, Query, Request
+from sqlalchemy import extract, func, select
 
 from app.api.deps import CurrentUser, DbSession
 from app.config import settings
+from app.core.exceptions import NotFoundError
 from app.core.rate_limit import limiter
+from app.models.meal_plan import MealPlan, MealPlanItem
+from app.models.recipe_rule import RecipeRule
 from app.schemas.household import (
     AddMemberByPhoneRequest,
+    CreateHouseholdRecipeRuleRequest,
     HouseholdCreate,
     HouseholdDetailResponse,
     HouseholdMemberResponse,
+    HouseholdRecipeRuleResponse,
     HouseholdResponse,
     HouseholdUpdate,
     InviteCodeResponse,
@@ -50,6 +58,26 @@ def _household_response(household, member_count: int) -> HouseholdResponse:
         is_active=household.is_active,
         created_at=household.created_at,
         updated_at=household.updated_at,
+    )
+
+
+def _recipe_rule_response(r) -> HouseholdRecipeRuleResponse:
+    """Convert a RecipeRule model to household recipe rule response schema."""
+    return HouseholdRecipeRuleResponse(
+        id=r.id,
+        household_id=r.household_id,
+        scope=r.scope,
+        target_type=r.target_type,
+        action=r.action,
+        target_name=r.target_name,
+        frequency_type=r.frequency_type,
+        frequency_count=r.frequency_count,
+        frequency_days=r.frequency_days,
+        enforcement=r.enforcement,
+        meal_slot=r.meal_slot,
+        is_active=r.is_active,
+        created_at=r.created_at,
+        updated_at=r.updated_at,
     )
 
 
@@ -208,3 +236,128 @@ async def remove_member(
         user=user,
         db=db,
     )
+
+
+@router.get("/{household_id}/stats/monthly")
+async def get_household_monthly_stats(
+    household_id: str,
+    user: CurrentUser,
+    db: DbSession,
+    month: int = Query(ge=1, le=12),
+    year: int = Query(ge=2020),
+):
+    """Get monthly stats for a household. Member access."""
+    await HouseholdService._verify_membership(household_id, user, db)
+
+    # Count meal plan items for this household in the given month
+    result = await db.execute(
+        select(func.count())
+        .select_from(MealPlanItem)
+        .join(MealPlan, MealPlanItem.meal_plan_id == MealPlan.id)
+        .where(
+            MealPlan.household_id == household_id,
+            extract("month", MealPlanItem.date) == month,
+            extract("year", MealPlanItem.date) == year,
+        )
+    )
+    total_items = result.scalar_one()
+
+    # Count by meal_status
+    status_result = await db.execute(
+        select(MealPlanItem.meal_status, func.count())
+        .join(MealPlan, MealPlanItem.meal_plan_id == MealPlan.id)
+        .where(
+            MealPlan.household_id == household_id,
+            extract("month", MealPlanItem.date) == month,
+            extract("year", MealPlanItem.date) == year,
+        )
+        .group_by(MealPlanItem.meal_status)
+    )
+    status_counts = {row[0]: row[1] for row in status_result.fetchall()}
+
+    return {
+        "household_id": household_id,
+        "month": month,
+        "year": year,
+        "total_meals_planned": total_items,
+        "meals_cooked": status_counts.get("COOKED", 0),
+        "meals_skipped": status_counts.get("SKIPPED", 0),
+        "meals_ordered_out": status_counts.get("ORDERED_OUT", 0),
+    }
+
+
+# --- Household Recipe Rules ---
+
+
+@router.get(
+    "/{household_id}/recipe-rules",
+    response_model=list[HouseholdRecipeRuleResponse],
+)
+async def list_household_recipe_rules(
+    household_id: str, user: CurrentUser, db: DbSession
+):
+    """List all recipe rules scoped to this household. Member access."""
+    await HouseholdService._verify_membership(household_id, user, db)
+    result = await db.execute(
+        select(RecipeRule).where(
+            RecipeRule.household_id == household_id,
+            RecipeRule.scope == "HOUSEHOLD",
+            RecipeRule.is_active == True,  # noqa: E712
+        )
+    )
+    return [_recipe_rule_response(r) for r in result.scalars().all()]
+
+
+@router.post(
+    "/{household_id}/recipe-rules",
+    response_model=HouseholdRecipeRuleResponse,
+    status_code=201,
+)
+async def create_household_recipe_rule(
+    household_id: str,
+    body: CreateHouseholdRecipeRuleRequest,
+    user: CurrentUser,
+    db: DbSession,
+):
+    """Create a household-scoped recipe rule. Owner only."""
+    await HouseholdService._verify_owner(household_id, user, db)
+    rule = RecipeRule(
+        id=str(uuid.uuid4()),
+        user_id=str(user.id),
+        household_id=household_id,
+        scope="HOUSEHOLD",
+        target_type=body.target_type,
+        action=body.action,
+        target_name=body.target_name,
+        frequency_type=body.frequency_type,
+        frequency_count=body.frequency_count,
+        frequency_days=body.frequency_days,
+        enforcement=body.enforcement or "PREFERRED",
+        meal_slot=body.meal_slot,
+        is_active=True,
+    )
+    db.add(rule)
+    await db.flush()
+    return _recipe_rule_response(rule)
+
+
+@router.delete(
+    "/{household_id}/recipe-rules/{rule_id}",
+    status_code=204,
+)
+async def delete_household_recipe_rule(
+    household_id: str, rule_id: str, user: CurrentUser, db: DbSession
+):
+    """Soft-delete a household recipe rule. Owner only."""
+    await HouseholdService._verify_owner(household_id, user, db)
+    result = await db.execute(
+        select(RecipeRule).where(
+            RecipeRule.id == rule_id,
+            RecipeRule.household_id == household_id,
+        )
+    )
+    rule = result.scalar_one_or_none()
+    if not rule:
+        raise NotFoundError("Rule not found in this household")
+    rule.is_active = False
+    await db.flush()
