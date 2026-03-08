@@ -8,6 +8,7 @@ from fastapi import APIRouter, Request
 from app.ai.chat_assistant import process_chat_message, get_chat_history
 from app.ai.gemini_client import analyze_food_image
 from app.api.deps import CurrentUser
+from app.config import settings
 from app.core.rate_limit import limiter
 from app.schemas.chat import (
     ChatHistoryResponse,
@@ -21,7 +22,7 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 
 
 @router.post("/message", response_model=ChatResponse)
-@limiter.limit("30/minute")
+@limiter.limit("500/minute" if settings.debug else "30/minute")
 async def send_message(
     request: Request,
     chat_request: ChatMessageRequest,
@@ -76,7 +77,7 @@ async def get_history(
 
 
 @router.post("/image", response_model=ChatResponse)
-@limiter.limit("10/hour")
+@limiter.limit("500/hour" if settings.debug else "10/hour")
 async def send_image_message(
     request: Request,
     image_request: ChatImageRequest,
@@ -96,7 +97,11 @@ async def send_image_message(
     response = await analyze_food_image(
         image_base64=image_request.image_base64,
         media_type=image_request.media_type,
-        prompt=image_request.message if image_request.message != "Please analyze this food image" else None
+        prompt=(
+            image_request.message
+            if image_request.message != "Please analyze this food image"
+            else None
+        ),
     )
 
     message_id = str(uuid4())

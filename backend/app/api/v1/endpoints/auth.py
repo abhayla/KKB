@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Request
 
+from app.config import settings
 from app.core.rate_limit import limiter
 from app.schemas.auth import (
     AuthRequest,
@@ -10,13 +11,17 @@ from app.schemas.auth import (
     RefreshTokenResponse,
 )
 from app.api.deps import CurrentUser
-from app.services.auth_service import authenticate_with_firebase, logout_user, refresh_access_token
+from app.services.auth_service import (
+    authenticate_with_firebase,
+    logout_user,
+    refresh_access_token,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/firebase", response_model=AuthResponse)
-@limiter.limit("10/minute")
+@limiter.limit("500/minute" if settings.debug else "10/minute")
 async def firebase_auth(request: Request, auth_request: AuthRequest) -> AuthResponse:
     """Exchange Firebase ID token for JWT access token.
 
@@ -27,8 +32,10 @@ async def firebase_auth(request: Request, auth_request: AuthRequest) -> AuthResp
 
 
 @router.post("/refresh", response_model=RefreshTokenResponse)
-@limiter.limit("20/minute")
-async def refresh_token(request: Request, refresh_request: RefreshTokenRequest) -> RefreshTokenResponse:
+@limiter.limit("500/minute" if settings.debug else "20/minute")
+async def refresh_token(
+    request: Request, refresh_request: RefreshTokenRequest
+) -> RefreshTokenResponse:
     """Refresh an access token using a valid refresh token.
 
     This endpoint takes a refresh token and returns a new access token.

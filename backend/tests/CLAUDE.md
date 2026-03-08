@@ -68,7 +68,6 @@ tests/
 ## Known Issues
 
 - **1 `test_health.py` failure**: Health check returns 503 because tests use SQLite, not real PostgreSQL. Not a regression.
-- **4 `test_email_uniqueness.py` failures**: Fail in full suite, pass in isolation — test ordering issue with session state. Not a regression.
 
 ## Adding New Models
 
