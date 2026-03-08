@@ -120,7 +120,8 @@ data class RecipeRulesUiState(
     val pendingConflictDetails: List<com.rasoiai.domain.model.ConflictDetail> = emptyList(),
     val pendingConflictRule: RecipeRule? = null,
 
-    val selectedScope: DataScope = DataScope.PERSONAL
+    val selectedScope: DataScope = DataScope.PERSONAL,
+    val hasHousehold: Boolean = false
 ) {
     /**
      * Rules sorted: active first (newest first), then paused (newest first).

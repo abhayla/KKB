@@ -200,12 +200,14 @@ internal fun StatsScreenContent(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(vertical = spacing.md)
                 ) {
-                    // Scope Toggle
-                    item {
-                        ScopeToggle(
-                            selectedScope = uiState.selectedScope,
-                            onScopeChange = onScopeChanged
-                        )
+                    // Scope Toggle — only visible when user has active household
+                    if (uiState.hasHousehold) {
+                        item {
+                            ScopeToggle(
+                                selectedScope = uiState.selectedScope,
+                                onScopeChange = onScopeChanged
+                            )
+                        }
                     }
 
                     // Streak Card

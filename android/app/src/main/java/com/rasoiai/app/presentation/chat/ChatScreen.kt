@@ -360,11 +360,13 @@ internal fun ChatScreenContent(
                     contentPadding = PaddingValues(vertical = spacing.sm)
                 ) {
                     // Scope Toggle
-                    item(key = "scope_toggle") {
-                        ScopeToggle(
-                            selectedScope = uiState.selectedScope,
-                            onScopeChange = onScopeChanged
-                        )
+                    if (uiState.hasHousehold) {
+                        item(key = "scope_toggle") {
+                            ScopeToggle(
+                                selectedScope = uiState.selectedScope,
+                                onScopeChange = onScopeChanged
+                            )
+                        }
                     }
 
                     items(

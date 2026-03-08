@@ -233,10 +233,8 @@ class ScopeToggleFlowTest : BaseE2ETest() {
     // ===================== Cross-Screen Toggle Persistence =====================
 
     @Test
-    @Ignore("Requires user to be a member of an active household")
     fun testScopeToggleNotVisibleWithoutHousehold() {
         // When user has no active household, scope toggle should not appear
-        // This test assumes the user is NOT a household member
         homeRobot.waitForHomeScreen(60000)
         homeRobot.navigateToStats()
 

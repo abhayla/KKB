@@ -4,8 +4,9 @@ import android.util.Log
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import com.rasoiai.app.e2e.base.BaseE2ETest
 import com.rasoiai.app.e2e.robots.HomeRobot
 import com.rasoiai.app.presentation.common.TestTags
@@ -20,10 +21,6 @@ import org.junit.Test
  * Tests the Achievements screen navigation from Stats and content display.
  * The Achievements screen shows unlocked/locked achievement sections with
  * progress bars and share actions.
- *
- * All tests are @Ignore because they require:
- * - Running backend with achievements endpoints active
- * - Seeded achievement definitions
  *
  * @see docs/testing/Functional-Requirement-Rule.md
  */
@@ -52,8 +49,22 @@ class AchievementsFlowTest : BaseE2ETest() {
 
         composeTestRule.onNodeWithTag(TestTags.STATS_SCREEN).assertIsDisplayed()
 
-        // Tap the achievements section/button on the Stats screen
-        composeTestRule.onNodeWithText("Achievements", substring = true, ignoreCase = true)
+        // Swipe up on the stats screen to scroll to the achievements section
+        // AchievementsSection is ~8th item in the LazyColumn, needs several swipes
+        repeat(3) {
+            composeTestRule.onNodeWithTag(TestTags.STATS_SCREEN)
+                .performTouchInput { swipeUp() }
+            composeTestRule.waitForIdle()
+        }
+
+        // Now tap "View All" in the achievements section
+        composeTestRule.waitUntil(5000) {
+            composeTestRule.onAllNodes(
+                hasTestTag(TestTags.ACHIEVEMENTS_VIEW_ALL)
+            ).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeTestRule.onNodeWithTag(TestTags.ACHIEVEMENTS_VIEW_ALL)
             .performClick()
         composeTestRule.waitForIdle()
 
@@ -67,7 +78,6 @@ class AchievementsFlowTest : BaseE2ETest() {
     // ===================== Tests =====================
 
     @Test
-    @Ignore("Requires running backend with achievements endpoints and seeded data")
     fun testNavigateToAchievementsFromStats() {
         navigateToAchievements()
 
@@ -77,7 +87,6 @@ class AchievementsFlowTest : BaseE2ETest() {
     }
 
     @Test
-    @Ignore("Requires running backend with achievements endpoints and seeded data")
     fun testAchievementsListDisplayed() {
         navigateToAchievements()
 
@@ -88,7 +97,6 @@ class AchievementsFlowTest : BaseE2ETest() {
     }
 
     @Test
-    @Ignore("Requires running backend with achievements endpoints and seeded data")
     fun testUnlockedSectionDisplayed() {
         navigateToAchievements()
 
@@ -101,7 +109,6 @@ class AchievementsFlowTest : BaseE2ETest() {
     }
 
     @Test
-    @Ignore("Requires running backend with achievements endpoints and seeded data")
     fun testLockedSectionDisplayed() {
         navigateToAchievements()
 
@@ -114,7 +121,7 @@ class AchievementsFlowTest : BaseE2ETest() {
     }
 
     @Test
-    @Ignore("Requires running backend with achievements endpoints and seeded data")
+    @Ignore("Requires seeded achievement data with progress")
     fun testAchievementCardWithProgress() {
         navigateToAchievements()
 
@@ -128,7 +135,7 @@ class AchievementsFlowTest : BaseE2ETest() {
     }
 
     @Test
-    @Ignore("Requires running backend with achievements endpoints and seeded data")
+    @Ignore("Requires seeded achievement data to share")
     fun testShareAchievement() {
         navigateToAchievements()
 

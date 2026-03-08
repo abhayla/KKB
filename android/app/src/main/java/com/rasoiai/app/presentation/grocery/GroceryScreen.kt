@@ -303,11 +303,13 @@ internal fun GroceryScreenContent(
                     contentPadding = PaddingValues(bottom = spacing.md)
                 ) {
                     // Scope Toggle
-                    item {
-                        ScopeToggle(
-                            selectedScope = uiState.selectedScope,
-                            onScopeChange = onScopeChanged
-                        )
+                    if (uiState.hasHousehold) {
+                        item {
+                            ScopeToggle(
+                                selectedScope = uiState.selectedScope,
+                                onScopeChange = onScopeChanged
+                            )
+                        }
                     }
 
                     // Week Header

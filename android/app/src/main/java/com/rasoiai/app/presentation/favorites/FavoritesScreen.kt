@@ -252,10 +252,12 @@ internal fun FavoritesScreenContent(
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
                     // Scope Toggle
-                    ScopeToggle(
-                        selectedScope = uiState.selectedScope,
-                        onScopeChange = onScopeChanged
-                    )
+                    if (uiState.hasHousehold) {
+                        ScopeToggle(
+                            selectedScope = uiState.selectedScope,
+                            onScopeChange = onScopeChanged
+                        )
+                    }
 
                     // Collections Row
                     if (!uiState.isReorderMode) {

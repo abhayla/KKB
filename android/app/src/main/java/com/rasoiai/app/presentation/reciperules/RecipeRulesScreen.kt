@@ -206,10 +206,12 @@ internal fun RecipeRulesScreenContent(
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
                     // Scope Toggle
-                    ScopeToggle(
-                        selectedScope = uiState.selectedScope,
-                        onScopeChange = onScopeChanged
-                    )
+                    if (uiState.hasHousehold) {
+                        ScopeToggle(
+                            selectedScope = uiState.selectedScope,
+                            onScopeChange = onScopeChanged
+                        )
+                    }
 
                     // Tab Bar
                     RulesTabBar(

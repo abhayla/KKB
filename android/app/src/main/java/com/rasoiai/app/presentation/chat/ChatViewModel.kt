@@ -40,7 +40,8 @@ data class ChatUiState(
     val showImageSourceDialog: Boolean = false,
     val selectedImageUri: Uri? = null,
     val isUploadingImage: Boolean = false,
-    val selectedScope: DataScope = DataScope.PERSONAL
+    val selectedScope: DataScope = DataScope.PERSONAL,
+    val hasHousehold: Boolean = false
 )
 
 /**

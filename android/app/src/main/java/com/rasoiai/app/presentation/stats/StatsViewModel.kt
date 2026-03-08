@@ -47,7 +47,8 @@ data class StatsUiState(
     val selectedYearMonth: YearMonth = YearMonth.now(),
     val isJoiningChallenge: Boolean = false,
     val cuisineBreakdown: List<CuisineBreakdown> = emptyList(),
-    val selectedScope: DataScope = DataScope.PERSONAL
+    val selectedScope: DataScope = DataScope.PERSONAL,
+    val hasHousehold: Boolean = false
 ) {
     val unlockedAchievements: List<Achievement>
         get() = achievements.filter { it.isUnlocked }

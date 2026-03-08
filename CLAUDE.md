@@ -431,9 +431,9 @@ For each HIGH priority recommendation, provide:
 
 ## Claude Code Configuration
 
-The `.claude/` directory contains: `agents/` (14 agents), `knowledge.db` (pattern library), `skills/` (20 slash commands), `hooks/` (9 hooks — see table above), `rules/` (5 path-scoped rule files), `logs/` (session logs).
+The `.claude/` directory contains: `agents/` (14 agents), `knowledge.db` (pattern library), `skills/` (24 slash commands), `hooks/` (9 hooks — see table above), `rules/` (5 path-scoped rule files), `logs/` (session logs).
 
-**Skills:** `/adb-test`, `/auto-verify`, `/claude-guardian`, `/clean-pyc`, `/continue`, `/fix-issue`, `/fix-loop`, `/implement`, `/plan-to-issues`, `/post-fix-pipeline`, `/reflect`, `/run-android-tests`, `/run-backend-tests`, `/run-e2e`, `/db-migrate`, `/deploy`, `/status`, `/sync-check`, `/strategic-architect`, `/verify-screenshots`, `/generate-meal`, `/gemini-api`
+**Skills:** `/adb-test`, `/auto-verify`, `/claude-guardian`, `/clean-pyc`, `/continue`, `/fix-issue`, `/fix-loop`, `/implement`, `/plan-to-issues`, `/post-fix-pipeline`, `/reflect`, `/run-android-tests`, `/run-backend-tests`, `/run-e2e`, `/db-migrate`, `/deploy`, `/skill-factory`, `/status`, `/sync-check`, `/strategic-architect`, `/test-knowledge`, `/verify-screenshots`, `/generate-meal`, `/gemini-api`
 
 **MCP Servers** (`.mcp.json`): Playwright (`@anthropic-ai/mcp-server-playwright`) for web screenshots, ADB (`adb-mcp`) for Android emulator automation.
 

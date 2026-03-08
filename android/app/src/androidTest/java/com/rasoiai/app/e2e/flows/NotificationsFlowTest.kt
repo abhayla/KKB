@@ -19,10 +19,6 @@ import org.junit.Test
  * Tests the Notifications screen navigation, list display, filtering,
  * mark-all-read, and empty state.
  *
- * All tests are @Ignore because they require:
- * - Running backend with notifications endpoints active
- * - Pre-existing notification data for the test user
- *
  * @see docs/testing/Functional-Requirement-Rule.md
  */
 @HiltAndroidTest
@@ -58,7 +54,6 @@ class NotificationsFlowTest : BaseE2ETest() {
     // ===================== Tests =====================
 
     @Test
-    @Ignore("Requires running backend with notifications endpoints")
     fun testNavigateToNotifications() {
         navigateToNotifications()
 
@@ -68,7 +63,32 @@ class NotificationsFlowTest : BaseE2ETest() {
     }
 
     @Test
-    @Ignore("Requires running backend with notifications endpoints")
+    fun testEmptyState() {
+        navigateToNotifications()
+
+        composeTestRule.onNodeWithTag(TestTags.NOTIFICATIONS_SCREEN).assertIsDisplayed()
+
+        // When there are no notifications, the empty state should be visible
+        composeTestRule.onNodeWithTag(TestTags.NOTIFICATIONS_EMPTY).assertIsDisplayed()
+
+        Log.i(TAG, "testEmptyState: empty state displayed when no notifications")
+    }
+
+    @Test
+    fun testFilterChipsDisplayed() {
+        navigateToNotifications()
+
+        composeTestRule.onNodeWithTag(TestTags.NOTIFICATIONS_SCREEN).assertIsDisplayed()
+
+        // Filter chips should be visible
+        composeTestRule.onNodeWithTag(TestTags.NOTIFICATION_FILTER_ALL).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(TestTags.NOTIFICATION_FILTER_UNREAD).assertIsDisplayed()
+
+        Log.i(TAG, "testFilterChipsDisplayed: All and Unread filter chips visible")
+    }
+
+    @Test
+    @Ignore("Requires pre-existing notification data")
     fun testNotificationsListDisplayed() {
         navigateToNotifications()
 
@@ -82,7 +102,7 @@ class NotificationsFlowTest : BaseE2ETest() {
     }
 
     @Test
-    @Ignore("Requires running backend with notifications endpoints")
+    @Ignore("Requires pre-existing notification data")
     fun testFilterByUnread() {
         navigateToNotifications()
 
@@ -92,43 +112,21 @@ class NotificationsFlowTest : BaseE2ETest() {
         composeTestRule.onNodeWithTag(TestTags.NOTIFICATION_FILTER_UNREAD).performClick()
         composeTestRule.waitForIdle()
 
-        // The filter should now be active and show only unread notifications
         composeTestRule.onNodeWithTag(TestTags.NOTIFICATION_FILTER_UNREAD).assertIsDisplayed()
 
         Log.i(TAG, "testFilterByUnread: filtered to unread notifications")
     }
 
     @Test
-    @Ignore("Requires running backend with notifications endpoints")
-    fun testFilterByAll() {
-        navigateToNotifications()
-
-        composeTestRule.onNodeWithTag(TestTags.NOTIFICATIONS_SCREEN).assertIsDisplayed()
-
-        // First switch to Unread, then back to All
-        composeTestRule.onNodeWithTag(TestTags.NOTIFICATION_FILTER_UNREAD).performClick()
-        composeTestRule.waitForIdle()
-
-        composeTestRule.onNodeWithTag(TestTags.NOTIFICATION_FILTER_ALL).performClick()
-        composeTestRule.waitForIdle()
-
-        composeTestRule.onNodeWithTag(TestTags.NOTIFICATIONS_LIST).assertIsDisplayed()
-
-        Log.i(TAG, "testFilterByAll: switched back to all notifications")
-    }
-
-    @Test
-    @Ignore("Requires running backend with notifications endpoints")
+    @Ignore("Requires pre-existing notification data")
     fun testMarkAllRead() {
         navigateToNotifications()
 
         composeTestRule.onNodeWithTag(TestTags.NOTIFICATIONS_SCREEN).assertIsDisplayed()
 
-        // Tap "Mark all read" button
         composeTestRule.onNodeWithTag(TestTags.NOTIFICATIONS_MARK_ALL_READ).performClick()
         composeTestRule.waitForIdle()
 
-        // After marking all read, switching to Unread filter should show empty or no items
         composeTestRule.onNodeWithTag(TestTags.NOTIFICATION_FILTER_UNREAD).performClick()
         composeTestRule.waitForIdle()
 
@@ -136,38 +134,20 @@ class NotificationsFlowTest : BaseE2ETest() {
     }
 
     @Test
-    @Ignore("Requires running backend with notifications endpoints")
-    fun testEmptyState() {
-        navigateToNotifications()
-
-        composeTestRule.onNodeWithTag(TestTags.NOTIFICATIONS_SCREEN).assertIsDisplayed()
-
-        // When there are no notifications, the empty state should be visible
-        // This test assumes no notifications exist for the test user
-        composeTestRule.onNodeWithTag(TestTags.NOTIFICATIONS_EMPTY).assertIsDisplayed()
-
-        Log.i(TAG, "testEmptyState: empty state displayed when no notifications")
-    }
-
-    @Test
-    @Ignore("Requires running backend with notifications endpoints")
+    @Ignore("Requires pre-existing notification data")
     fun testClearAllNotifications() {
         navigateToNotifications()
 
         composeTestRule.onNodeWithTag(TestTags.NOTIFICATIONS_SCREEN).assertIsDisplayed()
 
-        // Tap "Clear all" button
         composeTestRule.onNodeWithTag(TestTags.NOTIFICATIONS_CLEAR_ALL).performClick()
         composeTestRule.waitForIdle()
 
-        // Confirmation dialog should appear
         composeTestRule.onNodeWithTag(TestTags.NOTIFICATIONS_CLEAR_ALL_DIALOG).assertIsDisplayed()
 
-        // Confirm the clear action
         composeTestRule.onNodeWithTag(TestTags.NOTIFICATIONS_CLEAR_ALL_CONFIRM).performClick()
         composeTestRule.waitForIdle()
 
-        // After clearing, empty state should be visible
         composeTestRule.onNodeWithTag(TestTags.NOTIFICATIONS_EMPTY).assertIsDisplayed()
 
         Log.i(TAG, "testClearAllNotifications: cleared all and empty state shown")

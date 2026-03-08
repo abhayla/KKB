@@ -35,6 +35,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.testTag
+import com.rasoiai.app.presentation.common.TestTags
 import com.rasoiai.app.presentation.theme.RasoiAITheme
 import com.rasoiai.app.presentation.theme.spacing
 import com.rasoiai.domain.model.Achievement
@@ -61,7 +63,10 @@ fun AchievementsSection(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            TextButton(onClick = onViewAllClick) {
+            TextButton(
+                onClick = onViewAllClick,
+                modifier = Modifier.testTag(TestTags.ACHIEVEMENTS_VIEW_ALL)
+            ) {
                 Text("View All")
             }
         }

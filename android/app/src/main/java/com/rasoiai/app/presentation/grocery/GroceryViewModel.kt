@@ -37,7 +37,8 @@ data class GroceryUiState(
     val showMoreOptionsMenu: Boolean = false,
     val selectedItem: GroceryItem? = null,
     val shareOption: ShareOption = ShareOption.FULL_LIST,
-    val selectedScope: DataScope = DataScope.PERSONAL
+    val selectedScope: DataScope = DataScope.PERSONAL,
+    val hasHousehold: Boolean = false
 ) {
     val formattedDateRange: String
         get() = groceryList?.let {

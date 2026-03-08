@@ -36,7 +36,8 @@ data class FavoritesUiState(
     val searchQuery: String = "",
     val selectedCuisineFilter: CuisineType? = null,
     val selectedTimeFilter: TimeFilter? = null,
-    val selectedScope: DataScope = DataScope.PERSONAL
+    val selectedScope: DataScope = DataScope.PERSONAL,
+    val hasHousehold: Boolean = false
 ) {
     val selectedCollection: FavoriteCollection?
         get() = collections.find { it.id == selectedCollectionId }

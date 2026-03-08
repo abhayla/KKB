@@ -229,6 +229,7 @@ object TestTags {
     const val ACHIEVEMENT_CARD_PREFIX = "achievement_card_"
     const val ACHIEVEMENT_PROGRESS_PREFIX = "achievement_progress_"
     const val ACHIEVEMENT_SHARE_PREFIX = "achievement_share_"
+    const val ACHIEVEMENTS_VIEW_ALL = "achievements_view_all"
 
     // Cooking Mode Screen
     const val COOKING_MODE_SCREEN = "cooking_mode_screen"
