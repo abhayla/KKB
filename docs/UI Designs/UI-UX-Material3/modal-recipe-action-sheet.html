@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Recipe Actions</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame bottom-sheet-page" id="app"></div>
+
+  <script>
+    initPage();
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      ${renderStatusBar()}
+
+      <!-- Dimmed parent preview -->
+      <div class="top-app-bar" style="opacity:0.3;">
+        <a href="main-home.html" class="nav-icon">&#9776;</a>
+        <span class="title">RasoiAI</span>
+        <div class="actions">
+          <span class="action-icon">&#128276;</span>
+          <span class="action-icon">&#128100;</span>
+        </div>
+      </div>
+      <div class="screen-content" style="opacity:0.15;filter:blur(2px);pointer-events:none;">
+        <div class="content-padding">
+          <div class="week-header">
+            <span class="week-range">Mar 2 - Mar 8, 2026</span>
+          </div>
+          <div style="height:40px;background:var(--surface-variant);border-radius:var(--radius-md);margin:var(--sp-sm) 0;"></div>
+          <div style="height:80px;background:var(--surface);border-radius:var(--radius-md);margin:var(--sp-sm) 0;box-shadow:var(--shadow-sm);"></div>
+          <div style="height:80px;background:var(--surface);border-radius:var(--radius-md);margin:var(--sp-sm) 0;box-shadow:var(--shadow-sm);"></div>
+        </div>
+      </div>
+
+      <!-- Bottom Sheet Overlay -->
+      <div class="bottom-sheet-overlay">
+        <div class="bottom-sheet" style="max-height:55%;">
+          <div class="handle"></div>
+
+          <!-- Recipe name header -->
+          <div style="margin-bottom:var(--sp-md);">
+            <span class="title-medium" style="font-weight:600;font-size:16px;">Paneer Tikka Masala</span>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+              <div class="veg-indicator"></div>
+              <span class="body-small" style="color:var(--on-surface-variant);">&#9201; 30 min &middot; 350 cal</span>
+            </div>
+          </div>
+
+          <div class="list-divider" style="margin:0 0 var(--sp-sm);"></div>
+
+          <!-- Action items -->
+          <a href="detail-recipe.html" class="list-item" style="text-decoration:none;">
+            <div class="list-icon" style="background:var(--primary-container);color:var(--on-primary-container);">&#128065;</div>
+            <div class="list-content">
+              <div class="list-title">View Recipe</div>
+              <div class="list-subtitle">See full recipe details and instructions</div>
+            </div>
+            <span class="list-trailing">&#8250;</span>
+          </a>
+
+          <a href="modal-swap-sheet.html" class="list-item" style="text-decoration:none;">
+            <div class="list-icon" style="background:var(--secondary-container);color:var(--on-secondary-container);">&#128260;</div>
+            <div class="list-content">
+              <div class="list-title">Swap Recipe</div>
+              <div class="list-subtitle">Replace with a different recipe</div>
+            </div>
+            <span class="list-trailing">&#8250;</span>
+          </a>
+
+          <div class="list-item" onclick="this.querySelector('.list-icon').textContent = this.querySelector('.list-icon').textContent === '&#128274;' ? '&#128275;' : '&#128274;'; this.querySelector('.list-title').textContent = this.querySelector('.list-title').textContent === 'Lock Recipe' ? 'Unlock Recipe' : 'Lock Recipe';">
+            <div class="list-icon" style="background:var(--tertiary-container);color:var(--on-tertiary-container);">&#128274;</div>
+            <div class="list-content">
+              <div class="list-title">Lock Recipe</div>
+              <div class="list-subtitle">Keep this recipe when regenerating</div>
+            </div>
+          </div>
+
+          <div class="list-item">
+            <div class="list-icon" style="background:var(--error-container);color:var(--on-error-container);">&#128465;</div>
+            <div class="list-content">
+              <div class="list-title" style="color:var(--error);">Remove from Plan</div>
+              <div class="list-subtitle">Remove this recipe from today's meal</div>
+            </div>
+          </div>
+
+          <div style="margin-top:var(--sp-md);text-align:center;">
+            <a href="main-home.html" class="btn btn-text" style="text-decoration:none;">Cancel</a>
+          </div>
+        </div>
+      </div>
+    `;
+  </script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Notifications</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app"></div>
+
+  <script>
+    initPage();
+
+    let notifications = getState('notifications', SHARMA_DEFAULTS.notifications);
+
+    const items = [
+      { key: 'meal_reminders', title: 'Meal Reminders', subtitle: 'Get notified before meal times to start cooking' },
+      { key: 'achievements', title: 'Achievement Notifications', subtitle: 'Celebrate when you unlock new cooking badges' },
+      { key: 'weekly_summary', title: 'Weekly Summary', subtitle: 'Receive a summary of your cooking stats every Sunday' },
+      { key: 'promotions', title: 'Promotions', subtitle: 'Tips, new features, and seasonal recipe suggestions' }
+    ];
+
+    function render() {
+      document.getElementById('app').innerHTML = `
+        ${renderStatusBar()}
+        ${renderTopBar({ title: 'Notifications', backLink: 'settings-main.html' })}
+
+        <div class="screen-content">
+          <div class="content-padding">
+
+            ${items.map(item => `
+              <div class="list-item" onclick="toggleNotification('${item.key}')" style="margin-bottom:var(--sp-xs);">
+                <div class="list-content">
+                  <div class="list-title">${item.title}</div>
+                  <div class="list-subtitle">${item.subtitle}</div>
+                </div>
+                <button class="toggle ${notifications[item.key] ? 'on' : ''}" id="toggle-${item.key}"></button>
+              </div>
+              <div class="list-divider"></div>
+            `).join('')}
+
+          </div>
+        </div>
+      `;
+    }
+
+    function toggleNotification(key) {
+      notifications[key] = !notifications[key];
+      setState('notifications', notifications);
+      render();
+    }
+
+    render();
+  </script>
+</body>
+</html>

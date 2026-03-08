@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Items Per Meal</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame bottom-sheet-page" id="app"></div>
+
+  <script>
+    initPage();
+    const app = document.getElementById('app');
+
+    let itemCount = getState('items_per_meal', 2);
+
+    function render() {
+      app.innerHTML = `
+        ${renderStatusBar()}
+
+        <!-- Dimmed parent preview -->
+        <div class="top-app-bar" style="opacity:0.3;">
+          <a href="settings-main.html" class="nav-icon">&#8592;</a>
+          <span class="title">Settings</span>
+        </div>
+        <div class="screen-content" style="opacity:0.15;filter:blur(2px);pointer-events:none;">
+          <div class="content-padding">
+            <div style="height:56px;background:var(--surface);border-radius:var(--radius-sm);margin:var(--sp-xs) 0;box-shadow:var(--shadow-sm);"></div>
+            <div style="height:56px;background:var(--surface);border-radius:var(--radius-sm);margin:var(--sp-xs) 0;box-shadow:var(--shadow-sm);"></div>
+            <div style="height:56px;background:var(--surface);border-radius:var(--radius-sm);margin:var(--sp-xs) 0;box-shadow:var(--shadow-sm);"></div>
+            <div style="height:56px;background:var(--surface);border-radius:var(--radius-sm);margin:var(--sp-xs) 0;box-shadow:var(--shadow-sm);"></div>
+          </div>
+        </div>
+
+        <!-- Dialog Overlay -->
+        <div class="dialog-overlay">
+          <div class="dialog" style="max-width:280px;text-align:center;">
+            <div class="dialog-title">Items Per Meal</div>
+
+            <p class="body-medium" style="color:var(--on-surface-variant);margin-bottom:var(--sp-lg);">
+              Number of recipe items shown per meal slot
+            </p>
+
+            <!-- Number Selector -->
+            <div style="display:flex;align-items:center;justify-content:center;gap:var(--sp-lg);margin-bottom:var(--sp-lg);">
+              <button class="icon-btn" style="width:48px;height:48px;border:2px solid var(--outline-variant);font-size:22px;font-weight:700;${itemCount <= 1 ? 'opacity:0.3;pointer-events:none;' : ''}" onclick="if(itemCount>1){itemCount--;render();}">&#8722;</button>
+
+              <div style="width:72px;height:72px;border-radius:var(--radius-lg);background:var(--primary-container);display:flex;align-items:center;justify-content:center;">
+                <span style="font-family:'Poppins',sans-serif;font-size:36px;font-weight:700;color:var(--on-primary-container);">${itemCount}</span>
+              </div>
+
+              <button class="icon-btn" style="width:48px;height:48px;border:2px solid var(--outline-variant);font-size:22px;font-weight:700;${itemCount >= 4 ? 'opacity:0.3;pointer-events:none;' : ''}" onclick="if(itemCount<4){itemCount++;render();}">+</button>
+            </div>
+
+            <!-- Visual hint -->
+            <div style="display:flex;justify-content:center;gap:6px;margin-bottom:var(--sp-lg);">
+              ${Array.from({length: 4}, (_, i) => `
+                <div style="width:12px;height:12px;border-radius:50%;${i < itemCount ? 'background:var(--primary);' : 'background:var(--outline-variant);'}"></div>
+              `).join('')}
+            </div>
+
+            <div class="body-small" style="color:var(--on-surface-variant);margin-bottom:var(--sp-md);">
+              ${itemCount === 1 ? 'Single item per slot (e.g., just Dal Fry)' :
+                itemCount === 2 ? 'Paired items (e.g., Dal Fry + Jeera Rice)' :
+                itemCount === 3 ? 'Triple combo (e.g., Dal + Rice + Raita)' :
+                'Full thali style (e.g., Dal + Rice + Sabzi + Roti)'}
+            </div>
+
+            <div class="dialog-actions" style="justify-content:center;">
+              <a href="settings-main.html" class="btn btn-outlined" style="text-decoration:none;" onclick="return true;">Cancel</a>
+              <a href="settings-main.html" class="btn btn-filled" style="text-decoration:none;" onclick="setState('items_per_meal', ${itemCount});return true;">Save</a>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Verify OTP</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .auth-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: var(--sp-lg);
+      gap: var(--sp-lg);
+    }
+    .auth-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .auth-subtitle {
+      font-size: 14px;
+      color: var(--on-surface-variant);
+      line-height: 1.5;
+      margin-top: calc(-1 * var(--sp-sm));
+    }
+    .otp-row {
+      display: flex;
+      justify-content: center;
+      gap: var(--sp-sm);
+    }
+    .otp-box {
+      width: 48px;
+      height: 56px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--on-surface);
+      background: var(--surface);
+      border: 2px solid var(--outline-variant);
+      border-radius: var(--radius-sm);
+      outline: none;
+      caret-color: var(--primary);
+      transition: border-color 0.15s;
+    }
+    .otp-box:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(255,104,56,0.15);
+    }
+    .otp-box.filled {
+      border-color: var(--primary);
+      background: var(--primary-container);
+    }
+    .auth-error {
+      color: var(--error);
+      font-size: 12px;
+      min-height: 16px;
+      text-align: center;
+    }
+    .resend-row {
+      text-align: center;
+      font-size: 14px;
+      color: var(--on-surface-variant);
+    }
+    .resend-row a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .resend-row a.disabled {
+      color: var(--on-surface-variant);
+      pointer-events: none;
+      opacity: 0.6;
+    }
+    .auth-spacer {
+      flex: 1;
+    }
+  </style>
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame">
+    <script>document.write(renderStatusBar())</script>
+    <script>document.write(renderTopBar({ title: '', backLink: 'auth-phone.html' }))</script>
+
+    <div class="auth-content">
+      <div>
+        <div class="auth-title">Enter OTP</div>
+      </div>
+      <p class="auth-subtitle" id="otpSubtitle">OTP sent to +91 XXXXX XXXXX</p>
+
+      <div class="otp-row">
+        <input type="text" class="otp-box" maxlength="1" inputmode="numeric" data-idx="0">
+        <input type="text" class="otp-box" maxlength="1" inputmode="numeric" data-idx="1">
+        <input type="text" class="otp-box" maxlength="1" inputmode="numeric" data-idx="2">
+        <input type="text" class="otp-box" maxlength="1" inputmode="numeric" data-idx="3">
+        <input type="text" class="otp-box" maxlength="1" inputmode="numeric" data-idx="4">
+        <input type="text" class="otp-box" maxlength="1" inputmode="numeric" data-idx="5">
+      </div>
+
+      <div class="auth-error" id="otpError"></div>
+
+      <button class="btn-filled btn-large w-full" id="verifyBtn" onclick="handleVerify()">
+        Verify
+      </button>
+
+      <div class="resend-row">
+        <span id="resendText">
+          <a id="resendLink" class="disabled" onclick="handleResend()">Resend OTP</a>
+          <span id="resendTimer"> in 30s</span>
+        </span>
+      </div>
+
+      <div class="auth-spacer"></div>
+    </div>
+  </div>
+
+  <script>
+    initPage();
+
+    // Show masked phone number
+    const phone = getState('phone', '+911234567890');
+    const digits = phone.replace(/\D/g, '');
+    const last5 = digits.slice(-5);
+    const masked = digits.slice(0, digits.length - 5).replace(/\d/g, 'X');
+    // Format as +91 XXXXX 12345
+    const countryCode = '+91';
+    const localDigits = digits.length > 2 ? digits.slice(2) : digits;
+    const displayPhone = countryCode + ' ' + localDigits.slice(0,5).replace(/\d/g, 'X') + ' ' + localDigits.slice(5);
+    document.getElementById('otpSubtitle').textContent = 'OTP sent to ' + displayPhone;
+
+    // OTP box logic
+    const boxes = document.querySelectorAll('.otp-box');
+    boxes.forEach((box, i) => {
+      box.addEventListener('input', function(e) {
+        this.value = this.value.replace(/\D/g, '').slice(0, 1);
+        if (this.value) {
+          this.classList.add('filled');
+          if (i < 5) boxes[i + 1].focus();
+        } else {
+          this.classList.remove('filled');
+        }
+      });
+
+      box.addEventListener('keydown', function(e) {
+        if (e.key === 'Backspace' && !this.value && i > 0) {
+          boxes[i - 1].focus();
+          boxes[i - 1].value = '';
+          boxes[i - 1].classList.remove('filled');
+        }
+        if (e.key === 'Enter') handleVerify();
+      });
+
+      // Handle paste
+      box.addEventListener('paste', function(e) {
+        e.preventDefault();
+        const pasted = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6);
+        pasted.split('').forEach((ch, j) => {
+          if (boxes[i + j]) {
+            boxes[i + j].value = ch;
+            boxes[i + j].classList.add('filled');
+          }
+        });
+        const nextIdx = Math.min(i + pasted.length, 5);
+        boxes[nextIdx].focus();
+      });
+    });
+
+    // Focus first box
+    boxes[0].focus();
+
+    function getOtpValue() {
+      return Array.from(boxes).map(b => b.value).join('');
+    }
+
+    function handleVerify() {
+      const otp = getOtpValue();
+      if (otp.length !== 6) {
+        document.getElementById('otpError').textContent = 'Please enter the complete 6-digit OTP';
+        return;
+      }
+      setState('auth', true);
+      window.location.href = 'onboarding-step1-household.html';
+    }
+
+    // Resend timer
+    let secondsLeft = 30;
+    const timerEl = document.getElementById('resendTimer');
+    const linkEl = document.getElementById('resendLink');
+
+    function updateTimer() {
+      if (secondsLeft > 0) {
+        secondsLeft--;
+        timerEl.textContent = ' in ' + secondsLeft + 's';
+        setTimeout(updateTimer, 1000);
+      } else {
+        timerEl.textContent = '';
+        linkEl.classList.remove('disabled');
+      }
+    }
+    updateTimer();
+
+    function handleResend() {
+      if (secondsLeft > 0) return;
+      secondsLeft = 30;
+      linkEl.classList.add('disabled');
+      timerEl.textContent = ' in 30s';
+      updateTimer();
+      // Clear boxes
+      boxes.forEach(b => { b.value = ''; b.classList.remove('filled'); });
+      boxes[0].focus();
+      document.getElementById('otpError').textContent = '';
+    }
+  </script>
+</body>
+</html>

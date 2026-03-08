@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Swap Recipe</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame bottom-sheet-page" id="app"></div>
+
+  <script>
+    initPage();
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      ${renderStatusBar()}
+
+      <!-- Dimmed parent preview -->
+      <div class="top-app-bar" style="opacity:0.3;">
+        <a href="main-home.html" class="nav-icon">&#9776;</a>
+        <span class="title">RasoiAI</span>
+        <div class="actions">
+          <span class="action-icon">&#128276;</span>
+          <span class="action-icon">&#128100;</span>
+        </div>
+      </div>
+      <div class="screen-content" style="opacity:0.15;filter:blur(2px);pointer-events:none;">
+        <div class="content-padding">
+          <div class="week-header">
+            <span class="week-range">Mar 2 - Mar 8, 2026</span>
+          </div>
+          <div style="height:40px;background:var(--surface-variant);border-radius:var(--radius-md);margin:var(--sp-sm) 0;"></div>
+          <div style="height:80px;background:var(--surface);border-radius:var(--radius-md);margin:var(--sp-sm) 0;box-shadow:var(--shadow-sm);"></div>
+          <div style="height:80px;background:var(--surface);border-radius:var(--radius-md);margin:var(--sp-sm) 0;box-shadow:var(--shadow-sm);"></div>
+          <div style="height:80px;background:var(--surface);border-radius:var(--radius-md);margin:var(--sp-sm) 0;box-shadow:var(--shadow-sm);"></div>
+        </div>
+      </div>
+
+      <!-- Bottom Sheet Overlay -->
+      <div class="bottom-sheet-overlay">
+        <div class="bottom-sheet" style="max-height:70%;">
+          <div class="handle"></div>
+
+          <!-- Header -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-md);">
+            <span class="title-large" style="font-size:18px;font-weight:600;">Swap Recipe</span>
+            <a href="main-home.html" class="icon-btn" style="text-decoration:none;">&#10005;</a>
+          </div>
+
+          <!-- Search -->
+          <input type="text" class="text-field" placeholder="Search recipes..." style="height:44px;margin-bottom:var(--sp-md);font-size:14px;">
+
+          <!-- Recipe Grid -->
+          <div class="recipe-grid">
+            ${[
+              { name: 'Paneer Butter Masala', time: 30, emoji: '&#127835;', cat: 'curry' },
+              { name: 'Aloo Gobi', time: 20, emoji: '&#129382;', cat: 'sabzi' },
+              { name: 'Bhindi Masala', time: 15, emoji: '&#129367;', cat: 'sabzi' },
+              { name: 'Chole Masala', time: 25, emoji: '&#127835;', cat: 'curry' },
+              { name: 'Palak Dal', time: 20, emoji: '&#129379;', cat: 'dal' },
+              { name: 'Veg Korma', time: 30, emoji: '&#127835;', cat: 'curry' }
+            ].map(r => `
+              <div class="recipe-grid-item">
+                <div class="recipe-thumb">${r.emoji}</div>
+                <div class="recipe-grid-info">
+                  <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
+                    <div class="veg-indicator" style="width:12px;height:12px;"><div style="width:6px;height:6px;"></div></div>
+                  </div>
+                  <div class="recipe-grid-name">${r.name}</div>
+                  <div class="recipe-grid-meta">
+                    <span>&#9201; ${r.time} min</span>
+                  </div>
+                  <button class="btn btn-filled" style="width:100%;margin-top:var(--sp-sm);height:32px;font-size:12px;">Swap</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  </script>
+</body>
+</html>

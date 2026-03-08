@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Grocery</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app"></div>
+
+  <script>
+    initPage();
+
+    function getChecked() {
+      return getState('grocery_checked', {});
+    }
+
+    function getPersonalChecked() {
+      return getState('grocery_personal_checked', {});
+    }
+
+    function buildCategoryHTML(data, checkedState, toggleFn) {
+      return Object.entries(data).map(([cat, items]) => {
+        const catIcon = CATEGORY_ICONS[cat] || '&#128230;';
+        const catId = cat.replace(/[^a-zA-Z]/g, '');
+        const collapsed = getState('grocery_collapse_' + catId, false);
+
+        const itemsHTML = items.map(item => {
+          const isChecked = checkedState[item.id] || false;
+          return `<div class="grocery-item ${isChecked ? 'checked' : ''}" data-id="${item.id}">
+            <div class="checkbox ${isChecked ? 'checked' : ''}" onclick="${toggleFn}('${item.id}')">
+              ${isChecked ? '&#10003;' : ''}
+            </div>
+            <span class="grocery-name">${item.name}</span>
+            <span class="grocery-qty">${item.qty} ${item.unit}</span>
+          </div>`;
+        }).join('');
+
+        return `<div class="grocery-category">
+          <div class="grocery-category-header" onclick="toggleCategory('${catId}')">
+            <span class="category-name">${catIcon} ${cat}</span>
+            <span class="category-count">${items.length} items ${collapsed ? '&#9654;' : '&#9660;'}</span>
+          </div>
+          <div id="cat-${catId}" class="${collapsed ? 'hidden' : ''}">
+            ${itemsHTML}
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function renderSuggestionsSection() {
+      const pending = MOCK_GROCERY_SUGGESTIONS.filter(s => s.status === 'pending');
+      if (pending.length === 0) return '';
+
+      const ownerView = isOwner();
+      const cardsHTML = pending.map(s => {
+        const actionHTML = ownerView
+          ? `<div style="display:flex;gap:var(--sp-sm);margin-left:auto;flex-shrink:0;">
+              <button onclick="approveSuggestion('${s.id}')" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--primary-container);color:var(--on-primary-container);font-size:16px;cursor:pointer;" title="Approve">&#10003;</button>
+              <button onclick="rejectSuggestion('${s.id}')" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--error-container);color:var(--on-error-container);font-size:16px;cursor:pointer;" title="Reject">&#10005;</button>
+            </div>`
+          : `<span style="font-size:12px;color:var(--on-surface-variant);margin-left:auto;white-space:nowrap;">Pending approval</span>`;
+
+        return `<div style="display:flex;align-items:center;gap:var(--sp-sm);padding:var(--sp-sm) var(--sp-md);background:var(--surface-container);border-radius:var(--radius-md);border-left:3px solid var(--tertiary);margin-bottom:var(--sp-xs);">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:14px;color:var(--on-surface);">${s.name} <span style="font-weight:400;color:var(--on-surface-variant);">${s.qty} ${s.unit}</span></div>
+            <div style="display:flex;align-items:center;gap:var(--sp-xs);margin-top:2px;">
+              ${renderMemberAvatar(s.suggested_by, 18)}
+              <span style="font-size:12px;color:var(--on-surface-variant);">Suggested by ${s.suggested_by}</span>
+            </div>
+          </div>
+          ${actionHTML}
+        </div>`;
+      }).join('');
+
+      return `<div style="margin-top:var(--sp-md);padding:0 0 var(--sp-md);">
+        <div style="display:flex;align-items:center;gap:var(--sp-sm);margin-bottom:var(--sp-sm);">
+          <span style="font-weight:700;font-size:14px;color:var(--on-surface);">Pending Suggestions</span>
+          <span style="background:var(--tertiary-container);color:var(--on-tertiary-container);font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;">${pending.length}</span>
+        </div>
+        ${cardsHTML}
+      </div>`;
+    }
+
+    function render() {
+      const scope = getScopeView('grocery');
+      const scopeToggle = !isSoloUser() ? renderScopeToggle('grocery') : '';
+
+      if (scope === 'personal' && !isSoloUser()) {
+        renderPersonalView(scopeToggle);
+      } else {
+        renderFamilyView(scopeToggle);
+      }
+    }
+
+    function renderFamilyView(scopeToggle) {
+      const grocery = getGrocery();
+      const allItems = Object.values(grocery).flat();
+      const totalCount = allItems.length;
+      const checked = getChecked();
+      const purchasedCount = Object.values(checked).filter(Boolean).length;
+      const remainingCount = totalCount - purchasedCount;
+
+      const categoriesHTML = buildCategoryHTML(grocery, checked, 'toggleItem');
+      const suggestionsHTML = renderSuggestionsSection();
+
+      const fabHref = isOwner()
+        ? 'modal-add-grocery-item.html'
+        : '#';
+      const fabOnclick = isOwner()
+        ? ''
+        : "onclick=\"alert('Suggest item: Your suggestion will be sent to the household owner for approval.'); return false;\"";
+
+      document.getElementById('app').innerHTML = `
+        ${renderStatusBar()}
+        ${renderTopBar({ title: 'Grocery List', actions: '<a href="modal-whatsapp-share.html" class="action-icon" title="Share">&#128228;</a>' })}
+        <div class="screen-content">
+          ${scopeToggle}
+
+          <!-- Week Header -->
+          <div class="week-header">
+            <span class="week-range">Mar 2-8, 2026</span>
+          </div>
+
+          <!-- Summary Bar -->
+          <div style="display:flex;justify-content:center;gap:var(--sp-lg);padding:var(--sp-sm) var(--sp-md) var(--sp-md);font-size:13px;color:var(--on-surface-variant);">
+            <span><strong>${totalCount}</strong> items</span>
+            <span><strong>${purchasedCount}</strong> purchased</span>
+            <span><strong>${remainingCount}</strong> remaining</span>
+          </div>
+
+          <!-- Categories -->
+          ${categoriesHTML}
+
+          <!-- Suggestions -->
+          ${suggestionsHTML}
+        </div>
+
+        <!-- FAB -->
+        <a href="${fabHref}" class="fab" title="${isOwner() ? 'Add item' : 'Suggest item'}" ${fabOnclick}>+</a>
+
+        ${renderBottomNav('grocery')}
+      `;
+    }
+
+    function renderPersonalView(scopeToggle) {
+      const personalData = MOCK_PERSONAL_GROCERY;
+      const allItems = Object.values(personalData).flat();
+      const totalCount = allItems.length;
+      const checked = getPersonalChecked();
+      const purchasedCount = Object.values(checked).filter(Boolean).length;
+      const remainingCount = totalCount - purchasedCount;
+
+      let contentHTML = '';
+      if (totalCount === 0) {
+        contentHTML = `<div style="text-align:center;padding:var(--sp-xxl) var(--sp-md);color:var(--on-surface-variant);">
+          <div style="font-size:48px;margin-bottom:var(--sp-md);">&#128722;</div>
+          <div style="font-size:15px;">Your personal grocery items will appear here.</div>
+        </div>`;
+      } else {
+        const categoriesHTML = buildCategoryHTML(personalData, checked, 'togglePersonalItem');
+        contentHTML = `
+          <!-- Summary Bar -->
+          <div style="display:flex;justify-content:center;gap:var(--sp-lg);padding:var(--sp-sm) var(--sp-md) var(--sp-md);font-size:13px;color:var(--on-surface-variant);">
+            <span><strong>${totalCount}</strong> items</span>
+            <span><strong>${purchasedCount}</strong> purchased</span>
+            <span><strong>${remainingCount}</strong> remaining</span>
+          </div>
+          ${categoriesHTML}`;
+      }
+
+      document.getElementById('app').innerHTML = `
+        ${renderStatusBar()}
+        ${renderTopBar({ title: 'Grocery List', actions: '<a href="modal-whatsapp-share.html" class="action-icon" title="Share">&#128228;</a>' })}
+        <div class="screen-content">
+          ${scopeToggle}
+          ${contentHTML}
+        </div>
+
+        <!-- FAB -->
+        <a href="modal-add-grocery-item.html" class="fab" title="Add item">+</a>
+
+        ${renderBottomNav('grocery')}
+      `;
+    }
+
+    window.toggleItem = function(id) {
+      const checked = getChecked();
+      checked[id] = !checked[id];
+      setState('grocery_checked', checked);
+      render();
+    };
+
+    window.togglePersonalItem = function(id) {
+      const checked = getPersonalChecked();
+      checked[id] = !checked[id];
+      setState('grocery_personal_checked', checked);
+      render();
+    };
+
+    window.toggleCategory = function(catId) {
+      const key = 'grocery_collapse_' + catId;
+      const current = getState(key, false);
+      setState(key, !current);
+      render();
+    };
+
+    window.approveSuggestion = function(id) {
+      const s = MOCK_GROCERY_SUGGESTIONS.find(s => s.id === id);
+      if (s) {
+        s.status = 'approved';
+        render();
+      }
+    };
+
+    window.rejectSuggestion = function(id) {
+      const idx = MOCK_GROCERY_SUGGESTIONS.findIndex(s => s.id === id);
+      if (idx !== -1) {
+        MOCK_GROCERY_SUGGESTIONS.splice(idx, 1);
+        render();
+      }
+    };
+
+    render();
+  </script>
+</body>
+</html>

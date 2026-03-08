@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Share Invite</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame bottom-sheet-page" id="app"></div>
+
+  <script>
+    initPage();
+    const hh = getHousehold();
+    document.getElementById('app').innerHTML = `
+      ${renderStatusBar()}
+      <div class="top-app-bar" style="opacity:0.3;">
+        <a href="settings-household.html" class="nav-icon">&#8592;</a>
+        <span class="title">Household</span>
+      </div>
+      <div class="screen-content" style="opacity:0.15;filter:blur(2px);pointer-events:none;">
+        <div class="content-padding">
+          <div style="height:80px;background:var(--surface-variant);border-radius:var(--radius-md);margin:var(--sp-sm) 0;"></div>
+          <div style="height:120px;background:var(--surface);border-radius:var(--radius-md);margin:var(--sp-sm) 0;box-shadow:var(--shadow-sm);"></div>
+        </div>
+      </div>
+
+      <div class="bottom-sheet-overlay">
+        <div class="bottom-sheet">
+          <div class="handle"></div>
+          <div class="title-large" style="font-size:18px;font-weight:600;text-align:center;margin-bottom:var(--sp-lg);">Share Invite Code</div>
+
+          <div class="invite-code-display" style="margin:0 auto var(--sp-md);">${hh ? hh.invite_code : 'A1B2C3D4'}</div>
+          <div class="body-small" style="text-align:center;color:var(--on-surface-variant);margin-bottom:var(--sp-lg);">Code expires ${hh ? hh.invite_code_expires : 'in 7 days'}</div>
+
+          <!-- QR Placeholder -->
+          <div style="width:160px;height:160px;margin:0 auto var(--sp-lg);background:var(--surface-variant);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;">
+            <span style="font-size:48px;opacity:0.3;">&#9638;</span>
+          </div>
+
+          <div style="display:flex;gap:var(--sp-sm);margin-bottom:var(--sp-md);">
+            <button class="btn btn-filled" style="flex:1;" onclick="copyInviteCode()">Copy Code</button>
+            <button class="btn btn-outlined" style="flex:1;">Share via WhatsApp</button>
+          </div>
+        </div>
+      </div>
+    `;
+  </script>
+</body>
+</html>

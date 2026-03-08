@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Festival Recipes</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame bottom-sheet-page" id="app"></div>
+
+  <script>
+    initPage();
+    const app = document.getElementById('app');
+
+    const recipes = [
+      { name: 'Gujiya', time: 45, emoji: '&#129384;', type: 'Sweet', cat: 'snacks' },
+      { name: 'Thandai', time: 20, emoji: '&#129380;', type: 'Drink', cat: 'snacks' },
+      { name: 'Puran Poli', time: 40, emoji: '&#129479;', type: 'Sweet', cat: 'lunch' },
+      { name: 'Malpua', time: 30, emoji: '&#129374;', type: 'Dessert', cat: 'snacks' },
+      { name: 'Dahi Bhalla', time: 25, emoji: '&#127839;', type: 'Snack', cat: 'snacks' },
+      { name: 'Kachori', time: 30, emoji: '&#127839;', type: 'Snack', cat: 'breakfast' }
+    ];
+
+    app.innerHTML = `
+      ${renderStatusBar()}
+
+      <!-- Dimmed parent preview -->
+      <div class="top-app-bar" style="opacity:0.3;">
+        <a href="main-home.html" class="nav-icon">&#9776;</a>
+        <span class="title">RasoiAI</span>
+        <div class="actions">
+          <span class="action-icon">&#128276;</span>
+          <span class="action-icon">&#128100;</span>
+        </div>
+      </div>
+      <div class="screen-content" style="opacity:0.15;filter:blur(2px);pointer-events:none;">
+        <div class="content-padding">
+          <div class="festival-banner" style="opacity:0.5;">
+            <div class="festival-icon">&#127881;</div>
+            <div class="festival-info">
+              <div class="festival-name">Holi is coming!</div>
+            </div>
+          </div>
+          <div style="height:40px;background:var(--surface-variant);border-radius:var(--radius-md);margin:var(--sp-sm) 0;"></div>
+          <div style="height:80px;background:var(--surface);border-radius:var(--radius-md);margin:var(--sp-sm) 0;box-shadow:var(--shadow-sm);"></div>
+        </div>
+      </div>
+
+      <!-- Bottom Sheet Overlay -->
+      <div class="bottom-sheet-overlay">
+        <div class="bottom-sheet" style="max-height:75%;">
+          <div class="handle"></div>
+
+          <!-- Festival Header -->
+          <div style="text-align:center;margin-bottom:var(--sp-md);">
+            <div style="font-size:36px;margin-bottom:var(--sp-xs);">&#127881;</div>
+            <div class="title-large" style="font-size:18px;font-weight:600;">Holi Special Recipes</div>
+            <div class="body-small" style="color:var(--on-surface-variant);margin-top:4px;">March 14, 2026</div>
+          </div>
+
+          <!-- Meal type filter chips -->
+          <div class="chip-group" style="margin-bottom:var(--sp-md);justify-content:center;" id="filter-chips">
+            <button class="filter-chip active" onclick="filterRecipes('all', this)">All</button>
+            <button class="filter-chip" onclick="filterRecipes('breakfast', this)">Breakfast</button>
+            <button class="filter-chip" onclick="filterRecipes('lunch', this)">Lunch</button>
+            <button class="filter-chip" onclick="filterRecipes('dinner', this)">Dinner</button>
+            <button class="filter-chip" onclick="filterRecipes('snacks', this)">Snacks</button>
+          </div>
+
+          <!-- Recipe Grid -->
+          <div class="recipe-grid" id="festival-grid">
+            ${recipes.map(r => `
+              <div class="recipe-grid-item" data-cat="${r.cat}">
+                <div class="recipe-thumb">${r.emoji}</div>
+                <div class="recipe-grid-info">
+                  <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;">
+                    <div class="veg-indicator" style="width:12px;height:12px;"></div>
+                    <span class="body-small" style="color:var(--on-surface-variant);">${r.type}</span>
+                  </div>
+                  <div class="recipe-grid-name">${r.name}</div>
+                  <div class="recipe-grid-meta">
+                    <span>&#9201; ${r.time} min</span>
+                  </div>
+                  <button class="btn btn-filled" style="width:100%;margin-top:var(--sp-sm);height:32px;font-size:11px;">Add to Meal Plan</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div style="text-align:center;margin-top:var(--sp-lg);">
+            <a href="main-home.html" class="btn btn-text" style="text-decoration:none;">Close</a>
+          </div>
+        </div>
+      </div>
+    `;
+
+    function filterRecipes(cat, btn) {
+      document.querySelectorAll('#filter-chips .filter-chip').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('#festival-grid .recipe-grid-item').forEach(item => {
+        if (cat === 'all' || item.dataset.cat === cat) {
+          item.style.display = '';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Add Nutrition Goal</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame bottom-sheet-page" id="app"></div>
+
+  <script>
+    initPage();
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      ${renderStatusBar()}
+
+      <!-- Dimmed parent preview -->
+      <div class="top-app-bar" style="opacity:0.3;">
+        <a href="feature-recipe-rules.html" class="nav-icon">&#8592;</a>
+        <span class="title">Recipe Rules</span>
+      </div>
+      <div class="screen-content" style="opacity:0.15;filter:blur(2px);pointer-events:none;">
+        <div class="content-padding">
+          <div style="height:48px;background:var(--surface-variant);border-radius:var(--radius-md);margin:var(--sp-sm) 0;"></div>
+          <div style="height:64px;background:var(--surface);border-radius:var(--radius-md);margin:var(--sp-sm) 0;box-shadow:var(--shadow-sm);"></div>
+          <div style="height:64px;background:var(--surface);border-radius:var(--radius-md);margin:var(--sp-sm) 0;box-shadow:var(--shadow-sm);"></div>
+        </div>
+      </div>
+
+      <!-- Bottom Sheet Overlay -->
+      <div class="bottom-sheet-overlay">
+        <div class="bottom-sheet" style="max-height:65%;">
+          <div class="handle"></div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-lg);">
+            <span class="title-large" style="font-size:18px;font-weight:600;">Add Nutrition Goal</span>
+            <a href="feature-recipe-rules.html" class="icon-btn" style="text-decoration:none;">&#10005;</a>
+          </div>
+
+          <!-- Category Dropdown -->
+          <div style="margin-bottom:var(--sp-lg);">
+            <div class="label-large" style="margin-bottom:var(--sp-sm);color:var(--on-surface-variant);">Category</div>
+            <div class="dropdown">
+              <button class="dropdown-trigger" onclick="this.nextElementSibling.classList.toggle('open');">
+                <span id="cat-selected">Select category...</span>
+                <span>&#9662;</span>
+              </button>
+              <div class="dropdown-menu">
+                ${['Green Leafy','Protein-rich','Whole Grain','Fruits','Fermented','Iron-rich'].map(c => `
+                  <div class="dropdown-item" onclick="document.getElementById('cat-selected').textContent='${c}';this.parentElement.classList.remove('open');">${c}</div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+
+          <!-- Weekly Target -->
+          <div style="margin-bottom:var(--sp-lg);">
+            <div class="label-large" style="margin-bottom:var(--sp-sm);color:var(--on-surface-variant);">Weekly Target</div>
+            <div style="display:flex;align-items:center;gap:var(--sp-md);">
+              <button class="icon-btn" style="border:1px solid var(--outline-variant);width:36px;height:36px;font-size:18px;" onclick="const el=document.getElementById('target-val');let v=parseInt(el.textContent);if(v>1){el.textContent=v-1;}">&#8722;</button>
+              <div style="width:56px;height:56px;border-radius:var(--radius-md);background:var(--primary-container);display:flex;align-items:center;justify-content:center;">
+                <span id="target-val" style="font-size:24px;font-weight:700;color:var(--on-primary-container);">5</span>
+              </div>
+              <button class="icon-btn" style="border:1px solid var(--outline-variant);width:36px;height:36px;font-size:18px;" onclick="const el=document.getElementById('target-val');let v=parseInt(el.textContent);if(v<14){el.textContent=v+1;}">+</button>
+              <span class="body-medium" style="color:var(--on-surface-variant);">times per week</span>
+            </div>
+          </div>
+
+          <!-- Enforcement Toggle -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-lg);padding:var(--sp-sm) 0;">
+            <div>
+              <div class="title-small" style="font-weight:600;">Enforcement</div>
+              <div class="body-small" style="color:var(--on-surface-variant);">Strict goals are always tracked</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--sp-sm);">
+              <span class="body-small" style="color:var(--on-surface-variant);">Flexible</span>
+              <button class="toggle on" onclick="this.classList.toggle('on');"></button>
+              <span class="body-small" style="font-weight:500;">Strict</span>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div style="display:flex;gap:var(--sp-sm);">
+            <a href="feature-recipe-rules.html" class="btn btn-outlined" style="flex:1;text-decoration:none;">Cancel</a>
+            <a href="feature-recipe-rules.html" class="btn btn-filled" style="flex:1;text-decoration:none;">Add Goal</a>
+          </div>
+        </div>
+      </div>
+    `;
+  </script>
+</body>
+</html>

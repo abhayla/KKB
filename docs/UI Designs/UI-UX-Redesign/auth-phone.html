@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Phone Number</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .auth-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: var(--sp-lg);
+      gap: var(--sp-lg);
+    }
+    .auth-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .auth-subtitle {
+      font-size: 14px;
+      color: var(--on-surface-variant);
+      line-height: 1.5;
+      margin-top: calc(-1 * var(--sp-sm));
+    }
+    .phone-input-row {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+    }
+    .country-code {
+      height: 56px;
+      padding: 0 var(--sp-md);
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--on-surface);
+      background: var(--surface-variant);
+      border: 1px solid var(--outline-variant);
+      border-radius: var(--radius-sm);
+      flex-shrink: 0;
+      gap: 6px;
+    }
+    .country-code .flag {
+      font-size: 20px;
+    }
+    .phone-input-row .text-field {
+      flex: 1;
+    }
+    .auth-error {
+      color: var(--error);
+      font-size: 12px;
+      min-height: 16px;
+      margin-top: calc(-1 * var(--sp-sm));
+    }
+    .auth-spacer {
+      flex: 1;
+    }
+    .auth-terms {
+      text-align: center;
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      line-height: 1.5;
+      padding-bottom: var(--sp-lg);
+    }
+    .auth-terms a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+  </style>
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame">
+    <script>document.write(renderStatusBar())</script>
+    <script>document.write(renderTopBar({ backLink: 'auth-splash.html' }))</script>
+
+    <div class="auth-content">
+      <div>
+        <div class="auth-title">Welcome to RasoiAI</div>
+      </div>
+      <p class="auth-subtitle">Enter your phone number to get started. We'll send you a one-time password to verify.</p>
+
+      <div>
+        <div class="phone-input-row">
+          <div class="country-code">
+            <span class="flag">&#x1F1EE;&#x1F1F3;</span>
+            <span>+91</span>
+          </div>
+          <input
+            type="tel"
+            id="phoneInput"
+            class="text-field"
+            placeholder="Enter phone number"
+            maxlength="10"
+            inputmode="numeric"
+            pattern="[0-9]*"
+          >
+        </div>
+        <div class="auth-error" id="phoneError"></div>
+      </div>
+
+      <button class="btn-filled btn-large w-full" id="sendOtpBtn" onclick="handleSendOtp()">
+        Send OTP
+      </button>
+
+      <div class="auth-spacer"></div>
+
+      <p class="auth-terms">
+        By continuing, you agree to our<br>
+        <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    initPage();
+
+    const phoneInput = document.getElementById('phoneInput');
+    const phoneError = document.getElementById('phoneError');
+
+    // Allow only digits
+    phoneInput.addEventListener('input', function() {
+      this.value = this.value.replace(/\D/g, '').slice(0, 10);
+      phoneError.textContent = '';
+    });
+
+    function handleSendOtp() {
+      const phone = phoneInput.value.trim();
+      if (phone.length !== 10) {
+        phoneError.textContent = 'Please enter a valid 10-digit phone number';
+        phoneInput.focus();
+        return;
+      }
+      setState('phone', '+91' + phone);
+      window.location.href = 'auth-otp.html';
+    }
+
+    // Enter key triggers send
+    phoneInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') handleSendOtp();
+    });
+  </script>
+</body>
+</html>

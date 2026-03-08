@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Nature Distilled Redesign</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    body {
+      align-items: center;
+    }
+    .index-actions {
+      display: flex;
+      gap: var(--sp-sm);
+      margin-top: var(--sp-md);
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .index-actions button {
+      padding: 8px 20px;
+      border-radius: var(--radius-full);
+      border: 2px solid rgba(255,255,255,0.5);
+      background: rgba(255,255,255,0.15);
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .index-actions button:hover {
+      background: rgba(255,255,255,0.3);
+      border-color: white;
+    }
+  </style>
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="index-page">
+    <div class="index-header">
+      <h1>RasoiAI</h1>
+      <p>Nature Distilled Redesign - 47 Screens</p>
+      <p style="font-size:13px; opacity:0.85; margin-top:4px;">Warm, earthy aesthetic with Playfair Display typography and terracotta palette</p>
+      <div class="index-actions">
+        <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
+        <button onclick="clearAllState(); location.reload();">Reset All Data</button>
+      </div>
+    </div>
+
+    <!-- Auth Flow -->
+    <div class="index-section">
+      <h2>Auth Flow</h2>
+      <div class="index-links">
+        <a href="auth-splash.html" class="index-link">
+          <span class="link-icon">&#x1F3AC;</span> Splash Screen
+        </a>
+        <a href="auth-phone.html" class="index-link">
+          <span class="link-icon">&#x1F4F1;</span> Phone Entry
+        </a>
+        <a href="auth-otp.html" class="index-link">
+          <span class="link-icon">&#x1F510;</span> OTP Verification
+        </a>
+      </div>
+    </div>
+
+    <!-- Onboarding -->
+    <div class="index-section">
+      <h2>Onboarding</h2>
+      <div class="index-links">
+        <a href="onboarding-step1-household.html" class="index-link">
+          <span class="link-icon">&#x1F3E0;</span> Step 1: Household
+        </a>
+        <a href="onboarding-step2-dietary.html" class="index-link">
+          <span class="link-icon">&#x1F957;</span> Step 2: Dietary
+        </a>
+        <a href="onboarding-step3-cuisine.html" class="index-link">
+          <span class="link-icon">&#x1F35B;</span> Step 3: Cuisine
+        </a>
+        <a href="onboarding-step4-ingredients.html" class="index-link">
+          <span class="link-icon">&#x1F966;</span> Step 4: Ingredients
+        </a>
+        <a href="onboarding-step5-cooking-time.html" class="index-link">
+          <span class="link-icon">&#x23F1;</span> Step 5: Cooking Time
+        </a>
+        <a href="onboarding-generation.html" class="index-link">
+          <span class="link-icon">&#x2728;</span> Generation Progress
+        </a>
+      </div>
+    </div>
+
+    <!-- Main Screens -->
+    <div class="index-section">
+      <h2>Main Screens</h2>
+      <div class="index-links">
+        <a href="main-home.html" class="index-link">
+          <span class="link-icon">&#x1F3E0;</span> Home
+        </a>
+        <a href="main-grocery.html" class="index-link">
+          <span class="link-icon">&#x1F6D2;</span> Grocery
+        </a>
+        <a href="main-chat.html" class="index-link">
+          <span class="link-icon">&#x1F4AC;</span> Chat
+        </a>
+        <a href="main-favorites.html" class="index-link">
+          <span class="link-icon">&#x2764;</span> Favorites
+        </a>
+        <a href="main-stats.html" class="index-link">
+          <span class="link-icon">&#x1F4CA;</span> Stats
+        </a>
+      </div>
+    </div>
+
+    <!-- Detail Screens -->
+    <div class="index-section">
+      <h2>Detail Screens</h2>
+      <div class="index-links">
+        <a href="detail-recipe.html" class="index-link">
+          <span class="link-icon">&#x1F4D6;</span> Recipe Detail
+        </a>
+        <a href="detail-cooking-mode.html" class="index-link">
+          <span class="link-icon">&#x1F373;</span> Cooking Mode
+        </a>
+      </div>
+    </div>
+
+    <!-- Feature Screens -->
+    <div class="index-section">
+      <h2>Feature Screens</h2>
+      <div class="index-links">
+        <a href="feature-pantry.html" class="index-link">
+          <span class="link-icon">&#x1F3E8;</span> Pantry
+        </a>
+        <a href="feature-recipe-rules.html" class="index-link">
+          <span class="link-icon">&#x1F4CB;</span> Recipe Rules
+        </a>
+        <a href="feature-notifications.html" class="index-link">
+          <span class="link-icon">&#x1F514;</span> Notifications
+        </a>
+        <a href="feature-achievements.html" class="index-link">
+          <span class="link-icon">&#x1F3C6;</span> Achievements
+        </a>
+        <a href="feature-leaderboard.html" class="index-link">
+          <span class="link-icon">&#x1F3C5;</span> Leaderboard
+        </a>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="index-section">
+      <h2>Settings</h2>
+      <div class="index-links">
+        <a href="settings-main.html" class="index-link">
+          <span class="link-icon">&#x2699;</span> Settings Main
+        </a>
+        <a href="settings-dietary-restrictions.html" class="index-link">
+          <span class="link-icon">&#x1F957;</span> Dietary Restrictions
+        </a>
+        <a href="settings-disliked-ingredients.html" class="index-link">
+          <span class="link-icon">&#x1F645;</span> Disliked Ingredients
+        </a>
+        <a href="settings-cuisine-preferences.html" class="index-link">
+          <span class="link-icon">&#x1F35B;</span> Cuisine Preferences
+        </a>
+        <a href="settings-spice-level.html" class="index-link">
+          <span class="link-icon">&#x1F336;</span> Spice Level
+        </a>
+        <a href="settings-cooking-time.html" class="index-link">
+          <span class="link-icon">&#x23F0;</span> Cooking Time
+        </a>
+        <a href="settings-family-members.html" class="index-link">
+          <span class="link-icon">&#x1F46A;</span> Family Members
+        </a>
+        <a href="settings-notification-settings.html" class="index-link">
+          <span class="link-icon">&#x1F515;</span> Notification Settings
+        </a>
+        <a href="settings-units.html" class="index-link">
+          <span class="link-icon">&#x1F4CF;</span> Units
+        </a>
+        <a href="settings-edit-profile.html" class="index-link">
+          <span class="link-icon">&#x1F464;</span> Edit Profile
+        </a>
+        <a href="settings-connected-accounts.html" class="index-link">
+          <span class="link-icon">&#x1F517;</span> Connected Accounts
+        </a>
+      </div>
+    </div>
+
+    <!-- Modals (Home) -->
+    <div class="index-section">
+      <h2>Modals (Home)</h2>
+      <div class="index-links">
+        <a href="modal-swap-sheet.html" class="index-link">
+          <span class="link-icon">&#x1F500;</span> Swap Sheet
+        </a>
+        <a href="modal-recipe-action-sheet.html" class="index-link">
+          <span class="link-icon">&#x2699;</span> Recipe Action Sheet
+        </a>
+        <a href="modal-refresh-options.html" class="index-link">
+          <span class="link-icon">&#x1F504;</span> Refresh Options
+        </a>
+        <a href="modal-add-recipe.html" class="index-link">
+          <span class="link-icon">&#x2795;</span> Add Recipe
+        </a>
+        <a href="modal-festival-recipes.html" class="index-link">
+          <span class="link-icon">&#x1F389;</span> Festival Recipes
+        </a>
+      </div>
+    </div>
+
+    <!-- Modals (Recipe Rules) -->
+    <div class="index-section">
+      <h2>Modals (Recipe Rules)</h2>
+      <div class="index-links">
+        <a href="modal-add-rule.html" class="index-link">
+          <span class="link-icon">&#x2795;</span> Add Rule
+        </a>
+        <a href="modal-add-nutrition-goal.html" class="index-link">
+          <span class="link-icon">&#x1F34E;</span> Add Nutrition Goal
+        </a>
+        <a href="modal-conflict-dialog.html" class="index-link">
+          <span class="link-icon">&#x26A0;</span> Conflict Dialog
+        </a>
+        <a href="modal-delete-confirmation.html" class="index-link">
+          <span class="link-icon">&#x1F5D1;</span> Delete Confirmation
+        </a>
+      </div>
+    </div>
+
+    <!-- Modals (Grocery) -->
+    <div class="index-section">
+      <h2>Modals (Grocery)</h2>
+      <div class="index-links">
+        <a href="modal-add-grocery-item.html" class="index-link">
+          <span class="link-icon">&#x2795;</span> Add Grocery Item
+        </a>
+        <a href="modal-edit-grocery-item.html" class="index-link">
+          <span class="link-icon">&#x270F;</span> Edit Grocery Item
+        </a>
+        <a href="modal-whatsapp-share.html" class="index-link">
+          <span class="link-icon">&#x1F4E4;</span> WhatsApp Share
+        </a>
+      </div>
+    </div>
+
+    <!-- Modals (Settings) -->
+    <div class="index-section">
+      <h2>Modals (Settings)</h2>
+      <div class="index-links">
+        <a href="modal-dark-mode.html" class="index-link">
+          <span class="link-icon">&#x1F319;</span> Dark Mode
+        </a>
+        <a href="modal-items-per-meal.html" class="index-link">
+          <span class="link-icon">&#x1F372;</span> Items Per Meal
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>initPage();</script>
+</body>
+</html>

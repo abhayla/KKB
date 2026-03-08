@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Delete Rule</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame bottom-sheet-page" id="app"></div>
+
+  <script>
+    initPage();
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      ${renderStatusBar()}
+
+      <!-- Dimmed parent preview -->
+      <div class="top-app-bar" style="opacity:0.3;">
+        <a href="feature-recipe-rules.html" class="nav-icon">&#8592;</a>
+        <span class="title">Recipe Rules</span>
+      </div>
+      <div class="screen-content" style="opacity:0.15;filter:blur(2px);pointer-events:none;">
+        <div class="content-padding">
+          <div style="height:48px;background:var(--surface-variant);border-radius:var(--radius-md);margin:var(--sp-sm) 0;"></div>
+          <div style="height:64px;background:var(--surface);border-radius:var(--radius-md);margin:var(--sp-sm) 0;box-shadow:var(--shadow-sm);"></div>
+          <div style="height:64px;background:var(--surface);border-radius:var(--radius-md);margin:var(--sp-sm) 0;box-shadow:var(--shadow-sm);"></div>
+          <div style="height:64px;background:var(--surface);border-radius:var(--radius-md);margin:var(--sp-sm) 0;box-shadow:var(--shadow-sm);"></div>
+        </div>
+      </div>
+
+      <!-- Dialog Overlay -->
+      <div class="dialog-overlay">
+        <div class="dialog" style="max-width:300px;">
+          <!-- Warning icon -->
+          <div style="text-align:center;margin-bottom:var(--sp-md);">
+            <div style="width:56px;height:56px;border-radius:50%;background:var(--error-container);display:inline-flex;align-items:center;justify-content:center;font-size:28px;">&#128465;</div>
+          </div>
+
+          <div class="dialog-title" style="text-align:center;">Delete Rule?</div>
+
+          <p class="body-medium" style="color:var(--on-surface-variant);text-align:center;line-height:1.5;margin-bottom:var(--sp-lg);">
+            Are you sure you want to delete the rule <strong>"Chai - Daily"</strong>? This action cannot be undone.
+          </p>
+
+          <!-- Actions -->
+          <div class="dialog-actions" style="justify-content:stretch;">
+            <a href="feature-recipe-rules.html" class="btn btn-outlined" style="flex:1;text-decoration:none;">Cancel</a>
+            <a href="feature-recipe-rules.html" class="btn btn-filled" style="flex:1;text-decoration:none;background:var(--error);color:var(--on-error);">Delete</a>
+          </div>
+        </div>
+      </div>
+    `;
+  </script>
+</body>
+</html>

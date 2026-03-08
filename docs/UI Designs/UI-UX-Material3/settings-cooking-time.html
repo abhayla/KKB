@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Cooking Schedule</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app"></div>
+
+  <style>
+    .day-chip {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      border: 2px solid var(--outline-variant);
+      background: transparent;
+      color: var(--on-surface-variant);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .day-chip.selected {
+      background: var(--primary);
+      color: var(--on-primary);
+      border-color: var(--primary);
+    }
+    .day-chip:hover:not(.selected) {
+      background: var(--surface-variant);
+    }
+    .section-disabled {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    .section-divider {
+      height: 1px;
+      background: var(--outline-variant);
+      margin: var(--sp-lg) 0;
+    }
+    .section-description {
+      color: var(--on-surface-variant);
+      font-size: 13px;
+      margin-bottom: var(--sp-md);
+      line-height: 1.4;
+    }
+  </style>
+
+  <script>
+    initPage();
+
+    const weekdayOptions = [15, 20, 25, 30, 45, 60];
+    const weekendOptions = [30, 45, 60, 90, 120];
+    const allDays = [
+      { id: 'MONDAY', label: 'Mon' },
+      { id: 'TUESDAY', label: 'Tue' },
+      { id: 'WEDNESDAY', label: 'Wed' },
+      { id: 'THURSDAY', label: 'Thu' },
+      { id: 'FRIDAY', label: 'Fri' },
+      { id: 'SATURDAY', label: 'Sat' },
+      { id: 'SUNDAY', label: 'Sun' }
+    ];
+
+    // Household state
+    let hhWeekdayTime = getState('hh_weekday_time', MOCK_HOUSEHOLD_PREFERENCES.weekday_time);
+    let hhWeekendTime = getState('hh_weekend_time', MOCK_HOUSEHOLD_PREFERENCES.weekend_time);
+    let hhBusyDays = getState('hh_busy_days', MOCK_HOUSEHOLD_PREFERENCES.busy_days).slice();
+
+    // Personal state
+    let myWeekdayTime = getState('my_weekday_time', MOCK_PERSONAL_PREFERENCES.weekday_time);
+    let myWeekendTime = getState('my_weekend_time', MOCK_PERSONAL_PREFERENCES.weekend_time);
+    let myBusyDays = getState('my_busy_days', MOCK_PERSONAL_PREFERENCES.busy_days).slice();
+
+    function renderCookingSection(prefix, weekdayVal, weekendVal, busyDaysVal, disabled) {
+      const disabledClass = disabled ? ' section-disabled' : '';
+      return `
+        <div class="${disabledClass}">
+          <!-- Weekday Time -->
+          <div class="section-header">
+            <span class="section-title">Weekday Cooking Time</span>
+          </div>
+          <p class="body-small" style="color:var(--on-surface-variant);margin-bottom:var(--sp-sm);">Maximum time per meal on weekdays</p>
+          <div class="dropdown" id="dd-${prefix}-weekday">
+            <div class="dropdown-trigger" onclick="toggleDropdown('dd-${prefix}-weekday')">
+              <span>${weekdayVal} minutes</span>
+              <span>&#9662;</span>
+            </div>
+            <div class="dropdown-menu" id="dd-${prefix}-weekday-menu">
+              ${weekdayOptions.map(t => `
+                <div class="dropdown-item ${t === weekdayVal ? 'selected' : ''}" onclick="selectTime('${prefix}', 'weekday', ${t})">${t} minutes</div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Weekend Time -->
+          <div class="section-header" style="margin-top:var(--sp-lg);">
+            <span class="section-title">Weekend Cooking Time</span>
+          </div>
+          <p class="body-small" style="color:var(--on-surface-variant);margin-bottom:var(--sp-sm);">Maximum time per meal on weekends</p>
+          <div class="dropdown" id="dd-${prefix}-weekend">
+            <div class="dropdown-trigger" onclick="toggleDropdown('dd-${prefix}-weekend')">
+              <span>${weekendVal} minutes</span>
+              <span>&#9662;</span>
+            </div>
+            <div class="dropdown-menu" id="dd-${prefix}-weekend-menu">
+              ${weekendOptions.map(t => `
+                <div class="dropdown-item ${t === weekendVal ? 'selected' : ''}" onclick="selectTime('${prefix}', 'weekend', ${t})">${t} minutes</div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Busy Days -->
+          <div class="section-header" style="margin-top:var(--sp-lg);">
+            <span class="section-title">Busy Days</span>
+          </div>
+          <p class="body-small" style="color:var(--on-surface-variant);margin-bottom:var(--sp-md);">On busy days, only quick recipes (&#8804; weekday time) will be suggested</p>
+          <div style="display:flex;gap:var(--sp-sm);flex-wrap:wrap;">
+            ${allDays.map(d => `
+              <div class="day-chip ${busyDaysVal.includes(d.id) ? 'selected' : ''}" onclick="toggleDay('${prefix}', '${d.id}')">${d.label}</div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function render() {
+      const solo = isSoloUser();
+      const ownerUser = isOwner();
+      let content = '';
+
+      if (!solo) {
+        const showFamily = getScopeView('settings_cooking') === 'family';
+
+        if (showFamily) {
+          // Household section
+          if (!ownerUser) {
+            content += '<div style="padding:var(--sp-sm) var(--sp-md);background:var(--secondary-container);border-radius:var(--radius-sm);margin-bottom:var(--sp-md);font-size:13px;color:var(--on-secondary-container);">Only the household owner can edit household cooking schedule.</div>';
+          }
+          content += '<p class="section-description">Cooking time limits for shared family meals.</p>';
+          content += renderCookingSection('hh', hhWeekdayTime, hhWeekendTime, hhBusyDays, !ownerUser);
+        } else {
+          // Personal section
+          content += '<p class="section-description">Your personal cooking time limits for breakfast &amp; snacks.</p>';
+          content += renderCookingSection('my', myWeekdayTime, myWeekendTime, myBusyDays, false);
+        }
+      } else {
+        // Solo user — single personal section (keep unchanged)
+        content += renderCookingSection('my', myWeekdayTime, myWeekendTime, myBusyDays, false);
+      }
+
+      document.getElementById('app').innerHTML = `
+        ${renderStatusBar()}
+        ${renderTopBar({ title: 'Cooking Schedule', backLink: 'settings-main.html' })}
+
+        ${!solo ? renderScopeToggle('settings_cooking', 'Household', 'My Preferences') : ''}
+
+        <div class="screen-content">
+          <div class="content-padding">
+            ${content}
+          </div>
+        </div>
+
+        <div style="padding:var(--sp-md);flex-shrink:0;">
+          <button class="btn btn-filled" style="width:100%;" onclick="saveSchedule()">Save</button>
+        </div>
+      `;
+    }
+
+    function toggleDropdown(id) {
+      const menu = document.getElementById(id + '-menu');
+      menu.classList.toggle('open');
+    }
+
+    function selectTime(prefix, type, val) {
+      if (prefix === 'hh') {
+        if (type === 'weekday') hhWeekdayTime = val;
+        else hhWeekendTime = val;
+      } else {
+        if (type === 'weekday') myWeekdayTime = val;
+        else myWeekendTime = val;
+      }
+      render();
+    }
+
+    function toggleDay(prefix, dayId) {
+      const arr = prefix === 'hh' ? hhBusyDays : myBusyDays;
+      const idx = arr.indexOf(dayId);
+      if (idx >= 0) {
+        arr.splice(idx, 1);
+      } else {
+        arr.push(dayId);
+      }
+      render();
+    }
+
+    function saveSchedule() {
+      if (!isSoloUser()) {
+        setState('hh_weekday_time', hhWeekdayTime);
+        setState('hh_weekend_time', hhWeekendTime);
+        setState('hh_busy_days', hhBusyDays);
+      }
+      setState('my_weekday_time', myWeekdayTime);
+      setState('my_weekend_time', myWeekendTime);
+      setState('my_busy_days', myBusyDays);
+      // Also update legacy keys for compatibility
+      setState('weekday_time', isSoloUser() ? myWeekdayTime : hhWeekdayTime);
+      setState('weekend_time', isSoloUser() ? myWeekendTime : hhWeekendTime);
+      setState('busy_days', isSoloUser() ? myBusyDays : hhBusyDays);
+      window.location.href = 'settings-main.html';
+    }
+
+    render();
+  </script>
+</body>
+</html>

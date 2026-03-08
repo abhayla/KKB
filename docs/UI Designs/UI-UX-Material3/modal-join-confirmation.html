@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Join Confirmation</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame bottom-sheet-page" id="app"></div>
+
+  <script>
+    initPage();
+    document.getElementById('app').innerHTML = `
+      ${renderStatusBar()}
+      <div class="top-app-bar" style="opacity:0.3;">
+        <a href="settings-join-household.html" class="nav-icon">&#8592;</a>
+        <span class="title">Join Household</span>
+      </div>
+      <div class="screen-content" style="opacity:0.15;filter:blur(2px);pointer-events:none;">
+        <div class="content-padding">
+          <div style="height:200px;"></div>
+        </div>
+      </div>
+
+      <div class="dialog-overlay">
+        <div class="dialog" style="max-width:320px;">
+          <div style="text-align:center;margin-bottom:var(--sp-md);">
+            <div style="font-size:48px;">&#127968;</div>
+          </div>
+          <div class="dialog-title" style="text-align:center;">Join Sharma Family?</div>
+          <div class="body-small" style="color:var(--on-surface-variant);text-align:center;margin-bottom:var(--sp-md);">3 members currently</div>
+
+          <div style="background:var(--surface-variant);border-radius:var(--radius-sm);padding:var(--sp-md);margin-bottom:var(--sp-lg);">
+            <div class="body-small" style="font-weight:600;color:var(--on-surface);margin-bottom:var(--sp-sm);">What happens when you join:</div>
+            <div style="display:flex;align-items:flex-start;gap:var(--sp-sm);margin-bottom:var(--sp-xs);">
+              <span style="color:var(--primary);flex-shrink:0;">&#10003;</span>
+              <span class="body-small" style="color:var(--on-surface-variant);">Your allergies will be merged into shared meals</span>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:var(--sp-sm);margin-bottom:var(--sp-xs);">
+              <span style="color:var(--primary);flex-shrink:0;">&#10003;</span>
+              <span class="body-small" style="color:var(--on-surface-variant);">Shared meals (lunch, dinner) planned together</span>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:var(--sp-sm);">
+              <span style="color:var(--primary);flex-shrink:0;">&#10003;</span>
+              <span class="body-small" style="color:var(--on-surface-variant);">Personal slots (breakfast, snacks) remain yours</span>
+            </div>
+          </div>
+
+          <div class="dialog-actions" style="justify-content:stretch;">
+            <a href="settings-join-household.html" class="btn btn-outlined" style="flex:1;text-decoration:none;">Cancel</a>
+            <a href="settings-household.html" class="btn btn-filled" style="flex:1;text-decoration:none;">Join</a>
+          </div>
+        </div>
+      </div>
+    `;
+  </script>
+</body>
+</html>

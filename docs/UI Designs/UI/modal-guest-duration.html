@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Guest Duration</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame bottom-sheet-page" id="app"></div>
+
+  <script>
+    initPage();
+    document.getElementById('app').innerHTML = `
+      ${renderStatusBar()}
+      <div class="top-app-bar" style="opacity:0.3;">
+        <a href="settings-household-members.html" class="nav-icon">&#8592;</a>
+        <span class="title">Household Members</span>
+      </div>
+      <div class="screen-content" style="opacity:0.15;filter:blur(2px);pointer-events:none;">
+        <div class="content-padding">
+          <div style="height:200px;"></div>
+        </div>
+      </div>
+
+      <div class="bottom-sheet-overlay">
+        <div class="bottom-sheet">
+          <div class="handle"></div>
+          <div class="title-large" style="font-size:18px;font-weight:600;margin-bottom:var(--sp-lg);">Guest Duration</div>
+
+          <div style="display:flex;gap:var(--sp-md);margin-bottom:var(--sp-md);">
+            <div style="flex:1;">
+              <div class="label-large" style="margin-bottom:var(--sp-xs);color:var(--on-surface-variant);">Arrival</div>
+              <input type="date" class="text-field" style="height:48px;font-size:14px;" value="2026-03-07">
+            </div>
+            <div style="flex:1;">
+              <div class="label-large" style="margin-bottom:var(--sp-xs);color:var(--on-surface-variant);">Departure</div>
+              <input type="date" class="text-field" style="height:48px;font-size:14px;" value="2026-03-14">
+            </div>
+          </div>
+
+          <div style="background:var(--primary-container);border-radius:var(--radius-sm);padding:var(--sp-md);margin-bottom:var(--sp-lg);text-align:center;">
+            <span class="title-medium" style="color:var(--on-primary-container);">Staying for 7 days</span>
+          </div>
+
+          <div class="body-small" style="color:var(--on-surface-variant);margin-bottom:var(--sp-lg);line-height:1.5;">Guest will be automatically removed from the household after the departure date. Their dietary constraints and meal history will be cleaned up.</div>
+
+          <div style="display:flex;gap:var(--sp-sm);">
+            <a href="settings-household-members.html" class="btn btn-outlined" style="flex:1;text-decoration:none;">Cancel</a>
+            <a href="settings-household-members.html" class="btn btn-filled" style="flex:1;text-decoration:none;">Confirm</a>
+          </div>
+        </div>
+      </div>
+    `;
+  </script>
+</body>
+</html>

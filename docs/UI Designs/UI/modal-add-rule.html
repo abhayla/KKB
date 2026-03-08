@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Add Rule</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame bottom-sheet-page" id="app"></div>
+
+  <script>
+    initPage();
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      ${renderStatusBar()}
+
+      <!-- Dimmed parent preview -->
+      <div class="top-app-bar" style="opacity:0.3;">
+        <a href="feature-recipe-rules.html" class="nav-icon">&#8592;</a>
+        <span class="title">Recipe Rules</span>
+      </div>
+      <div class="screen-content" style="opacity:0.15;filter:blur(2px);pointer-events:none;">
+        <div class="content-padding">
+          <div style="height:48px;background:var(--surface-variant);border-radius:var(--radius-md);margin:var(--sp-sm) 0;"></div>
+          <div style="height:64px;background:var(--surface);border-radius:var(--radius-md);margin:var(--sp-sm) 0;box-shadow:var(--shadow-sm);"></div>
+          <div style="height:64px;background:var(--surface);border-radius:var(--radius-md);margin:var(--sp-sm) 0;box-shadow:var(--shadow-sm);"></div>
+          <div style="height:64px;background:var(--surface);border-radius:var(--radius-md);margin:var(--sp-sm) 0;box-shadow:var(--shadow-sm);"></div>
+        </div>
+      </div>
+
+      <!-- Bottom Sheet Overlay -->
+      <div class="bottom-sheet-overlay">
+        <div class="bottom-sheet" style="max-height:82%;overflow-y:auto;">
+          <div class="handle"></div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-lg);">
+            <span class="title-large" style="font-size:18px;font-weight:600;">Add Rule</span>
+            <a href="feature-recipe-rules.html" class="icon-btn" style="text-decoration:none;">&#10005;</a>
+          </div>
+
+          <!-- Action Type -->
+          <div style="margin-bottom:var(--sp-lg);">
+            <div class="label-large" style="margin-bottom:var(--sp-sm);color:var(--on-surface-variant);">Action Type</div>
+            <div style="display:flex;gap:var(--sp-md);">
+              <label style="display:flex;align-items:center;gap:var(--sp-sm);cursor:pointer;flex:1;padding:var(--sp-sm) var(--sp-md);border-radius:var(--radius-sm);border:2px solid var(--secondary);background:color-mix(in srgb, var(--secondary) 8%, transparent);" id="radio-include" onclick="document.getElementById('radio-include').style.borderColor='var(--secondary)';document.getElementById('radio-include').style.background='color-mix(in srgb, var(--secondary) 8%, transparent)';document.getElementById('radio-exclude').style.borderColor='var(--outline-variant)';document.getElementById('radio-exclude').style.background='transparent';">
+                <div class="radio selected" style="border-color:var(--secondary);"><div style="width:10px;height:10px;border-radius:50%;background:var(--secondary);"></div></div>
+                <span style="font-weight:500;color:var(--secondary);">Include</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:var(--sp-sm);cursor:pointer;flex:1;padding:var(--sp-sm) var(--sp-md);border-radius:var(--radius-sm);border:2px solid var(--outline-variant);" id="radio-exclude" onclick="document.getElementById('radio-exclude').style.borderColor='var(--error)';document.getElementById('radio-exclude').style.background='color-mix(in srgb, var(--error) 8%, transparent)';document.getElementById('radio-include').style.borderColor='var(--outline-variant)';document.getElementById('radio-include').style.background='transparent';">
+                <div class="radio"></div>
+                <span style="font-weight:500;color:var(--error);">Exclude</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Search Field -->
+          <div style="margin-bottom:var(--sp-lg);">
+            <div class="label-large" style="margin-bottom:var(--sp-sm);color:var(--on-surface-variant);">Recipe or Ingredient</div>
+            <input type="text" class="text-field" placeholder="Search for recipe or ingredient..." style="height:48px;font-size:14px;">
+          </div>
+
+          <!-- Frequency Picker -->
+          <div style="margin-bottom:var(--sp-lg);">
+            <div class="label-large" style="margin-bottom:var(--sp-sm);color:var(--on-surface-variant);">Frequency</div>
+            <div class="chip-group" id="freq-chips">
+              <button class="chip selected" onclick="selectFreq(this);document.getElementById('times-input').style.display='none';document.getElementById('days-input').style.display='none';">Daily</button>
+              <button class="chip" onclick="selectFreq(this);document.getElementById('times-input').style.display='flex';document.getElementById('days-input').style.display='none';">Times per Week</button>
+              <button class="chip" onclick="selectFreq(this);document.getElementById('times-input').style.display='none';document.getElementById('days-input').style.display='none';">Never</button>
+              <button class="chip" onclick="selectFreq(this);document.getElementById('times-input').style.display='none';document.getElementById('days-input').style.display='flex';">Specific Days</button>
+            </div>
+
+            <!-- Times per week input -->
+            <div id="times-input" style="display:none;align-items:center;gap:var(--sp-sm);margin-top:var(--sp-sm);">
+              <span class="body-medium">Times:</span>
+              <input type="number" class="text-field" value="4" min="1" max="7" style="width:64px;height:40px;text-align:center;font-size:14px;">
+              <span class="body-small" style="color:var(--on-surface-variant);">per week</span>
+            </div>
+
+            <!-- Specific days chips -->
+            <div id="days-input" style="display:none;margin-top:var(--sp-sm);">
+              <div class="chip-group">
+                ${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => `
+                  <button class="chip" onclick="this.classList.toggle('selected')">${d}</button>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+
+          <!-- Meal Slot Chips -->
+          <div style="margin-bottom:var(--sp-lg);">
+            <div class="label-large" style="margin-bottom:var(--sp-sm);color:var(--on-surface-variant);">Meal Slots</div>
+            <div class="chip-group">
+              <button class="chip selected" onclick="this.classList.toggle('selected')">Breakfast</button>
+              <button class="chip" onclick="this.classList.toggle('selected')">Lunch</button>
+              <button class="chip" onclick="this.classList.toggle('selected')">Dinner</button>
+              <button class="chip" onclick="this.classList.toggle('selected')">Snacks</button>
+            </div>
+          </div>
+
+          <!-- Enforcement Toggle -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-lg);padding:var(--sp-sm) 0;">
+            <div>
+              <div class="title-small" style="font-weight:600;">Enforcement</div>
+              <div class="body-small" style="color:var(--on-surface-variant);">Strict rules are always enforced</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--sp-sm);">
+              <span class="body-small" style="color:var(--on-surface-variant);">Flexible</span>
+              <button class="toggle on" onclick="this.classList.toggle('on');"></button>
+              <span class="body-small" style="font-weight:500;">Strict</span>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div style="display:flex;gap:var(--sp-sm);">
+            <a href="feature-recipe-rules.html" class="btn btn-outlined" style="flex:1;text-decoration:none;">Cancel</a>
+            <a href="feature-recipe-rules.html" class="btn btn-filled" style="flex:1;text-decoration:none;">Add Rule</a>
+          </div>
+        </div>
+      </div>
+    `;
+
+    function selectFreq(btn) {
+      document.querySelectorAll('#freq-chips .chip').forEach(c => c.classList.remove('selected'));
+      btn.classList.add('selected');
+    }
+  </script>
+</body>
+</html>

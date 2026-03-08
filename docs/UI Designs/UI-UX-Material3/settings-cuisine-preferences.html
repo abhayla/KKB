@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Cuisine Preferences</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app"></div>
+
+  <style>
+    .cuisine-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--card-gap);
+      margin-bottom: var(--sp-lg);
+    }
+    .cuisine-card {
+      border-radius: var(--radius-md);
+      padding: var(--sp-lg) var(--sp-md);
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 2px solid var(--outline-variant);
+      background: var(--surface);
+    }
+    .cuisine-card:hover {
+      box-shadow: var(--shadow-md);
+    }
+    .cuisine-card.selected {
+      border-color: var(--primary);
+      background: var(--primary-container);
+    }
+    .cuisine-card .cuisine-emoji {
+      font-size: 40px;
+      margin-bottom: var(--sp-sm);
+    }
+    .cuisine-card .cuisine-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .cuisine-card.disabled {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    .section-divider {
+      height: 1px;
+      background: var(--outline-variant);
+      margin: var(--sp-lg) 0;
+    }
+  </style>
+
+  <script>
+    initPage();
+
+    const cuisineOptions = [
+      { id: 'north', name: 'North Indian', emoji: '&#127837;' },
+      { id: 'south', name: 'South Indian', emoji: '&#129385;' },
+      { id: 'east', name: 'East Indian', emoji: '&#127843;' },
+      { id: 'west', name: 'West Indian', emoji: '&#129472;' }
+    ];
+
+    // State initialization
+    let household_cuisines = getState('household_cuisines', MOCK_HOUSEHOLD_PREFERENCES.cuisines).slice();
+    let personal_cuisines = getState('personal_cuisines', MOCK_PERSONAL_PREFERENCES.cuisines).slice();
+
+    // For solo users, fall back to legacy key
+    if (isSoloUser()) {
+      personal_cuisines = getState('cuisines', SHARMA_DEFAULTS.cuisines).slice();
+    }
+
+    function renderCuisineGrid(selectedList, toggleFn, disabled) {
+      var disabledClass = disabled ? ' disabled' : '';
+      return '<div class="cuisine-grid">' +
+        cuisineOptions.map(function(c) {
+          var sel = selectedList.includes(c.id) ? ' selected' : '';
+          var onclick = disabled ? '' : ' onclick="' + toggleFn + '(\'' + c.id + '\')"';
+          return '<div class="cuisine-card' + sel + disabledClass + '"' + onclick + '>' +
+            '<div class="cuisine-emoji">' + c.emoji + '</div>' +
+            '<div class="cuisine-name">' + c.name + '</div>' +
+          '</div>';
+        }).join('') +
+      '</div>';
+    }
+
+    function render() {
+      var solo = isSoloUser();
+      var ownerUser = isOwner();
+      var content = '';
+
+      if (!solo) {
+        var showFamily = getScopeView('settings_cuisine') === 'family';
+
+        if (showFamily) {
+          // Household section
+          if (!ownerUser) {
+            content += '<div style="padding:var(--sp-sm) var(--sp-md);background:var(--secondary-container);border-radius:var(--radius-sm);margin-bottom:var(--sp-md);font-size:13px;color:var(--on-secondary-container);">Only the household owner can edit household cuisines.</div>';
+          }
+          content += '<p class="body-medium" style="color:var(--on-surface-variant);margin-bottom:var(--sp-lg);">Cuisine types for shared family meals.</p>';
+          content += renderCuisineGrid(household_cuisines, 'toggleHousehold', !ownerUser);
+        } else {
+          // Personal section
+          content += '<p class="body-medium" style="color:var(--on-surface-variant);margin-bottom:var(--sp-lg);">Your preferred cuisines for personal meal slots.</p>';
+          content += renderCuisineGrid(personal_cuisines, 'togglePersonal', false);
+        }
+      } else {
+        // Solo: personal only (keep as-is)
+        content += '<p class="body-medium" style="color:var(--on-surface-variant);margin-bottom:var(--sp-lg);">Select your preferred regional cuisines. Your meal plans will prioritize recipes from these regions.</p>';
+        content += renderCuisineGrid(personal_cuisines, 'togglePersonal', false);
+      }
+
+      document.getElementById('app').innerHTML =
+        renderStatusBar() +
+        renderTopBar({ title: 'Cuisine Preferences', backLink: 'settings-main.html' }) +
+        (!solo ? renderScopeToggle('settings_cuisine', 'Household', 'My Preferences') : '') +
+        '<div class="screen-content">' +
+          '<div class="content-padding">' +
+            content +
+          '</div>' +
+        '</div>' +
+        '<div style="padding:var(--sp-md);flex-shrink:0;">' +
+          '<button class="btn btn-filled" style="width:100%;" onclick="saveCuisines()">Save</button>' +
+        '</div>';
+    }
+
+    function toggleHousehold(id) {
+      var idx = household_cuisines.indexOf(id);
+      if (idx >= 0) {
+        household_cuisines.splice(idx, 1);
+      } else {
+        household_cuisines.push(id);
+      }
+      render();
+    }
+
+    function togglePersonal(id) {
+      var idx = personal_cuisines.indexOf(id);
+      if (idx >= 0) {
+        personal_cuisines.splice(idx, 1);
+      } else {
+        personal_cuisines.push(id);
+      }
+      render();
+    }
+
+    function saveCuisines() {
+      if (!isSoloUser()) {
+        setState('household_cuisines', household_cuisines);
+      }
+      setState('personal_cuisines', personal_cuisines);
+      // Also update legacy key for backward compatibility
+      setState('cuisines', personal_cuisines);
+      window.location.href = 'settings-main.html';
+    }
+
+    render();
+  </script>
+</body>
+</html>

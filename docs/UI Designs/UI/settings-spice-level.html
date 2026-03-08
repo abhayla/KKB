@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Spice Level</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app"></div>
+
+  <style>
+    .spice-option {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+      padding: var(--sp-md);
+      border-radius: var(--radius-md);
+      border: 2px solid var(--outline-variant);
+      background: var(--surface);
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: var(--sp-md);
+    }
+    .spice-option:hover {
+      box-shadow: var(--shadow-sm);
+    }
+    .spice-option.selected {
+      border-color: var(--primary);
+      background: color-mix(in srgb, var(--primary-container) 30%, var(--surface));
+    }
+    .spice-chilies {
+      font-size: 24px;
+      min-width: 80px;
+    }
+    .spice-label {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .spice-desc {
+      font-size: 13px;
+      color: var(--on-surface-variant);
+      margin-top: 2px;
+    }
+  </style>
+
+  <script>
+    initPage();
+
+    const levels = [
+      { id: 'mild', label: 'Mild', chilies: '&#127798;&#65039;', desc: 'Gentle flavors, minimal heat. Great for kids.' },
+      { id: 'medium', label: 'Medium', chilies: '&#127798;&#65039;&#127798;&#65039;', desc: 'Balanced spice with good flavor depth.' },
+      { id: 'spicy', label: 'Spicy', chilies: '&#127798;&#65039;&#127798;&#65039;&#127798;&#65039;', desc: 'Bold heat for those who love a kick.' },
+      { id: 'very_spicy', label: 'Very Spicy', chilies: '&#127798;&#65039;&#127798;&#65039;&#127798;&#65039;&#127798;&#65039;', desc: 'Maximum heat! Fiery and intense.' }
+    ];
+
+    let selected = getState('spice_level', SHARMA_DEFAULTS.spice_level);
+
+    function render() {
+      document.getElementById('app').innerHTML = `
+        ${renderStatusBar()}
+        ${renderTopBar({ title: 'Spice Level', backLink: 'settings-main.html' })}
+
+        <div class="screen-content">
+          <div class="content-padding">
+            <p class="body-medium" style="color:var(--on-surface-variant);margin-bottom:var(--sp-lg);">
+              Choose your preferred spice level. Recipes will be selected to match your heat tolerance.
+            </p>
+
+            ${levels.map(l => `
+              <div class="spice-option ${selected === l.id ? 'selected' : ''}" onclick="selectSpice('${l.id}')">
+                <div class="radio ${selected === l.id ? 'selected' : ''}"></div>
+                <div class="spice-chilies">${l.chilies}</div>
+                <div>
+                  <div class="spice-label">${l.label}</div>
+                  <div class="spice-desc">${l.desc}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Save Button -->
+        <div style="padding:var(--sp-md);flex-shrink:0;">
+          <button class="btn btn-filled" style="width:100%;" onclick="saveSpice()">Save</button>
+        </div>
+      `;
+    }
+
+    function selectSpice(id) {
+      selected = id;
+      render();
+    }
+
+    function saveSpice() {
+      setState('spice_level', selected);
+      window.location.href = 'settings-main.html';
+    }
+
+    render();
+  </script>
+</body>
+</html>

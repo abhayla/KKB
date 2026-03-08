@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Disliked Ingredients</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app"></div>
+
+  <script>
+    initPage();
+
+    let dislikes = getState('dislikes', SHARMA_DEFAULTS.dislikes).slice();
+    const suggestions = ['Lauki', 'Turai', 'Tinda', 'Arbi', 'Methi', 'Parwal'];
+
+    function render() {
+      document.getElementById('app').innerHTML = `
+        ${renderStatusBar()}
+        ${renderTopBar({ title: 'Disliked Ingredients', backLink: 'settings-main.html' })}
+
+        <div class="screen-content">
+          <div class="content-padding">
+
+            <!-- Search -->
+            <div style="display:flex;gap:var(--sp-sm);margin-bottom:var(--sp-lg);">
+              <input type="text" class="text-field" id="search-input" placeholder="Search ingredients..." style="flex:1;height:44px;">
+              <button class="btn btn-filled" style="height:44px;padding:0 16px;" onclick="addFromSearch()">Add</button>
+            </div>
+
+            <!-- Current Dislikes -->
+            <div class="section-header">
+              <span class="section-title">Current Dislikes</span>
+              <span class="body-small" style="color:var(--on-surface-variant);">${dislikes.length} items</span>
+            </div>
+            <div class="chip-group" style="margin-bottom:var(--sp-lg);">
+              ${dislikes.map(d => `
+                <span class="chip selected" onclick="removeDislike('${d}')">
+                  ${d}
+                  <span class="remove">&#10005;</span>
+                </span>
+              `).join('')}
+              ${dislikes.length === 0 ? '<span class="body-medium" style="color:var(--on-surface-variant);">No disliked ingredients</span>' : ''}
+            </div>
+
+            <!-- Suggestions -->
+            <div class="section-header">
+              <span class="section-title">Suggestions</span>
+            </div>
+            <div class="chip-group">
+              ${suggestions.filter(s => !dislikes.includes(s)).map(s => `
+                <span class="chip" onclick="addDislike('${s}')">+ ${s}</span>
+              `).join('')}
+              ${suggestions.filter(s => !dislikes.includes(s)).length === 0 ? '<span class="body-small" style="color:var(--on-surface-variant);">All suggestions added</span>' : ''}
+            </div>
+
+          </div>
+        </div>
+      `;
+    }
+
+    function addDislike(name) {
+      if (!dislikes.includes(name)) {
+        dislikes.push(name);
+        setState('dislikes', dislikes);
+        render();
+      }
+    }
+
+    function removeDislike(name) {
+      dislikes = dislikes.filter(d => d !== name);
+      setState('dislikes', dislikes);
+      render();
+    }
+
+    function addFromSearch() {
+      const input = document.getElementById('search-input');
+      const val = input.value.trim();
+      if (val && !dislikes.includes(val)) {
+        dislikes.push(val);
+        setState('dislikes', dislikes);
+        render();
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>

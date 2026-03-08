@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Stats</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app"></div>
+
+  <script>
+    initPage();
+
+    function buildCalendar() {
+      const year = 2026, month = 2; // March 2026 (0-indexed: 2)
+      const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const cookedDays = [1, 2, 3, 4, 5, 6, 7]; // First 7 days cooked
+
+      const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+      let html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;">';
+
+      // Day name headers
+      dayNames.forEach(d => {
+        html += `<div style="font-size:11px;font-weight:600;color:var(--on-surface-variant);padding:4px 0;">${d}</div>`;
+      });
+
+      // Empty cells before first day
+      for (let i = 0; i < firstDay; i++) {
+        html += '<div></div>';
+      }
+
+      // Day cells
+      for (let d = 1; d <= daysInMonth; d++) {
+        const isCooked = cookedDays.includes(d);
+        const isToday = d === 7;
+        let style = 'width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;margin:auto;position:relative;';
+        if (isToday) {
+          style += 'background:var(--primary);color:var(--on-primary);font-weight:700;';
+        } else if (isCooked) {
+          style += 'color:var(--on-surface);';
+        } else {
+          style += 'color:var(--on-surface-variant);';
+        }
+        const dot = isCooked && !isToday ? '<div style="position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--primary);"></div>' : '';
+        html += `<div><div style="${style}">${d}${dot}</div></div>`;
+      }
+
+      html += '</div>';
+      return html;
+    }
+
+    function buildCuisineBar(label, pct, color) {
+      return `<div style="margin-bottom:var(--sp-sm);">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+          <span style="color:var(--on-surface);">${label}</span>
+          <span style="color:var(--on-surface-variant);">${pct}%</span>
+        </div>
+        <div class="progress-bar" style="height:8px;border-radius:4px;">
+          <div class="progress-fill" style="width:${pct}%;background:${color};border-radius:4px;"></div>
+        </div>
+      </div>`;
+    }
+
+    function buildPersonalStats() {
+      const unlockedAchievements = MOCK_ACHIEVEMENTS.filter(a => a.unlocked);
+
+      return `
+          <!-- Streak Card -->
+          <div class="card card-elevated" style="text-align:center;margin-bottom:var(--sp-lg);padding:var(--sp-lg);">
+            <div style="font-size:48px;margin-bottom:var(--sp-sm);">&#128293;</div>
+            <div style="font-family:'Poppins',sans-serif;font-size:24px;font-weight:700;color:var(--primary);">7 Day Streak!</div>
+            <div style="font-size:14px;color:var(--on-surface-variant);margin-top:4px;">Best: 12 days</div>
+          </div>
+
+          <!-- Monthly Calendar -->
+          <div class="section-header">
+            <span class="section-title">March 2026</span>
+          </div>
+          <div class="card" style="margin-bottom:var(--sp-lg);padding:var(--sp-md);">
+            ${buildCalendar()}
+          </div>
+
+          <!-- Monthly Summary -->
+          <div class="section-header">
+            <span class="section-title">Monthly Summary</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--card-gap);margin-bottom:var(--sp-lg);">
+            <div class="stat-card">
+              <div class="stat-value">28</div>
+              <div class="stat-label">Meals Cooked</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">12</div>
+              <div class="stat-label">New Recipes</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">4.2</div>
+              <div class="stat-label">Avg Rating</div>
+            </div>
+          </div>
+
+          <!-- Cuisine Breakdown -->
+          <div class="section-header">
+            <span class="section-title">Cuisine Breakdown</span>
+          </div>
+          <div class="card" style="margin-bottom:var(--sp-lg);">
+            ${buildCuisineBar('North Indian', 60, 'var(--primary)')}
+            ${buildCuisineBar('South Indian', 30, 'var(--secondary)')}
+            ${buildCuisineBar('West Indian', 10, 'var(--tertiary)')}
+          </div>
+
+          <!-- Achievements Preview -->
+          <div class="section-header">
+            <span class="section-title">Achievements</span>
+            <a href="feature-achievements.html" class="section-action">View All</a>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:var(--card-gap);margin-bottom:var(--sp-lg);">
+            ${unlockedAchievements.map(a => `
+              <div class="achievement-card">
+                <div class="achievement-icon">${a.emoji}</div>
+                <div style="flex:1;">
+                  <div style="font-weight:600;font-size:14px;color:var(--on-surface);">${a.name}</div>
+                  <div style="font-size:12px;color:var(--on-surface-variant);">${a.description}</div>
+                  <div style="font-size:11px;color:var(--primary);margin-top:2px;">Unlocked ${a.date}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+
+          <!-- Leaderboard Preview -->
+          <div class="section-header">
+            <span class="section-title">Leaderboard</span>
+            <a href="feature-leaderboard.html" class="section-action">View Full</a>
+          </div>
+          <div class="card" style="margin-bottom:var(--sp-lg);">
+            ${[
+              { rank: 1, name: 'Sunita Sharma', meals: 42, emoji: '&#129351;' },
+              { rank: 2, name: 'Priya Mehta', meals: 38, emoji: '&#129352;' },
+              { rank: 3, name: 'Ramesh Sharma', meals: 28, emoji: '&#129353;' }
+            ].map(p => `
+              <div style="display:flex;align-items:center;gap:var(--sp-md);padding:var(--sp-sm) 0;${p.rank < 3 ? 'border-bottom:1px solid var(--outline-variant);' : ''}">
+                <span style="font-size:20px;width:28px;text-align:center;">${p.emoji}</span>
+                <div style="flex:1;">
+                  <div style="font-size:14px;font-weight:500;color:var(--on-surface);">${p.name}</div>
+                  <div style="font-size:12px;color:var(--on-surface-variant);">${p.meals} meals this month</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>`;
+    }
+
+    function buildFamilyStats() {
+      const stats = MOCK_HOUSEHOLD_STATS;
+      const household = getHousehold();
+      const medals = ['\u{1F947}', '\u{1F948}', '\u{1F949}'];
+      const sortedMembers = [...stats.members].sort((a, b) => b.meals_cooked - a.meals_cooked);
+      const unlockedAchievements = MOCK_ACHIEVEMENTS.filter(a => a.unlocked);
+
+      return `
+          <!-- Household Header -->
+          <div class="card card-elevated" style="text-align:center;margin-bottom:var(--sp-lg);padding:var(--sp-lg);">
+            <div style="font-size:36px;margin-bottom:var(--sp-sm);">&#127968;</div>
+            <div style="font-family:'Poppins',sans-serif;font-size:20px;font-weight:700;color:var(--primary);">${household.name} Stats</div>
+            <div style="font-size:14px;color:var(--on-surface-variant);margin-top:4px;">${stats.members.length} members cooking together</div>
+          </div>
+
+          <!-- Total Stats Row -->
+          <div class="section-header">
+            <span class="section-title">This Month</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--card-gap);margin-bottom:var(--sp-lg);">
+            <div class="stat-card">
+              <div class="stat-value">${stats.total_meals}</div>
+              <div class="stat-label">Total Meals</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">${stats.total_recipes_tried}</div>
+              <div class="stat-label">Recipes Tried</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" style="font-size:16px;">${stats.most_popular}</div>
+              <div class="stat-label">Most Popular</div>
+            </div>
+          </div>
+
+          <!-- Family Leaderboard -->
+          <div class="section-header">
+            <span class="section-title">Family Leaderboard</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:var(--card-gap);margin-bottom:var(--sp-lg);">
+            ${sortedMembers.map((member, i) => `
+              <div class="card" style="display:flex;align-items:center;gap:var(--sp-md);padding:var(--sp-md);">
+                <div style="position:relative;">
+                  ${renderMemberAvatar(member.name, 36)}
+                  <span style="position:absolute;top:-6px;right:-6px;font-size:14px;">${medals[i] || ''}</span>
+                </div>
+                <div style="flex:1;">
+                  <div style="font-weight:600;font-size:14px;color:var(--on-surface);">${member.name}</div>
+                  <div style="font-size:12px;color:var(--on-surface-variant);">${member.meals_cooked} meals cooked</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:12px;background:var(--primary-container);">
+                  <span style="font-size:12px;">&#128293;</span>
+                  <span style="font-size:12px;font-weight:600;color:var(--on-primary-container);">${member.streak}d</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+
+          <!-- Family Achievements -->
+          <div class="section-header">
+            <span class="section-title">Family Achievements</span>
+            <a href="feature-achievements.html" class="section-action">View All</a>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:var(--card-gap);margin-bottom:var(--sp-lg);">
+            ${unlockedAchievements.map(a => `
+              <div class="achievement-card">
+                <div class="achievement-icon">${a.emoji}</div>
+                <div style="flex:1;">
+                  <div style="font-weight:600;font-size:14px;color:var(--on-surface);">${a.name}</div>
+                  <div style="font-size:12px;color:var(--on-surface-variant);">${a.description}</div>
+                  <div style="font-size:11px;color:var(--primary);margin-top:2px;">Unlocked ${a.date}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>`;
+    }
+
+    function render() {
+      const showFamily = !isSoloUser() && getScopeView('stats') === 'family';
+
+      document.getElementById('app').innerHTML = `
+        ${renderStatusBar()}
+        ${renderTopBar({ title: 'Stats & Progress' })}
+
+        ${!isSoloUser() ? renderScopeToggle('stats') : ''}
+
+        <div class="screen-content">
+          <div class="content-padding">
+            ${showFamily ? buildFamilyStats() : buildPersonalStats()}
+          </div>
+        </div>
+
+        ${renderBottomNav('stats')}
+      `;
+    }
+
+    render();
+  </script>
+</body>
+</html>

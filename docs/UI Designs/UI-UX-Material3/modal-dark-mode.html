@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Appearance</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame bottom-sheet-page" id="app"></div>
+
+  <script>
+    initPage();
+    const app = document.getElementById('app');
+
+    function renderPage() {
+      const currentTheme = getState('dark_mode', 'light');
+      app.innerHTML = `
+        ${renderStatusBar()}
+
+        <!-- Dimmed parent preview -->
+        <div class="top-app-bar" style="opacity:0.3;">
+          <a href="settings-main.html" class="nav-icon">&#8592;</a>
+          <span class="title">Settings</span>
+        </div>
+        <div class="screen-content" style="opacity:0.15;filter:blur(2px);pointer-events:none;">
+          <div class="content-padding">
+            <div style="height:56px;background:var(--surface);border-radius:var(--radius-sm);margin:var(--sp-xs) 0;box-shadow:var(--shadow-sm);"></div>
+            <div style="height:56px;background:var(--surface);border-radius:var(--radius-sm);margin:var(--sp-xs) 0;box-shadow:var(--shadow-sm);"></div>
+            <div style="height:56px;background:var(--surface);border-radius:var(--radius-sm);margin:var(--sp-xs) 0;box-shadow:var(--shadow-sm);"></div>
+            <div style="height:56px;background:var(--surface);border-radius:var(--radius-sm);margin:var(--sp-xs) 0;box-shadow:var(--shadow-sm);"></div>
+          </div>
+        </div>
+
+        <!-- Dialog Overlay -->
+        <div class="dialog-overlay">
+          <div class="dialog" style="max-width:280px;">
+            <div class="dialog-title" style="text-align:center;">Appearance</div>
+
+            <!-- Theme Options -->
+            <div style="display:flex;flex-direction:column;gap:var(--sp-xs);">
+              ${[
+                { id: 'system', label: 'System Default', icon: '&#128241;', desc: 'Match device settings' },
+                { id: 'light', label: 'Light', icon: '&#9728;', desc: 'Always light theme' },
+                { id: 'dark', label: 'Dark', icon: '&#127769;', desc: 'Always dark theme' }
+              ].map(opt => `
+                <div class="list-item" style="border-radius:var(--radius-sm);${currentTheme === opt.id ? 'background:color-mix(in srgb, var(--primary) 8%, transparent);' : ''}" onclick="setTheme('${opt.id}');renderPage();">
+                  <div class="list-icon" style="background:${currentTheme === opt.id ? 'var(--primary-container)' : 'var(--surface-variant)'};font-size:18px;">${opt.icon}</div>
+                  <div class="list-content">
+                    <div class="list-title" style="font-size:15px;${currentTheme === opt.id ? 'font-weight:600;color:var(--primary);' : ''}">${opt.label}</div>
+                    <div class="list-subtitle" style="font-size:12px;">${opt.desc}</div>
+                  </div>
+                  <div class="radio ${currentTheme === opt.id ? 'selected' : ''}"></div>
+                </div>
+              `).join('')}
+            </div>
+
+            <div class="dialog-actions" style="justify-content:center;margin-top:var(--sp-lg);">
+              <a href="settings-main.html" class="btn btn-filled" style="text-decoration:none;min-width:100px;">Done</a>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    renderPage();
+  </script>
+</body>
+</html>

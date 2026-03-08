@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Cooking Mode</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .cooking-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .step-progress-bar {
+      padding: var(--sp-md);
+    }
+    .step-progress-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--on-surface-variant);
+      margin-bottom: var(--sp-sm);
+      text-align: center;
+    }
+    .instruction-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--sp-lg) var(--sp-md);
+      text-align: center;
+      overflow-y: auto;
+    }
+    .instruction-area .big-step-number {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: var(--on-primary);
+      font-family: 'Poppins', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: var(--sp-md);
+    }
+    .instruction-area .instruction-text {
+      font-size: 18px;
+      line-height: 1.6;
+      color: var(--on-surface);
+      max-width: 340px;
+    }
+    .ingredients-for-step {
+      margin-top: var(--sp-lg);
+      padding: var(--sp-md);
+      background: var(--surface-variant);
+      border-radius: var(--radius-md);
+      width: 100%;
+      max-width: 340px;
+    }
+    .ingredients-for-step .ifs-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--on-surface-variant);
+      margin-bottom: var(--sp-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .ingredients-for-step .ifs-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--sp-sm);
+    }
+    .ingredients-for-step .ifs-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 12px;
+      border-radius: var(--radius-full);
+      background: var(--surface);
+      font-size: 13px;
+      color: var(--on-surface);
+    }
+    .timer-section {
+      padding: var(--sp-md);
+      text-align: center;
+      border-top: 1px solid var(--outline-variant);
+      background: var(--surface);
+    }
+    .timer-display {
+      font-family: 'Poppins', sans-serif;
+      font-size: 40px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: var(--sp-sm);
+      letter-spacing: 2px;
+    }
+    .timer-buttons {
+      display: flex;
+      justify-content: center;
+      gap: var(--sp-sm);
+    }
+    .step-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--sp-sm) var(--sp-md) var(--sp-lg);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .step-nav .btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+  </style>
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app">
+  </div>
+
+  <script>
+    initPage();
+
+    const recipe = MOCK_RECIPE;
+    const totalSteps = recipe.instructions.length;
+    let currentStep = 0;
+    let timerSeconds = 0;
+    let timerInterval = null;
+    let timerRunning = false;
+
+    // Map steps to relevant ingredients (simplified: cycle through groups of ingredients)
+    function getStepIngredients(stepIdx) {
+      const perStep = Math.ceil(recipe.ingredients.length / totalSteps);
+      const start = (stepIdx * perStep) % recipe.ingredients.length;
+      return recipe.ingredients.slice(start, start + 3);
+    }
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+      const s = (seconds % 60).toString().padStart(2, '0');
+      return m + ':' + s;
+    }
+
+    function render() {
+      const app = document.getElementById('app');
+      const progress = ((currentStep + 1) / totalSteps) * 100;
+      const stepIngredients = getStepIngredients(currentStep);
+      const isLast = currentStep === totalSteps - 1;
+
+      app.innerHTML = `
+        ${renderStatusBar()}
+        ${renderTopBar({
+          title: 'Cooking Mode',
+          backLink: 'detail-recipe.html',
+          actions: ''
+        })}
+
+        <div class="cooking-body">
+          <div class="step-progress-bar">
+            <div class="step-progress-label">Step ${currentStep + 1} of ${totalSteps}</div>
+            <div class="progress-bar" style="height:6px;">
+              <div class="progress-fill" style="width: ${progress}%"></div>
+            </div>
+          </div>
+
+          <div class="instruction-area">
+            <div class="big-step-number">${currentStep + 1}</div>
+            <div class="instruction-text">${recipe.instructions[currentStep]}</div>
+
+            <div class="ingredients-for-step">
+              <div class="ifs-title">Ingredients for this step</div>
+              <div class="ifs-list">
+                ${stepIngredients.map(ing => `
+                  <span class="ifs-chip">${ing.name}${ing.qty ? ' (' + ing.qty + ' ' + ing.unit + ')' : ''}</span>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+
+          <div class="timer-section">
+            <div class="timer-display" id="timerDisplay">${formatTime(timerSeconds)}</div>
+            <div class="timer-buttons">
+              <button class="btn btn-outlined" onclick="resetTimer()">Reset</button>
+              <button class="btn btn-filled" id="timerToggle" onclick="toggleTimer()">${timerRunning ? 'Pause' : 'Start'}</button>
+            </div>
+          </div>
+
+          <div class="step-nav">
+            <button class="btn btn-outlined" onclick="prevStep()" ${currentStep === 0 ? 'disabled' : ''}>&#x2190; Previous</button>
+            ${isLast
+              ? `<a href="main-home.html" class="btn btn-filled" style="text-decoration:none;">Done!</a>`
+              : `<button class="btn btn-filled" onclick="nextStep()">Next &#x2192;</button>`
+            }
+          </div>
+        </div>
+      `;
+    }
+
+    function prevStep() {
+      if (currentStep > 0) {
+        currentStep--;
+        render();
+      }
+    }
+
+    function nextStep() {
+      if (currentStep < totalSteps - 1) {
+        currentStep++;
+        render();
+      }
+    }
+
+    function toggleTimer() {
+      if (timerRunning) {
+        clearInterval(timerInterval);
+        timerRunning = false;
+      } else {
+        timerRunning = true;
+        timerInterval = setInterval(() => {
+          timerSeconds++;
+          const display = document.getElementById('timerDisplay');
+          if (display) display.textContent = formatTime(timerSeconds);
+        }, 1000);
+      }
+      // Update button text only
+      const btn = document.getElementById('timerToggle');
+      if (btn) btn.textContent = timerRunning ? 'Pause' : 'Start';
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      timerRunning = false;
+      timerSeconds = 0;
+      const display = document.getElementById('timerDisplay');
+      if (display) display.textContent = formatTime(0);
+      const btn = document.getElementById('timerToggle');
+      if (btn) btn.textContent = 'Start';
+    }
+
+    render();
+  </script>
+</body>
+</html>

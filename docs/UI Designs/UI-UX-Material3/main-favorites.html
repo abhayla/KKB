@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Favorites</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app"></div>
+
+  <script>
+    initPage();
+
+    // All recipe items from meal plan, deduped by recipe_id
+    const allRecipes = {};
+    MOCK_MEAL_PLAN.days.forEach(day => {
+      ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(slot => {
+        (day[slot] || []).forEach(item => {
+          if (!allRecipes[item.recipe_id]) {
+            allRecipes[item.recipe_id] = item;
+          }
+        });
+      });
+    });
+
+    let activeFilter = 'all';
+    let showSearch = false;
+    let searchQuery = '';
+
+    // Assign meal types to recipes for filtering
+    const recipeMealTypes = {};
+    MOCK_MEAL_PLAN.days.forEach(day => {
+      ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(slot => {
+        (day[slot] || []).forEach(item => {
+          if (!recipeMealTypes[item.recipe_id]) recipeMealTypes[item.recipe_id] = new Set();
+          recipeMealTypes[item.recipe_id].add(slot);
+        });
+      });
+    });
+
+    // Map recipe categories to meal type filters for family favorites
+    const CATEGORY_TO_MEAL = {
+      'chai': 'breakfast',
+      'paratha': 'breakfast',
+      'dosa': 'breakfast',
+      'breakfast': 'breakfast',
+      'dal': 'lunch',
+      'rice': 'lunch',
+      'sabzi': 'lunch',
+      'curry': 'dinner',
+      'bread': 'dinner',
+      'snack': 'snacks',
+      'dessert': 'snacks',
+      'side': 'lunch'
+    };
+
+    function getCategoryMealTypes(category) {
+      // A category can appear in multiple meal types; return a set
+      const primary = CATEGORY_TO_MEAL[category];
+      const types = new Set();
+      if (primary) types.add(primary);
+      // Some categories span multiple meals
+      if (category === 'chai') { types.add('breakfast'); types.add('snacks'); }
+      if (category === 'dal') { types.add('lunch'); types.add('dinner'); }
+      if (category === 'curry') { types.add('lunch'); types.add('dinner'); }
+      if (category === 'rice') { types.add('lunch'); types.add('dinner'); }
+      if (category === 'sabzi') { types.add('lunch'); types.add('dinner'); }
+      if (category === 'paratha') { types.add('breakfast'); types.add('snacks'); }
+      return types;
+    }
+
+    function getFavorites() {
+      return getState('favorites', ['aloo-paratha', 'masala-chai', 'dal-fry', 'paneer-tikka']);
+    }
+
+    function toggleFav(recipeId) {
+      const favs = getFavorites();
+      const idx = favs.indexOf(recipeId);
+      if (idx >= 0) {
+        favs.splice(idx, 1);
+      } else {
+        favs.push(recipeId);
+      }
+      setState('favorites', favs);
+      render();
+    }
+
+    function renderFamilyFavorites() {
+      // Sort by count descending
+      let familyFavs = [...MOCK_FAMILY_FAVORITES].sort((a, b) => b.count - a.count);
+
+      // Apply filter
+      if (activeFilter !== 'all') {
+        familyFavs = familyFavs.filter(r => {
+          const mealTypes = getCategoryMealTypes(r.category);
+          return mealTypes.has(activeFilter);
+        });
+      }
+
+      // Apply search
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        familyFavs = familyFavs.filter(r => r.recipe_name.toLowerCase().includes(q));
+      }
+
+      if (familyFavs.length === 0) {
+        return `<div class="empty-state">
+            <div class="empty-icon">&#128148;</div>
+            <div class="empty-title">No Family Favorites</div>
+            <div class="empty-text">When family members favorite recipes, they'll appear here.</div>
+          </div>`;
+      }
+
+      return `<div class="recipe-grid" style="padding:0 var(--sp-md);">
+        ${familyFavs.map(r => `
+          <div class="recipe-grid-item">
+            <div class="recipe-thumb">
+              ${getFoodEmoji(r.category)}
+            </div>
+            <div class="recipe-grid-info">
+              <div class="recipe-grid-name">${r.recipe_name}</div>
+              <div class="recipe-grid-meta">
+                <span>&#9201; ${r.prep_time} min</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:4px;margin-top:4px;">
+                <div style="display:flex;margin-right:4px;">
+                  ${r.favorited_by.map((name, i) =>
+                    `<div style="margin-left:${i > 0 ? '-6' : '0'}px;position:relative;z-index:${r.favorited_by.length - i};">${renderMemberAvatar(name, 24)}</div>`
+                  ).join('')}
+                </div>
+                <span style="font-size:11px;color:var(--on-surface-variant);">${r.count} member${r.count !== 1 ? 's' : ''}</span>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>`;
+    }
+
+    function renderPersonalFavorites() {
+      const favs = getFavorites();
+      let favRecipes = favs.map(id => allRecipes[id]).filter(Boolean);
+
+      // Apply filter
+      if (activeFilter !== 'all') {
+        favRecipes = favRecipes.filter(r => {
+          const types = recipeMealTypes[r.recipe_id];
+          return types && types.has(activeFilter);
+        });
+      }
+
+      // Apply search
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        favRecipes = favRecipes.filter(r => r.recipe_name.toLowerCase().includes(q));
+      }
+
+      if (favRecipes.length === 0) {
+        return `<div class="empty-state">
+            <div class="empty-icon">&#128148;</div>
+            <div class="empty-title">No Favorites Yet</div>
+            <div class="empty-text">Tap the heart icon on any recipe to save it here.</div>
+          </div>`;
+      }
+
+      return `<div class="recipe-grid" style="padding:0 var(--sp-md);">
+        ${favRecipes.map(r => `
+          <div class="recipe-grid-item">
+            <div class="recipe-thumb">
+              ${getFoodEmoji(r.category)}
+              <button class="fav-btn" onclick="toggleFav('${r.recipe_id}')" title="Remove favorite">
+                <span style="color:#E53935;">&#10084;</span>
+              </button>
+            </div>
+            <div class="recipe-grid-info">
+              <div class="recipe-grid-name">${r.recipe_name}</div>
+              <div class="recipe-grid-meta">
+                <span>&#9201; ${r.prep_time} min</span>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>`;
+    }
+
+    function render() {
+      const scope = getScopeView('favorites');
+      const isFamilyView = !isSoloUser() && scope === 'family';
+      const filters = ['all', 'breakfast', 'lunch', 'dinner', 'snacks'];
+
+      const gridHTML = isFamilyView ? renderFamilyFavorites() : renderPersonalFavorites();
+
+      const searchBarHTML = showSearch
+        ? `<div class="search-bar">
+            <span class="search-icon">&#128269;</span>
+            <input type="text" placeholder="Search favorites..." value="${searchQuery}" oninput="searchQuery=this.value;render();" autofocus>
+          </div>`
+        : '';
+
+      document.getElementById('app').innerHTML = `
+        ${renderStatusBar()}
+        ${renderTopBar({
+          title: 'Favorites',
+          actions: '<button class="action-icon" onclick="showSearch=!showSearch;searchQuery=String();render();" title="Search">&#128269;</button>'
+        })}
+
+        <div class="screen-content">
+          ${!isSoloUser() ? renderScopeToggle('favorites', 'Family Favorites', 'My Favorites') : ''}
+
+          ${searchBarHTML}
+
+          <!-- Filter Chips -->
+          <div style="display:flex;gap:var(--sp-sm);padding:var(--sp-sm) var(--sp-md) var(--sp-md);overflow-x:auto;">
+            ${filters.map(f => `
+              <button class="filter-chip ${f === activeFilter ? 'active' : ''}" onclick="activeFilter='${f}';render();">
+                ${f.charAt(0).toUpperCase() + f.slice(1)}
+              </button>
+            `).join('')}
+          </div>
+
+          <!-- Recipe Grid -->
+          ${gridHTML}
+        </div>
+
+        ${renderBottomNav('favorites')}
+      `;
+    }
+
+    window.toggleFav = toggleFav;
+    render();
+  </script>
+</body>
+</html>

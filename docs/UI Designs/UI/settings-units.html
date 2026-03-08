@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Units</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app"></div>
+
+  <style>
+    .unit-option {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+      padding: var(--sp-md);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .unit-option:hover {
+      background: var(--surface-variant);
+    }
+  </style>
+
+  <script>
+    initPage();
+
+    let units = getState('units_config', {
+      volume: 'metric',
+      weight: 'metric',
+      temperature: 'celsius'
+    });
+
+    const volumeOptions = [
+      { id: 'metric', label: 'Metric (ml / L)' },
+      { id: 'us', label: 'US (cups / oz)' },
+      { id: 'indian', label: 'Indian (katori / glass)' }
+    ];
+
+    const weightOptions = [
+      { id: 'metric', label: 'Metric (g / kg)' },
+      { id: 'us', label: 'US (oz / lb)' }
+    ];
+
+    const tempOptions = [
+      { id: 'celsius', label: 'Celsius' },
+      { id: 'fahrenheit', label: 'Fahrenheit' }
+    ];
+
+    function render() {
+      document.getElementById('app').innerHTML = `
+        ${renderStatusBar()}
+        ${renderTopBar({ title: 'Units', backLink: 'settings-main.html' })}
+
+        <div class="screen-content">
+          <div class="content-padding">
+
+            <!-- Volume -->
+            <div class="section-header">
+              <span class="section-title">Volume</span>
+            </div>
+            ${volumeOptions.map(o => `
+              <div class="unit-option" onclick="setUnit('volume', '${o.id}')">
+                <div class="radio ${units.volume === o.id ? 'selected' : ''}"></div>
+                <span class="body-large" style="color:var(--on-surface);">${o.label}</span>
+              </div>
+            `).join('')}
+
+            <div class="list-divider" style="margin:var(--sp-md) 0;"></div>
+
+            <!-- Weight -->
+            <div class="section-header">
+              <span class="section-title">Weight</span>
+            </div>
+            ${weightOptions.map(o => `
+              <div class="unit-option" onclick="setUnit('weight', '${o.id}')">
+                <div class="radio ${units.weight === o.id ? 'selected' : ''}"></div>
+                <span class="body-large" style="color:var(--on-surface);">${o.label}</span>
+              </div>
+            `).join('')}
+
+            <div class="list-divider" style="margin:var(--sp-md) 0;"></div>
+
+            <!-- Temperature -->
+            <div class="section-header">
+              <span class="section-title">Temperature</span>
+            </div>
+            ${tempOptions.map(o => `
+              <div class="unit-option" onclick="setUnit('temperature', '${o.id}')">
+                <div class="radio ${units.temperature === o.id ? 'selected' : ''}"></div>
+                <span class="body-large" style="color:var(--on-surface);">${o.label}</span>
+              </div>
+            `).join('')}
+
+          </div>
+        </div>
+
+        <!-- Save Button -->
+        <div style="padding:var(--sp-md);flex-shrink:0;">
+          <button class="btn btn-filled" style="width:100%;" onclick="saveUnits()">Save</button>
+        </div>
+      `;
+    }
+
+    function setUnit(category, value) {
+      units[category] = value;
+      render();
+    }
+
+    function saveUnits() {
+      setState('units_config', units);
+      window.location.href = 'settings-main.html';
+    }
+
+    render();
+  </script>
+</body>
+</html>

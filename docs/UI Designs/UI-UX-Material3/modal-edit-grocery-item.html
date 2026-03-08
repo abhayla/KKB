@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Edit Grocery Item</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame bottom-sheet-page" id="app"></div>
+
+  <script>
+    initPage();
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      ${renderStatusBar()}
+
+      <!-- Dimmed parent preview -->
+      <div class="top-app-bar" style="opacity:0.3;">
+        <span class="title" style="flex:none;">Grocery List</span>
+        <div class="actions">
+          <span class="action-icon">&#128269;</span>
+          <span class="action-icon">&#8942;</span>
+        </div>
+      </div>
+      <div class="screen-content" style="opacity:0.15;filter:blur(2px);pointer-events:none;">
+        <div class="content-padding">
+          <div style="height:32px;background:var(--surface-variant);border-radius:var(--radius-md);margin:var(--sp-sm) 0;width:60%;"></div>
+          <div style="height:48px;background:var(--surface);border-radius:var(--radius-sm);margin:var(--sp-xs) 0;box-shadow:var(--shadow-sm);"></div>
+          <div style="height:48px;background:var(--surface);border-radius:var(--radius-sm);margin:var(--sp-xs) 0;box-shadow:var(--shadow-sm);border-left:3px solid var(--primary);"></div>
+          <div style="height:48px;background:var(--surface);border-radius:var(--radius-sm);margin:var(--sp-xs) 0;box-shadow:var(--shadow-sm);"></div>
+          <div style="height:48px;background:var(--surface);border-radius:var(--radius-sm);margin:var(--sp-xs) 0;box-shadow:var(--shadow-sm);"></div>
+        </div>
+      </div>
+
+      <!-- Bottom Sheet Overlay -->
+      <div class="bottom-sheet-overlay">
+        <div class="bottom-sheet" style="max-height:60%;">
+          <div class="handle"></div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-lg);">
+            <span class="title-large" style="font-size:18px;font-weight:600;">Edit Item</span>
+            <a href="main-grocery.html" class="icon-btn" style="text-decoration:none;">&#10005;</a>
+          </div>
+
+          <!-- Name Field (pre-filled) -->
+          <div style="margin-bottom:var(--sp-md);">
+            <div class="label-large" style="margin-bottom:var(--sp-xs);color:var(--on-surface-variant);">Name</div>
+            <input type="text" class="text-field" value="Potato" style="height:48px;font-size:14px;">
+          </div>
+
+          <!-- Category Dropdown (pre-filled) -->
+          <div style="margin-bottom:var(--sp-md);">
+            <div class="label-large" style="margin-bottom:var(--sp-xs);color:var(--on-surface-variant);">Category</div>
+            <div class="dropdown">
+              <button class="dropdown-trigger" style="height:48px;" onclick="this.nextElementSibling.classList.toggle('open');">
+                <span id="cat-val">Vegetables</span>
+                <span>&#9662;</span>
+              </button>
+              <div class="dropdown-menu">
+                ${['Vegetables','Dairy','Grains','Pulses','Spices','Oil & Ghee','Other'].map(c => `
+                  <div class="dropdown-item${c === 'Vegetables' ? ' selected' : ''}" onclick="document.getElementById('cat-val').textContent='${c}';this.parentElement.classList.remove('open');">${c}</div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+
+          <!-- Quantity + Unit Row (pre-filled) -->
+          <div style="display:flex;gap:var(--sp-sm);margin-bottom:var(--sp-lg);">
+            <div style="flex:1;">
+              <div class="label-large" style="margin-bottom:var(--sp-xs);color:var(--on-surface-variant);">Quantity</div>
+              <input type="number" class="text-field" value="1" style="height:48px;font-size:14px;">
+            </div>
+            <div style="flex:1;">
+              <div class="label-large" style="margin-bottom:var(--sp-xs);color:var(--on-surface-variant);">Unit</div>
+              <div class="dropdown">
+                <button class="dropdown-trigger" style="height:48px;" onclick="this.nextElementSibling.classList.toggle('open');">
+                  <span id="unit-val">kg</span>
+                  <span>&#9662;</span>
+                </button>
+                <div class="dropdown-menu">
+                  ${['g','kg','ml','L','pcs','bunch'].map(u => `
+                    <div class="dropdown-item${u === 'kg' ? ' selected' : ''}" onclick="document.getElementById('unit-val').textContent='${u}';this.parentElement.classList.remove('open');">${u}</div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div style="display:flex;gap:var(--sp-sm);">
+            <a href="main-grocery.html" class="btn btn-filled" style="flex:2;text-decoration:none;">Save</a>
+            <a href="main-grocery.html" class="btn btn-filled" style="flex:1;text-decoration:none;background:var(--error);color:var(--on-error);">Delete</a>
+          </div>
+        </div>
+      </div>
+    `;
+  </script>
+</body>
+</html>

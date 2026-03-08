@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Onboarding Step 1: Household</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .family-card {
+      background: var(--surface);
+      border-radius: var(--radius-md);
+      padding: var(--sp-md);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: var(--sp-sm);
+    }
+    .family-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--sp-sm);
+    }
+    .family-card-header .member-name {
+      font-family: 'Poppins', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .family-card-header .member-age {
+      font-size: 13px;
+      color: var(--on-surface-variant);
+    }
+    .member-type-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 10px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+      margin-bottom: var(--sp-sm);
+    }
+    .health-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .health-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      height: 26px;
+      padding: 0 10px;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      font-weight: 500;
+      background: var(--error-container);
+      color: var(--on-error-container);
+    }
+    .field-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--on-surface-variant);
+      margin-bottom: var(--sp-xs);
+    }
+    .step-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--on-surface);
+      margin-bottom: var(--sp-xs);
+    }
+    .step-subtitle {
+      font-size: 14px;
+      color: var(--on-surface-variant);
+      margin-bottom: var(--sp-lg);
+    }
+    .bottom-buttons {
+      display: flex;
+      gap: var(--sp-sm);
+      padding: var(--sp-md);
+      border-top: 1px solid var(--outline-variant);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .bottom-buttons .btn {
+      flex: 1;
+    }
+    .member-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-container), var(--tertiary-container));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .member-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .select-field {
+      width: 100%;
+      height: 56px;
+      border: 1px solid var(--outline);
+      border-radius: var(--radius-xs);
+      padding: 0 16px;
+      font-family: inherit;
+      font-size: 16px;
+      background: transparent;
+      color: var(--on-surface);
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237A757F' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      cursor: pointer;
+    }
+    .select-field:focus {
+      border-color: var(--primary);
+      border-width: 2px;
+      padding: 0 15px;
+    }
+  </style>
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Status Bar -->
+    <script>document.write(renderStatusBar())</script>
+
+    <!-- Top Bar -->
+    <script>document.write(renderTopBar({ title: 'Set Up Profile', backLink: 'auth-otp.html' }))</script>
+
+    <!-- Onboarding Progress -->
+    <script>document.write(renderOnboardingProgress(0))</script>
+
+    <!-- Content -->
+    <div class="screen-content">
+      <div class="content-padding">
+        <div class="step-title">Your Household</div>
+        <div class="step-subtitle">Tell us about your family so we can plan meals for everyone.</div>
+
+        <!-- Household Size -->
+        <div class="mb-md">
+          <div class="field-label">Household Size</div>
+          <select class="select-field" id="householdSize">
+            <option value="1">1 member</option>
+            <option value="2">2 members</option>
+            <option value="3" selected>3 members</option>
+            <option value="4">4 members</option>
+            <option value="5">5 members</option>
+            <option value="6">6 members</option>
+            <option value="7">7 members</option>
+            <option value="8">8 members</option>
+            <option value="9">9 members</option>
+            <option value="10">10 members</option>
+          </select>
+        </div>
+
+        <!-- Family Members -->
+        <div class="section-header">
+          <span class="section-title">Family Members</span>
+          <span class="section-action">3 of 3</span>
+        </div>
+
+        <!-- Ramesh -->
+        <div class="family-card">
+          <div class="family-card-header">
+            <div class="flex items-center gap-md">
+              <div class="member-avatar">&#x1F468;</div>
+              <div class="member-info">
+                <div class="member-name">Ramesh</div>
+                <div class="member-age">45 years old</div>
+              </div>
+            </div>
+          </div>
+          <div class="member-type-badge">Father</div>
+          <div class="health-chips">
+            <span class="health-chip">&#x1F4A7; DIABETIC</span>
+            <span class="health-chip">&#x1F9C8; LOW_OIL</span>
+          </div>
+        </div>
+
+        <!-- Sunita -->
+        <div class="family-card">
+          <div class="family-card-header">
+            <div class="flex items-center gap-md">
+              <div class="member-avatar">&#x1F469;</div>
+              <div class="member-info">
+                <div class="member-name">Sunita</div>
+                <div class="member-age">42 years old</div>
+              </div>
+            </div>
+          </div>
+          <div class="member-type-badge">Mother</div>
+          <div class="health-chips">
+            <span class="health-chip">&#x1F9C2; LOW_SALT</span>
+          </div>
+        </div>
+
+        <!-- Aarav -->
+        <div class="family-card">
+          <div class="family-card-header">
+            <div class="flex items-center gap-md">
+              <div class="member-avatar">&#x1F466;</div>
+              <div class="member-info">
+                <div class="member-name">Aarav</div>
+                <div class="member-age">12 years old</div>
+              </div>
+            </div>
+          </div>
+          <div class="member-type-badge">Child</div>
+          <div class="health-chips">
+            <span class="health-chip">&#x1F336;&#xFE0F; NO_SPICY</span>
+          </div>
+        </div>
+
+        <!-- Add Member Button -->
+        <div class="mt-md mb-lg">
+          <button class="btn btn-outlined w-full" onclick="alert('Add Member dialog would open')">
+            + Add Member
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Buttons -->
+    <div class="bottom-buttons">
+      <a href="auth-otp.html" class="btn btn-outlined" style="text-align:center;">Back</a>
+      <a href="onboarding-step2-dietary.html" class="btn btn-filled" style="text-align:center;">Next</a>
+    </div>
+  </div>
+
+  <script>initPage();</script>
+</body>
+</html>

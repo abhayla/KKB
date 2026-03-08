@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Data &amp; Privacy</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app"></div>
+
+  <script>
+    initPage();
+    const isOwner = getHouseholdMembers().some(m => m.role === 'OWNER' && m.user_id === 'user-1');
+
+    document.getElementById('app').innerHTML = `
+      ${renderStatusBar()}
+      ${renderTopBar({ title: 'Data & Privacy', backLink: 'settings-main.html' })}
+
+      <div class="screen-content">
+        <div class="content-padding">
+
+          <!-- Your Data -->
+          <div class="section-header">
+            <span class="section-title">Your Data</span>
+          </div>
+          <div class="card" style="margin-bottom:var(--sp-lg);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-sm);">
+              <div>
+                <div class="title-small" style="font-weight:600;">Export My Data</div>
+                <div class="body-small" style="color:var(--on-surface-variant);">Download preferences, meal history, recipes</div>
+              </div>
+              <button class="btn btn-outlined" style="height:36px;padding:0 16px;">Export</button>
+            </div>
+            <div class="body-small" style="color:var(--on-surface-variant);">Last export: Never</div>
+          </div>
+
+          <!-- Guest Data -->
+          <div class="section-header">
+            <span class="section-title">Guest Data</span>
+          </div>
+          <div class="card" style="margin-bottom:var(--sp-md);">
+            <div style="display:flex;align-items:flex-start;gap:var(--sp-sm);margin-bottom:var(--sp-md);">
+              <span style="color:var(--on-surface-variant);font-size:16px;flex-shrink:0;">&#9432;</span>
+              <span class="body-small" style="color:var(--on-surface-variant);line-height:1.5;">Guest data is automatically removed when they leave the household.</span>
+            </div>
+            <div style="border-top:1px solid var(--outline-variant);padding-top:var(--sp-md);">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--sp-xs) 0;">
+                <div>
+                  <div class="body-medium" style="font-weight:500;">Uncle Vijay</div>
+                  <div class="body-small" style="color:var(--on-surface-variant);">Visited Mar 1-7</div>
+                </div>
+                <span class="body-small" style="color:var(--secondary);font-weight:500;">Data removed</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Account Deletion -->
+          <div class="section-header">
+            <span class="section-title" style="color:var(--error);">Account Deletion</span>
+          </div>
+
+          ${isOwner ? `
+            <div style="background:var(--error-container);border-radius:var(--radius-md);padding:var(--sp-md);margin-bottom:var(--sp-md);">
+              <div class="body-small" style="color:var(--on-error-container);font-weight:600;margin-bottom:var(--sp-xs);">&#9888; You are the household owner</div>
+              <div class="body-small" style="color:var(--on-error-container);line-height:1.5;">Before deleting your account, you must transfer household ownership to another app-linked member.</div>
+            </div>
+            <a href="modal-transfer-ownership.html" class="btn btn-outlined" style="width:100%;text-decoration:none;margin-bottom:var(--sp-lg);">Transfer Ownership First</a>
+          ` : `
+            <div class="card" style="margin-bottom:var(--sp-md);">
+              <div class="body-small" style="color:var(--on-surface-variant);font-weight:600;margin-bottom:var(--sp-sm);">What gets deleted:</div>
+              <div style="display:flex;align-items:center;gap:var(--sp-sm);margin-bottom:var(--sp-xs);">
+                <span style="color:var(--error);">&#10005;</span>
+                <span class="body-small">Meal history and preferences</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:var(--sp-sm);margin-bottom:var(--sp-xs);">
+                <span style="color:var(--error);">&#10005;</span>
+                <span class="body-small">Saved recipes and favorites</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:var(--sp-sm);margin-bottom:var(--sp-xs);">
+                <span style="color:var(--error);">&#10005;</span>
+                <span class="body-small">Chat history</span>
+              </div>
+              <div style="border-top:1px solid var(--outline-variant);padding-top:var(--sp-sm);margin-top:var(--sp-sm);">
+                <div class="body-small" style="color:var(--on-surface-variant);font-weight:600;margin-bottom:var(--sp-xs);">What's preserved:</div>
+                <div style="display:flex;align-items:center;gap:var(--sp-sm);margin-bottom:var(--sp-xs);">
+                  <span style="color:var(--secondary);">&#10003;</span>
+                  <span class="body-small">Household plan (other members keep it)</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:var(--sp-sm);">
+                  <span style="color:var(--secondary);">&#10003;</span>
+                  <span class="body-small">Other members' data</span>
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-outlined" style="width:100%;color:var(--error);border-color:var(--error);">Delete My Account</button>
+          `}
+
+          <div style="height:var(--sp-xl);"></div>
+        </div>
+      </div>
+    `;
+  </script>
+</body>
+</html>

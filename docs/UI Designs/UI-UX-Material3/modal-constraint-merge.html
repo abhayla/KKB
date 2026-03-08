@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Merged Constraints</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame bottom-sheet-page" id="app"></div>
+
+  <script>
+    initPage();
+    document.getElementById('app').innerHTML = `
+      ${renderStatusBar()}
+      <div class="top-app-bar" style="opacity:0.3;">
+        <a href="main-home.html" class="nav-icon">&#9776;</a>
+        <span class="title">RasoiAI</span>
+      </div>
+      <div class="screen-content" style="opacity:0.15;filter:blur(2px);pointer-events:none;">
+        <div class="content-padding">
+          <div style="height:200px;"></div>
+        </div>
+      </div>
+
+      <div class="dialog-overlay">
+        <div class="dialog" style="max-width:340px;">
+          <div style="text-align:center;margin-bottom:var(--sp-md);">
+            <div style="font-size:36px;">&#128256;</div>
+          </div>
+          <div class="dialog-title" style="text-align:center;">Merged Constraints</div>
+          <div class="body-small" style="color:var(--on-surface-variant);text-align:center;margin-bottom:var(--sp-lg);">Combined dietary rules from all household members</div>
+
+          <!-- Allergies -->
+          <div style="margin-bottom:var(--sp-md);">
+            <div class="label-large" style="color:var(--error);margin-bottom:var(--sp-xs);">Allergies (Never Include)</div>
+            <div class="chip-group">
+              <span class="chip selected" style="background:var(--error-container);color:var(--on-error-container);pointer-events:none;">Peanuts <span class="body-small" style="opacity:0.7;">(Ramesh)</span></span>
+              <span class="chip selected" style="background:var(--error-container);color:var(--on-error-container);pointer-events:none;">Cashews <span class="body-small" style="opacity:0.7;">(Ramesh)</span></span>
+            </div>
+          </div>
+
+          <!-- Dislikes -->
+          <div style="margin-bottom:var(--sp-md);">
+            <div class="label-large" style="color:var(--on-surface-variant);margin-bottom:var(--sp-xs);">Dislikes (Avoid)</div>
+            <div class="chip-group">
+              <span class="chip" style="pointer-events:none;">Karela</span>
+              <span class="chip" style="pointer-events:none;">Baingan</span>
+              <span class="chip" style="pointer-events:none;">Mushroom</span>
+            </div>
+          </div>
+
+          <!-- Dietary -->
+          <div style="margin-bottom:var(--sp-md);">
+            <div class="label-large" style="color:var(--secondary);margin-bottom:var(--sp-xs);">Strictest Dietary Rule</div>
+            <div style="background:var(--secondary-container);border-radius:var(--radius-sm);padding:var(--sp-sm) var(--sp-md);">
+              <span class="body-medium" style="color:var(--on-secondary-container);font-weight:500;">Vegetarian + Sattvic (no onion/garlic)</span>
+            </div>
+          </div>
+
+          <!-- Viable Recipe Count -->
+          <div style="display:flex;align-items:center;gap:var(--sp-sm);padding:var(--sp-sm) var(--sp-md);background:color-mix(in srgb, var(--secondary) 8%, transparent);border-radius:var(--radius-sm);margin-bottom:var(--sp-lg);">
+            <span style="font-size:20px;">&#9989;</span>
+            <span class="body-medium" style="color:var(--secondary);font-weight:500;">847 viable recipes match all constraints</span>
+          </div>
+
+          <div class="dialog-actions" style="justify-content:stretch;">
+            <a href="feature-recipe-rules.html" class="btn btn-outlined" style="flex:1;text-decoration:none;">Adjust Rules</a>
+            <a href="main-home.html" class="btn btn-filled" style="flex:1;text-decoration:none;">Generate Anyway</a>
+          </div>
+        </div>
+      </div>
+    `;
+  </script>
+</body>
+</html>

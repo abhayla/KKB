@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Spice Level</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app"></div>
+
+  <style>
+    .spice-option {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+      padding: var(--sp-md);
+      border-radius: var(--radius-md);
+      border: 2px solid var(--outline-variant);
+      background: var(--surface);
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: var(--sp-md);
+    }
+    .spice-option:hover {
+      box-shadow: var(--shadow-sm);
+    }
+    .spice-option.selected {
+      border-color: var(--primary);
+      background: color-mix(in srgb, var(--primary-container) 30%, var(--surface));
+    }
+    .spice-chilies {
+      font-size: 24px;
+      min-width: 80px;
+    }
+    .spice-label {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .spice-desc {
+      font-size: 13px;
+      color: var(--on-surface-variant);
+      margin-top: 2px;
+    }
+  </style>
+
+  <script>
+    initPage();
+
+    const levels = [
+      { id: 'mild', label: 'Mild', chilies: '&#127798;&#65039;', desc: 'Gentle flavors, minimal heat. Great for kids.' },
+      { id: 'medium', label: 'Medium', chilies: '&#127798;&#65039;&#127798;&#65039;', desc: 'Balanced spice with good flavor depth.' },
+      { id: 'spicy', label: 'Spicy', chilies: '&#127798;&#65039;&#127798;&#65039;&#127798;&#65039;', desc: 'Bold heat for those who love a kick.' },
+      { id: 'very_spicy', label: 'Very Spicy', chilies: '&#127798;&#65039;&#127798;&#65039;&#127798;&#65039;&#127798;&#65039;', desc: 'Maximum heat! Fiery and intense.' }
+    ];
+
+    // Household spice level (shared meals)
+    let householdSpice = getState('household_spice_level', MOCK_HOUSEHOLD_PREFERENCES.spice_level);
+    // Personal spice level (breakfast & snacks)
+    let personalSpice = getState('personal_spice_level', MOCK_PERSONAL_PREFERENCES.spice_level);
+    // Solo user spice level (legacy key, used when no household)
+    let selected = getState('spice_level', SHARMA_DEFAULTS.spice_level);
+
+    function renderSpiceOptions(selectedId, selectFn, disabled) {
+      const disabledStyle = disabled ? 'opacity: 0.6; pointer-events: none;' : '';
+      return levels.map(l => `
+        <div class="spice-option ${selectedId === l.id ? 'selected' : ''}" onclick="${disabled ? '' : selectFn + "('" + l.id + "')"}" style="${disabledStyle}">
+          <div class="radio ${selectedId === l.id ? 'selected' : ''}"></div>
+          <div class="spice-chilies">${l.chilies}</div>
+          <div>
+            <div class="spice-label">${l.label}</div>
+            <div class="spice-desc">${l.desc}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function render() {
+      const solo = isSoloUser();
+      let contentHtml = '';
+
+      if (!solo) {
+        const ownerCanEdit = isOwner();
+        const showFamily = getScopeView('settings_spice') === 'family';
+
+        if (showFamily) {
+          // Household section
+          if (!ownerCanEdit) {
+            contentHtml += '<div style="padding:var(--sp-sm) var(--sp-md);background:var(--secondary-container);border-radius:var(--radius-sm);margin-bottom:var(--sp-md);font-size:13px;color:var(--on-secondary-container);">Only the household owner can edit the household spice level.</div>';
+          }
+          contentHtml += `<p class="body-medium" style="color:var(--on-surface-variant);margin-bottom:var(--sp-lg);">Spice level for shared family meals.</p>`;
+          contentHtml += renderSpiceOptions(householdSpice, 'selectHouseholdSpice', !ownerCanEdit);
+        } else {
+          // Personal section
+          contentHtml += `<p class="body-medium" style="color:var(--on-surface-variant);margin-bottom:var(--sp-lg);">Your preferred spice level for personal meals.</p>`;
+          contentHtml += renderSpiceOptions(personalSpice, 'selectPersonalSpice', false);
+        }
+      } else {
+        // Solo user: single section (keep unchanged)
+        contentHtml += `<p class="body-medium" style="color:var(--on-surface-variant);margin-bottom:var(--sp-lg);">Choose your preferred spice level. Recipes will be selected to match your heat tolerance.</p>`;
+        contentHtml += renderSpiceOptions(selected, 'selectSpice', false);
+      }
+
+      document.getElementById('app').innerHTML = `
+        ${renderStatusBar()}
+        ${renderTopBar({ title: 'Spice Level', backLink: 'settings-main.html' })}
+
+        ${!solo ? renderScopeToggle('settings_spice', 'Household', 'My Preferences') : ''}
+
+        <div class="screen-content">
+          <div class="content-padding">
+            ${contentHtml}
+          </div>
+        </div>
+
+        <div style="padding:var(--sp-md);flex-shrink:0;">
+          <button class="btn btn-filled" style="width:100%;" onclick="saveSpice()">Save</button>
+        </div>
+      `;
+    }
+
+    function selectHouseholdSpice(id) {
+      householdSpice = id;
+      render();
+    }
+
+    function selectPersonalSpice(id) {
+      personalSpice = id;
+      render();
+    }
+
+    function selectSpice(id) {
+      selected = id;
+      render();
+    }
+
+    function saveSpice() {
+      if (!isSoloUser()) {
+        setState('household_spice_level', householdSpice);
+        setState('personal_spice_level', personalSpice);
+      } else {
+        setState('spice_level', selected);
+      }
+      window.location.href = 'settings-main.html';
+    }
+
+    render();
+  </script>
+</body>
+</html>

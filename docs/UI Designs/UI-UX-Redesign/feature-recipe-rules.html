@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Recipe Rules</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .rule-card {
+      background: var(--surface);
+      border-radius: var(--radius-md);
+      padding: var(--sp-md);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: var(--sp-sm);
+      border-left: 4px solid transparent;
+    }
+    .rule-card.include {
+      border-left-color: var(--success);
+    }
+    .rule-card.exclude {
+      border-left-color: var(--error);
+    }
+    .rule-card .rule-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--sp-sm);
+    }
+    .rule-card .rule-target {
+      font-family: 'Poppins', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .rule-card .rule-actions {
+      display: flex;
+      gap: 0;
+    }
+    .rule-card .rule-frequency {
+      font-size: 13px;
+      color: var(--on-surface-variant);
+      margin-bottom: var(--sp-sm);
+    }
+    .rule-card .rule-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .rule-card .meal-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .rule-card .meal-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 10px;
+      border-radius: var(--radius-full);
+      background: var(--surface-variant);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--on-surface-variant);
+    }
+    .enforcement-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: var(--radius-xs);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: color-mix(in srgb, var(--primary) 15%, transparent);
+      color: var(--primary);
+    }
+    .goal-card {
+      background: var(--surface);
+      border-radius: var(--radius-md);
+      padding: var(--sp-md);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: var(--sp-sm);
+    }
+    .goal-card .goal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--sp-sm);
+    }
+    .goal-card .goal-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .goal-card .goal-progress-text {
+      font-size: 13px;
+      color: var(--on-surface-variant);
+    }
+    .goal-card .progress-bar {
+      height: 8px;
+      border-radius: 4px;
+    }
+    .goal-card .progress-bar .progress-fill {
+      border-radius: 4px;
+      background: var(--secondary);
+    }
+  </style>
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app">
+  </div>
+
+  <script>
+    initPage();
+
+    const rules = SHARMA_DEFAULTS.recipe_rules;
+    let activeTab = 'rules';
+
+    const includeRules = rules.filter(r => r.type === 'INCLUDE');
+    const excludeRules = rules.filter(r => r.type === 'EXCLUDE');
+
+    function frequencyText(rule) {
+      if (rule.frequency === 'DAILY') return 'Daily';
+      if (rule.frequency === 'TIMES_PER_WEEK') return rule.times + 'x / week';
+      if (rule.frequency === 'NEVER') return 'Never';
+      if (rule.frequency === 'SPECIFIC_DAYS') return 'Not on ' + (rule.specific_days || []).join(', ');
+      return rule.frequency;
+    }
+
+    function mealChips(rule) {
+      if (!rule.meals || rule.meals.length === 0) return '<span class="meal-chip">All meals</span>';
+      return rule.meals.map(m => `<span class="meal-chip">${m}</span>`).join('');
+    }
+
+    const nutritionGoals = [
+      { name: 'Green Leafy Vegetables', frequency: '5x/week', progress: 3, total: 5 },
+      { name: 'Protein-rich', frequency: '7x/week', progress: 5, total: 7 }
+    ];
+
+    function render() {
+      const app = document.getElementById('app');
+      app.innerHTML = `
+        ${renderStatusBar()}
+        ${renderTopBar({
+          title: 'Recipe Rules',
+          backLink: 'settings-main.html'
+        })}
+
+        <div class="tab-bar">
+          <button class="tab ${activeTab === 'rules' ? 'active' : ''}" onclick="switchTab('rules')">Rules</button>
+          <button class="tab ${activeTab === 'goals' ? 'active' : ''}" onclick="switchTab('goals')">Nutrition Goals</button>
+        </div>
+
+        <div class="screen-content">
+          <div class="content-padding">
+
+            <div id="tab-rules" style="${activeTab !== 'rules' ? 'display:none' : ''}">
+              ${includeRules.length > 0 ? `
+                <div class="section-header">
+                  <span class="section-title" style="color:var(--success);">&#x2705; Include Rules</span>
+                </div>
+                ${includeRules.map(rule => `
+                  <div class="rule-card include">
+                    <div class="rule-header">
+                      <span class="rule-target">${rule.target}</span>
+                      <div class="rule-actions">
+                        <button class="icon-btn" style="width:32px;height:32px;font-size:16px;" onclick="alert('Edit rule')">&#x270F;&#xFE0F;</button>
+                        <button class="icon-btn" style="width:32px;height:32px;font-size:16px;" onclick="alert('Delete rule')">&#x1F5D1;&#xFE0F;</button>
+                      </div>
+                    </div>
+                    <div class="rule-frequency">${frequencyText(rule)} at ${(rule.meals || []).join(', ') || 'any meal'}</div>
+                    <div class="rule-footer">
+                      <div class="meal-chips">${mealChips(rule)}</div>
+                      <span class="enforcement-badge">STRICT</span>
+                    </div>
+                  </div>
+                `).join('')}
+              ` : ''}
+
+              ${excludeRules.length > 0 ? `
+                <div class="section-header">
+                  <span class="section-title" style="color:var(--error);">&#x26D4; Exclude Rules</span>
+                </div>
+                ${excludeRules.map(rule => `
+                  <div class="rule-card exclude">
+                    <div class="rule-header">
+                      <span class="rule-target">${rule.target}</span>
+                      <div class="rule-actions">
+                        <button class="icon-btn" style="width:32px;height:32px;font-size:16px;" onclick="alert('Edit rule')">&#x270F;&#xFE0F;</button>
+                        <button class="icon-btn" style="width:32px;height:32px;font-size:16px;" onclick="alert('Delete rule')">&#x1F5D1;&#xFE0F;</button>
+                      </div>
+                    </div>
+                    <div class="rule-frequency">${frequencyText(rule)}</div>
+                    <div class="rule-footer">
+                      <div class="meal-chips">${mealChips(rule)}</div>
+                      <span class="enforcement-badge">STRICT</span>
+                    </div>
+                  </div>
+                `).join('')}
+              ` : ''}
+            </div>
+
+            <div id="tab-goals" style="${activeTab !== 'goals' ? 'display:none' : ''}">
+              <div class="section-header">
+                <span class="section-title">Your Nutrition Goals</span>
+              </div>
+              ${nutritionGoals.map(goal => `
+                <div class="goal-card">
+                  <div class="goal-header">
+                    <span class="goal-name">${goal.name}</span>
+                    <span class="goal-progress-text">${goal.progress}/${goal.total}</span>
+                  </div>
+                  <div class="rule-frequency mb-sm">${goal.frequency}</div>
+                  <div class="progress-bar" style="height:8px;">
+                    <div class="progress-fill" style="width: ${(goal.progress / goal.total) * 100}%; background: var(--secondary); height:100%; border-radius:4px;"></div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+
+          </div>
+        </div>
+
+        <button class="fab" onclick="alert('Add new ${activeTab === 'rules' ? 'rule' : 'nutrition goal'}')">+</button>
+      `;
+    }
+
+    function switchTab(tab) {
+      activeTab = tab;
+      document.getElementById('tab-rules').style.display = tab === 'rules' ? '' : 'none';
+      document.getElementById('tab-goals').style.display = tab === 'goals' ? '' : 'none';
+      document.querySelectorAll('.tab-bar .tab').forEach((el, i) => {
+        el.classList.toggle('active', (i === 0 && tab === 'rules') || (i === 1 && tab === 'goals'));
+      });
+    }
+
+    render();
+  </script>
+</body>
+</html>

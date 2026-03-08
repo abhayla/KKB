@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Edit Profile</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app"></div>
+
+  <style>
+    .avatar-edit {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      font-weight: 700;
+      margin: 0 auto var(--sp-lg);
+      position: relative;
+      cursor: pointer;
+    }
+    .avatar-edit .camera-overlay {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: var(--on-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      border: 2px solid var(--background);
+    }
+    .form-group {
+      margin-bottom: var(--sp-lg);
+    }
+    .form-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--on-surface-variant);
+      margin-bottom: var(--sp-xs);
+      display: block;
+    }
+  </style>
+
+  <script>
+    initPage();
+
+    const members = getState('family_members', SHARMA_DEFAULTS.family_members);
+    const primaryMember = members[0] || { name: 'Ramesh' };
+    const phone = getState('phone', SHARMA_DEFAULTS.phone);
+    let profileName = getState('profile_name', primaryMember.name + ' Sharma');
+    let profileEmail = getState('profile_email', 'ramesh.sharma@email.com');
+
+    document.getElementById('app').innerHTML = `
+      ${renderStatusBar()}
+      ${renderTopBar({ title: 'Edit Profile', backLink: 'settings-main.html' })}
+
+      <div class="screen-content">
+        <div class="content-padding">
+
+          <!-- Avatar -->
+          <div class="avatar-edit">
+            RS
+            <div class="camera-overlay">&#128247;</div>
+          </div>
+
+          <!-- Name -->
+          <div class="form-group">
+            <label class="form-label">Name</label>
+            <input type="text" class="text-field" id="input-name" value="${profileName}">
+          </div>
+
+          <!-- Phone (disabled) -->
+          <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input type="tel" class="text-field" value="${phone}" disabled style="opacity:0.5;cursor:not-allowed;background:var(--surface-variant);">
+          </div>
+
+          <!-- Email -->
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="text-field" id="input-email" value="${profileEmail}">
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Save Button -->
+      <div style="padding:var(--sp-md);flex-shrink:0;">
+        <button class="btn btn-filled" style="width:100%;" onclick="saveProfile()">Save Changes</button>
+      </div>
+    `;
+
+    function saveProfile() {
+      const name = document.getElementById('input-name').value.trim();
+      const email = document.getElementById('input-email').value.trim();
+      if (name) setState('profile_name', name);
+      if (email) setState('profile_email', email);
+      window.location.href = 'settings-main.html';
+    }
+  </script>
+</body>
+</html>

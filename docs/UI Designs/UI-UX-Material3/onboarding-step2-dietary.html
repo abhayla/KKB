@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Onboarding Step 2: Dietary Preferences</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .step-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--on-surface);
+      margin-bottom: var(--sp-xs);
+    }
+    .step-subtitle {
+      font-size: 14px;
+      color: var(--on-surface-variant);
+      margin-bottom: var(--sp-lg);
+    }
+    .field-label {
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--on-surface);
+      margin-bottom: var(--sp-sm);
+    }
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+      padding: var(--sp-md);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-bottom: var(--sp-xs);
+    }
+    .radio-option:hover {
+      background: var(--surface-variant);
+    }
+    .radio-option.active {
+      background: color-mix(in srgb, var(--primary-container) 40%, transparent);
+    }
+    .radio-option .radio-label {
+      flex: 1;
+      font-size: 16px;
+      color: var(--on-surface);
+    }
+    .radio-option .radio-desc {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+    }
+    .checkbox-option {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+      padding: var(--sp-sm) var(--sp-md);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-bottom: var(--sp-xs);
+    }
+    .checkbox-option:hover {
+      background: var(--surface-variant);
+    }
+    .checkbox-option.active {
+      background: color-mix(in srgb, var(--secondary-container) 30%, transparent);
+    }
+    .checkbox-label-group {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+    }
+    .checkbox-label-group .label-text {
+      font-size: 15px;
+      color: var(--on-surface);
+    }
+    .bottom-buttons {
+      display: flex;
+      gap: var(--sp-sm);
+      padding: var(--sp-md);
+      border-top: 1px solid var(--outline-variant);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .bottom-buttons .btn {
+      flex: 1;
+    }
+  </style>
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Status Bar -->
+    <script>document.write(renderStatusBar())</script>
+
+    <!-- Top Bar -->
+    <script>document.write(renderTopBar({ title: 'Set Up Profile', backLink: 'onboarding-step1-household.html' }))</script>
+
+    <!-- Onboarding Progress -->
+    <script>document.write(renderOnboardingProgress(1))</script>
+
+    <!-- Content -->
+    <div class="screen-content">
+      <div class="content-padding">
+        <div class="step-title">Dietary Preferences</div>
+        <div class="step-subtitle">What does your family eat? We'll tailor meals accordingly.</div>
+
+        <!-- Primary Diet -->
+        <div class="mb-lg">
+          <div class="field-label">Primary Diet</div>
+
+          <div class="radio-option active" onclick="selectDiet(this)">
+            <div class="radio selected"></div>
+            <div style="flex:1">
+              <div class="radio-label">Vegetarian</div>
+              <div class="radio-desc">No meat, poultry, or fish</div>
+            </div>
+            <span class="dietary-badge veg">VEG</span>
+          </div>
+
+          <div class="radio-option" onclick="selectDiet(this)">
+            <div class="radio"></div>
+            <div style="flex:1">
+              <div class="radio-label">Eggetarian</div>
+              <div class="radio-desc">Vegetarian + eggs</div>
+            </div>
+            <span class="dietary-badge" style="background:color-mix(in srgb, var(--diet-eggetarian) 15%, transparent); color:var(--diet-eggetarian);">EGG</span>
+          </div>
+
+          <div class="radio-option" onclick="selectDiet(this)">
+            <div class="radio"></div>
+            <div style="flex:1">
+              <div class="radio-label">Non-Vegetarian</div>
+              <div class="radio-desc">Includes meat, poultry, and fish</div>
+            </div>
+            <span class="dietary-badge nonveg">NON-VEG</span>
+          </div>
+        </div>
+
+        <!-- Dietary Restrictions -->
+        <div class="mb-lg">
+          <div class="field-label">Dietary Restrictions</div>
+
+          <div class="checkbox-option" onclick="toggleCheck(this)">
+            <div class="checkbox"></div>
+            <div class="checkbox-label-group">
+              <span class="label-text">Jain</span>
+              <span class="dietary-badge jain">JAIN</span>
+            </div>
+          </div>
+
+          <div class="checkbox-option active" onclick="toggleCheck(this)">
+            <div class="checkbox checked">&#x2713;</div>
+            <div class="checkbox-label-group">
+              <span class="label-text">Sattvic</span>
+              <span class="dietary-badge sattvic">SATTVIC</span>
+            </div>
+          </div>
+
+          <div class="checkbox-option" onclick="toggleCheck(this)">
+            <div class="checkbox"></div>
+            <div class="checkbox-label-group">
+              <span class="label-text">Halal</span>
+              <span class="dietary-badge" style="background:color-mix(in srgb, var(--diet-halal) 15%, transparent); color:var(--diet-halal);">HALAL</span>
+            </div>
+          </div>
+
+          <div class="checkbox-option" onclick="toggleCheck(this)">
+            <div class="checkbox"></div>
+            <div class="checkbox-label-group">
+              <span class="label-text">Vegan</span>
+              <span class="dietary-badge vegan">VEGAN</span>
+            </div>
+          </div>
+
+          <div class="checkbox-option" onclick="toggleCheck(this)">
+            <div class="checkbox"></div>
+            <div class="checkbox-label-group">
+              <span class="label-text">No Gluten</span>
+              <span class="dietary-badge fasting">GLUTEN-FREE</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Buttons -->
+    <div class="bottom-buttons">
+      <a href="onboarding-step1-household.html" class="btn btn-outlined" style="text-align:center;">Back</a>
+      <a href="onboarding-step3-cuisine.html" class="btn btn-filled" style="text-align:center;">Next</a>
+    </div>
+  </div>
+
+  <script>
+    initPage();
+
+    function selectDiet(el) {
+      document.querySelectorAll('.radio-option').forEach(opt => {
+        opt.classList.remove('active');
+        opt.querySelector('.radio').classList.remove('selected');
+      });
+      el.classList.add('active');
+      el.querySelector('.radio').classList.add('selected');
+    }
+
+    function toggleCheck(el) {
+      el.classList.toggle('active');
+      const cb = el.querySelector('.checkbox');
+      if (cb.classList.contains('checked')) {
+        cb.classList.remove('checked');
+        cb.innerHTML = '';
+      } else {
+        cb.classList.add('checked');
+        cb.innerHTML = '\u2713';
+      }
+    }
+  </script>
+</body>
+</html>

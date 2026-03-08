@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Grocery</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app"></div>
+
+  <script>
+    initPage();
+
+    const grocery = getGrocery();
+    const allItems = Object.values(grocery).flat();
+    const totalCount = allItems.length;
+
+    function getChecked() {
+      return getState('grocery_checked', {});
+    }
+
+    function render() {
+      const checked = getChecked();
+      const purchasedCount = Object.values(checked).filter(Boolean).length;
+      const remainingCount = totalCount - purchasedCount;
+
+      const categoriesHTML = Object.entries(grocery).map(([cat, items]) => {
+        const catIcon = CATEGORY_ICONS[cat] || '&#128230;';
+        const catId = cat.replace(/[^a-zA-Z]/g, '');
+        const collapsed = getState('grocery_collapse_' + catId, false);
+
+        const itemsHTML = items.map(item => {
+          const isChecked = checked[item.id] || false;
+          return `<div class="grocery-item ${isChecked ? 'checked' : ''}" data-id="${item.id}">
+            <div class="checkbox ${isChecked ? 'checked' : ''}" onclick="toggleItem('${item.id}')">
+              ${isChecked ? '&#10003;' : ''}
+            </div>
+            <span class="grocery-name">${item.name}</span>
+            <span class="grocery-qty">${item.qty} ${item.unit}</span>
+          </div>`;
+        }).join('');
+
+        return `<div class="grocery-category">
+          <div class="grocery-category-header" onclick="toggleCategory('${catId}')">
+            <span class="category-name">${catIcon} ${cat}</span>
+            <span class="category-count">${items.length} items ${collapsed ? '&#9654;' : '&#9660;'}</span>
+          </div>
+          <div id="cat-${catId}" class="${collapsed ? 'hidden' : ''}">
+            ${itemsHTML}
+          </div>
+        </div>`;
+      }).join('');
+
+      document.getElementById('app').innerHTML = `
+        ${renderStatusBar()}
+        ${renderTopBar({ title: 'Grocery List', actions: '<a href="modal-whatsapp-share.html" class="action-icon" title="Share">&#128228;</a>' })}
+        <div class="screen-content">
+          <!-- Week Header -->
+          <div class="week-header">
+            <span class="week-range">Mar 2-8, 2026</span>
+          </div>
+
+          <!-- Summary Bar -->
+          <div style="display:flex;justify-content:center;gap:var(--sp-lg);padding:var(--sp-sm) var(--sp-md) var(--sp-md);font-size:13px;color:var(--on-surface-variant);">
+            <span><strong>${totalCount}</strong> items</span>
+            <span><strong>${purchasedCount}</strong> purchased</span>
+            <span><strong>${remainingCount}</strong> remaining</span>
+          </div>
+
+          <!-- Categories -->
+          ${categoriesHTML}
+        </div>
+
+        <!-- FAB -->
+        <a href="modal-add-grocery-item.html" class="fab" title="Add item">+</a>
+
+        ${renderBottomNav('grocery')}
+      `;
+    }
+
+    window.toggleItem = function(id) {
+      const checked = getChecked();
+      checked[id] = !checked[id];
+      setState('grocery_checked', checked);
+      render();
+    };
+
+    window.toggleCategory = function(catId) {
+      const key = 'grocery_collapse_' + catId;
+      const current = getState(key, false);
+      setState(key, !current);
+      render();
+    };
+
+    render();
+  </script>
+</body>
+</html>

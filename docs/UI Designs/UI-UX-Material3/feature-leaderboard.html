@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Leaderboard</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .podium-section {
+      padding: var(--sp-lg) var(--sp-md);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: var(--sp-md);
+      background: linear-gradient(180deg, var(--primary-container) 0%, var(--background) 100%);
+    }
+    .podium-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .podium-item .podium-rank {
+      font-size: 32px;
+      margin-bottom: var(--sp-xs);
+    }
+    .podium-item .podium-avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: var(--shadow-md);
+      margin-bottom: var(--sp-sm);
+      border: 3px solid transparent;
+    }
+    .podium-item.first .podium-avatar {
+      width: 68px;
+      height: 68px;
+      font-size: 28px;
+      border-color: #FFD700;
+    }
+    .podium-item.you .podium-avatar {
+      border-color: var(--primary);
+    }
+    .podium-item .podium-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--on-surface);
+      margin-bottom: 2px;
+    }
+    .podium-item .podium-stats {
+      font-size: 11px;
+      color: var(--on-surface-variant);
+    }
+    .podium-item .you-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px 6px;
+      border-radius: var(--radius-full);
+      background: var(--primary);
+      color: var(--on-primary);
+      font-size: 9px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+    .podium-pedestal {
+      width: 100%;
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+    }
+    .podium-item:nth-child(1) .podium-pedestal { height: 60px; }
+    .podium-item:nth-child(2) .podium-pedestal { height: 80px; }
+    .podium-item:nth-child(3) .podium-pedestal { height: 45px; }
+    .leaderboard-list {
+      padding: 0 var(--sp-md);
+    }
+    .lb-item {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+      padding: var(--sp-md) 0;
+      border-bottom: 1px solid var(--outline-variant);
+    }
+    .lb-item:last-child {
+      border-bottom: none;
+    }
+    .lb-item .lb-rank {
+      width: 28px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--on-surface-variant);
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .lb-item .lb-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--surface-variant);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .lb-item .lb-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .lb-item .lb-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--on-surface);
+    }
+    .lb-item .lb-stats {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      margin-top: 2px;
+    }
+    .lb-item.you-row {
+      background: color-mix(in srgb, var(--primary-container) 30%, transparent);
+      border-radius: var(--radius-sm);
+      padding-left: var(--sp-sm);
+      padding-right: var(--sp-sm);
+    }
+    .lb-item .you-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px 6px;
+      border-radius: var(--radius-full);
+      background: var(--primary);
+      color: var(--on-primary);
+      font-size: 9px;
+      font-weight: 700;
+      margin-left: var(--sp-sm);
+    }
+  </style>
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app">
+  </div>
+
+  <script>
+    initPage();
+
+    const leaderboard = [
+      { rank: 1, name: 'Priya S.', meals: 42, streak: 14, emoji: '\uD83D\uDC69', isYou: false },
+      { rank: 2, name: 'Ramesh S.', meals: 28, streak: 7, emoji: '\uD83D\uDC68', isYou: true },
+      { rank: 3, name: 'Ankit K.', meals: 25, streak: 5, emoji: '\uD83D\uDC68', isYou: false },
+      { rank: 4, name: 'Neha P.', meals: 22, streak: 4, emoji: '\uD83D\uDC69', isYou: false },
+      { rank: 5, name: 'Vivek M.', meals: 20, streak: 3, emoji: '\uD83D\uDC68', isYou: false },
+      { rank: 6, name: 'Suman R.', meals: 18, streak: 3, emoji: '\uD83D\uDC69', isYou: false },
+      { rank: 7, name: 'Kavita D.', meals: 15, streak: 2, emoji: '\uD83D\uDC69', isYou: false },
+      { rank: 8, name: 'Raj T.', meals: 12, streak: 1, emoji: '\uD83D\uDC68', isYou: false }
+    ];
+
+    const top3 = leaderboard.slice(0, 3);
+    const rest = leaderboard.slice(3);
+    const rankEmojis = ['\uD83E\uDD47', '\uD83E\uDD48', '\uD83E\uDD49'];
+
+    function render() {
+      const app = document.getElementById('app');
+      // Podium order: 2nd, 1st, 3rd
+      const podiumOrder = [top3[1], top3[0], top3[2]];
+      const podiumClasses = ['', 'first', ''];
+
+      app.innerHTML = `
+        ${renderStatusBar()}
+        ${renderTopBar({
+          title: 'Friends Leaderboard',
+          backLink: 'main-stats.html'
+        })}
+
+        <div class="screen-content">
+          <div class="podium-section">
+            ${podiumOrder.map((p, i) => {
+              const isFirst = i === 1;
+              const cls = isFirst ? 'first' : '';
+              const youCls = p.isYou ? ' you' : '';
+              return `
+                <div class="podium-item ${cls}${youCls}" style="flex:1;">
+                  <div class="podium-rank">${rankEmojis[p.rank - 1]}</div>
+                  <div class="podium-avatar">${p.emoji}</div>
+                  <div class="podium-name">${p.name}</div>
+                  <div class="podium-stats">${p.meals} meals &bull; ${p.streak}-day streak</div>
+                  ${p.isYou ? '<span class="you-badge">YOU</span>' : ''}
+                  <div class="podium-pedestal"></div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+
+          <div class="leaderboard-list">
+            ${rest.map(p => `
+              <div class="lb-item ${p.isYou ? 'you-row' : ''}">
+                <div class="lb-rank">${p.rank}</div>
+                <div class="lb-avatar">${p.emoji}</div>
+                <div class="lb-info">
+                  <div class="lb-name">
+                    ${p.name}
+                    ${p.isYou ? '<span class="you-tag">YOU</span>' : ''}
+                  </div>
+                  <div class="lb-stats">${p.meals} meals cooked &bull; ${p.streak}-day streak</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Chat</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app"></div>
+
+  <script>
+    initPage();
+
+    const AI_RESPONSES = [
+      "That's a great choice! I'd suggest pairing it with some raita on the side for a complete meal.",
+      "Based on your preferences, I recommend trying Palak Paneer tomorrow. It's healthy and takes only 30 minutes!",
+      "For a quick snack, how about some Dhokla? It's light, healthy, and Aarav would love it since it's not spicy.",
+      "Your meal plan this week has a great variety of North and South Indian dishes. Would you like me to adjust anything?",
+      "Since Ramesh is diabetic, I've ensured all meals have a low glycemic index. The Dal Palak tomorrow is an excellent choice!"
+    ];
+
+    let messages = getState('chat_messages', MOCK_CHAT);
+
+    function renderMessages() {
+      return messages.map(msg => {
+        if (msg.role === 'ai') {
+          return `<div style="display:flex;gap:var(--sp-sm);align-items:flex-start;">
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--primary-container);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">&#129302;</div>
+            <div>
+              <div class="chat-bubble ai">${msg.text}</div>
+              <div style="font-size:11px;color:var(--on-surface-variant);padding-left:4px;margin-top:2px;">${msg.time}</div>
+            </div>
+          </div>`;
+        } else {
+          return `<div style="display:flex;flex-direction:column;align-items:flex-end;">
+            <div class="chat-bubble user">${msg.text}</div>
+            <div style="font-size:11px;color:var(--on-surface-variant);padding-right:4px;margin-top:2px;">${msg.time}</div>
+          </div>`;
+        }
+      }).join('');
+    }
+
+    function render() {
+      document.getElementById('app').innerHTML = `
+        ${renderStatusBar()}
+        ${renderTopBar({ title: 'RasoiAI Assistant', actions: '<button class="action-icon" onclick="clearChat()" title="Clear chat">&#128465;</button>' })}
+
+        <div class="screen-content" id="chat-scroll">
+          <div class="chat-container" id="chat-messages">
+            ${renderMessages()}
+          </div>
+
+          <!-- Quick Chips -->
+          <div style="display:flex;gap:var(--sp-sm);padding:0 var(--sp-md) var(--sp-md);flex-wrap:wrap;">
+            <button class="chip" onclick="sendQuick('What\\'s for dinner?')">What's for dinner?</button>
+            <button class="chip" onclick="sendQuick('Suggest a snack')">Suggest a snack</button>
+            <button class="chip" onclick="sendQuick('Healthy breakfast ideas')">Healthy breakfast ideas</button>
+          </div>
+        </div>
+
+        <!-- Chat Input -->
+        <div class="chat-input-bar">
+          <button class="icon-btn" title="Attach">&#128206;</button>
+          <input type="text" id="chat-input" placeholder="Ask me anything..." onkeydown="if(event.key==='Enter')sendMessage()">
+          <button class="icon-btn" title="Voice input">&#127908;</button>
+          <button class="icon-btn active" onclick="sendMessage()" title="Send">&#10148;</button>
+        </div>
+
+        ${renderBottomNav('chat')}
+      `;
+
+      // Scroll to bottom
+      const scroll = document.getElementById('chat-scroll');
+      if (scroll) scroll.scrollTop = scroll.scrollHeight;
+    }
+
+    function getCurrentTime() {
+      const now = new Date();
+      let h = now.getHours();
+      const m = now.getMinutes().toString().padStart(2, '0');
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      return h + ':' + m + ' ' + ampm;
+    }
+
+    window.sendMessage = function() {
+      const input = document.getElementById('chat-input');
+      const text = input ? input.value.trim() : '';
+      if (!text) return;
+
+      messages.push({ id: 'u' + Date.now(), role: 'user', text: text, time: getCurrentTime() });
+      setState('chat_messages', messages);
+      render();
+
+      // Simulate AI response after 500ms
+      setTimeout(() => {
+        const response = AI_RESPONSES[Math.floor(Math.random() * AI_RESPONSES.length)];
+        messages.push({ id: 'a' + Date.now(), role: 'ai', text: response, time: getCurrentTime() });
+        setState('chat_messages', messages);
+        render();
+      }, 500);
+    };
+
+    window.sendQuick = function(text) {
+      messages.push({ id: 'u' + Date.now(), role: 'user', text: text, time: getCurrentTime() });
+      setState('chat_messages', messages);
+      render();
+
+      setTimeout(() => {
+        const response = AI_RESPONSES[Math.floor(Math.random() * AI_RESPONSES.length)];
+        messages.push({ id: 'a' + Date.now(), role: 'ai', text: response, time: getCurrentTime() });
+        setState('chat_messages', messages);
+        render();
+      }, 500);
+    };
+
+    window.clearChat = function() {
+      messages = [MOCK_CHAT[0]]; // Keep welcome message
+      setState('chat_messages', messages);
+      render();
+    };
+
+    render();
+  </script>
+</body>
+</html>

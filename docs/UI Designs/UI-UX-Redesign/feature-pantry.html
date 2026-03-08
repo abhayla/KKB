@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Pantry</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .expiry-alert-card {
+      border: 1px solid var(--error);
+      border-radius: var(--radius-md);
+      padding: var(--sp-md);
+      margin-bottom: var(--sp-md);
+      background: color-mix(in srgb, var(--error-container) 30%, var(--surface));
+    }
+    .expiry-alert-card .alert-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--error);
+      margin-bottom: var(--sp-sm);
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+    }
+    .expiry-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+    }
+    .expiry-item:not(:last-child) {
+      border-bottom: 1px solid var(--outline-variant);
+    }
+    .expiry-item .item-name {
+      font-size: 14px;
+      color: var(--on-surface);
+      font-weight: 500;
+    }
+    .expiry-item .expiry-text {
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .expiry-text.expired { color: var(--error); }
+    .expiry-text.expiring { color: var(--warning); }
+    .pantry-category-header {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+      padding: var(--sp-md) 0 var(--sp-sm);
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .pantry-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--outline-variant);
+    }
+    .pantry-item:last-child {
+      border-bottom: none;
+    }
+    .pantry-item .p-name {
+      flex: 1;
+      font-size: 14px;
+      color: var(--on-surface);
+    }
+    .pantry-item .p-qty {
+      font-size: 13px;
+      color: var(--on-surface-variant);
+      margin-right: var(--sp-md);
+      white-space: nowrap;
+    }
+    .pantry-item .p-expiry {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      margin-right: var(--sp-sm);
+      white-space: nowrap;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .status-dot.ok { background: var(--success); }
+    .status-dot.expiring { background: var(--warning); }
+    .status-dot.expired { background: var(--error); }
+    .matching-recipes-card {
+      margin-top: var(--sp-md);
+      padding: var(--sp-md);
+      background: var(--secondary-container);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+    .matching-recipes-card:hover {
+      box-shadow: var(--shadow-md);
+    }
+    .matching-recipes-card .mrc-text {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--on-secondary-container);
+    }
+    .matching-recipes-card .mrc-arrow {
+      font-size: 18px;
+      color: var(--on-secondary-container);
+    }
+  </style>
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app">
+  </div>
+
+  <script>
+    initPage();
+
+    const pantry = MOCK_PANTRY;
+
+    // Group by category
+    const categories = {};
+    pantry.forEach(item => {
+      if (!categories[item.category]) categories[item.category] = [];
+      categories[item.category].push(item);
+    });
+
+    // Alerts: expired or expiring items
+    const alertItems = pantry.filter(p => p.status === 'expired' || p.status === 'expiring');
+
+    function getExpiryText(item) {
+      const today = new Date('2026-03-07');
+      const exp = new Date(item.expiry);
+      const diffDays = Math.round((exp - today) / (1000 * 60 * 60 * 24));
+      if (diffDays < 0) return { text: `Expired ${Math.abs(diffDays)} days ago`, cls: 'expired' };
+      if (diffDays === 0) return { text: 'Expires today', cls: 'expiring' };
+      if (diffDays === 1) return { text: 'Expires tomorrow', cls: 'expiring' };
+      return { text: `Expires in ${diffDays} days`, cls: 'expiring' };
+    }
+
+    function formatExpiry(dateStr) {
+      const d = new Date(dateStr + 'T00:00:00');
+      return d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    const categoryIcons = {
+      'Dairy': '\uD83E\uDDC0',
+      'Grains': '\uD83C\uDF3E',
+      'Pulses': '\uD83E\uDED8',
+      'Spices': '\uD83C\uDF36\uFE0F',
+      'Oil & Ghee': '\uD83E\uDED3'
+    };
+
+    function render() {
+      const app = document.getElementById('app');
+      app.innerHTML = `
+        ${renderStatusBar()}
+        ${renderTopBar({
+          title: 'Pantry',
+          backLink: 'settings-main.html',
+          actions: '<button class="icon-btn" onclick="alert(\'Scan barcode\')">&#x1F4F7;</button>'
+        })}
+
+        <div class="screen-content">
+          <div class="content-padding">
+
+            ${alertItems.length > 0 ? `
+              <div class="expiry-alert-card">
+                <div class="alert-title">&#x26A0;&#xFE0F; Expiry Alerts</div>
+                ${alertItems.map(item => {
+                  const info = getExpiryText(item);
+                  return `
+                    <div class="expiry-item">
+                      <span class="item-name">${item.name}</span>
+                      <span class="expiry-text ${info.cls}">${info.text}</span>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            ` : ''}
+
+            ${Object.entries(categories).map(([cat, items]) => `
+              <div class="pantry-category-header">
+                <span>${categoryIcons[cat] || '\uD83D\uDCE6'}</span>
+                <span>${cat}</span>
+              </div>
+              ${items.map(item => `
+                <div class="pantry-item">
+                  <span class="p-name">${item.name}</span>
+                  <span class="p-qty">${item.qty} ${item.unit}</span>
+                  <span class="p-expiry">${formatExpiry(item.expiry)}</span>
+                  <span class="status-dot ${item.status}"></span>
+                </div>
+              `).join('')}
+            `).join('')}
+
+            <div class="matching-recipes-card" onclick="alert('View matching recipes')">
+              <span class="mrc-text">&#x1F373; Matching Recipes: 12</span>
+              <span class="mrc-arrow">&#x2192;</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="fab" onclick="alert('Add pantry item')">+</button>
+      `;
+    }
+
+    render();
+  </script>
+</body>
+</html>

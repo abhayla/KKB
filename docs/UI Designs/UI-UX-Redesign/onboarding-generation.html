@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Generating Your Meal Plan</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .gen-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--sp-lg);
+      text-align: center;
+    }
+    .gen-logo {
+      font-size: 56px;
+      margin-bottom: var(--sp-lg);
+    }
+    .gen-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--on-surface);
+      margin-bottom: var(--sp-xs);
+    }
+    .gen-subtitle {
+      font-size: 14px;
+      color: var(--on-surface-variant);
+      margin-bottom: var(--sp-xl);
+    }
+    .gen-steps {
+      width: 100%;
+      max-width: 320px;
+      text-align: left;
+      margin-bottom: var(--sp-lg);
+    }
+    .gen-progress-bar {
+      width: 100%;
+      max-width: 320px;
+      margin-bottom: var(--sp-md);
+    }
+    .gen-progress-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--on-surface-variant);
+      text-align: center;
+      margin-bottom: var(--sp-sm);
+    }
+    .gen-helper {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      margin-top: var(--sp-md);
+    }
+    .gen-success {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--sp-md);
+      animation: fadeScale 0.4s ease-out;
+    }
+    .gen-success.visible {
+      display: flex;
+    }
+    .success-icon {
+      font-size: 64px;
+      animation: bounceIn 0.5s ease-out;
+    }
+    @keyframes bounceIn {
+      0% { transform: scale(0); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+    .success-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .success-text {
+      font-size: 14px;
+      color: var(--on-surface-variant);
+    }
+    .gen-in-progress {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+    .gen-in-progress.hidden {
+      display: none;
+    }
+  </style>
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Status Bar -->
+    <script>document.write(renderStatusBar())</script>
+
+    <!-- Content (no top bar, no bottom nav) -->
+    <div class="gen-container">
+      <div class="gen-logo">&#x1F373;</div>
+
+      <!-- In-progress state -->
+      <div class="gen-in-progress" id="genInProgress">
+        <div class="gen-title">Creating Your Meal Plan</div>
+        <div class="gen-subtitle">Personalizing for the Sharma family</div>
+
+        <!-- Generation Steps -->
+        <div class="gen-steps" id="genSteps">
+          <div class="generation-step done" id="step1">
+            <div class="step-icon">&#x2705;</div>
+            <span class="step-text">Analyzing your preferences...</span>
+          </div>
+          <div class="generation-step done" id="step2">
+            <div class="step-icon">&#x2705;</div>
+            <span class="step-text">Checking upcoming festivals...</span>
+          </div>
+          <div class="generation-step active" id="step3">
+            <div class="step-icon">&#x1F52E;</div>
+            <span class="step-text">Generating personalized recipes...</span>
+          </div>
+          <div class="generation-step pending" id="step4">
+            <div class="step-icon">&#x23F3;</div>
+            <span class="step-text">Building your grocery list...</span>
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="gen-progress-bar">
+          <div class="gen-progress-label" id="progressLabel">75% complete</div>
+          <div class="progress-bar" style="height:6px;">
+            <div class="progress-fill" id="progressFill" style="width:75%;"></div>
+          </div>
+        </div>
+
+        <div class="gen-helper">This usually takes 30-40 seconds</div>
+      </div>
+
+      <!-- Success state (hidden initially) -->
+      <div class="gen-success" id="genSuccess">
+        <div class="success-icon">&#x1F389;</div>
+        <div class="success-title">Your Meal Plan is Ready!</div>
+        <div class="success-text">7 days of personalized meals for the Sharma family</div>
+        <a href="main-home.html" class="btn btn-filled btn-large mt-lg" id="viewPlanBtn">
+          View Your Meal Plan
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    initPage();
+
+    // Simulate generation progress
+    setTimeout(function() {
+      // Complete step 3
+      var step3 = document.getElementById('step3');
+      step3.classList.remove('active');
+      step3.classList.add('done');
+      step3.querySelector('.step-icon').innerHTML = '\u2705';
+
+      // Activate step 4
+      var step4 = document.getElementById('step4');
+      step4.classList.remove('pending');
+      step4.classList.add('active');
+      step4.querySelector('.step-icon').innerHTML = '\uD83D\uDD2E';
+
+      // Update progress
+      document.getElementById('progressFill').style.width = '90%';
+      document.getElementById('progressLabel').textContent = '90% complete';
+    }, 3000);
+
+    setTimeout(function() {
+      // Complete step 4
+      var step4 = document.getElementById('step4');
+      step4.classList.remove('active');
+      step4.classList.add('done');
+      step4.querySelector('.step-icon').innerHTML = '\u2705';
+
+      // Update progress to 100%
+      document.getElementById('progressFill').style.width = '100%';
+      document.getElementById('progressLabel').textContent = '100% complete';
+
+      // After brief pause, show success
+      setTimeout(function() {
+        document.getElementById('genInProgress').classList.add('hidden');
+        document.getElementById('genSuccess').classList.add('visible');
+
+        // Set onboarded flag
+        setState('onboarded', true);
+      }, 500);
+    }, 5000);
+  </script>
+</body>
+</html>

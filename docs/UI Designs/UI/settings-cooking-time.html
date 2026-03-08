@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Cooking Schedule</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app"></div>
+
+  <style>
+    .day-chip {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      border: 2px solid var(--outline-variant);
+      background: transparent;
+      color: var(--on-surface-variant);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .day-chip.selected {
+      background: var(--primary);
+      color: var(--on-primary);
+      border-color: var(--primary);
+    }
+    .day-chip:hover:not(.selected) {
+      background: var(--surface-variant);
+    }
+  </style>
+
+  <script>
+    initPage();
+
+    let weekdayTime = getState('weekday_time', SHARMA_DEFAULTS.weekday_time);
+    let weekendTime = getState('weekend_time', SHARMA_DEFAULTS.weekend_time);
+    let busyDays = getState('busy_days', SHARMA_DEFAULTS.busy_days).slice();
+
+    const weekdayOptions = [15, 20, 25, 30, 45, 60];
+    const weekendOptions = [30, 45, 60, 90, 120];
+    const allDays = [
+      { id: 'MONDAY', label: 'Mon' },
+      { id: 'TUESDAY', label: 'Tue' },
+      { id: 'WEDNESDAY', label: 'Wed' },
+      { id: 'THURSDAY', label: 'Thu' },
+      { id: 'FRIDAY', label: 'Fri' },
+      { id: 'SATURDAY', label: 'Sat' },
+      { id: 'SUNDAY', label: 'Sun' }
+    ];
+
+    function render() {
+      document.getElementById('app').innerHTML = `
+        ${renderStatusBar()}
+        ${renderTopBar({ title: 'Cooking Schedule', backLink: 'settings-main.html' })}
+
+        <div class="screen-content">
+          <div class="content-padding">
+
+            <!-- Weekday Time -->
+            <div class="section-header">
+              <span class="section-title">Weekday Cooking Time</span>
+            </div>
+            <p class="body-small" style="color:var(--on-surface-variant);margin-bottom:var(--sp-sm);">Maximum time per meal on weekdays</p>
+            <div class="dropdown" id="dd-weekday">
+              <div class="dropdown-trigger" onclick="toggleDropdown('dd-weekday')">
+                <span>${weekdayTime} minutes</span>
+                <span>&#9662;</span>
+              </div>
+              <div class="dropdown-menu" id="dd-weekday-menu">
+                ${weekdayOptions.map(t => `
+                  <div class="dropdown-item ${t === weekdayTime ? 'selected' : ''}" onclick="selectWeekday(${t})">${t} minutes</div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Weekend Time -->
+            <div class="section-header" style="margin-top:var(--sp-lg);">
+              <span class="section-title">Weekend Cooking Time</span>
+            </div>
+            <p class="body-small" style="color:var(--on-surface-variant);margin-bottom:var(--sp-sm);">Maximum time per meal on weekends</p>
+            <div class="dropdown" id="dd-weekend">
+              <div class="dropdown-trigger" onclick="toggleDropdown('dd-weekend')">
+                <span>${weekendTime} minutes</span>
+                <span>&#9662;</span>
+              </div>
+              <div class="dropdown-menu" id="dd-weekend-menu">
+                ${weekendOptions.map(t => `
+                  <div class="dropdown-item ${t === weekendTime ? 'selected' : ''}" onclick="selectWeekend(${t})">${t} minutes</div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Busy Days -->
+            <div class="section-header" style="margin-top:var(--sp-lg);">
+              <span class="section-title">Busy Days</span>
+            </div>
+            <p class="body-small" style="color:var(--on-surface-variant);margin-bottom:var(--sp-md);">On busy days, only quick recipes (&#8804; weekday time) will be suggested</p>
+            <div style="display:flex;gap:var(--sp-sm);flex-wrap:wrap;">
+              ${allDays.map(d => `
+                <div class="day-chip ${busyDays.includes(d.id) ? 'selected' : ''}" onclick="toggleDay('${d.id}')">${d.label}</div>
+              `).join('')}
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Save Button -->
+        <div style="padding:var(--sp-md);flex-shrink:0;">
+          <button class="btn btn-filled" style="width:100%;" onclick="saveSchedule()">Save</button>
+        </div>
+      `;
+    }
+
+    function toggleDropdown(id) {
+      const menu = document.getElementById(id + '-menu');
+      menu.classList.toggle('open');
+    }
+
+    function selectWeekday(val) {
+      weekdayTime = val;
+      render();
+    }
+
+    function selectWeekend(val) {
+      weekendTime = val;
+      render();
+    }
+
+    function toggleDay(dayId) {
+      const idx = busyDays.indexOf(dayId);
+      if (idx >= 0) {
+        busyDays.splice(idx, 1);
+      } else {
+        busyDays.push(dayId);
+      }
+      render();
+    }
+
+    function saveSchedule() {
+      setState('weekday_time', weekdayTime);
+      setState('weekend_time', weekendTime);
+      setState('busy_days', busyDays);
+      window.location.href = 'settings-main.html';
+    }
+
+    render();
+  </script>
+</body>
+</html>

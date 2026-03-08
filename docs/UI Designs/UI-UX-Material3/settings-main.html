@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Settings</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app"></div>
+
+  <script>
+    initPage();
+
+    const members = getState('family_members', SHARMA_DEFAULTS.family_members);
+    const darkMode = getState('dark_mode', 'light');
+    const darkModeLabel = darkMode === 'light' ? 'Off' : darkMode === 'dark' ? 'On' : 'System';
+    const itemsPerMeal = getState('items_per_meal', 2);
+    const strictAllergen = getState('strict_allergen', true);
+    const strictDietary = getState('strict_dietary', true);
+    const dietRestrictions = getState('dietary_restrictions', SHARMA_DEFAULTS.dietary_restrictions);
+    const dislikes = getState('dislikes', SHARMA_DEFAULTS.dislikes);
+    const cuisines = getState('cuisines', SHARMA_DEFAULTS.cuisines);
+    const spice = getState('spice_level', SHARMA_DEFAULTS.spice_level);
+    const weekdayTime = getState('weekday_time', 30);
+    const weekendTime = getState('weekend_time', 60);
+
+    const cuisineLabels = { north: 'North Indian', south: 'South Indian', east: 'East Indian', west: 'West Indian' };
+    const cuisineStr = cuisines.map(c => cuisineLabels[c] || c).join(', ');
+    const spiceLabels = { mild: 'Mild', medium: 'Medium', spicy: 'Spicy', very_spicy: 'Very Spicy' };
+
+    document.getElementById('app').innerHTML = `
+      ${renderStatusBar()}
+      ${renderTopBar({ title: 'Settings', backLink: 'main-home.html' })}
+
+      <div class="screen-content">
+        <div class="content-padding">
+
+          <!-- Profile Section -->
+          <a href="settings-edit-profile.html" style="text-decoration:none;">
+            <div class="card" style="display:flex;align-items:center;gap:var(--sp-md);margin-bottom:var(--sp-lg);">
+              <div style="width:56px;height:56px;border-radius:50%;background:var(--primary-container);color:var(--on-primary-container);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;flex-shrink:0;">RS</div>
+              <div style="flex:1;min-width:0;">
+                <div class="title-medium" style="color:var(--on-surface);">Ramesh Sharma</div>
+                <div class="body-small" style="color:var(--on-surface-variant);">+91 1234567890</div>
+              </div>
+              <span style="color:var(--primary);font-size:13px;font-weight:500;">Edit Profile</span>
+            </div>
+          </a>
+
+          <!-- Meal Generation -->
+          <div class="section-header">
+            <span class="section-title">Meal Generation</span>
+          </div>
+          <a href="modal-items-per-meal.html" style="text-decoration:none;">
+            <div class="list-item">
+              <div class="list-icon" style="background:var(--primary-container);color:var(--on-primary-container);">&#127858;</div>
+              <div class="list-content">
+                <div class="list-title">Items per Meal</div>
+              </div>
+              <span class="list-trailing" style="font-size:14px;font-weight:500;color:var(--primary);">${itemsPerMeal}</span>
+            </div>
+          </a>
+          <div class="list-item" onclick="toggleStrictAllergen()">
+            <div class="list-icon" style="background:var(--error-container);color:var(--on-error-container);">&#9888;</div>
+            <div class="list-content">
+              <div class="list-title">Strict Allergen Mode</div>
+            </div>
+            <button class="toggle ${strictAllergen ? 'on' : ''}" id="toggle-allergen"></button>
+          </div>
+          <div class="list-item" onclick="toggleStrictDietary()">
+            <div class="list-icon" style="background:var(--secondary-container);color:var(--on-secondary-container);">&#127807;</div>
+            <div class="list-content">
+              <div class="list-title">Strict Dietary Mode</div>
+            </div>
+            <button class="toggle ${strictDietary ? 'on' : ''}" id="toggle-dietary"></button>
+          </div>
+
+          <div class="list-divider"></div>
+
+          <!-- Meal Preferences -->
+          <div class="section-header">
+            <span class="section-title">Meal Preferences</span>
+          </div>
+          <a href="settings-dietary-restrictions.html" style="text-decoration:none;">
+            <div class="list-item">
+              <div class="list-icon" style="background:var(--tertiary-container);color:var(--on-tertiary-container);">&#128220;</div>
+              <div class="list-content">
+                <div class="list-title">Dietary Restrictions</div>
+                <div class="list-subtitle">${dietRestrictions.length > 0 ? dietRestrictions.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(', ') : 'None set'}</div>
+              </div>
+              <span class="list-trailing">&#8250;</span>
+            </div>
+          </a>
+          <a href="settings-disliked-ingredients.html" style="text-decoration:none;">
+            <div class="list-item">
+              <div class="list-icon" style="background:var(--error-container);color:var(--on-error-container);">&#128078;</div>
+              <div class="list-content">
+                <div class="list-title">Disliked Ingredients</div>
+                <div class="list-subtitle">${dislikes.join(', ')}</div>
+              </div>
+              <span class="list-trailing">&#8250;</span>
+            </div>
+          </a>
+          <a href="settings-cuisine-preferences.html" style="text-decoration:none;">
+            <div class="list-item">
+              <div class="list-icon" style="background:var(--primary-container);color:var(--on-primary-container);">&#127835;</div>
+              <div class="list-content">
+                <div class="list-title">Cuisine Preferences</div>
+                <div class="list-subtitle">${cuisineStr}</div>
+              </div>
+              <span class="list-trailing">&#8250;</span>
+            </div>
+          </a>
+          <a href="settings-spice-level.html" style="text-decoration:none;">
+            <div class="list-item">
+              <div class="list-icon" style="background:var(--error-container);color:var(--on-error-container);">&#127798;&#65039;</div>
+              <div class="list-content">
+                <div class="list-title">Spice Level</div>
+                <div class="list-subtitle">${spiceLabels[spice] || spice}</div>
+              </div>
+              <span class="list-trailing">&#8250;</span>
+            </div>
+          </a>
+          <a href="settings-cooking-time.html" style="text-decoration:none;">
+            <div class="list-item">
+              <div class="list-icon" style="background:var(--secondary-container);color:var(--on-secondary-container);">&#9201;</div>
+              <div class="list-content">
+                <div class="list-title">Cooking Schedule</div>
+                <div class="list-subtitle">Weekday ${weekdayTime}min, Weekend ${weekendTime}min</div>
+              </div>
+              <span class="list-trailing">&#8250;</span>
+            </div>
+          </a>
+
+          <div class="list-divider"></div>
+
+          <!-- Family -->
+          <div class="section-header">
+            <span class="section-title">Family</span>
+          </div>
+          <a href="settings-family-members.html" style="text-decoration:none;">
+            <div class="list-item">
+              <div class="list-icon" style="background:var(--primary-container);color:var(--on-primary-container);">&#128106;</div>
+              <div class="list-content">
+                <div class="list-title">Family Members</div>
+                <div class="list-subtitle">${members.length} members</div>
+              </div>
+              <span class="list-trailing">&#8250;</span>
+            </div>
+          </a>
+
+          <div class="list-divider"></div>
+
+          <!-- Household -->
+          <div class="section-header">
+            <span class="section-title">Household</span>
+          </div>
+          <a href="settings-household.html" style="text-decoration:none;">
+            <div class="list-item">
+              <div class="list-icon" style="background:var(--tertiary-container);color:var(--on-tertiary-container);">&#127968;</div>
+              <div class="list-content">
+                <div class="list-title">Manage Household</div>
+                <div class="list-subtitle">${getHousehold() ? getHousehold().name : 'Create or join a household'}</div>
+              </div>
+              <span class="list-trailing">&#8250;</span>
+            </div>
+          </a>
+
+          <div class="list-divider"></div>
+
+          <!-- Features -->
+          <div class="section-header">
+            <span class="section-title">Features</span>
+          </div>
+          <a href="feature-recipe-rules.html" style="text-decoration:none;">
+            <div class="list-item">
+              <div class="list-icon" style="background:var(--secondary-container);color:var(--on-secondary-container);">&#128209;</div>
+              <div class="list-content">
+                <div class="list-title">Recipe Rules</div>
+                <div class="list-subtitle">Include/Exclude rules for meal plans</div>
+              </div>
+              <span class="list-trailing">&#8250;</span>
+            </div>
+          </a>
+          <a href="feature-pantry.html" style="text-decoration:none;">
+            <div class="list-item">
+              <div class="list-icon" style="background:var(--tertiary-container);color:var(--on-tertiary-container);">&#129746;</div>
+              <div class="list-content">
+                <div class="list-title">Pantry</div>
+                <div class="list-subtitle">Track your kitchen inventory</div>
+              </div>
+              <span class="list-trailing">&#8250;</span>
+            </div>
+          </a>
+          <a href="feature-achievements.html" style="text-decoration:none;">
+            <div class="list-item">
+              <div class="list-icon" style="background:var(--primary-container);color:var(--on-primary-container);">&#127942;</div>
+              <div class="list-content">
+                <div class="list-title">Achievements</div>
+                <div class="list-subtitle">Badges and milestones</div>
+              </div>
+              <span class="list-trailing">&#8250;</span>
+            </div>
+          </a>
+
+          <div class="list-divider"></div>
+
+          <!-- App Settings -->
+          <div class="section-header">
+            <span class="section-title">App Settings</span>
+          </div>
+          <a href="settings-notification-settings.html" style="text-decoration:none;">
+            <div class="list-item">
+              <div class="list-icon" style="background:var(--secondary-container);color:var(--on-secondary-container);">&#128276;</div>
+              <div class="list-content">
+                <div class="list-title">Notifications</div>
+                <div class="list-subtitle">Reminders and alerts</div>
+              </div>
+              <span class="list-trailing">&#8250;</span>
+            </div>
+          </a>
+          <a href="settings-units.html" style="text-decoration:none;">
+            <div class="list-item">
+              <div class="list-icon" style="background:var(--tertiary-container);color:var(--on-tertiary-container);">&#9878;</div>
+              <div class="list-content">
+                <div class="list-title">Units</div>
+                <div class="list-subtitle">Measurement preferences</div>
+              </div>
+              <span class="list-trailing">&#8250;</span>
+            </div>
+          </a>
+          <a href="modal-dark-mode.html" style="text-decoration:none;">
+            <div class="list-item">
+              <div class="list-icon" style="background:var(--inverse-surface);color:var(--inverse-on-surface);">&#127769;</div>
+              <div class="list-content">
+                <div class="list-title">Dark Mode</div>
+                <div class="list-subtitle">${darkModeLabel}</div>
+              </div>
+              <span class="list-trailing">&#8250;</span>
+            </div>
+          </a>
+          <a href="settings-connected-accounts.html" style="text-decoration:none;">
+            <div class="list-item">
+              <div class="list-icon" style="background:var(--primary-container);color:var(--on-primary-container);">&#128279;</div>
+              <div class="list-content">
+                <div class="list-title">Connected Accounts</div>
+                <div class="list-subtitle">Google, WhatsApp, Apple Health</div>
+              </div>
+              <span class="list-trailing">&#8250;</span>
+            </div>
+          </a>
+
+          <div class="list-divider"></div>
+
+          <!-- About -->
+          <div class="section-header">
+            <span class="section-title">About</span>
+          </div>
+          <div class="list-item" style="cursor:default;">
+            <div class="list-icon" style="background:var(--surface-variant);color:var(--on-surface-variant);">&#9432;</div>
+            <div class="list-content">
+              <div class="list-title">Version 1.0.0</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-icon" style="background:var(--surface-variant);color:var(--on-surface-variant);">&#10067;</div>
+            <div class="list-content">
+              <div class="list-title">Help &amp; Support</div>
+            </div>
+            <span class="list-trailing">&#8250;</span>
+          </div>
+          <div class="list-item">
+            <div class="list-icon" style="background:var(--surface-variant);color:var(--on-surface-variant);">&#128172;</div>
+            <div class="list-content">
+              <div class="list-title">Send Feedback</div>
+            </div>
+            <span class="list-trailing">&#8250;</span>
+          </div>
+
+          <!-- Sign Out -->
+          <div style="padding:var(--sp-lg) 0 var(--sp-xl);">
+            <button class="btn btn-outlined" style="width:100%;color:var(--error);border-color:var(--error);" onclick="signOut()">Sign Out</button>
+          </div>
+
+        </div>
+      </div>
+    `;
+
+    function toggleStrictAllergen() {
+      const current = getState('strict_allergen', true);
+      setState('strict_allergen', !current);
+      const el = document.getElementById('toggle-allergen');
+      el.classList.toggle('on');
+    }
+
+    function toggleStrictDietary() {
+      const current = getState('strict_dietary', true);
+      setState('strict_dietary', !current);
+      const el = document.getElementById('toggle-dietary');
+      el.classList.toggle('on');
+    }
+
+    function signOut() {
+      setState('auth', false);
+      window.location.href = 'auth-splash.html';
+    }
+  </script>
+</body>
+</html>

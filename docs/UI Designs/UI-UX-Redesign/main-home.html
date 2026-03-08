@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Home</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app">
+    <!-- Status Bar -->
+    <script>document.getElementById('app').innerHTML = renderStatusBar();</script>
+
+    <!-- Top Bar -->
+    <div class="top-app-bar">
+      <a href="settings-main.html" class="nav-icon">&#9776;</a>
+      <span class="title">RasoiAI</span>
+      <div class="actions">
+        <a href="feature-notifications.html" class="action-icon" style="position:relative;">
+          &#128276;
+          <span class="badge" style="position:absolute;top:2px;right:2px;min-width:16px;height:16px;border-radius:8px;background:var(--error);color:var(--on-error);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;" id="notif-badge"></span>
+        </a>
+        <a href="settings-edit-profile.html" class="action-icon">&#128100;</a>
+      </div>
+    </div>
+
+    <!-- Scrollable Content -->
+    <div class="screen-content" id="screen-content">
+      <div class="content-padding">
+        <!-- Festival Banner -->
+        <a href="modal-festival-recipes.html" style="text-decoration:none;">
+          <div class="festival-banner">
+            <div class="festival-icon">&#127881;</div>
+            <div class="festival-info">
+              <div class="festival-name">Holi is coming! Mar 14</div>
+              <div class="festival-desc">Special Holi recipes added to your plan</div>
+            </div>
+            <span style="color:var(--on-surface-variant);">&#8250;</span>
+          </div>
+        </a>
+
+        <!-- Week Header -->
+        <div class="week-header">
+          <div class="week-nav">
+            <button class="icon-btn" id="week-prev">&#8249;</button>
+          </div>
+          <span class="week-range" id="week-range"></span>
+          <div class="week-nav">
+            <button class="icon-btn" id="week-next">&#8250;</button>
+          </div>
+        </div>
+
+        <!-- Day Selector -->
+        <div class="day-selector" id="day-selector"></div>
+
+        <!-- Meals Container -->
+        <div id="meals-container"></div>
+      </div>
+    </div>
+
+    <!-- Refresh FAB -->
+    <a href="modal-refresh-options.html" class="fab" title="Refresh meal plan">&#8635;</a>
+
+    <!-- Bottom Nav -->
+    <nav id="bottom-nav"></nav>
+  </div>
+
+  <script>
+    initPage();
+
+    // Set notification badge count
+    const unreadCount = MOCK_NOTIFICATIONS.filter(n => !n.read).length;
+    document.getElementById('notif-badge').textContent = unreadCount > 0 ? unreadCount : '';
+    if (unreadCount === 0) document.getElementById('notif-badge').style.display = 'none';
+
+    // Render bottom nav
+    document.getElementById('bottom-nav').outerHTML = renderBottomNav('home');
+
+    // Week range
+    const plan = getMealPlan();
+    const startDate = new Date(plan.week_start_date + 'T00:00:00');
+    const endDate = new Date(plan.week_end_date + 'T00:00:00');
+    document.getElementById('week-range').textContent =
+      startDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }) + ' - ' +
+      endDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    // Day selector
+    let selectedDay = 5; // Saturday = "today"
+    const weekDates = getWeekDates();
+
+    function renderDaySelector() {
+      const container = document.getElementById('day-selector');
+      container.innerHTML = weekDates.map((d, i) => {
+        const classes = ['day-chip'];
+        if (d.isToday) classes.push('today');
+        if (i === selectedDay) classes.push('selected');
+        return `<button class="${classes.join(' ')}" data-index="${i}">
+          <span class="day-label">${d.label}</span>
+          <span class="day-number">${d.number}</span>
+        </button>`;
+      }).join('');
+
+      container.querySelectorAll('.day-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          selectedDay = parseInt(chip.dataset.index);
+          renderDaySelector();
+          renderMeals();
+        });
+      });
+    }
+
+    function renderMeals() {
+      const day = getDayData(selectedDay);
+      const lockedMeals = getState('locked_meals', {});
+      const mealTypes = ['breakfast', 'lunch', 'dinner', 'snacks'];
+      const container = document.getElementById('meals-container');
+
+      container.innerHTML = mealTypes.map(type => {
+        const items = day[type] || [];
+        const dayLocked = getState('locked_days', {})[selectedDay + '_' + type] || false;
+
+        return `<div class="meal-section">
+          <div class="meal-section-header">
+            <div class="meal-type">
+              <span class="icon">${MEAL_ICONS[type]}</span>
+              <span>${type.charAt(0).toUpperCase() + type.slice(1)}</span>
+            </div>
+            <div class="meal-section-actions">
+              <button class="icon-btn ${dayLocked ? 'active' : ''}" title="Lock ${type}" onclick="toggleDayLock(${selectedDay}, '${type}')">
+                ${dayLocked ? '&#128274;' : '&#128275;'}
+              </button>
+              <a href="modal-add-recipe.html" class="icon-btn" title="Add recipe">+</a>
+            </div>
+          </div>
+          ${items.map(item => {
+            const isLocked = lockedMeals[item.id] || false;
+            return `<div class="meal-card ${isLocked ? 'locked' : ''}">
+              <div class="veg-indicator"></div>
+              <div class="recipe-image">${getFoodEmoji(item.category)}</div>
+              <div class="recipe-info">
+                <div class="recipe-name">${item.recipe_name}</div>
+                <div class="recipe-meta">
+                  <span>&#9201; ${item.prep_time} min</span>
+                  <span>&#183; ${item.calories} cal</span>
+                </div>
+              </div>
+              <div class="recipe-actions">
+                <a href="modal-recipe-action-sheet.html" class="icon-btn" title="More options">
+                  ${isLocked ? '&#128274;' : '&#128275;'}
+                </a>
+                <a href="modal-swap-sheet.html" class="icon-btn" title="Swap recipe">&#8644;</a>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>`;
+      }).join('');
+    }
+
+    function toggleDayLock(dayIdx, mealType) {
+      const lockedDays = getState('locked_days', {});
+      const key = dayIdx + '_' + mealType;
+      lockedDays[key] = !lockedDays[key];
+      setState('locked_days', lockedDays);
+      renderMeals();
+    }
+
+    renderDaySelector();
+    renderMeals();
+  </script>
+</body>
+</html>

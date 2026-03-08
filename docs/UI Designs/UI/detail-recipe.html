@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Recipe Detail</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .hero-section {
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(135deg, var(--primary-container), var(--tertiary-container));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 72px;
+      position: relative;
+    }
+    .hero-section .dietary-badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+    }
+    .recipe-header {
+      padding: var(--sp-md);
+    }
+    .recipe-header .recipe-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--on-surface);
+      margin-bottom: 4px;
+    }
+    .recipe-header .recipe-subtitle {
+      font-size: 14px;
+      color: var(--on-surface-variant);
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: var(--sp-sm) var(--sp-md);
+      gap: var(--sp-sm);
+    }
+    .info-item {
+      flex: 1;
+      text-align: center;
+      padding: var(--sp-sm);
+      background: var(--surface-variant);
+      border-radius: var(--radius-sm);
+    }
+    .info-item .info-value {
+      font-family: 'Poppins', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .info-item .info-label {
+      font-size: 11px;
+      color: var(--on-surface-variant);
+      margin-top: 2px;
+    }
+    .servings-control {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--sp-sm);
+    }
+    .servings-control .servings-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--outline);
+      background: transparent;
+      color: var(--on-surface);
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .servings-control .servings-btn:hover {
+      background: var(--surface-variant);
+    }
+    .servings-control .servings-value {
+      font-family: 'Poppins', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      min-width: 20px;
+      text-align: center;
+    }
+    .tab-content {
+      padding: var(--sp-md);
+    }
+    .ingredient-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--outline-variant);
+    }
+    .ingredient-item:last-child {
+      border-bottom: none;
+    }
+    .ingredient-name {
+      font-size: 14px;
+      color: var(--on-surface);
+    }
+    .ingredient-qty {
+      font-size: 13px;
+      color: var(--on-surface-variant);
+      white-space: nowrap;
+    }
+    .instruction-step {
+      display: flex;
+      gap: var(--sp-md);
+      padding: var(--sp-sm) 0;
+    }
+    .step-number {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .step-text {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--on-surface);
+    }
+    .nutrition-card {
+      background: var(--surface);
+      border-radius: var(--radius-md);
+      padding: var(--sp-md);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: var(--sp-sm);
+    }
+    .nutrition-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+    }
+    .nutrition-row:not(:last-child) {
+      border-bottom: 1px solid var(--outline-variant);
+    }
+    .nutrition-name {
+      font-size: 14px;
+      color: var(--on-surface);
+      font-weight: 500;
+    }
+    .nutrition-value {
+      font-size: 14px;
+      color: var(--on-surface-variant);
+    }
+    .nutrition-bar-wrap {
+      flex: 1;
+      max-width: 120px;
+      margin: 0 var(--sp-md);
+    }
+    .nutrition-bar {
+      height: 6px;
+      background: var(--surface-variant);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .nutrition-bar .fill {
+      height: 100%;
+      border-radius: 3px;
+      background: var(--primary);
+    }
+    .bottom-action-bar {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+      padding: var(--sp-sm) var(--sp-md);
+      border-top: 1px solid var(--outline-variant);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .bottom-action-bar .btn-filled {
+      flex: 1;
+    }
+  </style>
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app">
+  </div>
+
+  <script>
+    initPage();
+
+    const recipe = MOCK_RECIPE;
+    let servings = recipe.servings;
+    let activeTab = 'ingredients';
+
+    function scaleQty(qty, baseServings) {
+      if (!qty || qty === '') return '';
+      const num = parseFloat(qty);
+      if (isNaN(num)) return qty;
+      const scaled = (num / baseServings) * servings;
+      return scaled % 1 === 0 ? scaled.toString() : scaled.toFixed(1);
+    }
+
+    function render() {
+      const app = document.getElementById('app');
+      app.innerHTML = `
+        ${renderStatusBar()}
+        ${renderTopBar({
+          title: 'Recipe',
+          backLink: 'main-home.html',
+          actions: `
+            <button class="icon-btn" id="favBtn" onclick="toggleFav()">&#9825;</button>
+            <button class="icon-btn" onclick="alert('Share recipe!')">&#x1F4E4;</button>
+          `
+        })}
+
+        <div class="screen-content">
+          <div class="hero-section">
+            <span class="dietary-badge veg">&#x25CF; VEG</span>
+            &#x1F35B;
+          </div>
+
+          <div class="recipe-header">
+            <div class="recipe-title">${recipe.name}</div>
+            <div class="recipe-subtitle">
+              <span>${recipe.cuisine}</span>
+              <span>&#x2022;</span>
+              <span>${recipe.difficulty}</span>
+            </div>
+          </div>
+
+          <div class="info-row">
+            <div class="info-item">
+              <div class="info-value">${recipe.prep_time}m</div>
+              <div class="info-label">Prep</div>
+            </div>
+            <div class="info-item">
+              <div class="info-value">${recipe.cook_time}m</div>
+              <div class="info-label">Cook</div>
+            </div>
+            <div class="info-item">
+              <div class="info-value">${recipe.calories}</div>
+              <div class="info-label">Cal</div>
+            </div>
+            <div class="info-item">
+              <div class="servings-control">
+                <button class="servings-btn" onclick="changeServings(-1)">&#x2212;</button>
+                <span class="servings-value" id="servingsVal">${servings}</span>
+                <button class="servings-btn" onclick="changeServings(1)">+</button>
+              </div>
+              <div class="info-label">Servings</div>
+            </div>
+          </div>
+
+          <div class="tab-bar">
+            <button class="tab ${activeTab === 'ingredients' ? 'active' : ''}" onclick="switchTab('ingredients')">Ingredients</button>
+            <button class="tab ${activeTab === 'instructions' ? 'active' : ''}" onclick="switchTab('instructions')">Instructions</button>
+            <button class="tab ${activeTab === 'nutrition' ? 'active' : ''}" onclick="switchTab('nutrition')">Nutrition</button>
+          </div>
+
+          <div class="tab-content" id="tab-ingredients" style="${activeTab !== 'ingredients' ? 'display:none' : ''}">
+            ${recipe.ingredients.map(ing => `
+              <div class="ingredient-item">
+                <span class="ingredient-name">${ing.name}</span>
+                <span class="ingredient-qty">${scaleQty(ing.qty, recipe.servings)} ${ing.unit}</span>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="tab-content" id="tab-instructions" style="${activeTab !== 'instructions' ? 'display:none' : ''}">
+            ${recipe.instructions.map((step, i) => `
+              <div class="instruction-step">
+                <div class="step-number">${i + 1}</div>
+                <div class="step-text">${step}</div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="tab-content" id="tab-nutrition" style="${activeTab !== 'nutrition' ? 'display:none' : ''}">
+            <div class="nutrition-card">
+              ${[
+                { name: 'Calories', value: recipe.nutrition.calories + ' kcal', pct: 100 },
+                { name: 'Protein', value: recipe.nutrition.protein + ' g', pct: (recipe.nutrition.protein / 50) * 100 },
+                { name: 'Fat', value: recipe.nutrition.fat + ' g', pct: (recipe.nutrition.fat / 65) * 100 },
+                { name: 'Carbs', value: recipe.nutrition.carbs + ' g', pct: (recipe.nutrition.carbs / 300) * 100 },
+                { name: 'Fiber', value: recipe.nutrition.fiber + ' g', pct: (recipe.nutrition.fiber / 25) * 100 }
+              ].map(n => `
+                <div class="nutrition-row">
+                  <span class="nutrition-name">${n.name}</span>
+                  <div class="nutrition-bar-wrap">
+                    <div class="nutrition-bar">
+                      <div class="fill" style="width: ${Math.min(n.pct, 100)}%"></div>
+                    </div>
+                  </div>
+                  <span class="nutrition-value">${n.value}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+
+        <div class="bottom-action-bar">
+          <a href="detail-cooking-mode.html" class="btn btn-filled btn-large" style="text-decoration:none; flex:1; text-align:center;">Start Cooking</a>
+          <a href="main-chat.html" class="btn btn-text">Ask RasoiAI</a>
+        </div>
+      `;
+
+      // Update fav state
+      const favs = getState('favorites', []);
+      const favBtn = document.getElementById('favBtn');
+      if (favBtn && favs.includes(recipe.id)) {
+        favBtn.innerHTML = '&#x2764;&#xFE0F;';
+        favBtn.classList.add('active');
+      }
+    }
+
+    function switchTab(tab) {
+      activeTab = tab;
+      document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+      document.getElementById('tab-' + tab).style.display = '';
+      document.querySelectorAll('.tab-bar .tab').forEach(el => el.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+
+    function changeServings(delta) {
+      servings = Math.max(1, Math.min(12, servings + delta));
+      render();
+    }
+
+    function toggleFav() {
+      const favs = getState('favorites', []);
+      const idx = favs.indexOf(recipe.id);
+      if (idx >= 0) favs.splice(idx, 1);
+      else favs.push(recipe.id);
+      setState('favorites', favs);
+      render();
+    }
+
+    render();
+  </script>
+</body>
+</html>

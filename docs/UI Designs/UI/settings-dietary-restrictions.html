@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Dietary Restrictions</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app"></div>
+
+  <script>
+    initPage();
+
+    const allRestrictions = [
+      { id: 'jain', label: 'Jain', badge: 'jain', desc: 'No root vegetables, no onion/garlic' },
+      { id: 'sattvic', label: 'Sattvic', badge: 'sattvic', desc: 'Pure, clean foods without onion/garlic' },
+      { id: 'halal', label: 'Halal', badge: 'halal', desc: 'Halal-certified ingredients only' },
+      { id: 'vegan', label: 'Vegan', badge: 'vegan', desc: 'No animal products' },
+      { id: 'no_gluten', label: 'No Gluten', badge: 'fasting', desc: 'Gluten-free meals only' }
+    ];
+
+    let selected = getState('dietary_restrictions', SHARMA_DEFAULTS.dietary_restrictions);
+
+    function render() {
+      document.getElementById('app').innerHTML = `
+        ${renderStatusBar()}
+        ${renderTopBar({ title: 'Dietary Restrictions', backLink: 'settings-main.html' })}
+
+        <div class="screen-content">
+          <div class="content-padding">
+            <p class="body-medium" style="color:var(--on-surface-variant);margin-bottom:var(--sp-lg);">
+              Select any dietary restrictions for your family. These will be strictly enforced during meal plan generation.
+            </p>
+
+            ${allRestrictions.map(r => {
+              const isChecked = selected.includes(r.id);
+              return `
+                <div class="list-item" onclick="toggleRestriction('${r.id}')" style="margin-bottom:var(--sp-xs);">
+                  <div class="checkbox ${isChecked ? 'checked' : ''}" id="cb-${r.id}">${isChecked ? '&#10003;' : ''}</div>
+                  <div class="list-content">
+                    <div style="display:flex;align-items:center;gap:var(--sp-sm);">
+                      <span class="list-title">${r.label}</span>
+                      <span class="dietary-badge ${r.badge}">${r.label.toUpperCase()}</span>
+                    </div>
+                    <div class="list-subtitle">${r.desc}</div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+
+          </div>
+        </div>
+
+        <!-- Save Button -->
+        <div style="padding:var(--sp-md);flex-shrink:0;">
+          <button class="btn btn-filled" style="width:100%;" onclick="saveRestrictions()">Save</button>
+        </div>
+      `;
+    }
+
+    function toggleRestriction(id) {
+      const idx = selected.indexOf(id);
+      if (idx >= 0) {
+        selected.splice(idx, 1);
+      } else {
+        selected.push(id);
+      }
+      render();
+    }
+
+    function saveRestrictions() {
+      setState('dietary_restrictions', selected);
+      window.location.href = 'settings-main.html';
+    }
+
+    render();
+  </script>
+</body>
+</html>

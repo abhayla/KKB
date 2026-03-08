@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Onboarding Step 4: Allergies & Dislikes</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .step-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--on-surface);
+      margin-bottom: var(--sp-xs);
+    }
+    .step-subtitle {
+      font-size: 14px;
+      color: var(--on-surface-variant);
+      margin-bottom: var(--sp-lg);
+    }
+    .field-label {
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--on-surface);
+      margin-bottom: var(--sp-sm);
+    }
+    .field-hint {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      margin-bottom: var(--sp-sm);
+    }
+    .search-input {
+      width: 100%;
+      height: 48px;
+      border: 1px solid var(--outline);
+      border-radius: var(--radius-sm);
+      padding: 0 16px;
+      font-family: inherit;
+      font-size: 14px;
+      background: transparent;
+      color: var(--on-surface);
+      outline: none;
+      margin-bottom: var(--sp-sm);
+    }
+    .search-input:focus {
+      border-color: var(--primary);
+      border-width: 2px;
+      padding: 0 15px;
+    }
+    .search-input::placeholder {
+      color: var(--on-surface-variant);
+    }
+    .allergy-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 36px;
+      padding: 0 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: default;
+    }
+    .allergy-chip.severe {
+      background: var(--error-container);
+      color: var(--on-error-container);
+    }
+    .allergy-chip.mild {
+      background: color-mix(in srgb, var(--warning) 15%, transparent);
+      color: #8B6914;
+    }
+    .allergy-chip .severity-badge {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 1px 6px;
+      border-radius: var(--radius-xs);
+    }
+    .allergy-chip.severe .severity-badge {
+      background: var(--error);
+      color: var(--on-error);
+    }
+    .allergy-chip.mild .severity-badge {
+      background: var(--warning);
+      color: #fff;
+    }
+    .allergy-chip .remove-btn {
+      font-size: 16px;
+      cursor: pointer;
+      opacity: 0.7;
+      background: none;
+      border: none;
+      color: inherit;
+      padding: 0;
+      line-height: 1;
+    }
+    .allergy-chip .remove-btn:hover {
+      opacity: 1;
+    }
+    .dislike-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 36px;
+      padding: 0 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      background: var(--surface-variant);
+      color: var(--on-surface);
+      cursor: default;
+    }
+    .dislike-chip .remove-btn {
+      font-size: 16px;
+      cursor: pointer;
+      opacity: 0.7;
+      background: none;
+      border: none;
+      color: inherit;
+      padding: 0;
+      line-height: 1;
+    }
+    .dislike-chip .remove-btn:hover {
+      opacity: 1;
+    }
+    .bottom-buttons {
+      display: flex;
+      gap: var(--sp-sm);
+      padding: var(--sp-md);
+      border-top: 1px solid var(--outline-variant);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .bottom-buttons .btn {
+      flex: 1;
+    }
+    .section-divider {
+      height: 1px;
+      background: var(--outline-variant);
+      margin: var(--sp-lg) 0;
+    }
+  </style>
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Status Bar -->
+    <script>document.write(renderStatusBar())</script>
+
+    <!-- Top Bar -->
+    <script>document.write(renderTopBar({ title: 'Set Up Profile', backLink: 'onboarding-step3-cuisine.html' }))</script>
+
+    <!-- Onboarding Progress -->
+    <script>document.write(renderOnboardingProgress(3))</script>
+
+    <!-- Content -->
+    <div class="screen-content">
+      <div class="content-padding">
+        <div class="step-title">Allergies & Dislikes</div>
+        <div class="step-subtitle">Safety first! We'll never include allergens in your meal plan.</div>
+
+        <!-- Allergies Section -->
+        <div class="mb-lg">
+          <div class="field-label">&#x26A0;&#xFE0F; Allergies</div>
+          <div class="field-hint">Allergenic ingredients will be strictly excluded from all recipes.</div>
+          <input type="text" class="search-input" placeholder="Search ingredients (e.g., Peanuts, Shellfish...)" />
+
+          <div class="chip-group">
+            <span class="allergy-chip severe">
+              &#x1F95C; Peanuts
+              <span class="severity-badge">SEVERE</span>
+              <button class="remove-btn" onclick="this.parentElement.remove()">&#x2715;</button>
+            </span>
+            <span class="allergy-chip mild">
+              &#x1F330; Cashews
+              <span class="severity-badge">MILD</span>
+              <button class="remove-btn" onclick="this.parentElement.remove()">&#x2715;</button>
+            </span>
+          </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Dislikes Section -->
+        <div class="mb-lg">
+          <div class="field-label">&#x1F44E; Dislikes</div>
+          <div class="field-hint">We'll try to avoid these ingredients when possible.</div>
+          <input type="text" class="search-input" placeholder="Search ingredients (e.g., Karela, Baingan...)" />
+
+          <div class="chip-group">
+            <span class="dislike-chip">
+              Karela
+              <button class="remove-btn" onclick="this.parentElement.remove()">&#x2715;</button>
+            </span>
+            <span class="dislike-chip">
+              Baingan
+              <button class="remove-btn" onclick="this.parentElement.remove()">&#x2715;</button>
+            </span>
+            <span class="dislike-chip">
+              Mushroom
+              <button class="remove-btn" onclick="this.parentElement.remove()">&#x2715;</button>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Buttons -->
+    <div class="bottom-buttons">
+      <a href="onboarding-step3-cuisine.html" class="btn btn-outlined" style="text-align:center;">Back</a>
+      <a href="onboarding-step5-cooking-time.html" class="btn btn-filled" style="text-align:center;">Next</a>
+    </div>
+  </div>
+
+  <script>initPage();</script>
+</body>
+</html>

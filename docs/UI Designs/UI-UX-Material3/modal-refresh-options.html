@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Refresh Meals</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame bottom-sheet-page" id="app"></div>
+
+  <script>
+    initPage();
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      ${renderStatusBar()}
+
+      <!-- Dimmed parent preview -->
+      <div class="top-app-bar" style="opacity:0.3;">
+        <a href="main-home.html" class="nav-icon">&#9776;</a>
+        <span class="title">RasoiAI</span>
+        <div class="actions">
+          <span class="action-icon">&#128276;</span>
+          <span class="action-icon">&#128100;</span>
+        </div>
+      </div>
+      <div class="screen-content" style="opacity:0.15;filter:blur(2px);pointer-events:none;">
+        <div class="content-padding">
+          <div class="week-header">
+            <span class="week-range">Mar 2 - Mar 8, 2026</span>
+          </div>
+          <div style="height:40px;background:var(--surface-variant);border-radius:var(--radius-md);margin:var(--sp-sm) 0;"></div>
+          <div style="height:80px;background:var(--surface);border-radius:var(--radius-md);margin:var(--sp-sm) 0;box-shadow:var(--shadow-sm);"></div>
+          <div style="height:80px;background:var(--surface);border-radius:var(--radius-md);margin:var(--sp-sm) 0;box-shadow:var(--shadow-sm);"></div>
+          <div style="height:80px;background:var(--surface);border-radius:var(--radius-md);margin:var(--sp-sm) 0;box-shadow:var(--shadow-sm);"></div>
+        </div>
+      </div>
+
+      <!-- Dialog Overlay -->
+      <div class="dialog-overlay">
+        <div class="dialog" style="max-width:300px;">
+          <div class="dialog-title" style="text-align:center;">Refresh Meals</div>
+
+          <!-- Option 1: Refresh Today -->
+          <div class="card card-outlined" style="margin-bottom:var(--sp-sm);cursor:pointer;padding:var(--sp-md);" onclick="this.style.borderColor='var(--primary)';this.nextElementSibling.style.borderColor='var(--outline-variant)';">
+            <div style="display:flex;align-items:center;gap:var(--sp-md);">
+              <div style="width:40px;height:40px;border-radius:var(--radius-sm);background:var(--primary-container);display:flex;align-items:center;justify-content:center;font-size:20px;">&#128197;</div>
+              <div style="flex:1;">
+                <div class="title-small" style="font-weight:600;">Refresh Today</div>
+                <div class="body-small" style="color:var(--on-surface-variant);margin-top:2px;">Regenerate meals for Saturday only</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Option 2: Refresh Entire Week -->
+          <div class="card card-outlined" style="cursor:pointer;padding:var(--sp-md);" onclick="this.style.borderColor='var(--primary)';this.previousElementSibling.style.borderColor='var(--outline-variant)';">
+            <div style="display:flex;align-items:center;gap:var(--sp-md);">
+              <div style="width:40px;height:40px;border-radius:var(--radius-sm);background:var(--secondary-container);display:flex;align-items:center;justify-content:center;font-size:20px;">&#128467;</div>
+              <div style="flex:1;">
+                <div class="title-small" style="font-weight:600;">Refresh Entire Week</div>
+                <div class="body-small" style="color:var(--on-surface-variant);margin-top:2px;">Generate a completely new meal plan</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dialog-actions" style="justify-content:center;margin-top:var(--sp-lg);">
+            <a href="main-home.html" class="btn btn-text" style="text-decoration:none;">Cancel</a>
+          </div>
+        </div>
+      </div>
+    `;
+  </script>
+</body>
+</html>

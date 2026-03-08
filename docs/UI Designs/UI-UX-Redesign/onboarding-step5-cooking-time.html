@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Onboarding Step 5: Cooking Schedule</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .step-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--on-surface);
+      margin-bottom: var(--sp-xs);
+    }
+    .step-subtitle {
+      font-size: 14px;
+      color: var(--on-surface-variant);
+      margin-bottom: var(--sp-lg);
+    }
+    .field-label {
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--on-surface);
+      margin-bottom: var(--sp-sm);
+    }
+    .field-hint {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      margin-bottom: var(--sp-sm);
+    }
+    .select-field {
+      width: 100%;
+      height: 56px;
+      border: 1px solid var(--outline);
+      border-radius: var(--radius-xs);
+      padding: 0 16px;
+      font-family: inherit;
+      font-size: 16px;
+      background: transparent;
+      color: var(--on-surface);
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237A757F' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      cursor: pointer;
+    }
+    .select-field:focus {
+      border-color: var(--primary);
+      border-width: 2px;
+      padding: 0 15px;
+    }
+    .time-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-md);
+      margin-bottom: var(--sp-lg);
+    }
+    .time-card {
+      background: var(--surface);
+      border-radius: var(--radius-md);
+      padding: var(--sp-md);
+      box-shadow: var(--shadow-sm);
+      text-align: center;
+    }
+    .time-card .time-icon {
+      font-size: 28px;
+      margin-bottom: var(--sp-sm);
+    }
+    .time-card .time-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--on-surface-variant);
+      margin-bottom: var(--sp-sm);
+    }
+    .day-toggle-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+    .day-toggle {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: var(--sp-sm) 0;
+      border-radius: var(--radius-sm);
+      border: 2px solid var(--outline-variant);
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .day-toggle:hover {
+      border-color: var(--primary);
+    }
+    .day-toggle.selected {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: var(--on-primary);
+    }
+    .day-toggle .day-abbr {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .day-toggle:not(.selected) .day-abbr {
+      color: var(--on-surface);
+    }
+    .day-toggle .day-icon {
+      font-size: 16px;
+    }
+    .bottom-buttons {
+      display: flex;
+      gap: var(--sp-sm);
+      padding: var(--sp-md);
+      border-top: 1px solid var(--outline-variant);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .bottom-buttons .btn {
+      flex: 1;
+    }
+    .section-divider {
+      height: 1px;
+      background: var(--outline-variant);
+      margin: var(--sp-lg) 0;
+    }
+  </style>
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Status Bar -->
+    <script>document.write(renderStatusBar())</script>
+
+    <!-- Top Bar -->
+    <script>document.write(renderTopBar({ title: 'Set Up Profile', backLink: 'onboarding-step4-ingredients.html' }))</script>
+
+    <!-- Onboarding Progress -->
+    <script>document.write(renderOnboardingProgress(4))</script>
+
+    <!-- Content -->
+    <div class="screen-content">
+      <div class="content-padding">
+        <div class="step-title">Cooking Schedule</div>
+        <div class="step-subtitle">How much time do you have? We'll pick recipes that fit.</div>
+
+        <!-- Cooking Time -->
+        <div class="time-cards">
+          <div class="time-card">
+            <div class="time-icon">&#x1F4BC;</div>
+            <div class="time-label">Weekday Cooking</div>
+            <select class="select-field" id="weekdayTime" style="height:48px; font-size:14px;">
+              <option value="15">15 min</option>
+              <option value="20">20 min</option>
+              <option value="25">25 min</option>
+              <option value="30" selected>30 min</option>
+              <option value="45">45 min</option>
+              <option value="60">60 min</option>
+            </select>
+          </div>
+
+          <div class="time-card">
+            <div class="time-icon">&#x1F3E1;</div>
+            <div class="time-label">Weekend Cooking</div>
+            <select class="select-field" id="weekendTime" style="height:48px; font-size:14px;">
+              <option value="30">30 min</option>
+              <option value="45">45 min</option>
+              <option value="60" selected>60 min</option>
+              <option value="90">90 min</option>
+              <option value="120">120 min</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Busy Days -->
+        <div class="mb-lg">
+          <div class="field-label">Busy Days</div>
+          <div class="field-hint">On busy days, we'll suggest quicker recipes (max weekday time).</div>
+
+          <div class="day-toggle-grid">
+            <button class="day-toggle selected" onclick="toggleDay(this)">
+              <span class="day-abbr">Mon</span>
+              <span class="day-icon">&#x1F525;</span>
+            </button>
+            <button class="day-toggle" onclick="toggleDay(this)">
+              <span class="day-abbr">Tue</span>
+              <span class="day-icon">&nbsp;</span>
+            </button>
+            <button class="day-toggle selected" onclick="toggleDay(this)">
+              <span class="day-abbr">Wed</span>
+              <span class="day-icon">&#x1F525;</span>
+            </button>
+            <button class="day-toggle" onclick="toggleDay(this)">
+              <span class="day-abbr">Thu</span>
+              <span class="day-icon">&nbsp;</span>
+            </button>
+            <button class="day-toggle selected" onclick="toggleDay(this)">
+              <span class="day-abbr">Fri</span>
+              <span class="day-icon">&#x1F525;</span>
+            </button>
+            <button class="day-toggle" onclick="toggleDay(this)">
+              <span class="day-abbr">Sat</span>
+              <span class="day-icon">&nbsp;</span>
+            </button>
+            <button class="day-toggle" onclick="toggleDay(this)">
+              <span class="day-abbr">Sun</span>
+              <span class="day-icon">&nbsp;</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Buttons -->
+    <div class="bottom-buttons">
+      <a href="onboarding-step4-ingredients.html" class="btn btn-outlined" style="text-align:center;">Back</a>
+      <a href="onboarding-generation.html" class="btn btn-filled" style="text-align:center;">Generate Meal Plan</a>
+    </div>
+  </div>
+
+  <script>
+    initPage();
+
+    function toggleDay(el) {
+      el.classList.toggle('selected');
+      const icon = el.querySelector('.day-icon');
+      if (el.classList.contains('selected')) {
+        icon.innerHTML = '\uD83D\uDD25';
+      } else {
+        icon.innerHTML = '&nbsp;';
+      }
+    }
+  </script>
+</body>
+</html>

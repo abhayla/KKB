@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Meal Status</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame bottom-sheet-page" id="app"></div>
+
+  <script>
+    initPage();
+    let selectedStatus = 'planned';
+
+    document.getElementById('app').innerHTML = `
+      ${renderStatusBar()}
+      <div class="top-app-bar" style="opacity:0.3;">
+        <a href="main-home.html" class="nav-icon">&#9776;</a>
+        <span class="title">RasoiAI</span>
+      </div>
+      <div class="screen-content" style="opacity:0.15;filter:blur(2px);pointer-events:none;">
+        <div class="content-padding">
+          <div style="height:200px;"></div>
+        </div>
+      </div>
+
+      <div class="bottom-sheet-overlay">
+        <div class="bottom-sheet">
+          <div class="handle"></div>
+          <div class="title-large" style="font-size:18px;font-weight:600;margin-bottom:var(--sp-xs);">Update Meal Status</div>
+          <div class="body-medium" style="color:var(--on-surface-variant);margin-bottom:var(--sp-lg);">Monday Dinner - Paneer Masala + Naan</div>
+
+          <!-- Status Options -->
+          ${[
+            { id: 'planned', icon: '&#128197;', label: 'Planned', desc: 'Default - meal is in the plan', color: 'var(--outline)' },
+            { id: 'cooked', icon: '&#9989;', label: 'Cooked', desc: 'Mark as prepared and eaten', color: 'var(--secondary)' },
+            { id: 'skipped', icon: '&#10060;', label: 'Skipped', desc: 'Nobody ate this meal', color: 'var(--on-surface-variant)' },
+            { id: 'ordered', icon: '&#128188;', label: 'Ordered Out', desc: 'Ate out or ordered delivery', color: 'var(--tertiary)' }
+          ].map((s, i) => `
+            <label style="display:flex;align-items:center;gap:var(--sp-md);padding:var(--sp-md);border:2px solid ${i === 0 ? 'var(--primary)' : 'var(--outline-variant)'};border-radius:var(--radius-sm);margin-bottom:var(--sp-sm);cursor:pointer;" onclick="document.querySelectorAll('.status-option').forEach(l=>{l.style.borderColor='var(--outline-variant)';l.style.background='transparent';});this.style.borderColor='var(--primary)';this.style.background='color-mix(in srgb, var(--primary) 5%, transparent)';document.getElementById('rating-section').style.display=this.dataset.id==='cooked'?'block':'none';" class="status-option" data-id="${s.id}">
+              <span style="font-size:24px;color:${s.color};">${s.icon}</span>
+              <div style="flex:1;">
+                <div class="title-small" style="font-weight:600;">${s.label}</div>
+                <div class="body-small" style="color:var(--on-surface-variant);">${s.desc}</div>
+              </div>
+              <div class="radio ${i === 0 ? 'selected' : ''}" style="${i === 0 ? 'border-color:var(--primary);' : ''}"><div style="width:10px;height:10px;border-radius:50%;${i === 0 ? 'background:var(--primary);' : ''}"></div></div>
+            </label>
+          `).join('')}
+
+          <!-- Rating (shown when Cooked) -->
+          <div id="rating-section" style="display:none;margin:var(--sp-md) 0;">
+            <div class="body-medium" style="font-weight:500;margin-bottom:var(--sp-xs);">How was it?</div>
+            <div class="star-rating" style="font-size:28px;">
+              ${[1,2,3,4,5].map(i => `<span class="star" onclick="document.querySelectorAll('.star-rating .star').forEach((s,j)=>s.classList.toggle('filled',j<${i}));" style="cursor:pointer;">&#9733;</span>`).join('')}
+            </div>
+          </div>
+
+          <button class="btn btn-filled" style="width:100%;margin-top:var(--sp-md);">Update</button>
+        </div>
+      </div>
+    `;
+  </script>
+</body>
+</html>

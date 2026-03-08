@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Rule Conflict</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame bottom-sheet-page" id="app"></div>
+
+  <script>
+    initPage();
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      ${renderStatusBar()}
+
+      <!-- Dimmed parent preview -->
+      <div class="top-app-bar" style="opacity:0.3;">
+        <a href="feature-recipe-rules.html" class="nav-icon">&#8592;</a>
+        <span class="title">Recipe Rules</span>
+      </div>
+      <div class="screen-content" style="opacity:0.15;filter:blur(2px);pointer-events:none;">
+        <div class="content-padding">
+          <div style="height:48px;background:var(--surface-variant);border-radius:var(--radius-md);margin:var(--sp-sm) 0;"></div>
+          <div style="height:64px;background:var(--surface);border-radius:var(--radius-md);margin:var(--sp-sm) 0;box-shadow:var(--shadow-sm);"></div>
+          <div style="height:64px;background:var(--surface);border-radius:var(--radius-md);margin:var(--sp-sm) 0;box-shadow:var(--shadow-sm);"></div>
+          <div style="height:64px;background:var(--surface);border-radius:var(--radius-md);margin:var(--sp-sm) 0;box-shadow:var(--shadow-sm);"></div>
+        </div>
+      </div>
+
+      <!-- Dialog Overlay -->
+      <div class="dialog-overlay">
+        <div class="dialog" style="max-width:320px;">
+          <!-- Warning icon -->
+          <div style="text-align:center;margin-bottom:var(--sp-md);">
+            <div style="width:56px;height:56px;border-radius:50%;background:color-mix(in srgb, var(--warning) 15%, transparent);display:inline-flex;align-items:center;justify-content:center;font-size:28px;">&#9888;</div>
+          </div>
+
+          <div class="dialog-title" style="text-align:center;">Rule Conflict Detected</div>
+
+          <p class="body-medium" style="color:var(--on-surface-variant);margin-bottom:var(--sp-md);line-height:1.5;">
+            Adding <strong>"Chicken"</strong> as INCLUDE conflicts with family member Aarav's <strong>NO_SPICY</strong> health condition and your <strong>VEGETARIAN</strong> dietary preference.
+          </p>
+
+          <!-- Conflict list -->
+          <div style="background:var(--error-container);border-radius:var(--radius-sm);padding:var(--sp-md);margin-bottom:var(--sp-lg);">
+            <div style="display:flex;align-items:flex-start;gap:var(--sp-sm);margin-bottom:var(--sp-sm);">
+              <span style="color:var(--on-error-container);font-size:16px;flex-shrink:0;margin-top:1px;">&#9888;</span>
+              <span class="body-small" style="color:var(--on-error-container);">Conflicts with <strong>VEGETARIAN</strong> primary diet</span>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:var(--sp-sm);">
+              <span style="color:var(--on-error-container);font-size:16px;flex-shrink:0;margin-top:1px;">&#9888;</span>
+              <span class="body-small" style="color:var(--on-error-container);">Aarav (age 12) has <strong>NO_SPICY</strong> health restriction</span>
+            </div>
+          </div>
+
+          <!-- Force override checkbox -->
+          <label style="display:flex;align-items:flex-start;gap:var(--sp-sm);cursor:pointer;margin-bottom:var(--sp-lg);" onclick="const cb=this.querySelector('.checkbox');const btn=document.getElementById('confirm-btn');cb.classList.toggle('checked');if(cb.classList.contains('checked')){cb.innerHTML='&#10003;';btn.style.opacity='1';btn.style.pointerEvents='auto';}else{cb.innerHTML='';btn.style.opacity='0.5';btn.style.pointerEvents='none';}">
+            <div class="checkbox" style="margin-top:2px;"></div>
+            <span class="body-small" style="color:var(--on-surface-variant);line-height:1.4;">I understand the risks. Override safety check.</span>
+          </label>
+
+          <!-- Actions -->
+          <div class="dialog-actions" style="justify-content:stretch;">
+            <a href="feature-recipe-rules.html" class="btn btn-outlined" style="flex:1;text-decoration:none;">Cancel</a>
+            <a href="feature-recipe-rules.html" class="btn btn-filled" id="confirm-btn" style="flex:1;text-decoration:none;opacity:0.5;pointer-events:none;background:var(--error);color:var(--on-error);">Confirm Override</a>
+          </div>
+        </div>
+      </div>
+    `;
+  </script>
+</body>
+</html>

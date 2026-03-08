@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Transfer Ownership</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame bottom-sheet-page" id="app"></div>
+
+  <script>
+    initPage();
+    const members = getHouseholdMembers().filter(m => m.user_id && m.role !== 'OWNER');
+
+    document.getElementById('app').innerHTML = `
+      ${renderStatusBar()}
+      <div class="top-app-bar" style="opacity:0.3;">
+        <a href="settings-household.html" class="nav-icon">&#8592;</a>
+        <span class="title">Household</span>
+      </div>
+      <div class="screen-content" style="opacity:0.15;filter:blur(2px);pointer-events:none;">
+        <div class="content-padding">
+          <div style="height:200px;"></div>
+        </div>
+      </div>
+
+      <div class="dialog-overlay">
+        <div class="dialog" style="max-width:320px;">
+          <div style="text-align:center;margin-bottom:var(--sp-md);">
+            <div style="font-size:48px;">&#128081;</div>
+          </div>
+          <div class="dialog-title" style="text-align:center;">Transfer Ownership</div>
+          <p class="body-medium" style="color:var(--on-surface-variant);text-align:center;margin-bottom:var(--sp-lg);">Choose a new owner for this household.</p>
+
+          <!-- Eligible Members -->
+          ${members.map((m, i) => `
+            <label style="display:flex;align-items:center;gap:var(--sp-md);padding:var(--sp-md);border:2px solid ${i === 0 ? 'var(--primary)' : 'var(--outline-variant)'};border-radius:var(--radius-sm);margin-bottom:var(--sp-sm);cursor:pointer;${i === 0 ? 'background:color-mix(in srgb, var(--primary) 8%, transparent);' : ''}" onclick="this.parentElement.querySelectorAll('label').forEach(l=>{l.style.borderColor='var(--outline-variant)';l.style.background='transparent';});this.style.borderColor='var(--primary)';this.style.background='color-mix(in srgb, var(--primary) 8%, transparent)';">
+              ${renderMemberAvatar(m.name, 40)}
+              <div style="flex:1;">
+                <div class="title-small" style="font-weight:500;">${m.name}</div>
+                <div class="body-small" style="color:var(--on-surface-variant);">App linked</div>
+              </div>
+              <div class="radio ${i === 0 ? 'selected' : ''}" style="${i === 0 ? 'border-color:var(--primary);' : ''}"><div style="width:10px;height:10px;border-radius:50%;${i === 0 ? 'background:var(--primary);' : ''}"></div></div>
+            </label>
+          `).join('')}
+
+          <div style="background:var(--surface-variant);border-radius:var(--radius-sm);padding:var(--sp-sm) var(--sp-md);margin:var(--sp-md) 0;">
+            <span class="body-small" style="color:var(--on-surface-variant);">You will become a regular Member after transferring.</span>
+          </div>
+
+          <div class="dialog-actions" style="justify-content:stretch;margin-top:var(--sp-md);">
+            <a href="settings-household.html" class="btn btn-outlined" style="flex:1;text-decoration:none;">Cancel</a>
+            <a href="settings-household.html" class="btn btn-filled" style="flex:1;text-decoration:none;">Transfer</a>
+          </div>
+        </div>
+      </div>
+    `;
+  </script>
+</body>
+</html>

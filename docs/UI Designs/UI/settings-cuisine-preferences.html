@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RasoiAI - Cuisine Preferences</title>
+  <link rel="stylesheet" href="shared.css">
+  <script src="shared.js"></script>
+</head>
+<body>
+  <div class="phone-frame" id="app"></div>
+
+  <style>
+    .cuisine-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--card-gap);
+      margin-bottom: var(--sp-lg);
+    }
+    .cuisine-card {
+      border-radius: var(--radius-md);
+      padding: var(--sp-lg) var(--sp-md);
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 2px solid var(--outline-variant);
+      background: var(--surface);
+    }
+    .cuisine-card:hover {
+      box-shadow: var(--shadow-md);
+    }
+    .cuisine-card.selected {
+      border-color: var(--primary);
+      background: var(--primary-container);
+    }
+    .cuisine-card .cuisine-emoji {
+      font-size: 40px;
+      margin-bottom: var(--sp-sm);
+    }
+    .cuisine-card .cuisine-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+  </style>
+
+  <script>
+    initPage();
+
+    const cuisineOptions = [
+      { id: 'north', name: 'North Indian', emoji: '&#127837;' },
+      { id: 'south', name: 'South Indian', emoji: '&#129385;' },
+      { id: 'east', name: 'East Indian', emoji: '&#127843;' },
+      { id: 'west', name: 'West Indian', emoji: '&#129472;' }
+    ];
+
+    let selected = getState('cuisines', SHARMA_DEFAULTS.cuisines).slice();
+
+    function render() {
+      document.getElementById('app').innerHTML = `
+        ${renderStatusBar()}
+        ${renderTopBar({ title: 'Cuisine Preferences', backLink: 'settings-main.html' })}
+
+        <div class="screen-content">
+          <div class="content-padding">
+            <p class="body-medium" style="color:var(--on-surface-variant);margin-bottom:var(--sp-lg);">
+              Select your preferred regional cuisines. Your meal plans will prioritize recipes from these regions.
+            </p>
+
+            <div class="cuisine-grid">
+              ${cuisineOptions.map(c => `
+                <div class="cuisine-card ${selected.includes(c.id) ? 'selected' : ''}" onclick="toggleCuisine('${c.id}')">
+                  <div class="cuisine-emoji">${c.emoji}</div>
+                  <div class="cuisine-name">${c.name}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+
+        <!-- Save Button -->
+        <div style="padding:var(--sp-md);flex-shrink:0;">
+          <button class="btn btn-filled" style="width:100%;" onclick="saveCuisines()">Save</button>
+        </div>
+      `;
+    }
+
+    function toggleCuisine(id) {
+      const idx = selected.indexOf(id);
+      if (idx >= 0) {
+        selected.splice(idx, 1);
+      } else {
+        selected.push(id);
+      }
+      render();
+    }
+
+    function saveCuisines() {
+      setState('cuisines', selected);
+      window.location.href = 'settings-main.html';
+    }
+
+    render();
+  </script>
+</body>
+</html>
