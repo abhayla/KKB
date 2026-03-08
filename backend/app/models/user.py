@@ -21,6 +21,7 @@ from app.db.base import Base, TimestampMixin
 if TYPE_CHECKING:
     from app.models.chat import ChatMessage
     from app.models.grocery import GroceryList
+    from app.models.household import Household
     from app.models.meal_plan import MealPlan
     from app.models.notification import FcmToken, Notification
     from app.models.recipe_rule import NutritionGoal, RecipeRule
@@ -70,6 +71,18 @@ class User(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     deleted_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True, default=None
+    )
+
+    # Household membership
+    active_household_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("households.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    passive_household_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("households.id", ondelete="SET NULL"),
+        nullable=True,
     )
 
     # Relationships
@@ -129,6 +142,14 @@ class User(Base, TimestampMixin):
         "NutritionGoal",
         back_populates="user",
         cascade="all, delete-orphan",
+    )
+    active_household: Mapped[Optional["Household"]] = relationship(
+        "Household",
+        foreign_keys="User.active_household_id",
+    )
+    passive_household: Mapped[Optional["Household"]] = relationship(
+        "Household",
+        foreign_keys="User.passive_household_id",
     )
 
 

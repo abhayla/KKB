@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
@@ -48,8 +48,23 @@ class Notification(Base, TimestampMixin):
     action_data: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON
 
     # Status
-    is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
-    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    is_read: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False, index=True
+    )
+    expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    # Household scoping
+    household_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("households.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    metadata_json: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True
+    )  # JSON string
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="notifications")
@@ -73,7 +88,9 @@ class FcmToken(Base, TimestampMixin):
     )
 
     token: Mapped[str] = mapped_column(String(500), nullable=False, unique=True)
-    device_type: Mapped[str] = mapped_column(String(20), nullable=False, default="android")
+    device_type: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="android"
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     # Relationships

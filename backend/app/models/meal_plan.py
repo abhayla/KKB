@@ -35,6 +35,17 @@ class MealPlan(Base, TimestampMixin):
     week_end_date: Mapped[date] = mapped_column(Date, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
+    # Household scoping
+    household_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("households.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    slot_scope: Mapped[str] = mapped_column(
+        String(20), default="ALL", nullable=False
+    )  # ALL, SHARED, PERSONAL
+
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="meal_plans")
     items: Mapped[list["MealPlanItem"]] = relationship(
@@ -79,6 +90,19 @@ class MealPlanItem(Base, TimestampMixin):
 
     # Optional festival info for this day
     festival_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+
+    # Household scoping
+    scope: Mapped[str] = mapped_column(
+        String(20), default="FAMILY", nullable=False
+    )  # FAMILY or PERSONAL
+    for_user_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    meal_status: Mapped[str] = mapped_column(
+        String(20), default="PLANNED", nullable=False
+    )  # PLANNED, COOKED, SKIPPED, ORDERED_OUT
 
     # Relationships
     meal_plan: Mapped["MealPlan"] = relationship("MealPlan", back_populates="items")

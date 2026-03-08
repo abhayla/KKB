@@ -72,6 +72,16 @@ class RecipeRule(Base, TimestampMixin):
         Boolean, default=False, nullable=False
     )  # True when user explicitly overrode family safety conflict
 
+    # Household scoping
+    household_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("households.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    scope: Mapped[str] = mapped_column(
+        String(20), default="PERSONAL", nullable=False
+    )  # PERSONAL or HOUSEHOLD
+
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="recipe_rules")
 
