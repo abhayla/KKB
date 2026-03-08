@@ -1,7 +1,7 @@
 # User Management Design — RasoiAI
 
-**Status:** Brainstorming Complete + Gap Analysis Done (12 Themes Approved, 10 Open Questions Resolved, 7 Must-Fix Items Identified)
-**Last Updated:** 2026-03-07
+**Status:** Design Complete — All 7 must-fix items resolved in data model. 12 Themes Approved, 10 Open Questions Resolved.
+**Last Updated:** 2026-03-08
 **Approach:** Household-Centric (Approach 1 — recommended)
 
 ---
@@ -83,8 +83,12 @@ SOLO ──── (creates household) ───> OWNER
 households
 ├── id (UUID, PK)
 ├── name (String 100)          -- "Sharma Family"
-├── invite_code (String 8, UNIQUE, INDEXED)  -- shareable join code
+├── invite_code (String 8, UNIQUE, INDEXED)  -- shareable join code, 7-day expiry
+├── invite_code_expires_at (DateTime, nullable) -- null = no active code
 ├── owner_id (FK -> users)     -- who created it
+├── slot_config (JSONB, default='{"shared":["lunch","dinner"],"personal":["breakfast","snacks"]}')
+│                              -- configurable shared vs personal slots (Q5)
+├── max_members (Integer, default=6)  -- cap per Q8
 ├── is_active (Boolean, default=True)
 ├── created_at (DateTime)
 └── updated_at (DateTime)
@@ -100,11 +104,25 @@ household_members
 ├── join_date (Date)
 ├── leave_date (Date, nullable)  -- null = permanent
 ├── previous_household_id (UUID, nullable)  -- for guest return
+├── portion_size (String 20, default='REGULAR')  -- SMALL, REGULAR, LARGE (Theme 8)
+├── active_meal_slots (JSONB, nullable)  -- opt-out slots, e.g. ["breakfast","snacks"] (Theme 8)
 ├── status (String 20)        -- ACTIVE, PAUSED, LEFT
 ├── created_at (DateTime)
 └── updated_at (DateTime)
 
-UNIQUE(household_id, user_id)  -- a user can only be in a household once
+UNIQUE(household_id, user_id) WHERE user_id IS NOT NULL  -- partial unique index
+
+notifications
+├── id (UUID, PK)
+├── user_id (FK -> users)              -- recipient
+├── household_id (FK -> households, nullable)  -- null = personal notification
+├── type (String 30)           -- JOIN, LEAVE, PLAN_REGENERATED, SUGGESTION, ACHIEVEMENT, REMINDER
+├── title (String 200)
+├── body (Text)
+├── is_read (Boolean, default=False)
+├── metadata (JSONB, nullable)  -- extra context (e.g., suggested_item_id, member_name)
+├── created_at (DateTime)
+└── updated_at (DateTime)
 ```
 
 ### Extended Tables
@@ -120,9 +138,21 @@ meal_plan_items (extended)
 ├── scope (String 20, default='FAMILY')  -- FAMILY or PERSONAL
 └── for_user_id (FK -> users, nullable)  -- only set for PERSONAL items
 
+meal_plan_items (extended)
+├── existing fields...
+├── scope (String 20, default='FAMILY')  -- FAMILY or PERSONAL
+├── for_user_id (FK -> users, nullable)  -- only set for PERSONAL items
+└── meal_status (String 20, default='PLANNED')  -- PLANNED, COOKED, SKIPPED, ORDERED_OUT (Theme 11)
+
 users (extended)
 ├── existing fields...
-└── active_household_id (FK -> households, nullable)  -- current household
+├── active_household_id (FK -> households, nullable)   -- current household
+└── passive_household_id (FK -> households, nullable)  -- read-only monitoring (Q2: 1 active + 1 passive)
+
+recipe_rules (extended)
+├── existing fields...
+├── household_id (FK -> households, nullable)  -- null = personal rule
+└── scope (String 20, default='PERSONAL')      -- PERSONAL or HOUSEHOLD (Q7)
 ```
 
 ### Entity Relationship
@@ -344,6 +374,7 @@ Guest                        Host Family Owner
 | PUT | `/api/v1/households/{id}/members/{mid}` | Update role/permissions | Owner |
 | DELETE | `/api/v1/households/{id}/members/{mid}` | Remove member | Owner |
 | POST | `/api/v1/households/{id}/leave` | Leave household | Member/Guest |
+| POST | `/api/v1/households/{id}/transfer-ownership` | Transfer ownership to another member | Owner |
 
 ### Family Meal Plans
 
@@ -360,6 +391,23 @@ Guest                        Host Family Owner
 |--------|----------|-------------|------|
 | GET | `/api/v1/meal-plans/current` | Get personal plan (existing, unchanged) | Self |
 | POST | `/api/v1/meal-plans/generate` | Generate personal plan (existing) | Self |
+
+### Grocery (Household-Scoped)
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/v1/households/{id}/grocery` | Get household grocery list | Member |
+| POST | `/api/v1/households/{id}/grocery/suggest` | Suggest item (member/guest) | Member/Guest |
+| GET | `/api/v1/households/{id}/grocery/suggestions` | List pending suggestions | Owner |
+| PUT | `/api/v1/households/{id}/grocery/suggestions/{sid}` | Approve/reject suggestion | Owner |
+
+### Notifications
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/v1/notifications` | Get personal notifications (existing) | Self |
+| GET | `/api/v1/households/{id}/notifications` | Get household notifications | Member |
+| PUT | `/api/v1/notifications/{nid}/read` | Mark notification as read | Self |
 
 ---
 
@@ -629,25 +677,25 @@ The persona brainstorm surfaced needs that extend beyond the initial household-s
 | 3. Streamlined Joining | Partial | Yes | Yes (Phase 1) | No lightweight onboarding flow defined — what screens does a joining member see? |
 | 4. Flexible Membership | Yes | Partial | Yes (Phase 4) | No auto-departure cron/scheduler design; "cron/scheduled check" mentioned but not specified |
 | 5. Constraint Merging | Described | No endpoint | Implicit | No "constraint overload" warning endpoint or UI; the <10 viable recipes threshold has no API representation |
-| 6. Permissions + Notifications | Yes | Yes | Yes (Phase 2) | No notification table, endpoint, or delivery mechanism designed despite Q9 deciding "in-app notifications" |
-| 7. Dual Context | Partial | No | Phase 4 (partial) | Schema has `active_household_id` but no `passive_household_id` — cannot implement "1 active + 1 passive" |
-| 8. Per-Person Customization | **No** | **No** | **No** | Entirely missing from schema (no portion_size, meal_timing, active_slots fields) |
+| 6. Permissions + Notifications | Yes | Yes | Yes (Phase 2) | **RESOLVED** — `notifications` table + endpoints added to Sections 4 and 8 |
+| 7. Dual Context | Yes | No | Phase 4 (partial) | **RESOLVED** — `passive_household_id` added to `users` schema |
+| 8. Per-Person Customization | Partial | **No** | **No** | **Partial** — `portion_size` and `active_meal_slots` added to `household_members`. `meal_timing` deferred |
 | 9. Accessibility Modes | **No** | **No** | **No** | Acknowledged as UI concern — out of scope for data model |
 | 10. Contextual Dietary Profiles | **No** | **No** | **No** | Acknowledged as "significant extension" — deferred |
 | 11. Family Communication Layer | **No** | **No** | **No** | Acknowledged as "future phase" — deferred |
-| 12. Data Lifecycle | Partial | Partial | Phase 4 (partial) | Ownership transfer decided in Q3 but no API endpoint designed |
+| 12. Data Lifecycle | Partial | Yes | Phase 4 (partial) | **RESOLVED** — `POST /households/{id}/transfer-ownership` added to Section 8 |
 
 ### 15.3 Internal Inconsistencies
 
-| # | Inconsistency | Locations | Resolution Needed |
-|---|---------------|-----------|-------------------|
-| 1 | Q5 says "configurable per household" but `households` table has no `slot_config` field | Q5 vs Section 4 | Add `slot_config` JSON field to `households` |
-| 2 | Q7 says "both household + personal rules" but `recipe_rules` has no `household_id` or `scope` field | Q7 vs Section 4 | Add `household_id` + `scope` to `recipe_rules` |
-| 3 | Q6 says "shared grocery visible to all" but no `household_id` on grocery endpoints or data | Q6 vs Section 8 | Extend grocery API with household scope |
-| 4 | Q10 says "personal slots auto-generate on join" but no API trigger for this | Q10 vs Section 8 | Add auto-generation logic to join flow |
-| 5 | Invite code is "8-char" in schema but "ABC123" (6-char) in join flow example | Section 4 vs Section 6 | Standardize to 8-char everywhere |
-| 6 | `UNIQUE(household_id, user_id)` but `user_id` is nullable — standard unique won't work | Section 4 | Use partial unique index (WHERE user_id IS NOT NULL) |
-| 7 | Q2 decided "1 active + 1 passive" but no `passive_household_id` field exists in schema | Q2 vs Section 4 | Add `passive_household_id` to `users` table |
+| # | Inconsistency | Locations | Resolution |
+|---|---------------|-----------|------------|
+| 1 | Q5 says "configurable per household" but `households` table has no `slot_config` field | Q5 vs Section 4 | **RESOLVED** — `slot_config JSONB` added to `households` |
+| 2 | Q7 says "both household + personal rules" but `recipe_rules` has no `household_id` or `scope` field | Q7 vs Section 4 | **RESOLVED** — `household_id` + `scope` added to `recipe_rules` |
+| 3 | Q6 says "shared grocery visible to all" but no `household_id` on grocery endpoints or data | Q6 vs Section 8 | **RESOLVED** — Grocery household endpoints added to Section 8 |
+| 4 | Q10 says "personal slots auto-generate on join" but no API trigger for this | Q10 vs Section 8 | **Pending** — Auto-generation logic to be added to join flow service |
+| 5 | Invite code is "8-char" in schema but "ABC123" (6-char) in join flow example | Section 4 vs Section 6 | **RESOLVED** — Standardized to 8-char |
+| 6 | `UNIQUE(household_id, user_id)` but `user_id` is nullable — standard unique won't work | Section 4 | **RESOLVED** — Changed to partial unique index |
+| 7 | Q2 decided "1 active + 1 passive" but no `passive_household_id` field exists in schema | Q2 vs Section 4 | **RESOLVED** — `passive_household_id` added to `users` |
 
 ### 15.4 Persona Coverage
 
@@ -677,23 +725,23 @@ The persona brainstorm surfaced needs that extend beyond the initial household-s
 
 ### 15.6 Recommendations
 
-**Must-fix before implementation planning:**
+**Must-fix before implementation planning (all resolved in Section 4 data model):**
 
-1. Add `slot_config JSONB` field to `households` table (for Q5 configurability)
-2. Add `passive_household_id` to `users` table (for Q2 dual context)
-3. Add `household_id` + `scope` to `recipe_rules` table (for Q7 both scopes)
-4. Add `POST /households/{id}/transfer-ownership` endpoint (for Q3 decision)
-5. Fix invite code length — standardize to 8-char in all examples
-6. Use partial unique index for `UNIQUE(household_id, user_id) WHERE user_id IS NOT NULL`
-7. Design notification table: `notifications(id, user_id, household_id, type, message, is_read, created_at)`
+1. ~~Add `slot_config JSONB` field to `households` table (for Q5 configurability)~~ **DONE**
+2. ~~Add `passive_household_id` to `users` table (for Q2 dual context)~~ **DONE**
+3. ~~Add `household_id` + `scope` to `recipe_rules` table (for Q7 both scopes)~~ **DONE**
+4. ~~Add `POST /households/{id}/transfer-ownership` endpoint (for Q3 decision)~~ **DONE** (Section 8)
+5. ~~Fix invite code length — standardize to 8-char in all examples~~ **DONE** (standardized to 8-char)
+6. ~~Use partial unique index for `UNIQUE(household_id, user_id) WHERE user_id IS NOT NULL`~~ **DONE**
+7. ~~Design notification table: `notifications(id, user_id, household_id, type, message, is_read, created_at)`~~ **DONE**
 
 **Should address in design (not necessarily MVP):**
 
-8. Add per-member fields to `household_members`: `portion_size`, `active_meal_slots`, `meal_timing` (Theme 8)
+8. ~~Add per-member fields to `household_members`: `portion_size`, `active_meal_slots`, `meal_timing` (Theme 8)~~ **PARTIAL** — `portion_size` + `active_meal_slots` added; `meal_timing` deferred
 9. Define "skip meal" / "away today" mechanism for travel days (Dad #7, Guest Female #7)
 10. Specify real-time sync strategy (WebSocket vs polling vs FCM)
 11. Define auto-departure scheduler (cron job, background worker, or on-request check)
-12. Add `meal_status` field to `meal_plan_items` (cooked/skipped/ordered_out) for Theme 11
+12. ~~Add `meal_status` field to `meal_plan_items` (cooked/skipped/ordered_out) for Theme 11~~ **DONE** — added to Section 4
 
 **Acceptable to defer:**
 

@@ -302,7 +302,7 @@ offer to send a suggestion to {owner_name} instead.
 | Recipe Rules | No toggle, no scope | Add toggle. Family: household rules (read-only for members). Personal: my rules |
 | Notifications | No toggle | Add toggle. Family: household events. Personal: reminders/achievements |
 | Chat | No role awareness | Inject role context into AI prompt. No UI toggle needed |
-| Settings sub-screens | Single flat list | Split into two sections: "Household" (top) + "My Preferences" (bottom) |
+| Settings sub-screens | Single flat list | Add `[Household] \| [My Preferences]` toggle (same pattern as other toggle screens — one scope visible at a time) |
 | Dietary Profiles | Personal only | No change (always personal) |
 | Units | Personal only | No change |
 
@@ -312,6 +312,21 @@ offer to send a suggestion to {owner_name} instead.
 - Defaults to `FAMILY` when user first joins a household
 - Defaults to `PERSONAL` (and toggle hidden) for SOLO users
 - Persists across app restarts
+
+---
+
+## 7B. Pending UI Designs
+
+The following UI elements are referenced in this design but do not yet have HTML prototype files in `docs/UI Designs/UI-UX-Material3/`:
+
+| Design Needed | Referenced By | Priority |
+|---------------|---------------|----------|
+| Grocery suggestion modal (`modal-suggest-grocery.html`) | Section 5.3 grocery suggestion flow | High — core multi-user interaction |
+| Grocery suggestion approval list (inline in `main-grocery.html`) | Section 5.3 owner approval flow | High — owner sees pending suggestions |
+| Family favorites card with `favorited_by` attribution | Section 5.5 two-tier model | Medium — shows `"Favorited by Sunita, Aarav"` |
+| Household leaderboard card for Stats family view | Section 3.1 Stats toggle | Medium — member rankings, combined cooking count |
+| Meal status indicator (`modal-meal-status.html` exists but needs cooked/skipped/ordered_out states) | `meal_plan_items.meal_status` field | Low — deferred to Theme 11 |
+| Passive household read-only view | Section 9, Q2 dual context | Low — deferred to Phase 4 |
 
 ---
 
@@ -400,6 +415,21 @@ Even in personal view, some data flows into the household:
 | `modal-transfer-ownership.html` | Already household-scoped |
 | `modal-leave-household.html` | Already household-scoped |
 | `modal-guest-duration.html` | Already household-scoped |
+
+---
+
+---
+
+## 11. Open Design Items
+
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 1 | `modal-suggest-grocery.html` prototype | Not started | Needed for member suggestion flow (Section 5.3) |
+| 2 | Family favorites card with attribution | Not started | Shows `"Favorited by Sunita, Aarav"` (Section 5.5) |
+| 3 | Stats household leaderboard card | Not started | Member rankings in family view (Section 3.1) |
+| 4 | Passive household read-only view | Deferred to Phase 4 | Q2: 1 active + 1 passive |
+| 5 | Auto-departure scheduler design | Deferred to Phase 4 | Cron vs background worker vs on-request check |
+| 6 | Real-time sync mechanism | Deferred | WebSocket vs polling vs FCM for multi-user updates |
 
 ---
 
