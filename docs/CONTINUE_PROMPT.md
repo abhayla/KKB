@@ -14,7 +14,7 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 route
 | Backend | ~580 (46 files) | PASS |
 | Android Unit | ~580 | PASS |
 | Android UI | 750+ | PASS |
-| Android E2E | 67+ | PASS |
+| Android E2E | 67+ (+ 45 @Ignore household) | PASS |
 
 ---
 
@@ -27,7 +27,7 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 route
 | 2-item pairing logic | DONE | Default 2 items per slot |
 | INCLUDE/EXCLUDE rules | DONE | Full tracking across week |
 | Android Compose UI | DONE | 18+ screens implemented |
-| E2E Test Suite | DONE | ~125 tests in 23 files, 14 customer journey suites |
+| E2E Test Suite | DONE | ~125 tests in 28 files, 17 customer journey suites (J01-J17) |
 | UI Tests | DONE | 750+ tests |
 | Photo Attachment | DONE | Issue #13 - Gemini Vision |
 | Items per Meal Dialog | DONE | Issue #16 - Settings |
@@ -68,11 +68,13 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 route
 | Dependency Fixes | DONE | Hilt 2.56.1, Room 2.8.1, JUnit Platform Launcher |
 | Phone Auth Migration | DONE | Google OAuth → Firebase Phone OTP (backend + Android + tests + docs) |
 | E2E Suite Consolidation | DONE | 33 files → 23 files, -34 duplicates, +9 gap tests, 7 tiers |
-| Customer Journey Suites | DONE | 14 journey-based @Suite classes grouping 23 E2E test files |
+| Customer Journey Suites | DONE | 17 journey-based @Suite classes grouping 28 E2E test files |
 | Gemini Structured Output | DONE | response_json_schema with short keys, thinking disabled |
 | Generation Tracker | DONE | Per-call JSON logging (logs/MEAL_PLAN-*.json) with timing + tokens |
 | Multi-User Load Testing | DONE | fake-firebase-token-{suffix}, Locust profiles, raised DEBUG rate limits |
 | Meal Gen Performance | DONE | 180s timeout, ~35s generation (was ~90s), response_json_schema |
+| Household Backend Endpoints | DONE | ~18 endpoints, ~120+ backend tests across 7 files |
+| Household Android E2E (Placeholder) | PLACEHOLDER | 5 flow tests, 45 @Ignore tests, 3 journey suites (J15-J17) |
 
 ---
 
@@ -92,5 +94,5 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 route
 ---
 
 *Last Updated: March 6, 2026*
-*E2E suite: 23 files, ~125 tests, 14 customer journey suites. ~580 backend tests (46 files). ~580 Android unit tests. 750+ UI tests.*
-*~44 API endpoints across 13 routers. 3,580 recipes. ~525 requirements across 12 screen files. Room DB v12.*
+*E2E suite: 28 files, ~170 tests (125 active + 45 @Ignore household), 17 customer journey suites (J01-J17). ~580 backend tests (46 files). ~580 Android unit tests. 750+ UI tests.*
+*~62 API endpoints across 13+ routers. 3,580 recipes. ~525 requirements across 12 screen files. Room DB v12.*

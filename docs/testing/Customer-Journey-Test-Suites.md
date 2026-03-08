@@ -1,6 +1,6 @@
 # Customer Journey Test Suites
 
-14 journey-based test suites that group the 23 E2E test files into realistic user scenarios. Each journey has a runnable JUnit `@Suite` class.
+17 journey-based test suites that group the 28 E2E test files into realistic user scenarios. Each journey has a runnable JUnit `@Suite` class.
 
 **Location:** `android/app/src/androidTest/java/com/rasoiai/app/e2e/journeys/`
 
@@ -36,6 +36,9 @@ cd android
 | `J12` | Offline and Error Resilience | 2 |
 | `J13` | Returning User Quick Check | 3 |
 | `J14` | AI Chat and Recipe Discovery | 3 |
+| `J15` | Household Setup & Member Management | 2 |
+| `J16` | Household Meal Collaboration | 2 |
+| `J17` | Household Notifications & Awareness | 2 |
 
 ---
 
@@ -174,6 +177,33 @@ User explores recipes via AI chat and search, saves favorites.
 | 2 | `RecipeInteractionFlowTest` | Recipe search, add from catalog |
 | 3 | `FavoritesFlowTest` | Save and manage favorites |
 
+### J15: Household Setup & Member Management
+
+User creates a household, manages members, generates and shares invite codes.
+
+| Order | Test File | What It Covers |
+|:-----:|-----------|----------------|
+| 1 | `HouseholdSetupFlowTest` | Create/view/update/deactivate household, validation |
+| 2 | `HouseholdMemberFlowTest` | Add by phone, invite codes, join, leave, transfer ownership, roles |
+
+### J16: Household Meal Collaboration
+
+Household members manage shared recipe rules and collaborate on meal plans.
+
+| Order | Test File | What It Covers |
+|:-----:|-----------|----------------|
+| 1 | `HouseholdRecipeRulesFlowTest` | Household INCLUDE/EXCLUDE rules, merged constraints |
+| 2 | `HouseholdMealPlanFlowTest` | Shared meal plan, item status (cooked/skipped/ordered out), monthly stats |
+
+### J17: Household Notifications & Awareness
+
+User checks household notifications and monitors shared meal plan activity.
+
+| Order | Test File | What It Covers |
+|:-----:|-----------|----------------|
+| 1 | `HouseholdNotificationFlowTest` | Notification list, mark read, badge count, access control |
+| 2 | `HouseholdMealPlanFlowTest` | Shared meal plan view, activity monitoring |
+
 ---
 
 ## Coverage Matrix
@@ -205,8 +235,13 @@ Every test file appears in at least one journey:
 | `SettingsFlowTest` | J11 |
 | `OfflineFlowTest` | J12 |
 | `EdgeCasesTest` | J12 |
+| `HouseholdSetupFlowTest` | J15 |
+| `HouseholdMemberFlowTest` | J15 |
+| `HouseholdMealPlanFlowTest` | J16, J17 |
+| `HouseholdRecipeRulesFlowTest` | J16 |
+| `HouseholdNotificationFlowTest` | J17 |
 
-**23/23 test files covered (100%)**
+**28/28 test files covered (100%)**
 
 ---
 
@@ -272,6 +307,15 @@ cd android
 
 ./gradlew :app:connectedDebugAndroidTest \
   -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.journeys.J14_AIChatRecipeDiscoverySuite
+
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.journeys.J15_HouseholdSetupSuite
+
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.journeys.J16_HouseholdMealCollaborationSuite
+
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.journeys.J17_HouseholdNotificationsSuite
 
 # All journeys at once
 ./gradlew :app:connectedDebugAndroidTest \

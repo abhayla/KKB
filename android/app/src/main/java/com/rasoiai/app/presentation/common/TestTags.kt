@@ -252,4 +252,61 @@ object TestTags {
     const val FREQUENCY_COUNT_DROPDOWN = "frequency_count_dropdown"
     const val ENFORCEMENT_REQUIRED = "enforcement_required"
     const val ENFORCEMENT_PREFERRED = "enforcement_preferred"
+
+    // Household Screen
+    const val HOUSEHOLD_SCREEN = "household_screen"
+    const val HOUSEHOLD_NAME_FIELD = "household_name_field"
+    const val HOUSEHOLD_CREATE_BUTTON = "household_create_button"
+    const val HOUSEHOLD_DEACTIVATE_BUTTON = "household_deactivate_button"
+
+    // Household Members
+    const val HOUSEHOLD_MEMBERS_LIST = "household_members_list"
+    const val HOUSEHOLD_MEMBER_ROW_PREFIX = "household_member_row_"
+    const val HOUSEHOLD_ADD_MEMBER_BUTTON = "household_add_member_button"
+    const val HOUSEHOLD_ADD_MEMBER_PHONE_FIELD = "household_add_member_phone_field"
+    const val HOUSEHOLD_MEMBER_ROLE_PREFIX = "household_member_role_"
+    const val HOUSEHOLD_MEMBER_REMOVE_PREFIX = "household_member_remove_"
+    const val HOUSEHOLD_MEMBER_PORTION_SIZE_PREFIX = "household_member_portion_size_"
+
+    // Household Invite
+    const val HOUSEHOLD_INVITE_CODE_DISPLAY = "household_invite_code_display"
+    const val HOUSEHOLD_INVITE_SHARE_BUTTON = "household_invite_share_button"
+    const val HOUSEHOLD_INVITE_REFRESH_BUTTON = "household_invite_refresh_button"
+    const val HOUSEHOLD_JOIN_CODE_FIELD = "household_join_code_field"
+    const val HOUSEHOLD_JOIN_BUTTON = "household_join_button"
+
+    // Household Ownership
+    const val HOUSEHOLD_TRANSFER_BUTTON = "household_transfer_button"
+    const val HOUSEHOLD_TRANSFER_DIALOG = "household_transfer_dialog"
+    const val HOUSEHOLD_LEAVE_BUTTON = "household_leave_button"
+
+    // Household Meal Plan
+    const val HOUSEHOLD_MEAL_PLAN_SCREEN = "household_meal_plan_screen"
+    const val HOUSEHOLD_MEAL_ITEM_STATUS_PREFIX = "household_meal_item_status_"
+    const val HOUSEHOLD_MEAL_ITEM_COOKED = "household_meal_item_cooked"
+    const val HOUSEHOLD_MEAL_ITEM_SKIPPED = "household_meal_item_skipped"
+    const val HOUSEHOLD_MEAL_ITEM_ORDERED_OUT = "household_meal_item_ordered_out"
+
+    // Household Stats
+    const val HOUSEHOLD_STATS_SCREEN = "household_stats_screen"
+    const val HOUSEHOLD_STATS_TOTAL_MEALS = "household_stats_total_meals"
+    const val HOUSEHOLD_STATS_COOKED_COUNT = "household_stats_cooked_count"
+    const val HOUSEHOLD_STATS_SKIPPED_COUNT = "household_stats_skipped_count"
+    const val HOUSEHOLD_STATS_MONTH_SELECTOR = "household_stats_month_selector"
+
+    // Household Recipe Rules
+    const val HOUSEHOLD_RECIPE_RULES_SCREEN = "household_recipe_rules_screen"
+    const val HOUSEHOLD_RULE_ADD_BUTTON = "household_rule_add_button"
+    const val HOUSEHOLD_RULE_CARD_PREFIX = "household_rule_card_"
+    const val HOUSEHOLD_RULE_DELETE_PREFIX = "household_rule_delete_"
+    const val HOUSEHOLD_CONSTRAINTS_VIEW = "household_constraints_view"
+    const val HOUSEHOLD_CONSTRAINTS_ALLERGIES = "household_constraints_allergies"
+
+    // Household Notifications
+    const val HOUSEHOLD_NOTIFICATION_SCREEN = "household_notification_screen"
+    const val HOUSEHOLD_NOTIFICATION_LIST = "household_notification_list"
+    const val HOUSEHOLD_NOTIFICATION_ITEM_PREFIX = "household_notification_item_"
+    const val HOUSEHOLD_NOTIFICATION_BADGE = "household_notification_badge"
+    const val HOUSEHOLD_NOTIFICATION_MARK_READ_PREFIX = "household_notification_mark_read_"
+    const val HOUSEHOLD_NOTIFICATION_EMPTY = "household_notification_empty"
 }
