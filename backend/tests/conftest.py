@@ -30,6 +30,7 @@ from app.models import (  # noqa: F401
     config,
     festival,
     grocery,
+    household,
     meal_plan,
     notification,
     recipe,
@@ -132,8 +133,6 @@ def _clear_dependency_overrides():
     """
     yield
     app.dependency_overrides.clear()
-
-
 
 
 # ==================== Shared Client Fixtures ====================

@@ -4,6 +4,7 @@ from app.models.chat import ChatMessage
 from app.models.config import ReferenceData, SystemConfig
 from app.models.festival import Festival
 from app.models.grocery import GroceryItem, GroceryList
+from app.models.household import Household, HouseholdMember
 from app.models.meal_plan import MealPlan, MealPlanItem
 from app.models.notification import FcmToken, Notification
 from app.models.recipe import (
@@ -31,6 +32,8 @@ __all__ = [
     "MealPlanItem",
     "GroceryList",
     "GroceryItem",
+    "Household",
+    "HouseholdMember",
     "Festival",
     "ChatMessage",
     "CookingStreak",

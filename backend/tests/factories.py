@@ -87,3 +87,44 @@ def make_goal_payload(**overrides) -> dict:
     }
     defaults.update(overrides)
     return defaults
+
+
+from app.models.household import Household, HouseholdMember
+
+
+def make_household(owner_id: str, **overrides) -> Household:
+    """Create a Household instance with sensible defaults."""
+    defaults = {
+        "id": str(uuid.uuid4()),
+        "name": "Test Household",
+        "invite_code": None,
+        "invite_code_expires_at": None,
+        "owner_id": owner_id,
+        "max_members": 6,
+        "is_active": True,
+    }
+    defaults.update(overrides)
+    return Household(**defaults)
+
+
+def make_household_member(household_id: str, **overrides) -> HouseholdMember:
+    """Create a HouseholdMember instance with sensible defaults."""
+    from datetime import date as date_type
+
+    defaults = {
+        "id": str(uuid.uuid4()),
+        "household_id": household_id,
+        "user_id": None,
+        "family_member_id": None,
+        "role": "MEMBER",
+        "can_edit_shared_plan": False,
+        "is_temporary": False,
+        "join_date": date_type.today(),
+        "leave_date": None,
+        "previous_household_id": None,
+        "portion_size": "REGULAR",
+        "active_meal_slots": None,
+        "status": "ACTIVE",
+    }
+    defaults.update(overrides)
+    return HouseholdMember(**defaults)
