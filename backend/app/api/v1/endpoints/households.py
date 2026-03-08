@@ -361,3 +361,154 @@ async def delete_household_recipe_rule(
         raise NotFoundError("Rule not found in this household")
     rule.is_active = False
     await db.flush()
+
+
+# --- Household Notifications ---
+
+
+@router.get("/{household_id}/notifications")
+async def list_household_notifications(
+    household_id: str, user: CurrentUser, db: DbSession
+):
+    """List household notifications for the current user. Member access."""
+    from app.models.notification import Notification
+
+    await HouseholdService._verify_membership(household_id, user, db)
+    result = await db.execute(
+        select(Notification)
+        .where(
+            Notification.household_id == household_id,
+            Notification.user_id == str(user.id),
+        )
+        .order_by(Notification.created_at.desc())
+        .limit(50)
+    )
+    notifications = result.scalars().all()
+    return [
+        {
+            "id": n.id,
+            "type": n.type,
+            "title": n.title,
+            "body": n.body,
+            "is_read": n.is_read,
+            "metadata_json": n.metadata_json,
+            "created_at": n.created_at.isoformat() if n.created_at else None,
+        }
+        for n in notifications
+    ]
+
+
+@router.put("/{household_id}/notifications/{notification_id}/read", status_code=204)
+async def mark_notification_read(
+    household_id: str,
+    notification_id: str,
+    user: CurrentUser,
+    db: DbSession,
+):
+    """Mark a household notification as read."""
+    from app.models.notification import Notification
+
+    await HouseholdService._verify_membership(household_id, user, db)
+    result = await db.execute(
+        select(Notification).where(
+            Notification.id == notification_id,
+            Notification.household_id == household_id,
+            Notification.user_id == str(user.id),
+        )
+    )
+    notification = result.scalar_one_or_none()
+    if not notification:
+        raise NotFoundError("Notification not found")
+    notification.is_read = True
+    await db.flush()
+
+
+# --- Household Meal Plans ---
+
+
+@router.get("/{household_id}/meal-plans/current")
+async def get_household_current_meal_plan(
+    household_id: str, user: CurrentUser, db: DbSession
+):
+    """Get current household meal plan. Member access."""
+    plan = await HouseholdService.get_current_meal_plan(
+        household_id=household_id, user=user, db=db
+    )
+    if not plan:
+        return {"meal_plan": None}
+
+    # Group items by date
+    items_by_date: dict = {}
+    for item in plan.items:
+        d = item.date.isoformat()
+        if d not in items_by_date:
+            items_by_date[d] = {"date": d, "meals": {}}
+        meal_type = item.meal_type
+        if meal_type not in items_by_date[d]["meals"]:
+            items_by_date[d]["meals"][meal_type] = []
+        items_by_date[d]["meals"][meal_type].append(
+            {
+                "id": item.id,
+                "recipe_name": item.recipe_name,
+                "meal_status": item.meal_status,
+                "scope": item.scope,
+                "for_user_id": item.for_user_id,
+                "is_locked": item.is_locked,
+            }
+        )
+
+    return {
+        "meal_plan": {
+            "id": plan.id,
+            "household_id": plan.household_id,
+            "week_start_date": plan.week_start_date.isoformat(),
+            "week_end_date": plan.week_end_date.isoformat(),
+            "days": list(items_by_date.values()),
+        }
+    }
+
+
+@router.get("/{household_id}/constraints")
+async def get_household_constraints(
+    household_id: str, user: CurrentUser, db: DbSession
+):
+    """Get merged dietary constraints for the household. Owner access."""
+    await HouseholdService._verify_owner(household_id, user, db)
+    constraints = await HouseholdService.get_merged_constraints(
+        household_id=household_id, db=db
+    )
+    return constraints
+
+
+@router.put("/{household_id}/meal-plans/{plan_id}/items/{item_id}/status")
+async def update_meal_item_status(
+    household_id: str,
+    plan_id: str,
+    item_id: str,
+    user: CurrentUser,
+    db: DbSession,
+    status: str = Query(pattern="^(PLANNED|COOKED|SKIPPED|ORDERED_OUT)$"),
+):
+    """Update meal item status (COOKED, SKIPPED, etc). Member with edit access."""
+    from app.core.exceptions import ForbiddenError as ForbiddenErr
+
+    member = await HouseholdService._verify_membership(household_id, user, db)
+    if member.role != "OWNER" and not member.can_edit_shared_plan:
+        raise ForbiddenErr("You don't have edit access to this household's meal plan")
+
+    result = await db.execute(
+        select(MealPlanItem)
+        .join(MealPlan)
+        .where(
+            MealPlanItem.id == item_id,
+            MealPlan.id == plan_id,
+            MealPlan.household_id == household_id,
+        )
+    )
+    item = result.scalar_one_or_none()
+    if not item:
+        raise NotFoundError("Meal item not found")
+
+    item.meal_status = status
+    await db.flush()
+    return {"id": item.id, "meal_status": item.meal_status}

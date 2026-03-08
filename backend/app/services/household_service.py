@@ -660,3 +660,195 @@ class HouseholdService:
             )
         )
         return result.scalar_one()
+
+    @staticmethod
+    async def create_notification(
+        household_id: str,
+        user_id: str,
+        notification_type: str,
+        title: str,
+        body: str,
+        db: AsyncSession,
+        metadata: dict | None = None,
+    ) -> None:
+        """Create a household notification for a specific user."""
+        import json as json_module
+
+        from app.models.notification import Notification
+
+        notification = Notification(
+            id=str(uuid.uuid4()),
+            user_id=user_id,
+            household_id=household_id,
+            type=notification_type,
+            title=title,
+            body=body,
+            metadata_json=json_module.dumps(metadata) if metadata else None,
+        )
+        db.add(notification)
+        await db.flush()
+
+    @staticmethod
+    async def notify_household_members(
+        household_id: str,
+        notification_type: str,
+        title: str,
+        body: str,
+        db: AsyncSession,
+        exclude_user_id: str | None = None,
+        metadata: dict | None = None,
+    ) -> None:
+        """Send a notification to all active members of a household."""
+        result = await db.execute(
+            select(HouseholdMember).where(
+                HouseholdMember.household_id == household_id,
+                HouseholdMember.status == "ACTIVE",
+                HouseholdMember.user_id.isnot(None),
+            )
+        )
+        members = list(result.scalars().all())
+
+        for member in members:
+            if member.user_id == exclude_user_id:
+                continue
+            await HouseholdService.create_notification(
+                household_id=household_id,
+                user_id=member.user_id,
+                notification_type=notification_type,
+                title=title,
+                body=body,
+                db=db,
+                metadata=metadata,
+            )
+
+    @staticmethod
+    async def get_current_meal_plan(
+        household_id: str, user: User, db: AsyncSession
+    ) -> "MealPlan | None":
+        """Get the current active household meal plan.
+
+        Args:
+            household_id: The household UUID.
+            user: The authenticated user (must be an active member).
+            db: Async database session.
+
+        Returns:
+            The active MealPlan with items loaded, or None.
+
+        Raises:
+            ForbiddenError: If the user is not an active member.
+        """
+        from app.models.meal_plan import MealPlan
+
+        await HouseholdService._verify_membership(household_id, user, db)
+        result = await db.execute(
+            select(MealPlan)
+            .options(selectinload(MealPlan.items))
+            .where(
+                MealPlan.household_id == household_id,
+                MealPlan.is_active == True,  # noqa: E712
+            )
+            .order_by(MealPlan.week_start_date.desc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
+
+    @staticmethod
+    async def get_merged_constraints(household_id: str, db: AsyncSession) -> dict:
+        """Merge dietary constraints from all active members for generation.
+
+        Computes the union of allergies and dislikes across all active
+        members, the intersection of dietary tags (strictest common set),
+        and collects household-scoped recipe rules.
+
+        Args:
+            household_id: The household UUID.
+            db: Async database session.
+
+        Returns:
+            A dict with allergies, dislikes, dietary_tags,
+            include_rules, exclude_rules, and member_count.
+        """
+        from app.models.recipe_rule import RecipeRule
+
+        # Get all active members with linked users
+        members_result = await db.execute(
+            select(HouseholdMember).where(
+                HouseholdMember.household_id == household_id,
+                HouseholdMember.status == "ACTIVE",
+                HouseholdMember.user_id.isnot(None),
+            )
+        )
+        members = list(members_result.scalars().all())
+
+        all_allergies: set[str] = set()
+        all_dislikes: set[str] = set()
+        all_dietary_tags: set[str] | None = None  # Will intersect
+
+        for member in members:
+            # Load user preferences
+            user_result = await db.execute(
+                select(User)
+                .options(selectinload(User.preferences))
+                .where(User.id == member.user_id)
+            )
+            user = user_result.scalar_one_or_none()
+            if not user or not user.preferences:
+                continue
+
+            prefs = user.preferences
+
+            # Union allergies
+            if prefs.allergies:
+                for allergy in prefs.allergies:
+                    if isinstance(allergy, dict):
+                        all_allergies.add(allergy.get("ingredient", "").lower())
+                    else:
+                        all_allergies.add(str(allergy).lower())
+
+            # Union dislikes
+            if prefs.disliked_ingredients:
+                for d in prefs.disliked_ingredients:
+                    all_dislikes.add(d.lower())
+
+            # Intersection of dietary tags (strictest common set)
+            if prefs.dietary_tags:
+                member_tags = set(prefs.dietary_tags)
+                if all_dietary_tags is None:
+                    all_dietary_tags = member_tags
+                else:
+                    all_dietary_tags = all_dietary_tags & member_tags
+
+        # Get household-scoped rules
+        rules_result = await db.execute(
+            select(RecipeRule).where(
+                RecipeRule.household_id == household_id,
+                RecipeRule.scope == "HOUSEHOLD",
+                RecipeRule.is_active == True,  # noqa: E712
+            )
+        )
+        rules = list(rules_result.scalars().all())
+
+        include_rules = [
+            {
+                "target": r.target_name,
+                "frequency": r.frequency_type,
+                "meal_slot": r.meal_slot,
+            }
+            for r in rules
+            if r.action == "INCLUDE"
+        ]
+        exclude_rules = [
+            {"target": r.target_name, "frequency": r.frequency_type}
+            for r in rules
+            if r.action == "EXCLUDE"
+        ]
+
+        return {
+            "allergies": list(all_allergies),
+            "dislikes": list(all_dislikes),
+            "dietary_tags": list(all_dietary_tags) if all_dietary_tags else [],
+            "include_rules": include_rules,
+            "exclude_rules": exclude_rules,
+            "member_count": len(members),
+        }
