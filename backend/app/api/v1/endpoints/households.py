@@ -8,6 +8,10 @@ from app.schemas.household import (
     HouseholdMemberResponse,
     HouseholdResponse,
     HouseholdUpdate,
+    InviteCodeResponse,
+    JoinHouseholdRequest,
+    TransferOwnershipRequest,
+    UpdateMemberRequest,
 )
 from app.services.household_service import HouseholdService
 
@@ -57,9 +61,7 @@ async def create_household(body: HouseholdCreate, user: CurrentUser, db: DbSessi
 @router.get("/{household_id}", response_model=HouseholdDetailResponse)
 async def get_household(household_id: str, user: CurrentUser, db: DbSession):
     """Get household details + members. Must be a member."""
-    household = await HouseholdService.get(
-        household_id=household_id, user=user, db=db
-    )
+    household = await HouseholdService.get(household_id=household_id, user=user, db=db)
     active_members = [m for m in household.members if m.status == "ACTIVE"]
     return HouseholdDetailResponse(
         household=_household_response(household, len(active_members)),
@@ -83,18 +85,12 @@ async def update_household(
 
 
 @router.delete("/{household_id}", status_code=204)
-async def deactivate_household(
-    household_id: str, user: CurrentUser, db: DbSession
-):
+async def deactivate_household(household_id: str, user: CurrentUser, db: DbSession):
     """Soft-deactivate household. Owner only."""
-    await HouseholdService.deactivate(
-        household_id=household_id, user=user, db=db
-    )
+    await HouseholdService.deactivate(household_id=household_id, user=user, db=db)
 
 
-@router.get(
-    "/{household_id}/members", response_model=list[HouseholdMemberResponse]
-)
+@router.get("/{household_id}/members", response_model=list[HouseholdMemberResponse])
 async def list_members(household_id: str, user: CurrentUser, db: DbSession):
     """List all household members."""
     members = await HouseholdService.list_members(
@@ -122,3 +118,79 @@ async def add_member(
         db=db,
     )
     return _member_response(member)
+
+
+@router.post("/{household_id}/invite-code", response_model=InviteCodeResponse)
+async def refresh_invite_code(household_id: str, user: CurrentUser, db: DbSession):
+    """Generate/refresh invite code. Owner only."""
+    code, expires_at = await HouseholdService.refresh_invite_code(
+        household_id=household_id, user=user, db=db
+    )
+    return InviteCodeResponse(invite_code=code, expires_at=expires_at)
+
+
+@router.post("/join", response_model=HouseholdMemberResponse, status_code=201)
+async def join_household(body: JoinHouseholdRequest, user: CurrentUser, db: DbSession):
+    """Join household via invite code."""
+    member = await HouseholdService.join(invite_code=body.invite_code, user=user, db=db)
+    return _member_response(member)
+
+
+@router.post("/{household_id}/leave", status_code=204)
+async def leave_household(household_id: str, user: CurrentUser, db: DbSession):
+    """Leave a household."""
+    await HouseholdService.leave(household_id=household_id, user=user, db=db)
+
+
+@router.post("/{household_id}/transfer-ownership", status_code=204)
+async def transfer_ownership(
+    household_id: str,
+    body: TransferOwnershipRequest,
+    user: CurrentUser,
+    db: DbSession,
+):
+    """Transfer household ownership."""
+    await HouseholdService.transfer(
+        household_id=household_id,
+        new_owner_member_id=body.new_owner_member_id,
+        user=user,
+        db=db,
+    )
+
+
+@router.put(
+    "/{household_id}/members/{member_id}",
+    response_model=HouseholdMemberResponse,
+)
+async def update_member(
+    household_id: str,
+    member_id: str,
+    body: UpdateMemberRequest,
+    user: CurrentUser,
+    db: DbSession,
+):
+    """Update member details. Owner only."""
+    member = await HouseholdService.update_member(
+        household_id=household_id,
+        member_id=member_id,
+        data=body.model_dump(exclude_unset=True),
+        user=user,
+        db=db,
+    )
+    return _member_response(member)
+
+
+@router.delete("/{household_id}/members/{member_id}", status_code=204)
+async def remove_member(
+    household_id: str,
+    member_id: str,
+    user: CurrentUser,
+    db: DbSession,
+):
+    """Remove member. Owner only."""
+    await HouseholdService.remove_member(
+        household_id=household_id,
+        member_id=member_id,
+        user=user,
+        db=db,
+    )
