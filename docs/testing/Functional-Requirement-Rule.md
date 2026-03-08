@@ -26,6 +26,9 @@ This document serves as the single source of truth for tracking functional requi
 | FR-018 | Family/Personal scope toggle on 5 screens | TBD | [`HouseholdMealPlanFlowTest.kt`](../../android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/HouseholdMealPlanFlowTest.kt) | [`test_household_scoped.py`](../../backend/tests/api/test_household_scoped.py) | ✅ |
 | FR-019 | Household meal plan view with status tracking | TBD | [`HouseholdMealPlanFlowTest.kt`](../../android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/HouseholdMealPlanFlowTest.kt) | [`test_household_layer4.py`](../../backend/tests/api/test_household_layer4.py) | ✅ |
 | FR-020 | Household notifications | TBD | [`HouseholdNotificationFlowTest.kt`](../../android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/HouseholdNotificationFlowTest.kt) | [`test_household_layer4.py`](../../backend/tests/api/test_household_layer4.py) | ✅ |
+| FR-021 | Scope Toggle E2E coverage (5 screens) | [#77](https://github.com/abhayla/KKB/issues/77) | [`ScopeToggleFlowTest.kt`](../../android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/ScopeToggleFlowTest.kt) | N/A (Android-only) | 🚧 |
+| FR-022 | Achievements screen E2E flow | [#78](https://github.com/abhayla/KKB/issues/78) | [`AchievementsFlowTest.kt`](../../android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/AchievementsFlowTest.kt) | N/A (Android-only) | 🚧 |
+| FR-023 | Notifications screen E2E flow | [#79](https://github.com/abhayla/KKB/issues/79) | [`NotificationsFlowTest.kt`](../../android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/NotificationsFlowTest.kt) | N/A (Android-only) | 🚧 |
 
 **Status Legend:**
 - ✅ Implemented and tested

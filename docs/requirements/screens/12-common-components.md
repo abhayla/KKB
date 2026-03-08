@@ -21,6 +21,7 @@
 | COM-015 | Bottom Sheet | Modal content | Implemented | Various |
 | COM-016 | Pull to Refresh | Refresh gesture | Implemented | Various |
 | COM-017 | Empty State | No data message | Implemented | Various |
+| COM-018 | Scope Toggle | Family/Personal switch | Implemented | `ScopeToggleFlowTest.kt` |
 
 ---
 
@@ -426,6 +427,45 @@ Background: errorContainer color.
 - And: Clear title
 - And: Helpful description
 - And: Optional call-to-action
+
+---
+
+### COM-018: Scope Toggle (Family/Personal)
+
+| Field | Value |
+|-------|-------|
+| **Component** | ScopeToggle |
+| **Element** | Family/Personal segmented button |
+| **Trigger** | User has active household |
+| **Status** | Implemented |
+| **Test** | `ScopeToggleFlowTest.kt` |
+
+**Layout:**
+```
+┌─────────────────────────────────────┐
+│  ┌──────────────┬──────────────┐    │
+│  │    Family    │   Personal   │    │
+│  └──────────────┴──────────────┘    │
+└─────────────────────────────────────┘
+```
+
+**Screens with Scope Toggle:**
+| Screen | Route | Data Changed |
+|--------|-------|--------------|
+| Stats | `stats` | Personal vs household cooking stats |
+| Grocery | `grocery` | Personal vs household grocery list |
+| Favorites | `favorites` | Personal vs household favorites |
+| Recipe Rules | `recipe-rules` | Personal vs household rules |
+| Chat | `chat` | Personal vs household context |
+
+**Acceptance Criteria:**
+- Given: User is a member of an active household
+- When: Screen with scope toggle loads
+- Then: Scope toggle is visible with Family/Personal options
+- And: Default scope is Personal
+- And: Tapping Family switches to household-scoped data
+- And: Tapping Personal switches back to personal data
+- And: Toggle is NOT visible when user has no household
 
 ---
 

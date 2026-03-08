@@ -253,6 +253,11 @@ object TestTags {
     const val ENFORCEMENT_REQUIRED = "enforcement_required"
     const val ENFORCEMENT_PREFERRED = "enforcement_preferred"
 
+    // Scope Toggle (Family/Personal)
+    const val SCOPE_TOGGLE = "scope_toggle"
+    const val SCOPE_TOGGLE_FAMILY = "scope_toggle_family"
+    const val SCOPE_TOGGLE_PERSONAL = "scope_toggle_personal"
+
     // Household Screen
     const val HOUSEHOLD_SCREEN = "household_screen"
     const val HOUSEHOLD_NAME_FIELD = "household_name_field"

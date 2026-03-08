@@ -58,18 +58,8 @@
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/verify-test-rerun.sh",
-            "timeout": 300
-          },
-          {
-            "type": "command",
             "command": "bash .claude/hooks/post-screenshot.sh",
             "timeout": 30
-          },
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/auto-fix-pattern-scan.sh",
-            "timeout": 10
           },
           {
             "type": "command",
@@ -100,11 +90,6 @@
             "type": "command",
             "command": "bash .claude/hooks/log-workflow.sh",
             "timeout": 15
-          },
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/post-skill-learning.sh",
-            "timeout": 30
           }
         ]
       },

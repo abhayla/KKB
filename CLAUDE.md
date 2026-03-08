@@ -427,11 +427,11 @@ For each HIGH priority recommendation, provide:
 
 ## Workflow Enforcement Hooks
 
-12 shell hooks in `.claude/hooks/` enforce the 7-step workflow (blocking edits, commits, and test claims when gates aren't met). State tracked in `.claude/workflow-state.json`. See `.claude/rules/workflow.md` for full hook documentation.
+9 shell hooks in `.claude/hooks/` enforce the 7-step workflow (blocking edits, commits, and test claims when gates aren't met). State tracked in `.claude/workflow-state.json`. See `.claude/rules/workflow.md` for full hook documentation.
 
 ## Claude Code Configuration
 
-The `.claude/` directory contains: `agents/` (14 agents), `knowledge.db` (pattern library), `skills/` (20 slash commands), `hooks/` (12 hooks — see table above), `rules/` (5 path-scoped rule files), `logs/` (session logs).
+The `.claude/` directory contains: `agents/` (14 agents), `knowledge.db` (pattern library), `skills/` (20 slash commands), `hooks/` (9 hooks — see table above), `rules/` (5 path-scoped rule files), `logs/` (session logs).
 
 **Skills:** `/adb-test`, `/auto-verify`, `/claude-guardian`, `/clean-pyc`, `/continue`, `/fix-issue`, `/fix-loop`, `/implement`, `/plan-to-issues`, `/post-fix-pipeline`, `/reflect`, `/run-android-tests`, `/run-backend-tests`, `/run-e2e`, `/db-migrate`, `/deploy`, `/status`, `/sync-check`, `/strategic-architect`, `/verify-screenshots`, `/generate-meal`, `/gemini-api`
 
