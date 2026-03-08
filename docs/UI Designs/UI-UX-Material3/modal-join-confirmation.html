@@ -6,6 +6,74 @@
   <title>RasoiAI - Join Confirmation</title>
   <link rel="stylesheet" href="shared.css">
   <script src="shared.js"></script>
+  <style>
+    .join-dialog {
+      max-width: 320px;
+    }
+    .join-emoji {
+      font-size: 48px;
+      animation: bounceIn 0.5s ease-out;
+      display: inline-block;
+    }
+    .household-card {
+      background: var(--surface-warm);
+      border-radius: var(--radius-md);
+      padding: var(--sp-md);
+      text-align: center;
+      margin-bottom: var(--sp-md);
+      border: 1px solid var(--outline-variant);
+    }
+    .household-card .hh-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--on-surface);
+      margin-bottom: 4px;
+    }
+    .household-card .hh-members {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+    }
+    .join-checklist {
+      background: var(--surface-variant);
+      border-radius: var(--radius-md);
+      padding: var(--sp-md);
+      margin-bottom: var(--sp-lg);
+    }
+    .join-checklist .checklist-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--on-surface);
+      margin-bottom: var(--sp-sm);
+    }
+    .checklist-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--sp-sm);
+      margin-bottom: var(--sp-xs);
+    }
+    .checklist-item:last-child {
+      margin-bottom: 0;
+    }
+    .checklist-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--secondary-container);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: var(--on-secondary-container);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .checklist-text {
+      font-size: 13px;
+      color: var(--on-surface-variant);
+      line-height: 1.4;
+    }
+  </style>
 </head>
 <body>
   <div class="phone-frame bottom-sheet-page" id="app"></div>
@@ -25,31 +93,36 @@
       </div>
 
       <div class="dialog-overlay">
-        <div class="dialog" style="max-width:320px;">
+        <div class="dialog join-dialog">
           <div style="text-align:center;margin-bottom:var(--sp-md);">
-            <div style="font-size:48px;">&#127968;</div>
+            <span class="join-emoji">&#127968;</span>
           </div>
-          <div class="dialog-title" style="text-align:center;">Join Sharma Family?</div>
-          <div class="body-small" style="color:var(--on-surface-variant);text-align:center;margin-bottom:var(--sp-md);">3 members currently</div>
 
-          <div style="background:var(--surface-variant);border-radius:var(--radius-sm);padding:var(--sp-md);margin-bottom:var(--sp-lg);">
-            <div class="body-small" style="font-weight:600;color:var(--on-surface);margin-bottom:var(--sp-sm);">What happens when you join:</div>
-            <div style="display:flex;align-items:flex-start;gap:var(--sp-sm);margin-bottom:var(--sp-xs);">
-              <span style="color:var(--primary);flex-shrink:0;">&#10003;</span>
-              <span class="body-small" style="color:var(--on-surface-variant);">Your allergies will be merged into shared meals</span>
+          <!-- Household info card -->
+          <div class="household-card">
+            <div class="hh-name">Sharma Family</div>
+            <div class="hh-members">&#128101; 3 members currently</div>
+          </div>
+
+          <!-- Checklist -->
+          <div class="join-checklist">
+            <div class="checklist-title">What happens when you join:</div>
+            <div class="checklist-item">
+              <div class="checklist-icon">&#10003;</div>
+              <span class="checklist-text">Your allergies will be merged into shared meals</span>
             </div>
-            <div style="display:flex;align-items:flex-start;gap:var(--sp-sm);margin-bottom:var(--sp-xs);">
-              <span style="color:var(--primary);flex-shrink:0;">&#10003;</span>
-              <span class="body-small" style="color:var(--on-surface-variant);">Shared meals (lunch, dinner) planned together</span>
+            <div class="checklist-item">
+              <div class="checklist-icon">&#10003;</div>
+              <span class="checklist-text">Shared meals (lunch, dinner) planned together</span>
             </div>
-            <div style="display:flex;align-items:flex-start;gap:var(--sp-sm);">
-              <span style="color:var(--primary);flex-shrink:0;">&#10003;</span>
-              <span class="body-small" style="color:var(--on-surface-variant);">Personal slots (breakfast, snacks) remain yours</span>
+            <div class="checklist-item">
+              <div class="checklist-icon">&#10003;</div>
+              <span class="checklist-text">Personal slots (breakfast, snacks) remain yours</span>
             </div>
           </div>
 
           <div class="dialog-actions" style="justify-content:stretch;">
-            <a href="settings-join-household.html" class="btn btn-outlined" style="flex:1;text-decoration:none;">Cancel</a>
+            <a href="settings-join-household.html" class="btn btn-text" style="flex:1;text-decoration:none;">Cancel</a>
             <a href="settings-household.html" class="btn btn-filled" style="flex:1;text-decoration:none;">Join</a>
           </div>
         </div>

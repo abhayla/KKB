@@ -27,7 +27,7 @@
       margin-bottom: var(--sp-sm);
     }
     .rule-card .rule-target {
-      font-family: 'Poppins', sans-serif;
+      font-family: 'Outfit', sans-serif;
       font-size: 16px;
       font-weight: 600;
       color: var(--on-surface);
@@ -216,14 +216,18 @@
                 <div class="section-header">
                   <span class="section-title" style="color:var(--success);">&#x2705; Include Rules</span>
                 </div>
+                <div class="stagger-list">
                 ${includeRules.map(rule => renderRuleCard(rule, 'include')).join('')}
+                </div>
               ` : ''}
 
               ${excludeRules.length > 0 ? `
                 <div class="section-header">
                   <span class="section-title" style="color:var(--error);">&#x26D4; Exclude Rules</span>
                 </div>
+                <div class="stagger-list">
                 ${excludeRules.map(rule => renderRuleCard(rule, 'exclude')).join('')}
+                </div>
               ` : ''}
             </div>
 
@@ -231,6 +235,7 @@
               <div class="section-header">
                 <span class="section-title">Your Nutrition Goals</span>
               </div>
+              <div class="stagger-list">
               ${nutritionGoals.map(goal => `
                 <div class="goal-card">
                   <div class="goal-header">
@@ -243,6 +248,7 @@
                   </div>
                 </div>
               `).join('')}
+              </div>
             </div>
 
           </div>

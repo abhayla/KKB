@@ -18,12 +18,15 @@
       font-size: 24px;
       font-weight: 600;
       color: var(--on-surface);
+      animation: fadeInUp 0.4s ease-out backwards;
     }
     .auth-subtitle {
       font-size: 14px;
       color: var(--on-surface-variant);
       line-height: 1.5;
       margin-top: calc(-1 * var(--sp-sm));
+      animation: fadeInUp 0.4s ease-out backwards;
+      animation-delay: 0.05s;
     }
     .otp-row {
       display: flex;
@@ -37,20 +40,39 @@
       font-size: 24px;
       font-weight: 600;
       color: var(--on-surface);
-      background: var(--surface);
+      background: var(--surface-warm);
       border: 2px solid var(--outline-variant);
       border-radius: var(--radius-sm);
       outline: none;
       caret-color: var(--primary);
-      transition: border-color 0.15s;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+      /* Stagger animation */
+      animation: fadeInUp 0.35s ease-out backwards;
     }
+    .otp-box:nth-child(1) { animation-delay: 0.08s; }
+    .otp-box:nth-child(2) { animation-delay: 0.12s; }
+    .otp-box:nth-child(3) { animation-delay: 0.16s; }
+    .otp-box:nth-child(4) { animation-delay: 0.20s; }
+    .otp-box:nth-child(5) { animation-delay: 0.24s; }
+    .otp-box:nth-child(6) { animation-delay: 0.28s; }
     .otp-box:focus {
       border-color: var(--primary);
-      box-shadow: 0 0 0 2px rgba(255,104,56,0.15);
+      box-shadow: 0 0 0 3px rgba(232, 93, 44, 0.15);
+      transform: translateY(-1px);
     }
     .otp-box.filled {
       border-color: var(--primary);
       background: var(--primary-container);
+    }
+    .otp-box.success {
+      border-color: var(--secondary);
+      background: var(--secondary-container);
+      animation: otpSuccess 0.3s ease-out;
+    }
+    @keyframes otpSuccess {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+      100% { transform: scale(1); }
     }
     .auth-error {
       color: var(--error);
@@ -62,6 +84,8 @@
       text-align: center;
       font-size: 14px;
       color: var(--on-surface-variant);
+      animation: fadeInUp 0.4s ease-out backwards;
+      animation-delay: 0.35s;
     }
     .resend-row a {
       color: var(--primary);
@@ -73,6 +97,21 @@
       color: var(--on-surface-variant);
       pointer-events: none;
       opacity: 0.6;
+    }
+    .otp-success-check {
+      display: none;
+      text-align: center;
+      font-size: 48px;
+      color: var(--secondary);
+      animation: bounceIn 0.5s ease-out;
+    }
+    .otp-success-check.visible {
+      display: block;
+    }
+    @keyframes bounceIn {
+      0% { transform: scale(0); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
     }
     .auth-spacer {
       flex: 1;
@@ -101,6 +140,9 @@
       </div>
 
       <div class="auth-error" id="otpError"></div>
+
+      <!-- Success checkmark (hidden initially) -->
+      <div class="otp-success-check" id="otpSuccessCheck">&#x2705;</div>
 
       <button class="btn-filled btn-large w-full" id="verifyBtn" onclick="handleVerify()">
         Verify
@@ -181,8 +223,14 @@
         document.getElementById('otpError').textContent = 'Please enter the complete 6-digit OTP';
         return;
       }
+      // Show success state
+      boxes.forEach(b => b.classList.add('success'));
+      document.getElementById('otpSuccessCheck').classList.add('visible');
+      document.getElementById('verifyBtn').style.display = 'none';
       setState('auth', true);
-      window.location.href = 'onboarding-step1-household.html';
+      setTimeout(function() {
+        window.location.href = 'onboarding-step1-household.html';
+      }, 800);
     }
 
     // Resend timer

@@ -6,6 +6,91 @@
   <title>RasoiAI - Add Rule</title>
   <link rel="stylesheet" href="shared.css">
   <script src="shared.js"></script>
+  <style>
+    .add-rule-sheet .handle {
+      background: var(--outline-variant);
+    }
+    .sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--sp-lg);
+    }
+    .sheet-header-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .field-group {
+      margin-bottom: var(--sp-lg);
+    }
+    .field-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--on-surface-variant);
+      margin-bottom: var(--sp-sm);
+    }
+    .action-type-row {
+      display: flex;
+      gap: var(--sp-md);
+    }
+    .action-type-option {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+      cursor: pointer;
+      flex: 1;
+      padding: var(--sp-sm) var(--sp-md);
+      border-radius: var(--radius-md);
+      border: 2px solid var(--outline-variant);
+      transition: all var(--transition-normal);
+      background: transparent;
+    }
+    .action-type-option:hover {
+      background: var(--surface-warm);
+    }
+    .action-type-option.include-active {
+      border-color: var(--secondary);
+      background: color-mix(in srgb, var(--secondary) 8%, transparent);
+    }
+    .action-type-option.exclude-active {
+      border-color: var(--error);
+      background: color-mix(in srgb, var(--error) 8%, transparent);
+    }
+    .field-group .text-field {
+      height: 48px;
+      font-size: 14px;
+      background: var(--surface-warm);
+      border: 1px solid var(--outline-variant);
+      transition: all var(--transition-normal);
+    }
+    .field-group .text-field:focus {
+      background: var(--surface);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 12%, transparent);
+    }
+    .enforcement-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--sp-md);
+      background: var(--surface-warm);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--sp-lg);
+    }
+    .enforcement-toggle-group {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+    }
+    .sheet-actions {
+      display: flex;
+      gap: var(--sp-sm);
+    }
+  </style>
 </head>
 <body>
   <div class="phone-frame bottom-sheet-page" id="app"></div>
@@ -32,23 +117,23 @@
 
       <!-- Bottom Sheet Overlay -->
       <div class="bottom-sheet-overlay">
-        <div class="bottom-sheet" style="max-height:82%;overflow-y:auto;">
+        <div class="bottom-sheet add-rule-sheet" style="max-height:82%;overflow-y:auto;">
           <div class="handle"></div>
 
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-lg);">
-            <span class="title-large" style="font-size:18px;font-weight:600;">Add Rule</span>
+          <div class="sheet-header">
+            <span class="sheet-header-title">Add Rule</span>
             <a href="feature-recipe-rules.html" class="icon-btn" style="text-decoration:none;">&#10005;</a>
           </div>
 
           <!-- Action Type -->
-          <div style="margin-bottom:var(--sp-lg);">
-            <div class="label-large" style="margin-bottom:var(--sp-sm);color:var(--on-surface-variant);">Action Type</div>
-            <div style="display:flex;gap:var(--sp-md);">
-              <label style="display:flex;align-items:center;gap:var(--sp-sm);cursor:pointer;flex:1;padding:var(--sp-sm) var(--sp-md);border-radius:var(--radius-sm);border:2px solid var(--secondary);background:color-mix(in srgb, var(--secondary) 8%, transparent);" id="radio-include" onclick="document.getElementById('radio-include').style.borderColor='var(--secondary)';document.getElementById('radio-include').style.background='color-mix(in srgb, var(--secondary) 8%, transparent)';document.getElementById('radio-exclude').style.borderColor='var(--outline-variant)';document.getElementById('radio-exclude').style.background='transparent';">
+          <div class="field-group">
+            <div class="field-label">Action Type</div>
+            <div class="action-type-row">
+              <label class="action-type-option include-active" id="radio-include" onclick="document.getElementById('radio-include').className='action-type-option include-active';document.getElementById('radio-exclude').className='action-type-option';">
                 <div class="radio selected" style="border-color:var(--secondary);"><div style="width:10px;height:10px;border-radius:50%;background:var(--secondary);"></div></div>
                 <span style="font-weight:500;color:var(--secondary);">Include</span>
               </label>
-              <label style="display:flex;align-items:center;gap:var(--sp-sm);cursor:pointer;flex:1;padding:var(--sp-sm) var(--sp-md);border-radius:var(--radius-sm);border:2px solid var(--outline-variant);" id="radio-exclude" onclick="document.getElementById('radio-exclude').style.borderColor='var(--error)';document.getElementById('radio-exclude').style.background='color-mix(in srgb, var(--error) 8%, transparent)';document.getElementById('radio-include').style.borderColor='var(--outline-variant)';document.getElementById('radio-include').style.background='transparent';">
+              <label class="action-type-option" id="radio-exclude" onclick="document.getElementById('radio-exclude').className='action-type-option exclude-active';document.getElementById('radio-include').className='action-type-option';">
                 <div class="radio"></div>
                 <span style="font-weight:500;color:var(--error);">Exclude</span>
               </label>
@@ -56,14 +141,14 @@
           </div>
 
           <!-- Search Field -->
-          <div style="margin-bottom:var(--sp-lg);">
-            <div class="label-large" style="margin-bottom:var(--sp-sm);color:var(--on-surface-variant);">Recipe or Ingredient</div>
-            <input type="text" class="text-field" placeholder="Search for recipe or ingredient..." style="height:48px;font-size:14px;">
+          <div class="field-group">
+            <div class="field-label">Recipe or Ingredient</div>
+            <input type="text" class="text-field" placeholder="Search for recipe or ingredient...">
           </div>
 
           <!-- Frequency Picker -->
-          <div style="margin-bottom:var(--sp-lg);">
-            <div class="label-large" style="margin-bottom:var(--sp-sm);color:var(--on-surface-variant);">Frequency</div>
+          <div class="field-group">
+            <div class="field-label">Frequency</div>
             <div class="chip-group" id="freq-chips">
               <button class="chip selected" onclick="selectFreq(this);document.getElementById('times-input').style.display='none';document.getElementById('days-input').style.display='none';">Daily</button>
               <button class="chip" onclick="selectFreq(this);document.getElementById('times-input').style.display='flex';document.getElementById('days-input').style.display='none';">Times per Week</button>
@@ -74,7 +159,7 @@
             <!-- Times per week input -->
             <div id="times-input" style="display:none;align-items:center;gap:var(--sp-sm);margin-top:var(--sp-sm);">
               <span class="body-medium">Times:</span>
-              <input type="number" class="text-field" value="4" min="1" max="7" style="width:64px;height:40px;text-align:center;font-size:14px;">
+              <input type="number" class="text-field" value="4" min="1" max="7" style="width:64px;height:40px;text-align:center;font-size:14px;background:var(--surface-warm);">
               <span class="body-small" style="color:var(--on-surface-variant);">per week</span>
             </div>
 
@@ -89,8 +174,8 @@
           </div>
 
           <!-- Meal Slot Chips -->
-          <div style="margin-bottom:var(--sp-lg);">
-            <div class="label-large" style="margin-bottom:var(--sp-sm);color:var(--on-surface-variant);">Meal Slots</div>
+          <div class="field-group">
+            <div class="field-label">Meal Slots</div>
             <div class="chip-group">
               <button class="chip selected" onclick="this.classList.toggle('selected')">Breakfast</button>
               <button class="chip" onclick="this.classList.toggle('selected')">Lunch</button>
@@ -100,12 +185,12 @@
           </div>
 
           <!-- Enforcement Toggle -->
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-lg);padding:var(--sp-sm) 0;">
+          <div class="enforcement-row">
             <div>
               <div class="title-small" style="font-weight:600;">Enforcement</div>
               <div class="body-small" style="color:var(--on-surface-variant);">Strict rules are always enforced</div>
             </div>
-            <div style="display:flex;align-items:center;gap:var(--sp-sm);">
+            <div class="enforcement-toggle-group">
               <span class="body-small" style="color:var(--on-surface-variant);">Flexible</span>
               <button class="toggle on" onclick="this.classList.toggle('on');"></button>
               <span class="body-small" style="font-weight:500;">Strict</span>
@@ -113,8 +198,8 @@
           </div>
 
           <!-- Actions -->
-          <div style="display:flex;gap:var(--sp-sm);">
-            <a href="feature-recipe-rules.html" class="btn btn-outlined" style="flex:1;text-decoration:none;">Cancel</a>
+          <div class="sheet-actions">
+            <a href="feature-recipe-rules.html" class="btn btn-text" style="flex:1;text-decoration:none;">Cancel</a>
             <a href="feature-recipe-rules.html" class="btn btn-filled" style="flex:1;text-decoration:none;">Add Rule</a>
           </div>
         </div>

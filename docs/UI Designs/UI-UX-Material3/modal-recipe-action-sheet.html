@@ -6,6 +6,78 @@
   <title>RasoiAI - Recipe Actions</title>
   <link rel="stylesheet" href="shared.css">
   <script src="shared.js"></script>
+  <style>
+    .action-sheet .handle {
+      background: var(--outline-variant);
+    }
+    .action-recipe-header {
+      margin-bottom: var(--sp-md);
+    }
+    .action-recipe-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .action-recipe-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .action-list-item {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+      padding: var(--sp-md);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--transition-normal);
+      text-decoration: none;
+      color: inherit;
+      margin-bottom: 2px;
+    }
+    .action-list-item:hover {
+      background: var(--surface-warm);
+      transform: translateX(4px);
+    }
+    .action-list-item:active {
+      transform: scale(0.98);
+    }
+    .action-list-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .action-list-content {
+      flex: 1;
+    }
+    .action-list-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--on-surface);
+    }
+    .action-list-subtitle {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      margin-top: 2px;
+    }
+    .action-list-trailing {
+      color: var(--on-surface-variant);
+      font-size: 18px;
+    }
+    .action-list-item.destructive .action-list-title {
+      color: var(--error);
+    }
+    .action-list-item.destructive:hover {
+      background: color-mix(in srgb, var(--error) 6%, transparent);
+    }
+  </style>
 </head>
 <body>
   <div class="phone-frame bottom-sheet-page" id="app"></div>
@@ -38,56 +110,56 @@
 
       <!-- Bottom Sheet Overlay -->
       <div class="bottom-sheet-overlay">
-        <div class="bottom-sheet" style="max-height:55%;">
+        <div class="bottom-sheet action-sheet" style="max-height:55%;">
           <div class="handle"></div>
 
           <!-- Recipe name header -->
-          <div style="margin-bottom:var(--sp-md);">
-            <span class="title-medium" style="font-weight:600;font-size:16px;">Paneer Tikka Masala</span>
-            <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+          <div class="action-recipe-header">
+            <div class="action-recipe-name">Paneer Tikka Masala</div>
+            <div class="action-recipe-meta">
               <div class="veg-indicator"></div>
               <span class="body-small" style="color:var(--on-surface-variant);">&#9201; 30 min &middot; 350 cal</span>
             </div>
           </div>
 
-          <div class="list-divider" style="margin:0 0 var(--sp-sm);"></div>
+          <div class="list-divider" style="margin:0 0 var(--sp-xs);"></div>
 
           <!-- Action items -->
-          <a href="detail-recipe.html" class="list-item" style="text-decoration:none;">
-            <div class="list-icon" style="background:var(--primary-container);color:var(--on-primary-container);">&#128065;</div>
-            <div class="list-content">
-              <div class="list-title">View Recipe</div>
-              <div class="list-subtitle">See full recipe details and instructions</div>
+          <a href="detail-recipe.html" class="action-list-item">
+            <div class="action-list-icon" style="background:var(--primary-container);color:var(--on-primary-container);">&#128065;</div>
+            <div class="action-list-content">
+              <div class="action-list-title">View Recipe</div>
+              <div class="action-list-subtitle">See full recipe details and instructions</div>
             </div>
-            <span class="list-trailing">&#8250;</span>
+            <span class="action-list-trailing">&#8250;</span>
           </a>
 
-          <a href="modal-swap-sheet.html" class="list-item" style="text-decoration:none;">
-            <div class="list-icon" style="background:var(--secondary-container);color:var(--on-secondary-container);">&#128260;</div>
-            <div class="list-content">
-              <div class="list-title">Swap Recipe</div>
-              <div class="list-subtitle">Replace with a different recipe</div>
+          <a href="modal-swap-sheet.html" class="action-list-item">
+            <div class="action-list-icon" style="background:var(--secondary-container);color:var(--on-secondary-container);">&#128260;</div>
+            <div class="action-list-content">
+              <div class="action-list-title">Swap Recipe</div>
+              <div class="action-list-subtitle">Replace with a different recipe</div>
             </div>
-            <span class="list-trailing">&#8250;</span>
+            <span class="action-list-trailing">&#8250;</span>
           </a>
 
-          <div class="list-item" onclick="this.querySelector('.list-icon').textContent = this.querySelector('.list-icon').textContent === '&#128274;' ? '&#128275;' : '&#128274;'; this.querySelector('.list-title').textContent = this.querySelector('.list-title').textContent === 'Lock Recipe' ? 'Unlock Recipe' : 'Lock Recipe';">
-            <div class="list-icon" style="background:var(--tertiary-container);color:var(--on-tertiary-container);">&#128274;</div>
-            <div class="list-content">
-              <div class="list-title">Lock Recipe</div>
-              <div class="list-subtitle">Keep this recipe when regenerating</div>
+          <div class="action-list-item" onclick="const icon=this.querySelector('.action-list-icon');const title=this.querySelector('.action-list-title');if(title.textContent==='Lock Recipe'){icon.textContent='&#128275;';title.textContent='Unlock Recipe';}else{icon.textContent='&#128274;';title.textContent='Lock Recipe';}">
+            <div class="action-list-icon" style="background:var(--tertiary-container);color:var(--on-tertiary-container);">&#128274;</div>
+            <div class="action-list-content">
+              <div class="action-list-title">Lock Recipe</div>
+              <div class="action-list-subtitle">Keep this recipe when regenerating</div>
             </div>
           </div>
 
-          <div class="list-item">
-            <div class="list-icon" style="background:var(--error-container);color:var(--on-error-container);">&#128465;</div>
-            <div class="list-content">
-              <div class="list-title" style="color:var(--error);">Remove from Plan</div>
-              <div class="list-subtitle">Remove this recipe from today's meal</div>
+          <div class="action-list-item destructive">
+            <div class="action-list-icon" style="background:var(--error-container);color:var(--on-error-container);">&#128465;</div>
+            <div class="action-list-content">
+              <div class="action-list-title">Remove from Plan</div>
+              <div class="action-list-subtitle">Remove this recipe from today's meal</div>
             </div>
           </div>
 
-          <div style="margin-top:var(--sp-md);text-align:center;">
+          <div style="margin-top:var(--sp-sm);text-align:center;">
             <a href="main-home.html" class="btn btn-text" style="text-decoration:none;">Cancel</a>
           </div>
         </div>

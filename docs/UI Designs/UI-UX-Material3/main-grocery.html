@@ -39,7 +39,7 @@
         }).join('');
 
         return `<div class="grocery-category">
-          <div class="grocery-category-header" onclick="toggleCategory('${catId}')">
+          <div class="grocery-category-header section-header-label" onclick="toggleCategory('${catId}')">
             <span class="category-name">${catIcon} ${cat}</span>
             <span class="category-count">${items.length} items ${collapsed ? '&#9654;' : '&#9660;'}</span>
           </div>
@@ -63,7 +63,7 @@
             </div>`
           : `<span style="font-size:12px;color:var(--on-surface-variant);margin-left:auto;white-space:nowrap;">Pending approval</span>`;
 
-        return `<div style="display:flex;align-items:center;gap:var(--sp-sm);padding:var(--sp-sm) var(--sp-md);background:var(--surface-container);border-radius:var(--radius-md);border-left:3px solid var(--tertiary);margin-bottom:var(--sp-xs);">
+        return `<div class="card-filled" style="display:flex;align-items:center;gap:var(--sp-sm);padding:var(--sp-sm) var(--sp-md);background:var(--surface-warm);border-left:3px solid var(--tertiary);margin-bottom:var(--sp-xs);">
           <div style="flex:1;min-width:0;">
             <div style="font-weight:600;font-size:14px;color:var(--on-surface);">${s.name} <span style="font-weight:400;color:var(--on-surface-variant);">${s.qty} ${s.unit}</span></div>
             <div style="display:flex;align-items:center;gap:var(--sp-xs);margin-top:2px;">
@@ -76,7 +76,7 @@
       }).join('');
 
       return `<div style="margin-top:var(--sp-md);padding:0 0 var(--sp-md);">
-        <div style="display:flex;align-items:center;gap:var(--sp-sm);margin-bottom:var(--sp-sm);">
+        <div class="section-header-label" style="display:flex;align-items:center;gap:var(--sp-sm);margin-bottom:var(--sp-sm);">
           <span style="font-weight:700;font-size:14px;color:var(--on-surface);">Pending Suggestions</span>
           <span style="background:var(--tertiary-container);color:var(--on-tertiary-container);font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;">${pending.length}</span>
         </div>
@@ -119,27 +119,29 @@
         <div class="screen-content">
           ${scopeToggle}
 
-          <!-- Week Header -->
-          <div class="week-header">
-            <span class="week-range">Mar 2-8, 2026</span>
-          </div>
-
-          <!-- Summary Bar -->
-          <div style="display:flex;justify-content:center;gap:var(--sp-lg);padding:var(--sp-sm) var(--sp-md) var(--sp-md);font-size:13px;color:var(--on-surface-variant);">
-            <span><strong>${totalCount}</strong> items</span>
-            <span><strong>${purchasedCount}</strong> purchased</span>
-            <span><strong>${remainingCount}</strong> remaining</span>
+          <!-- Week Header + Summary -->
+          <div class="gradient-header" style="padding:var(--sp-md);border-radius:var(--radius-lg);margin-bottom:var(--sp-sm);">
+            <div class="week-header" style="margin-bottom:var(--sp-xs);">
+              <span class="week-range">Mar 2-8, 2026</span>
+            </div>
+            <div style="display:flex;justify-content:center;gap:var(--sp-lg);font-size:13px;color:var(--on-surface-variant);">
+              <span><strong>${totalCount}</strong> items</span>
+              <span><strong>${purchasedCount}</strong> purchased</span>
+              <span><strong>${remainingCount}</strong> remaining</span>
+            </div>
           </div>
 
           <!-- Categories -->
-          ${categoriesHTML}
+          <div class="stagger-list">
+            ${categoriesHTML}
+          </div>
 
           <!-- Suggestions -->
           ${suggestionsHTML}
         </div>
 
         <!-- FAB -->
-        <a href="${fabHref}" class="fab" title="${isOwner() ? 'Add item' : 'Suggest item'}" ${fabOnclick}>+</a>
+        <a href="${fabHref}" class="fab" style="background:var(--primary);color:var(--on-primary);box-shadow:var(--shadow-lg);" title="${isOwner() ? 'Add item' : 'Suggest item'}" ${fabOnclick}>+</a>
 
         ${renderBottomNav('grocery')}
       `;
@@ -163,12 +165,16 @@
         const categoriesHTML = buildCategoryHTML(personalData, checked, 'togglePersonalItem');
         contentHTML = `
           <!-- Summary Bar -->
-          <div style="display:flex;justify-content:center;gap:var(--sp-lg);padding:var(--sp-sm) var(--sp-md) var(--sp-md);font-size:13px;color:var(--on-surface-variant);">
-            <span><strong>${totalCount}</strong> items</span>
-            <span><strong>${purchasedCount}</strong> purchased</span>
-            <span><strong>${remainingCount}</strong> remaining</span>
+          <div class="gradient-header" style="padding:var(--sp-md);border-radius:var(--radius-lg);margin-bottom:var(--sp-sm);">
+            <div style="display:flex;justify-content:center;gap:var(--sp-lg);font-size:13px;color:var(--on-surface-variant);">
+              <span><strong>${totalCount}</strong> items</span>
+              <span><strong>${purchasedCount}</strong> purchased</span>
+              <span><strong>${remainingCount}</strong> remaining</span>
+            </div>
           </div>
-          ${categoriesHTML}`;
+          <div class="stagger-list">
+            ${categoriesHTML}
+          </div>`;
       }
 
       document.getElementById('app').innerHTML = `
@@ -180,7 +186,7 @@
         </div>
 
         <!-- FAB -->
-        <a href="modal-add-grocery-item.html" class="fab" title="Add item">+</a>
+        <a href="modal-add-grocery-item.html" class="fab" style="background:var(--primary);color:var(--on-primary);box-shadow:var(--shadow-lg);" title="Add item">+</a>
 
         ${renderBottomNav('grocery')}
       `;

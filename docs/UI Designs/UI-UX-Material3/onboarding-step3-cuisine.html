@@ -12,11 +12,14 @@
       font-weight: 600;
       color: var(--on-surface);
       margin-bottom: var(--sp-xs);
+      animation: fadeInUp 0.4s ease-out backwards;
     }
     .step-subtitle {
       font-size: 14px;
       color: var(--on-surface-variant);
       margin-bottom: var(--sp-lg);
+      animation: fadeInUp 0.4s ease-out backwards;
+      animation-delay: 0.05s;
     }
     .field-label {
       font-family: 'Poppins', sans-serif;
@@ -32,21 +35,24 @@
       margin-bottom: var(--sp-lg);
     }
     .cuisine-card {
-      background: var(--surface);
+      background: var(--surface-warm);
       border: 2px solid var(--outline-variant);
       border-radius: var(--radius-md);
       padding: var(--sp-md);
       text-align: center;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.25s ease;
     }
     .cuisine-card:hover {
       box-shadow: var(--shadow-md);
-      transform: translateY(-1px);
+      transform: translateY(-2px);
+      background: color-mix(in srgb, var(--surface-warm) 80%, var(--primary-container));
     }
     .cuisine-card.selected {
       border-color: var(--primary);
-      background: color-mix(in srgb, var(--primary-container) 30%, var(--surface));
+      background: color-mix(in srgb, var(--primary-container) 40%, var(--surface-warm));
+      box-shadow: var(--shadow-md);
+      animation: warmPulse 0.6s ease-out;
     }
     .cuisine-card .cuisine-icon {
       font-size: 40px;
@@ -119,6 +125,16 @@
     .bottom-buttons .btn {
       flex: 1;
     }
+    .bottom-buttons {
+      background: var(--gradient-warm);
+    }
+    .cuisine-grid {
+      /* Override for stagger effect */
+    }
+    .cuisine-grid .cuisine-card:nth-child(1) { animation: fadeInUp 0.35s ease-out backwards; animation-delay: 0.08s; }
+    .cuisine-grid .cuisine-card:nth-child(2) { animation: fadeInUp 0.35s ease-out backwards; animation-delay: 0.14s; }
+    .cuisine-grid .cuisine-card:nth-child(3) { animation: fadeInUp 0.35s ease-out backwards; animation-delay: 0.20s; }
+    .cuisine-grid .cuisine-card:nth-child(4) { animation: fadeInUp 0.35s ease-out backwards; animation-delay: 0.26s; }
   </style>
   <script src="shared.js"></script>
 </head>

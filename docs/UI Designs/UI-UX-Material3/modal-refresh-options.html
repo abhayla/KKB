@@ -6,6 +6,55 @@
   <title>RasoiAI - Refresh Meals</title>
   <link rel="stylesheet" href="shared.css">
   <script src="shared.js"></script>
+  <style>
+    .refresh-dialog {
+      max-width: 300px;
+    }
+    .refresh-option {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+      padding: var(--sp-md);
+      border: 2px solid var(--outline-variant);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--sp-sm);
+      cursor: pointer;
+      transition: all var(--transition-normal);
+      background: transparent;
+    }
+    .refresh-option:hover {
+      background: var(--surface-warm);
+      transform: translateY(-1px);
+    }
+    .refresh-option.selected {
+      border-color: var(--primary);
+      background: color-mix(in srgb, var(--primary) 6%, transparent);
+      box-shadow: var(--shadow-sm);
+    }
+    .refresh-option-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .refresh-option-content {
+      flex: 1;
+    }
+    .refresh-option-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .refresh-option-desc {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      margin-top: 2px;
+    }
+  </style>
 </head>
 <body>
   <div class="phone-frame bottom-sheet-page" id="app"></div>
@@ -39,33 +88,30 @@
 
       <!-- Dialog Overlay -->
       <div class="dialog-overlay">
-        <div class="dialog" style="max-width:300px;">
+        <div class="dialog refresh-dialog">
           <div class="dialog-title" style="text-align:center;">Refresh Meals</div>
 
           <!-- Option 1: Refresh Today -->
-          <div class="card card-outlined" style="margin-bottom:var(--sp-sm);cursor:pointer;padding:var(--sp-md);" onclick="this.style.borderColor='var(--primary)';this.nextElementSibling.style.borderColor='var(--outline-variant)';">
-            <div style="display:flex;align-items:center;gap:var(--sp-md);">
-              <div style="width:40px;height:40px;border-radius:var(--radius-sm);background:var(--primary-container);display:flex;align-items:center;justify-content:center;font-size:20px;">&#128197;</div>
-              <div style="flex:1;">
-                <div class="title-small" style="font-weight:600;">Refresh Today</div>
-                <div class="body-small" style="color:var(--on-surface-variant);margin-top:2px;">Regenerate meals for Saturday only</div>
-              </div>
+          <div class="refresh-option selected" onclick="document.querySelectorAll('.refresh-option').forEach(o => o.classList.remove('selected')); this.classList.add('selected');">
+            <div class="refresh-option-icon" style="background:var(--primary-container);">&#128197;</div>
+            <div class="refresh-option-content">
+              <div class="refresh-option-title">Refresh Today</div>
+              <div class="refresh-option-desc">Regenerate meals for Saturday only</div>
             </div>
           </div>
 
           <!-- Option 2: Refresh Entire Week -->
-          <div class="card card-outlined" style="cursor:pointer;padding:var(--sp-md);" onclick="this.style.borderColor='var(--primary)';this.previousElementSibling.style.borderColor='var(--outline-variant)';">
-            <div style="display:flex;align-items:center;gap:var(--sp-md);">
-              <div style="width:40px;height:40px;border-radius:var(--radius-sm);background:var(--secondary-container);display:flex;align-items:center;justify-content:center;font-size:20px;">&#128467;</div>
-              <div style="flex:1;">
-                <div class="title-small" style="font-weight:600;">Refresh Entire Week</div>
-                <div class="body-small" style="color:var(--on-surface-variant);margin-top:2px;">Generate a completely new meal plan</div>
-              </div>
+          <div class="refresh-option" onclick="document.querySelectorAll('.refresh-option').forEach(o => o.classList.remove('selected')); this.classList.add('selected');">
+            <div class="refresh-option-icon" style="background:var(--secondary-container);">&#128467;</div>
+            <div class="refresh-option-content">
+              <div class="refresh-option-title">Refresh Entire Week</div>
+              <div class="refresh-option-desc">Generate a completely new meal plan</div>
             </div>
           </div>
 
-          <div class="dialog-actions" style="justify-content:center;margin-top:var(--sp-lg);">
-            <a href="main-home.html" class="btn btn-text" style="text-decoration:none;">Cancel</a>
+          <div class="dialog-actions" style="justify-content:stretch;margin-top:var(--sp-lg);">
+            <a href="main-home.html" class="btn btn-text" style="flex:1;text-decoration:none;">Cancel</a>
+            <a href="main-home.html" class="btn btn-filled" style="flex:1;text-decoration:none;">Refresh</a>
           </div>
         </div>
       </div>

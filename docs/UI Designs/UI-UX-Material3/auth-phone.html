@@ -6,6 +6,31 @@
   <title>RasoiAI - Phone Number</title>
   <link rel="stylesheet" href="shared.css">
   <style>
+    /* Warm gradient top section */
+    .auth-hero {
+      background: linear-gradient(165deg, #E85D2C 0%, #F4845F 60%, #FFF0E8 100%);
+      padding: var(--sp-xl) var(--sp-lg) var(--sp-xxl);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0 0 24px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .auth-hero::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 40px;
+      background: linear-gradient(to top, var(--background), transparent);
+    }
+    .auth-hero-icon {
+      font-size: 64px;
+      animation: bounceIn 0.6s ease-out;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+    }
     .auth-content {
       flex: 1;
       display: flex;
@@ -18,17 +43,23 @@
       font-size: 24px;
       font-weight: 600;
       color: var(--on-surface);
+      animation: fadeInUp 0.4s ease-out backwards;
+      animation-delay: 0.1s;
     }
     .auth-subtitle {
       font-size: 14px;
       color: var(--on-surface-variant);
       line-height: 1.5;
       margin-top: calc(-1 * var(--sp-sm));
+      animation: fadeInUp 0.4s ease-out backwards;
+      animation-delay: 0.15s;
     }
     .phone-input-row {
       display: flex;
       align-items: center;
       gap: var(--sp-sm);
+      animation: fadeInUp 0.4s ease-out backwards;
+      animation-delay: 0.2s;
     }
     .country-code {
       height: 56px;
@@ -38,17 +69,23 @@
       font-size: 16px;
       font-weight: 500;
       color: var(--on-surface);
-      background: var(--surface-variant);
+      background: var(--surface-warm);
       border: 1px solid var(--outline-variant);
       border-radius: var(--radius-sm);
       flex-shrink: 0;
       gap: 6px;
+      transition: border-color 0.2s;
     }
     .country-code .flag {
       font-size: 20px;
     }
     .phone-input-row .text-field {
       flex: 1;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .phone-input-row .text-field:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(232, 93, 44, 0.12);
     }
     .auth-error {
       color: var(--error);
@@ -59,16 +96,31 @@
     .auth-spacer {
       flex: 1;
     }
+    .auth-btn-wrap {
+      animation: fadeInUp 0.4s ease-out backwards;
+      animation-delay: 0.25s;
+    }
     .auth-terms {
       text-align: center;
       font-size: 12px;
       color: var(--on-surface-variant);
       line-height: 1.5;
       padding-bottom: var(--sp-lg);
+      animation: fadeInUp 0.4s ease-out backwards;
+      animation-delay: 0.3s;
     }
     .auth-terms a {
       color: var(--primary);
       text-decoration: none;
+      font-weight: 500;
+    }
+    .auth-terms a:hover {
+      text-decoration: underline;
+    }
+    @keyframes bounceIn {
+      0% { transform: scale(0); }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1); }
     }
   </style>
   <script src="shared.js"></script>
@@ -77,6 +129,11 @@
   <div class="phone-frame">
     <script>document.write(renderStatusBar())</script>
     <script>document.write(renderTopBar({ backLink: 'auth-splash.html' }))</script>
+
+    <!-- Warm gradient hero -->
+    <div class="auth-hero">
+      <div class="auth-hero-icon">&#x1F4F1;</div>
+    </div>
 
     <div class="auth-content">
       <div>
@@ -103,9 +160,11 @@
         <div class="auth-error" id="phoneError"></div>
       </div>
 
-      <button class="btn-filled btn-large w-full" id="sendOtpBtn" onclick="handleSendOtp()">
-        Send OTP
-      </button>
+      <div class="auth-btn-wrap">
+        <button class="btn-filled btn-large w-full" id="sendOtpBtn" onclick="handleSendOtp()">
+          Continue with Phone
+        </button>
+      </div>
 
       <div class="auth-spacer"></div>
 

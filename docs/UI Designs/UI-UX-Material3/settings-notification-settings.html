@@ -6,6 +6,42 @@
   <title>RasoiAI - Notifications</title>
   <link rel="stylesheet" href="shared.css">
   <script src="shared.js"></script>
+  <style>
+    .notif-item {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+      padding: var(--sp-md) 0;
+    }
+    .notif-item + .notif-item {
+      border-top: 1px solid var(--outline-variant);
+    }
+    .notif-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .notif-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .notif-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .notif-desc {
+      font-size: 13px;
+      color: var(--on-surface-variant);
+      margin-top: 2px;
+      line-height: 1.3;
+    }
+  </style>
 </head>
 <body>
   <div class="phone-frame" id="app"></div>
@@ -16,10 +52,10 @@
     let notifications = getState('notifications', SHARMA_DEFAULTS.notifications);
 
     const items = [
-      { key: 'meal_reminders', title: 'Meal Reminders', subtitle: 'Get notified before meal times to start cooking' },
-      { key: 'achievements', title: 'Achievement Notifications', subtitle: 'Celebrate when you unlock new cooking badges' },
-      { key: 'weekly_summary', title: 'Weekly Summary', subtitle: 'Receive a summary of your cooking stats every Sunday' },
-      { key: 'promotions', title: 'Promotions', subtitle: 'Tips, new features, and seasonal recipe suggestions' }
+      { key: 'meal_reminders', title: 'Meal Reminders', subtitle: 'Get notified before meal times to start cooking', emoji: '&#128276;', bg: 'var(--primary-container)', fg: 'var(--on-primary-container)' },
+      { key: 'achievements', title: 'Achievements', subtitle: 'Celebrate when you unlock new cooking badges', emoji: '&#127942;', bg: 'var(--secondary-container)', fg: 'var(--on-secondary-container)' },
+      { key: 'weekly_summary', title: 'Weekly Summary', subtitle: 'Receive a summary of your cooking stats every Sunday', emoji: '&#128202;', bg: 'var(--tertiary-container)', fg: 'var(--on-tertiary-container)' },
+      { key: 'promotions', title: 'Promotions', subtitle: 'Tips, new features, and seasonal recipe suggestions', emoji: '&#128227;', bg: 'var(--surface-variant)', fg: 'var(--on-surface-variant)' }
     ];
 
     function render() {
@@ -28,18 +64,33 @@
         ${renderTopBar({ title: 'Notifications', backLink: 'settings-main.html' })}
 
         <div class="screen-content">
-          <div class="content-padding">
+          <div class="content-padding stagger-list">
 
-            ${items.map(item => `
-              <div class="list-item" onclick="toggleNotification('${item.key}')" style="margin-bottom:var(--sp-xs);">
-                <div class="list-content">
-                  <div class="list-title">${item.title}</div>
-                  <div class="list-subtitle">${item.subtitle}</div>
+            <div class="section-header-label">Notification Preferences</div>
+            <div class="card-filled">
+              ${items.map(item => `
+                <div class="notif-item" onclick="toggleNotification('${item.key}')" style="cursor:pointer;">
+                  <div class="notif-icon" style="background:${item.bg};color:${item.fg};">${item.emoji}</div>
+                  <div class="notif-info">
+                    <div class="notif-title">${item.title}</div>
+                    <div class="notif-desc">${item.subtitle}</div>
+                  </div>
+                  <button class="toggle ${notifications[item.key] ? 'on' : ''}" id="toggle-${item.key}"></button>
                 </div>
-                <button class="toggle ${notifications[item.key] ? 'on' : ''}" id="toggle-${item.key}"></button>
+              `).join('')}
+            </div>
+
+            <div class="section-header-label" style="margin-top:var(--sp-lg);">Quiet Hours</div>
+            <div class="card-filled">
+              <div class="notif-item" style="cursor:default;">
+                <div class="notif-icon" style="background:var(--surface-variant);color:var(--on-surface-variant);">&#127769;</div>
+                <div class="notif-info">
+                  <div class="notif-title">Do Not Disturb</div>
+                  <div class="notif-desc">Silence all notifications between 10 PM and 7 AM</div>
+                </div>
+                <button class="toggle" onclick="this.classList.toggle('on');"></button>
               </div>
-              <div class="list-divider"></div>
-            `).join('')}
+            </div>
 
           </div>
         </div>

@@ -12,11 +12,14 @@
       font-weight: 600;
       color: var(--on-surface);
       margin-bottom: var(--sp-xs);
+      animation: fadeInUp 0.4s ease-out backwards;
     }
     .step-subtitle {
       font-size: 14px;
       color: var(--on-surface-variant);
       margin-bottom: var(--sp-lg);
+      animation: fadeInUp 0.4s ease-out backwards;
+      animation-delay: 0.05s;
     }
     .field-label {
       font-family: 'Poppins', sans-serif;
@@ -47,6 +50,7 @@
       border-color: var(--primary);
       border-width: 2px;
       padding: 0 15px;
+      box-shadow: 0 0 0 3px rgba(232, 93, 44, 0.1);
     }
     .search-input::placeholder {
       color: var(--on-surface-variant);
@@ -135,6 +139,9 @@
     .bottom-buttons .btn {
       flex: 1;
     }
+    .bottom-buttons {
+      background: var(--gradient-warm);
+    }
     .section-divider {
       height: 1px;
       background: var(--outline-variant);
@@ -166,7 +173,7 @@
           <div class="field-hint">Allergenic ingredients will be strictly excluded from all recipes.</div>
           <input type="text" class="search-input" placeholder="Search ingredients (e.g., Peanuts, Shellfish...)" />
 
-          <div class="chip-group">
+          <div class="chip-group stagger-list">
             <span class="allergy-chip severe">
               &#x1F95C; Peanuts
               <span class="severity-badge">SEVERE</span>
@@ -188,7 +195,7 @@
           <div class="field-hint">We'll try to avoid these ingredients when possible.</div>
           <input type="text" class="search-input" placeholder="Search ingredients (e.g., Karela, Baingan...)" />
 
-          <div class="chip-group">
+          <div class="chip-group stagger-list">
             <span class="dislike-chip">
               Karela
               <button class="remove-btn" onclick="this.parentElement.remove()">&#x2715;</button>

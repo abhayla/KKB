@@ -12,7 +12,7 @@
 
   <style>
     .account-card {
-      background: var(--surface);
+      background: var(--surface-warm);
       border-radius: var(--radius-md);
       padding: var(--sp-md);
       box-shadow: var(--shadow-sm);
@@ -20,6 +20,10 @@
       display: flex;
       align-items: center;
       gap: var(--sp-md);
+      transition: all 0.2s ease-out;
+    }
+    .account-card:hover {
+      box-shadow: var(--shadow-md);
     }
     .account-icon {
       width: 44px;
@@ -67,7 +71,9 @@
         ${renderTopBar({ title: 'Connected Accounts', backLink: 'settings-main.html' })}
 
         <div class="screen-content">
-          <div class="content-padding">
+          <div class="content-padding stagger-list">
+
+            <div class="section-header-label">Linked Services</div>
 
             <!-- Google -->
             <div class="account-card">

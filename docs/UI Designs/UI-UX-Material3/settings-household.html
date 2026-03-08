@@ -20,11 +20,11 @@
       ${renderTopBar({ title: 'Household', backLink: 'settings-main.html' })}
 
       <div class="screen-content">
-        <div class="content-padding">
+        <div class="content-padding stagger-list">
 
           ${hh ? `
             <!-- Household Name -->
-            <div class="card" style="margin-bottom:var(--sp-lg);">
+            <div class="card-filled" style="margin-bottom:var(--sp-lg);">
               <div style="display:flex;align-items:center;justify-content:space-between;">
                 <div>
                   <div class="title-medium" style="color:var(--on-surface);">${hh.name}</div>
@@ -35,10 +35,8 @@
             </div>
 
             <!-- Invite Code -->
-            <div class="section-header">
-              <span class="section-title">Invite Code</span>
-            </div>
-            <div class="card" style="text-align:center;padding:var(--sp-lg);margin-bottom:var(--sp-lg);">
+            <div class="section-header-label">Invite Code</div>
+            <div class="card-filled" style="text-align:center;padding:var(--sp-lg);margin-bottom:var(--sp-lg);">
               <div class="invite-code-display">${hh.invite_code}</div>
               <div class="body-small" style="color:var(--on-surface-variant);margin-top:var(--sp-sm);">Expires ${hh.invite_code_expires}</div>
               <div style="display:flex;gap:var(--sp-sm);justify-content:center;margin-top:var(--sp-md);">
@@ -49,11 +47,9 @@
             </div>
 
             <!-- Members Summary -->
-            <div class="section-header">
-              <span class="section-title">Members (${members.length})</span>
-            </div>
+            <div class="section-header-label">Members (${members.length})</div>
             <a href="settings-household-members.html" style="text-decoration:none;">
-              <div class="card" style="margin-bottom:var(--sp-lg);">
+              <div class="card-filled" style="margin-bottom:var(--sp-lg);">
                 ${members.map(m => `
                   <div style="display:flex;align-items:center;gap:var(--sp-sm);padding:var(--sp-sm) 0;">
                     ${renderMemberAvatar(m.name, 36)}
@@ -65,16 +61,14 @@
                   </div>
                 `).join('')}
                 <div style="text-align:center;margin-top:var(--sp-sm);">
-                  <span class="body-small" style="color:var(--primary);font-weight:500;">Manage Members &#8250;</span>
+                  <span class="body-small" style="color:var(--primary);font-weight:600;">Manage Members &#8250;</span>
                 </div>
               </div>
             </a>
 
             <!-- Shared Slot Config -->
-            <div class="section-header">
-              <span class="section-title">Shared Meal Slots</span>
-            </div>
-            <div class="card" style="margin-bottom:var(--sp-lg);">
+            <div class="section-header-label">Shared Meal Slots</div>
+            <div class="card-filled" style="margin-bottom:var(--sp-lg);">
               <div class="body-small" style="color:var(--on-surface-variant);margin-bottom:var(--sp-md);">Shared slots generate the same meal for all members</div>
               <div class="chip-group">
                 <button class="chip" onclick="this.classList.toggle('selected')">Breakfast</button>
@@ -85,36 +79,36 @@
             </div>
 
             <!-- Danger Zone -->
-            <div class="section-header">
-              <span class="section-title" style="color:var(--error);">Danger Zone</span>
+            <div class="section-header-label" style="color:var(--error);">Danger Zone</div>
+            <div class="card-filled" style="margin-bottom:var(--sp-lg);border:1px solid var(--error-container);">
+              <a href="modal-transfer-ownership.html" style="text-decoration:none;">
+                <div class="list-item">
+                  <div class="list-icon" style="background:var(--error-container);color:var(--on-error-container);">&#128081;</div>
+                  <div class="list-content">
+                    <div class="list-title">Transfer Ownership</div>
+                    <div class="list-subtitle">Make another member the owner</div>
+                  </div>
+                  <span class="list-trailing">&#8250;</span>
+                </div>
+              </a>
+              <a href="modal-leave-household.html" style="text-decoration:none;">
+                <div class="list-item" style="border-top:1px solid var(--outline-variant);">
+                  <div class="list-icon" style="background:var(--error-container);color:var(--on-error-container);">&#128682;</div>
+                  <div class="list-content">
+                    <div class="list-title" style="color:var(--error);">Leave Household</div>
+                    <div class="list-subtitle">Remove yourself from this household</div>
+                  </div>
+                  <span class="list-trailing">&#8250;</span>
+                </div>
+              </a>
             </div>
-            <a href="modal-transfer-ownership.html" style="text-decoration:none;">
-              <div class="list-item">
-                <div class="list-icon" style="background:var(--error-container);color:var(--on-error-container);">&#128081;</div>
-                <div class="list-content">
-                  <div class="list-title">Transfer Ownership</div>
-                  <div class="list-subtitle">Make another member the owner</div>
-                </div>
-                <span class="list-trailing">&#8250;</span>
-              </div>
-            </a>
-            <a href="modal-leave-household.html" style="text-decoration:none;">
-              <div class="list-item">
-                <div class="list-icon" style="background:var(--error-container);color:var(--on-error-container);">&#128682;</div>
-                <div class="list-content">
-                  <div class="list-title" style="color:var(--error);">Leave Household</div>
-                  <div class="list-subtitle">Remove yourself from this household</div>
-                </div>
-                <span class="list-trailing">&#8250;</span>
-              </div>
-            </a>
           ` : `
             <!-- No Household State -->
             <div style="text-align:center;padding:var(--sp-xl) 0;">
               <div style="font-size:64px;margin-bottom:var(--sp-lg);">&#127968;</div>
               <div class="title-large" style="color:var(--on-surface);margin-bottom:var(--sp-sm);">No Household Yet</div>
               <div class="body-medium" style="color:var(--on-surface-variant);margin-bottom:var(--sp-xl);line-height:1.5;">Create a household to share meal plans with your family, or join an existing one.</div>
-              <button class="btn btn-filled" style="width:100%;margin-bottom:var(--sp-md);">Create Household</button>
+              <button class="btn btn-filled btn-large" style="width:100%;margin-bottom:var(--sp-md);">Create Household</button>
               <a href="settings-join-household.html" class="btn btn-outlined" style="width:100%;text-decoration:none;">Join Household</a>
             </div>
           `}

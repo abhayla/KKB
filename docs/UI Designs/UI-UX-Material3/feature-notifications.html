@@ -134,7 +134,9 @@
                 <div class="empty-text">No ${isHousehold ? 'household' : 'unread'} notifications.</div>
               </div>
             ` : ''}
+            <div class="stagger-list">
             ${filtered.map(n => renderNotifItem(n, isHousehold)).join('')}
+            </div>
           </div>
         </div>
       `;

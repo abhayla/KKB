@@ -6,6 +6,105 @@
   <title>RasoiAI - Transfer Ownership</title>
   <link rel="stylesheet" href="shared.css">
   <script src="shared.js"></script>
+  <style>
+    .transfer-dialog {
+      max-width: 320px;
+    }
+    .transfer-emoji {
+      font-size: 48px;
+      display: inline-block;
+      animation: bounceIn 0.5s ease-out;
+    }
+    .member-radio-card {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+      padding: var(--sp-md);
+      border: 2px solid var(--outline-variant);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--sp-sm);
+      cursor: pointer;
+      transition: all var(--transition-normal);
+      background: transparent;
+    }
+    .member-radio-card:hover {
+      background: var(--surface-warm);
+    }
+    .member-radio-card.selected {
+      border-color: var(--primary);
+      background: var(--primary-container);
+    }
+    .member-radio-card .member-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 600;
+      flex-shrink: 0;
+      transition: transform var(--transition-normal);
+    }
+    .member-radio-card.selected .member-avatar {
+      transform: scale(1.1);
+    }
+    .member-radio-card .member-details {
+      flex: 1;
+    }
+    .member-radio-card .member-card-name {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--on-surface);
+    }
+    .member-radio-card.selected .member-card-name {
+      font-weight: 600;
+      color: var(--on-primary-container);
+    }
+    .member-radio-card .member-card-status {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      margin-top: 2px;
+    }
+    .member-radio-card .radio-indicator {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--outline);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all var(--transition-normal);
+    }
+    .member-radio-card.selected .radio-indicator {
+      border-color: var(--primary);
+    }
+    .radio-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: transparent;
+      transition: background var(--transition-normal);
+    }
+    .member-radio-card.selected .radio-dot {
+      background: var(--primary);
+    }
+    .transfer-note {
+      background: var(--surface-warm);
+      border-radius: var(--radius-sm);
+      padding: var(--sp-sm) var(--sp-md);
+      margin: var(--sp-md) 0;
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+    }
+    .transfer-note-icon {
+      font-size: 14px;
+      color: var(--on-surface-variant);
+      flex-shrink: 0;
+    }
+  </style>
 </head>
 <body>
   <div class="phone-frame bottom-sheet-page" id="app"></div>
@@ -27,31 +126,36 @@
       </div>
 
       <div class="dialog-overlay">
-        <div class="dialog" style="max-width:320px;">
+        <div class="dialog transfer-dialog">
           <div style="text-align:center;margin-bottom:var(--sp-md);">
-            <div style="font-size:48px;">&#128081;</div>
+            <span class="transfer-emoji">&#128081;</span>
           </div>
           <div class="dialog-title" style="text-align:center;">Transfer Ownership</div>
           <p class="body-medium" style="color:var(--on-surface-variant);text-align:center;margin-bottom:var(--sp-lg);">Choose a new owner for this household.</p>
 
           <!-- Eligible Members -->
-          ${members.map((m, i) => `
-            <label style="display:flex;align-items:center;gap:var(--sp-md);padding:var(--sp-md);border:2px solid ${i === 0 ? 'var(--primary)' : 'var(--outline-variant)'};border-radius:var(--radius-sm);margin-bottom:var(--sp-sm);cursor:pointer;${i === 0 ? 'background:color-mix(in srgb, var(--primary) 8%, transparent);' : ''}" onclick="this.parentElement.querySelectorAll('label').forEach(l=>{l.style.borderColor='var(--outline-variant)';l.style.background='transparent';});this.style.borderColor='var(--primary)';this.style.background='color-mix(in srgb, var(--primary) 8%, transparent)';">
-              ${renderMemberAvatar(m.name, 40)}
-              <div style="flex:1;">
-                <div class="title-small" style="font-weight:500;">${m.name}</div>
-                <div class="body-small" style="color:var(--on-surface-variant);">App linked</div>
+          <div id="member-list">
+            ${members.map((m, i) => `
+              <div class="member-radio-card ${i === 0 ? 'selected' : ''}" onclick="document.querySelectorAll('.member-radio-card').forEach(c => c.classList.remove('selected')); this.classList.add('selected');">
+                ${renderMemberAvatar(m.name, 44)}
+                <div class="member-details">
+                  <div class="member-card-name">${m.name}</div>
+                  <div class="member-card-status">App linked</div>
+                </div>
+                <div class="radio-indicator">
+                  <div class="radio-dot"></div>
+                </div>
               </div>
-              <div class="radio ${i === 0 ? 'selected' : ''}" style="${i === 0 ? 'border-color:var(--primary);' : ''}"><div style="width:10px;height:10px;border-radius:50%;${i === 0 ? 'background:var(--primary);' : ''}"></div></div>
-            </label>
-          `).join('')}
+            `).join('')}
+          </div>
 
-          <div style="background:var(--surface-variant);border-radius:var(--radius-sm);padding:var(--sp-sm) var(--sp-md);margin:var(--sp-md) 0;">
+          <div class="transfer-note">
+            <span class="transfer-note-icon">&#9432;</span>
             <span class="body-small" style="color:var(--on-surface-variant);">You will become a regular Member after transferring.</span>
           </div>
 
           <div class="dialog-actions" style="justify-content:stretch;margin-top:var(--sp-md);">
-            <a href="settings-household.html" class="btn btn-outlined" style="flex:1;text-decoration:none;">Cancel</a>
+            <a href="settings-household.html" class="btn btn-text" style="flex:1;text-decoration:none;">Cancel</a>
             <a href="settings-household.html" class="btn btn-filled" style="flex:1;text-decoration:none;">Transfer</a>
           </div>
         </div>

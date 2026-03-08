@@ -5,6 +5,59 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RasoiAI - Portion Customization</title>
   <link rel="stylesheet" href="shared.css">
+  <style>
+    .member-card {
+      background: var(--surface-warm);
+      border-radius: var(--radius-md);
+      padding: var(--card-padding);
+      margin-bottom: var(--sp-md);
+      transition: all var(--transition-normal);
+    }
+    .member-card:hover {
+      box-shadow: var(--shadow-sm);
+    }
+    .member-card .member-header {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+      margin-bottom: var(--sp-md);
+    }
+    .member-card .member-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .member-card .section-label {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      margin-bottom: var(--sp-xs);
+      letter-spacing: 0.4px;
+    }
+    .member-card .portion-section {
+      margin-bottom: var(--sp-md);
+    }
+    .member-card .slot-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 0;
+    }
+    .member-card .slot-label {
+      font-size: 14px;
+      color: var(--on-surface);
+    }
+    .member-card .slot-note {
+      font-size: 12px;
+      color: var(--tertiary);
+      margin-top: 2px;
+    }
+    .portion-segment .segment-btn.active {
+      background: var(--primary);
+      color: var(--on-primary);
+      box-shadow: var(--shadow-sm);
+    }
+  </style>
   <script src="shared.js"></script>
 </head>
 <body>
@@ -21,20 +74,21 @@
       <div class="screen-content">
         <div class="content-padding">
 
+          <div class="stagger-list">
           ${members.map((m, i) => `
-            <div class="hh-member-card" style="flex-direction:column;align-items:stretch;animation-delay:${i * 0.05}s;">
-              <div style="display:flex;align-items:center;gap:var(--sp-md);margin-bottom:var(--sp-md);">
+            <div class="member-card">
+              <div class="member-header">
                 ${renderMemberAvatar(m.name, 44)}
                 <div style="flex:1;">
-                  <div class="title-small" style="font-weight:600;color:var(--on-surface);">${m.name}</div>
+                  <div class="member-name">${m.name}</div>
                   ${renderRoleBadge(m.role)}
                 </div>
               </div>
 
               <!-- Portion Size -->
-              <div style="margin-bottom:var(--sp-md);">
-                <div class="body-small" style="color:var(--on-surface-variant);margin-bottom:var(--sp-xs);">Portion Size</div>
-                <div class="segment-control">
+              <div class="portion-section">
+                <div class="section-label">Portion Size</div>
+                <div class="segment-control portion-segment">
                   <button class="segment-btn ${m.portion_size === 'small' ? 'active' : ''}" onclick="selectSegment(this)">Small</button>
                   <button class="segment-btn ${m.portion_size === 'regular' ? 'active' : ''}" onclick="selectSegment(this)">Regular</button>
                   <button class="segment-btn ${m.portion_size === 'large' ? 'active' : ''}" onclick="selectSegment(this)">Large</button>
@@ -42,23 +96,23 @@
               </div>
 
               <!-- Active Meal Slots -->
-              <div style="margin-bottom:var(--sp-md);">
-                <div class="body-small" style="color:var(--on-surface-variant);margin-bottom:var(--sp-xs);">Active Meal Slots</div>
+              <div class="portion-section">
+                <div class="section-label">Active Meal Slots</div>
                 ${['breakfast', 'lunch', 'dinner', 'snacks'].map(slot => {
                   const active = m.active_slots.includes(slot);
                   return `
-                    <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;">
-                      <span class="body-medium">${slot.charAt(0).toUpperCase() + slot.slice(1)}</span>
+                    <div class="slot-row">
+                      <span class="slot-label">${slot.charAt(0).toUpperCase() + slot.slice(1)}</span>
                       <button class="toggle ${active ? 'on' : ''}" onclick="this.classList.toggle('on');"></button>
                     </div>
                   `;
                 }).join('')}
-                ${!m.active_slots.includes('lunch') ? `<div class="body-small" style="color:var(--tertiary);margin-top:2px;">${m.name} eats lunch at school</div>` : ''}
+                ${!m.active_slots.includes('lunch') ? `<div class="slot-note">${m.name} eats lunch at school</div>` : ''}
               </div>
 
               <!-- Nutrition Tracking -->
               <div>
-                <div class="body-small" style="color:var(--on-surface-variant);margin-bottom:var(--sp-xs);">Nutrition Tracking</div>
+                <div class="section-label">Nutrition Tracking</div>
                 <div class="segment-control">
                   <button class="segment-btn" onclick="selectSegment(this)">Off</button>
                   <button class="segment-btn active" onclick="selectSegment(this)">Basic</button>
@@ -67,6 +121,7 @@
               </div>
             </div>
           `).join('')}
+          </div>
 
           <button class="btn btn-filled" style="width:100%;margin-top:var(--sp-md);">Save Changes</button>
           <div style="height:var(--sp-xl);"></div>

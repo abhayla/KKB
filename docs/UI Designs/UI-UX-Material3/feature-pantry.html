@@ -14,7 +14,7 @@
       background: color-mix(in srgb, var(--error-container) 30%, var(--surface));
     }
     .expiry-alert-card .alert-title {
-      font-family: 'Poppins', sans-serif;
+      font-family: 'Outfit', sans-serif;
       font-size: 14px;
       font-weight: 600;
       color: var(--error);
@@ -48,7 +48,7 @@
       align-items: center;
       gap: var(--sp-sm);
       padding: var(--sp-md) 0 var(--sp-sm);
-      font-family: 'Poppins', sans-serif;
+      font-family: 'Outfit', sans-serif;
       font-size: 14px;
       font-weight: 600;
       color: var(--on-surface);
@@ -97,9 +97,11 @@
       align-items: center;
       justify-content: space-between;
       cursor: pointer;
+      transition: box-shadow var(--transition-normal), transform var(--transition-normal);
     }
     .matching-recipes-card:hover {
       box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
     }
     .matching-recipes-card .mrc-text {
       font-size: 14px;
@@ -183,6 +185,7 @@
               </div>
             ` : ''}
 
+            <div class="stagger-list">
             ${Object.entries(categories).map(([cat, items]) => `
               <div class="pantry-category-header">
                 <span>${categoryIcons[cat] || '\uD83D\uDCE6'}</span>
@@ -197,6 +200,7 @@
                 </div>
               `).join('')}
             `).join('')}
+            </div>
 
             <div class="matching-recipes-card" onclick="alert('View matching recipes')">
               <span class="mrc-text">&#x1F373; Matching Recipes: 12</span>

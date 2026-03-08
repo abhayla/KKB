@@ -6,6 +6,69 @@
   <title>RasoiAI - Join Household</title>
   <link rel="stylesheet" href="shared.css">
   <script src="shared.js"></script>
+  <style>
+    .join-hero {
+      text-align: center;
+      padding: var(--sp-xl) 0 var(--sp-lg);
+    }
+    .join-hero-icon {
+      font-size: 72px;
+      display: inline-block;
+      animation: fadeInUp 0.5s ease-out;
+    }
+    .invite-input {
+      width: 100%;
+      height: 60px;
+      padding: 0 var(--sp-md);
+      border: 2px solid var(--outline-variant);
+      border-radius: var(--radius-md);
+      background: var(--surface-warm);
+      font-size: 24px;
+      text-align: center;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      font-weight: 700;
+      font-family: monospace;
+      color: var(--on-surface);
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+      box-sizing: border-box;
+    }
+    .invite-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
+    }
+    .role-card {
+      flex: 1;
+      padding: var(--sp-md);
+      border: 2px solid var(--outline-variant);
+      border-radius: var(--radius-md);
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease-out;
+      background: var(--surface-warm);
+    }
+    .role-card:hover {
+      box-shadow: var(--shadow-sm);
+    }
+    .role-card.selected {
+      border-color: var(--primary);
+      background: var(--primary-container);
+      box-shadow: var(--shadow-md);
+    }
+    .guest-dates-field {
+      width: 100%;
+      height: 44px;
+      padding: 0 var(--sp-md);
+      border: 1px solid var(--outline-variant);
+      border-radius: var(--radius-sm);
+      background: var(--surface-warm);
+      font-size: 14px;
+      color: var(--on-surface);
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+  </style>
 </head>
 <body>
   <div class="phone-frame" id="app"></div>
@@ -18,56 +81,56 @@
       ${renderTopBar({ title: 'Join Household', backLink: 'settings-household.html' })}
 
       <div class="screen-content">
-        <div class="content-padding">
+        <div class="content-padding stagger-list">
 
           <!-- Illustration -->
-          <div style="text-align:center;padding:var(--sp-xl) 0 var(--sp-lg);">
-            <div style="font-size:72px;">&#127968;&#128273;</div>
+          <div class="join-hero">
+            <div class="join-hero-icon">&#127968;&#128273;</div>
             <div class="title-large" style="color:var(--on-surface);margin-top:var(--sp-md);">Join a Household</div>
             <div class="body-medium" style="color:var(--on-surface-variant);margin-top:var(--sp-sm);line-height:1.5;">Enter the 8-character invite code shared by the household owner.</div>
           </div>
 
           <!-- Invite Code Input -->
-          <div style="margin-bottom:var(--sp-xl);">
-            <div class="label-large" style="margin-bottom:var(--sp-sm);color:var(--on-surface-variant);">Invite Code</div>
-            <input type="text" class="text-field" id="invite-input" placeholder="A1B2C3D4" maxlength="8" style="height:56px;font-size:24px;text-align:center;letter-spacing:6px;text-transform:uppercase;font-weight:700;font-family:monospace;">
+          <div class="section-header-label">Invite Code</div>
+          <div class="card-filled" style="margin-bottom:var(--sp-lg);">
+            <input type="text" class="invite-input" id="invite-input" placeholder="A1B2C3D4" maxlength="8">
           </div>
 
           <!-- Role Selection -->
-          <div style="margin-bottom:var(--sp-xl);">
-            <div class="label-large" style="margin-bottom:var(--sp-sm);color:var(--on-surface-variant);">Join as</div>
-            <div style="display:flex;gap:var(--sp-md);">
-              <div class="radio-card selected" id="role-member" onclick="selectRole('member')">
-                <div style="font-size:28px;margin-bottom:var(--sp-xs);">&#128101;</div>
-                <div class="title-small" style="font-weight:600;">Member</div>
-                <div class="body-small" style="color:var(--on-surface-variant);margin-top:2px;">Permanent family member</div>
-              </div>
-              <div class="radio-card" id="role-guest" onclick="selectRole('guest')">
-                <div style="font-size:28px;margin-bottom:var(--sp-xs);">&#127890;</div>
-                <div class="title-small" style="font-weight:600;">Guest</div>
-                <div class="body-small" style="color:var(--on-surface-variant);margin-top:2px;">Temporary visitor</div>
-              </div>
+          <div class="section-header-label">Join as</div>
+          <div style="display:flex;gap:var(--sp-md);margin-bottom:var(--sp-lg);">
+            <div class="role-card selected" id="role-member" onclick="selectRole('member')">
+              <div style="font-size:28px;margin-bottom:var(--sp-xs);">&#128101;</div>
+              <div class="title-small" style="font-weight:600;">Member</div>
+              <div class="body-small" style="color:var(--on-surface-variant);margin-top:2px;">Permanent family member</div>
+            </div>
+            <div class="role-card" id="role-guest" onclick="selectRole('guest')">
+              <div style="font-size:28px;margin-bottom:var(--sp-xs);">&#127890;</div>
+              <div class="title-small" style="font-weight:600;">Guest</div>
+              <div class="body-small" style="color:var(--on-surface-variant);margin-top:2px;">Temporary visitor</div>
             </div>
           </div>
 
           <!-- Guest Duration (hidden by default) -->
-          <div id="guest-dates" style="display:none;margin-bottom:var(--sp-xl);">
-            <div class="label-large" style="margin-bottom:var(--sp-sm);color:var(--on-surface-variant);">Guest Duration</div>
-            <div style="display:flex;gap:var(--sp-md);">
-              <div style="flex:1;">
-                <div class="body-small" style="color:var(--on-surface-variant);margin-bottom:4px;">Arrival</div>
-                <input type="date" class="text-field" style="height:44px;font-size:14px;" value="2026-03-07">
+          <div id="guest-dates" style="display:none;margin-bottom:var(--sp-lg);">
+            <div class="section-header-label">Guest Duration</div>
+            <div class="card-filled">
+              <div style="display:flex;gap:var(--sp-md);">
+                <div style="flex:1;">
+                  <div class="body-small" style="color:var(--on-surface-variant);margin-bottom:4px;">Arrival</div>
+                  <input type="date" class="guest-dates-field" value="2026-03-07">
+                </div>
+                <div style="flex:1;">
+                  <div class="body-small" style="color:var(--on-surface-variant);margin-bottom:4px;">Departure</div>
+                  <input type="date" class="guest-dates-field" value="2026-03-14">
+                </div>
               </div>
-              <div style="flex:1;">
-                <div class="body-small" style="color:var(--on-surface-variant);margin-bottom:4px;">Departure</div>
-                <input type="date" class="text-field" style="height:44px;font-size:14px;" value="2026-03-14">
-              </div>
+              <div class="body-small" style="color:var(--on-surface-variant);margin-top:var(--sp-sm);">Guest data is auto-removed after departure.</div>
             </div>
-            <div class="body-small" style="color:var(--on-surface-variant);margin-top:var(--sp-sm);">Guest data is auto-removed after departure.</div>
           </div>
 
           <!-- Join Button -->
-          <a href="modal-join-confirmation.html" class="btn btn-filled" style="width:100%;text-decoration:none;">Join Household</a>
+          <a href="modal-join-confirmation.html" class="btn btn-filled btn-large" style="width:100%;text-decoration:none;">Join Household</a>
 
         </div>
       </div>

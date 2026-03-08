@@ -105,6 +105,7 @@
               <div class="section-header">
                 <span class="section-title">Unlocked</span>
               </div>
+              <div class="stagger-list">
               ${unlocked.map(a => `
                 <div class="achievement-card">
                   <div class="achievement-icon">${a.emoji}</div>
@@ -115,12 +116,14 @@
                   </div>
                 </div>
               `).join('')}
+              </div>
             ` : ''}
 
             ${locked.length > 0 ? `
               <div class="section-header" style="margin-top: var(--sp-md);">
                 <span class="section-title">Locked</span>
               </div>
+              <div class="stagger-list">
               ${locked.map(a => `
                 <div class="achievement-card locked">
                   <div class="achievement-icon"><span class="lock-icon">&#x1F512;</span></div>
@@ -136,6 +139,7 @@
                   </div>
                 </div>
               `).join('')}
+              </div>
             ` : ''}
 
           </div>

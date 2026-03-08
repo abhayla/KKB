@@ -6,24 +6,46 @@
   <title>RasoiAI - Units</title>
   <link rel="stylesheet" href="shared.css">
   <script src="shared.js"></script>
-</head>
-<body>
-  <div class="phone-frame" id="app"></div>
-
   <style>
     .unit-option {
       display: flex;
       align-items: center;
       gap: var(--sp-md);
-      padding: var(--sp-md);
+      padding: var(--sp-md) var(--sp-sm);
       border-radius: var(--radius-sm);
       cursor: pointer;
-      transition: background 0.15s;
+      transition: background var(--transition-fast);
     }
     .unit-option:hover {
-      background: var(--surface-variant);
+      background: color-mix(in srgb, var(--surface-warm) 60%, var(--primary-container));
+    }
+    .unit-option + .unit-option {
+      border-top: 1px solid var(--outline-variant);
+    }
+    .unit-option-icon {
+      font-size: 20px;
+      width: 28px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .unit-option-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .unit-option-label {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--on-surface);
+    }
+    .unit-option-desc {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      margin-top: 1px;
     }
   </style>
+</head>
+<body>
+  <div class="phone-frame" id="app"></div>
 
   <script>
     initPage();
@@ -35,20 +57,33 @@
     });
 
     const volumeOptions = [
-      { id: 'metric', label: 'Metric (ml / L)' },
-      { id: 'us', label: 'US (cups / oz)' },
-      { id: 'indian', label: 'Indian (katori / glass)' }
+      { id: 'metric', label: 'Metric', desc: 'Millilitres & Litres', icon: '&#129516;' },
+      { id: 'us', label: 'US Customary', desc: 'Cups & Fluid Ounces', icon: '&#129371;' },
+      { id: 'indian', label: 'Indian Traditional', desc: 'Katori & Glass', icon: '&#127861;' }
     ];
 
     const weightOptions = [
-      { id: 'metric', label: 'Metric (g / kg)' },
-      { id: 'us', label: 'US (oz / lb)' }
+      { id: 'metric', label: 'Metric', desc: 'Grams & Kilograms', icon: '&#9878;' },
+      { id: 'us', label: 'US Customary', desc: 'Ounces & Pounds', icon: '&#127991;' }
     ];
 
     const tempOptions = [
-      { id: 'celsius', label: 'Celsius' },
-      { id: 'fahrenheit', label: 'Fahrenheit' }
+      { id: 'celsius', label: 'Celsius', desc: 'Used in most countries', icon: '&#127777;' },
+      { id: 'fahrenheit', label: 'Fahrenheit', desc: 'Used in the US', icon: '&#128293;' }
     ];
+
+    function renderUnitGroup(options, category) {
+      return options.map(o => `
+        <div class="unit-option" onclick="setUnit('${category}', '${o.id}')">
+          <div class="radio ${units[category] === o.id ? 'selected' : ''}"></div>
+          <div class="unit-option-icon">${o.icon}</div>
+          <div class="unit-option-info">
+            <div class="unit-option-label">${o.label}</div>
+            <div class="unit-option-desc">${o.desc}</div>
+          </div>
+        </div>
+      `).join('');
+    }
 
     function render() {
       document.getElementById('app').innerHTML = `
@@ -56,51 +91,32 @@
         ${renderTopBar({ title: 'Units', backLink: 'settings-main.html' })}
 
         <div class="screen-content">
-          <div class="content-padding">
+          <div class="content-padding stagger-list">
 
             <!-- Volume -->
-            <div class="section-header">
-              <span class="section-title">Volume</span>
+            <div class="section-header-label">Volume</div>
+            <div class="card-filled" style="margin-bottom:var(--sp-lg);">
+              ${renderUnitGroup(volumeOptions, 'volume')}
             </div>
-            ${volumeOptions.map(o => `
-              <div class="unit-option" onclick="setUnit('volume', '${o.id}')">
-                <div class="radio ${units.volume === o.id ? 'selected' : ''}"></div>
-                <span class="body-large" style="color:var(--on-surface);">${o.label}</span>
-              </div>
-            `).join('')}
-
-            <div class="list-divider" style="margin:var(--sp-md) 0;"></div>
 
             <!-- Weight -->
-            <div class="section-header">
-              <span class="section-title">Weight</span>
+            <div class="section-header-label">Weight</div>
+            <div class="card-filled" style="margin-bottom:var(--sp-lg);">
+              ${renderUnitGroup(weightOptions, 'weight')}
             </div>
-            ${weightOptions.map(o => `
-              <div class="unit-option" onclick="setUnit('weight', '${o.id}')">
-                <div class="radio ${units.weight === o.id ? 'selected' : ''}"></div>
-                <span class="body-large" style="color:var(--on-surface);">${o.label}</span>
-              </div>
-            `).join('')}
-
-            <div class="list-divider" style="margin:var(--sp-md) 0;"></div>
 
             <!-- Temperature -->
-            <div class="section-header">
-              <span class="section-title">Temperature</span>
+            <div class="section-header-label">Temperature</div>
+            <div class="card-filled" style="margin-bottom:var(--sp-lg);">
+              ${renderUnitGroup(tempOptions, 'temperature')}
             </div>
-            ${tempOptions.map(o => `
-              <div class="unit-option" onclick="setUnit('temperature', '${o.id}')">
-                <div class="radio ${units.temperature === o.id ? 'selected' : ''}"></div>
-                <span class="body-large" style="color:var(--on-surface);">${o.label}</span>
-              </div>
-            `).join('')}
 
           </div>
         </div>
 
         <!-- Save Button -->
         <div style="padding:var(--sp-md);flex-shrink:0;">
-          <button class="btn btn-filled" style="width:100%;" onclick="saveUnits()">Save</button>
+          <button class="btn btn-filled btn-large" style="width:100%;" onclick="saveUnits()">Save</button>
         </div>
       `;
     }

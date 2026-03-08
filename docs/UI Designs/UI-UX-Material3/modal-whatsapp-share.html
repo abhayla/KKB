@@ -6,6 +6,115 @@
   <title>RasoiAI - Share Grocery List</title>
   <link rel="stylesheet" href="shared.css">
   <script src="shared.js"></script>
+  <style>
+    .share-sheet .handle {
+      background: var(--outline-variant);
+    }
+    .sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--sp-lg);
+    }
+    .sheet-header-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .share-option {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+      padding: var(--sp-md);
+      border: 2px solid var(--outline-variant);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--transition-normal);
+      background: transparent;
+      margin-bottom: var(--sp-sm);
+    }
+    .share-option:hover {
+      background: var(--surface-warm);
+    }
+    .share-option.selected {
+      border-color: var(--primary);
+      background: color-mix(in srgb, var(--primary) 6%, transparent);
+    }
+    .share-option .radio-indicator {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--outline);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all var(--transition-normal);
+    }
+    .share-option.selected .radio-indicator {
+      border-color: var(--primary);
+    }
+    .share-radio-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: transparent;
+      transition: background var(--transition-normal);
+    }
+    .share-option.selected .share-radio-dot {
+      background: var(--primary);
+    }
+    .share-option-info {
+      flex: 1;
+    }
+    .share-option-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .share-option-desc {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      margin-top: 2px;
+    }
+    .preview-section {
+      margin-bottom: var(--sp-lg);
+    }
+    .preview-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--on-surface-variant);
+      margin-bottom: var(--sp-sm);
+    }
+    .preview-box {
+      background: var(--surface-warm);
+      border-radius: var(--radius-md);
+      padding: var(--sp-md);
+      max-height: 140px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 11px;
+      color: var(--on-surface-variant);
+      line-height: 1.6;
+      white-space: pre-wrap;
+      border: 1px solid var(--outline-variant);
+    }
+    .btn-whatsapp-share {
+      width: 100%;
+      background: #25D366 !important;
+      color: #FFFFFF !important;
+      box-shadow: 0 2px 12px rgba(37, 211, 102, 0.3);
+      height: 48px;
+      font-size: 16px;
+    }
+    .btn-whatsapp-share:hover {
+      box-shadow: 0 4px 20px rgba(37, 211, 102, 0.4) !important;
+      filter: brightness(1.05);
+    }
+  </style>
 </head>
 <body>
   <div class="phone-frame bottom-sheet-page" id="app"></div>
@@ -16,10 +125,6 @@
 
     const grocery = getGrocery();
     const totalItems = Object.values(grocery).reduce((sum, items) => sum + items.length, 0);
-
-    const previewText = Object.entries(grocery).map(([cat, items]) => {
-      return cat + ':\\n' + items.map(i => '  - ' + i.name + ' (' + i.qty + ' ' + i.unit + ')').join('\\n');
-    }).join('\\n\\n');
 
     app.innerHTML = `
       ${renderStatusBar()}
@@ -43,39 +148,37 @@
 
       <!-- Bottom Sheet Overlay -->
       <div class="bottom-sheet-overlay">
-        <div class="bottom-sheet" style="max-height:72%;">
+        <div class="bottom-sheet share-sheet" style="max-height:72%;">
           <div class="handle"></div>
 
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-lg);">
-            <span class="title-large" style="font-size:18px;font-weight:600;">Share Grocery List</span>
+          <div class="sheet-header">
+            <span class="sheet-header-title">Share Grocery List</span>
             <a href="main-grocery.html" class="icon-btn" style="text-decoration:none;">&#10005;</a>
           </div>
 
           <!-- Share Options -->
           <div style="margin-bottom:var(--sp-lg);">
-            <label style="display:flex;align-items:center;gap:var(--sp-md);padding:var(--sp-md);border-radius:var(--radius-sm);cursor:pointer;background:color-mix(in srgb, var(--primary) 6%, transparent);border:2px solid var(--primary);" id="opt-full" onclick="document.getElementById('opt-full').style.borderColor='var(--primary)';document.getElementById('opt-full').style.background='color-mix(in srgb, var(--primary) 6%, transparent)';document.getElementById('opt-unpurchased').style.borderColor='var(--outline-variant)';document.getElementById('opt-unpurchased').style.background='transparent';">
-              <div class="radio selected"></div>
-              <div style="flex:1;">
-                <div class="title-small" style="font-weight:600;">Full List</div>
-                <div class="body-small" style="color:var(--on-surface-variant);">Share all ${totalItems} items</div>
+            <div class="share-option selected" id="opt-full" onclick="document.querySelectorAll('.share-option').forEach(o => o.classList.remove('selected')); this.classList.add('selected');">
+              <div class="radio-indicator"><div class="share-radio-dot"></div></div>
+              <div class="share-option-info">
+                <div class="share-option-title">Full List</div>
+                <div class="share-option-desc">Share all ${totalItems} items</div>
               </div>
-            </label>
+            </div>
 
-            <div style="height:var(--sp-sm);"></div>
-
-            <label style="display:flex;align-items:center;gap:var(--sp-md);padding:var(--sp-md);border-radius:var(--radius-sm);cursor:pointer;border:2px solid var(--outline-variant);" id="opt-unpurchased" onclick="document.getElementById('opt-unpurchased').style.borderColor='var(--primary)';document.getElementById('opt-unpurchased').style.background='color-mix(in srgb, var(--primary) 6%, transparent)';document.getElementById('opt-full').style.borderColor='var(--outline-variant)';document.getElementById('opt-full').style.background='transparent';">
-              <div class="radio"></div>
-              <div style="flex:1;">
-                <div class="title-small" style="font-weight:600;">Unpurchased Only</div>
-                <div class="body-small" style="color:var(--on-surface-variant);">Share only remaining items</div>
+            <div class="share-option" id="opt-unpurchased" onclick="document.querySelectorAll('.share-option').forEach(o => o.classList.remove('selected')); this.classList.add('selected');">
+              <div class="radio-indicator"><div class="share-radio-dot"></div></div>
+              <div class="share-option-info">
+                <div class="share-option-title">Unpurchased Only</div>
+                <div class="share-option-desc">Share only remaining items</div>
               </div>
-            </label>
+            </div>
           </div>
 
           <!-- Preview -->
-          <div style="margin-bottom:var(--sp-lg);">
-            <div class="label-large" style="margin-bottom:var(--sp-sm);color:var(--on-surface-variant);">Preview</div>
-            <div style="background:var(--surface-variant);border-radius:var(--radius-sm);padding:var(--sp-md);max-height:140px;overflow-y:auto;font-family:monospace;font-size:11px;color:var(--on-surface-variant);line-height:1.6;white-space:pre-wrap;">&#127917; RasoiAI Grocery List
+          <div class="preview-section">
+            <div class="preview-label">Preview</div>
+            <div class="preview-box">&#127917; RasoiAI Grocery List
 Week: Mar 2 - Mar 8, 2026
 
 Vegetables:
@@ -97,7 +200,7 @@ Spices & Masala:
           </div>
 
           <!-- WhatsApp Share Button -->
-          <a href="main-grocery.html" class="btn btn-filled btn-large" style="width:100%;text-decoration:none;background:#25D366;color:#FFFFFF;">
+          <a href="main-grocery.html" class="btn btn-filled btn-whatsapp-share" style="text-decoration:none;">
             &#128172; Share via WhatsApp
           </a>
 

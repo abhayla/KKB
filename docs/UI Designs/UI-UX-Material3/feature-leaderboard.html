@@ -91,7 +91,7 @@
     }
     .lb-item .lb-rank {
       width: 28px;
-      font-family: 'Poppins', sans-serif;
+      font-family: 'Outfit', sans-serif;
       font-size: 16px;
       font-weight: 600;
       color: var(--on-surface-variant);
@@ -197,7 +197,7 @@
             }).join('')}
           </div>
 
-          <div class="leaderboard-list">
+          <div class="leaderboard-list stagger-list">
             ${rest.map(p => `
               <div class="lb-item ${p.isYou ? 'you-row' : ''}">
                 <div class="lb-rank">${p.rank}</div>

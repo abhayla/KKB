@@ -21,18 +21,21 @@
       font-size: 13px;
       font-weight: 600;
       border: 2px solid var(--outline-variant);
-      background: transparent;
+      background: var(--surface-warm);
       color: var(--on-surface-variant);
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.2s ease-out;
     }
     .day-chip.selected {
       background: var(--primary);
       color: var(--on-primary);
       border-color: var(--primary);
+      box-shadow: var(--shadow-sm);
+      transform: scale(1.05);
     }
     .day-chip:hover:not(.selected) {
       background: var(--surface-variant);
+      transform: scale(1.05);
     }
     .section-disabled {
       opacity: 0.6;
@@ -81,9 +84,8 @@
       return `
         <div class="${disabledClass}">
           <!-- Weekday Time -->
-          <div class="section-header">
-            <span class="section-title">Weekday Cooking Time</span>
-          </div>
+          <div class="section-header-label">Weekday Cooking Time</div>
+          <div class="card-filled" style="margin-bottom:var(--sp-lg);">
           <p class="body-small" style="color:var(--on-surface-variant);margin-bottom:var(--sp-sm);">Maximum time per meal on weekdays</p>
           <div class="dropdown" id="dd-${prefix}-weekday">
             <div class="dropdown-trigger" onclick="toggleDropdown('dd-${prefix}-weekday')">
@@ -97,10 +99,11 @@
             </div>
           </div>
 
-          <!-- Weekend Time -->
-          <div class="section-header" style="margin-top:var(--sp-lg);">
-            <span class="section-title">Weekend Cooking Time</span>
           </div>
+
+          <!-- Weekend Time -->
+          <div class="section-header-label">Weekend Cooking Time</div>
+          <div class="card-filled" style="margin-bottom:var(--sp-lg);">
           <p class="body-small" style="color:var(--on-surface-variant);margin-bottom:var(--sp-sm);">Maximum time per meal on weekends</p>
           <div class="dropdown" id="dd-${prefix}-weekend">
             <div class="dropdown-trigger" onclick="toggleDropdown('dd-${prefix}-weekend')">
@@ -114,15 +117,17 @@
             </div>
           </div>
 
-          <!-- Busy Days -->
-          <div class="section-header" style="margin-top:var(--sp-lg);">
-            <span class="section-title">Busy Days</span>
           </div>
+
+          <!-- Busy Days -->
+          <div class="section-header-label">Busy Days</div>
+          <div class="card-filled">
           <p class="body-small" style="color:var(--on-surface-variant);margin-bottom:var(--sp-md);">On busy days, only quick recipes (&#8804; weekday time) will be suggested</p>
           <div style="display:flex;gap:var(--sp-sm);flex-wrap:wrap;">
             ${allDays.map(d => `
               <div class="day-chip ${busyDaysVal.includes(d.id) ? 'selected' : ''}" onclick="toggleDay('${prefix}', '${d.id}')">${d.label}</div>
             `).join('')}
+          </div>
           </div>
         </div>
       `;
@@ -160,13 +165,13 @@
         ${!solo ? renderScopeToggle('settings_cooking', 'Household', 'My Preferences') : ''}
 
         <div class="screen-content">
-          <div class="content-padding">
+          <div class="content-padding stagger-list">
             ${content}
           </div>
         </div>
 
         <div style="padding:var(--sp-md);flex-shrink:0;">
-          <button class="btn btn-filled" style="width:100%;" onclick="saveSchedule()">Save</button>
+          <button class="btn btn-filled btn-large" style="width:100%;" onclick="saveSchedule()">Save</button>
         </div>
       `;
     }

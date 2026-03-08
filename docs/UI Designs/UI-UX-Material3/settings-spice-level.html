@@ -18,17 +18,19 @@
       padding: var(--sp-md);
       border-radius: var(--radius-md);
       border: 2px solid var(--outline-variant);
-      background: var(--surface);
+      background: var(--surface-warm);
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s ease-out;
       margin-bottom: var(--sp-md);
     }
     .spice-option:hover {
       box-shadow: var(--shadow-sm);
+      transform: translateY(-1px);
     }
     .spice-option.selected {
       border-color: var(--primary);
-      background: color-mix(in srgb, var(--primary-container) 30%, var(--surface));
+      background: color-mix(in srgb, var(--primary-container) 40%, var(--surface-warm));
+      box-shadow: var(--shadow-md);
     }
     .spice-chilies {
       font-size: 24px;
@@ -110,13 +112,14 @@
         ${!solo ? renderScopeToggle('settings_spice', 'Household', 'My Preferences') : ''}
 
         <div class="screen-content">
-          <div class="content-padding">
+          <div class="content-padding stagger-list">
+            <div class="section-header-label">Choose Spice Level</div>
             ${contentHtml}
           </div>
         </div>
 
         <div style="padding:var(--sp-md);flex-shrink:0;">
-          <button class="btn btn-filled" style="width:100%;" onclick="saveSpice()">Save</button>
+          <button class="btn btn-filled btn-large" style="width:100%;" onclick="saveSpice()">Save</button>
         </div>
       `;
     }

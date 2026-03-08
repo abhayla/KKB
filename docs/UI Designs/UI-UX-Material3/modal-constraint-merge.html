@@ -6,6 +6,67 @@
   <title>RasoiAI - Merged Constraints</title>
   <link rel="stylesheet" href="shared.css">
   <script src="shared.js"></script>
+  <style>
+    .merge-dialog {
+      max-width: 340px;
+    }
+    .merge-emoji {
+      font-size: 40px;
+      display: inline-block;
+      animation: bounceIn 0.5s ease-out;
+    }
+    .constraint-section {
+      margin-bottom: var(--sp-md);
+    }
+    .constraint-section-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: var(--sp-xs);
+    }
+    .allergy-chip {
+      background: var(--error-container) !important;
+      color: var(--on-error-container) !important;
+      pointer-events: none;
+      border: none;
+    }
+    .allergy-chip .owner-hint {
+      opacity: 0.7;
+      font-size: 10px;
+    }
+    .dislike-chip {
+      pointer-events: none;
+      background: var(--surface-warm);
+      border: 1px solid var(--outline-variant);
+    }
+    .dietary-result {
+      background: var(--secondary-container);
+      border-radius: var(--radius-md);
+      padding: var(--sp-sm) var(--sp-md);
+    }
+    .dietary-result-text {
+      color: var(--on-secondary-container);
+      font-weight: 500;
+    }
+    .viable-count-banner {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+      padding: var(--sp-sm) var(--sp-md);
+      background: var(--surface-warm);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--sp-lg);
+      border: 1px solid color-mix(in srgb, var(--secondary) 20%, transparent);
+    }
+    .viable-count-banner .count-icon {
+      font-size: 20px;
+    }
+    .viable-count-banner .count-text {
+      color: var(--secondary);
+      font-weight: 500;
+    }
+  </style>
 </head>
 <body>
   <div class="phone-frame bottom-sheet-page" id="app"></div>
@@ -25,44 +86,44 @@
       </div>
 
       <div class="dialog-overlay">
-        <div class="dialog" style="max-width:340px;">
+        <div class="dialog merge-dialog">
           <div style="text-align:center;margin-bottom:var(--sp-md);">
-            <div style="font-size:36px;">&#128256;</div>
+            <span class="merge-emoji">&#128256;</span>
           </div>
           <div class="dialog-title" style="text-align:center;">Merged Constraints</div>
           <div class="body-small" style="color:var(--on-surface-variant);text-align:center;margin-bottom:var(--sp-lg);">Combined dietary rules from all household members</div>
 
           <!-- Allergies -->
-          <div style="margin-bottom:var(--sp-md);">
-            <div class="label-large" style="color:var(--error);margin-bottom:var(--sp-xs);">Allergies (Never Include)</div>
+          <div class="constraint-section">
+            <div class="constraint-section-label" style="color:var(--error);">Allergies (Never Include)</div>
             <div class="chip-group">
-              <span class="chip selected" style="background:var(--error-container);color:var(--on-error-container);pointer-events:none;">Peanuts <span class="body-small" style="opacity:0.7;">(Ramesh)</span></span>
-              <span class="chip selected" style="background:var(--error-container);color:var(--on-error-container);pointer-events:none;">Cashews <span class="body-small" style="opacity:0.7;">(Ramesh)</span></span>
+              <span class="chip allergy-chip">Peanuts <span class="owner-hint">(Ramesh)</span></span>
+              <span class="chip allergy-chip">Cashews <span class="owner-hint">(Ramesh)</span></span>
             </div>
           </div>
 
           <!-- Dislikes -->
-          <div style="margin-bottom:var(--sp-md);">
-            <div class="label-large" style="color:var(--on-surface-variant);margin-bottom:var(--sp-xs);">Dislikes (Avoid)</div>
+          <div class="constraint-section">
+            <div class="constraint-section-label" style="color:var(--on-surface-variant);">Dislikes (Avoid)</div>
             <div class="chip-group">
-              <span class="chip" style="pointer-events:none;">Karela</span>
-              <span class="chip" style="pointer-events:none;">Baingan</span>
-              <span class="chip" style="pointer-events:none;">Mushroom</span>
+              <span class="chip dislike-chip">Karela</span>
+              <span class="chip dislike-chip">Baingan</span>
+              <span class="chip dislike-chip">Mushroom</span>
             </div>
           </div>
 
           <!-- Dietary -->
-          <div style="margin-bottom:var(--sp-md);">
-            <div class="label-large" style="color:var(--secondary);margin-bottom:var(--sp-xs);">Strictest Dietary Rule</div>
-            <div style="background:var(--secondary-container);border-radius:var(--radius-sm);padding:var(--sp-sm) var(--sp-md);">
-              <span class="body-medium" style="color:var(--on-secondary-container);font-weight:500;">Vegetarian + Sattvic (no onion/garlic)</span>
+          <div class="constraint-section">
+            <div class="constraint-section-label" style="color:var(--secondary);">Strictest Dietary Rule</div>
+            <div class="dietary-result">
+              <span class="body-medium dietary-result-text">Vegetarian + Sattvic (no onion/garlic)</span>
             </div>
           </div>
 
           <!-- Viable Recipe Count -->
-          <div style="display:flex;align-items:center;gap:var(--sp-sm);padding:var(--sp-sm) var(--sp-md);background:color-mix(in srgb, var(--secondary) 8%, transparent);border-radius:var(--radius-sm);margin-bottom:var(--sp-lg);">
-            <span style="font-size:20px;">&#9989;</span>
-            <span class="body-medium" style="color:var(--secondary);font-weight:500;">847 viable recipes match all constraints</span>
+          <div class="viable-count-banner">
+            <span class="count-icon">&#9989;</span>
+            <span class="body-medium count-text">847 viable recipes match all constraints</span>
           </div>
 
           <div class="dialog-actions" style="justify-content:stretch;">

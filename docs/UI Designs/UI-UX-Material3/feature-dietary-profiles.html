@@ -5,6 +5,89 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RasoiAI - Dietary Profiles</title>
   <link rel="stylesheet" href="shared.css">
+  <style>
+    .profile-card {
+      background: var(--surface-warm);
+      border-radius: var(--radius-md);
+      padding: var(--card-padding);
+      margin-bottom: var(--sp-md);
+      border: 2px solid transparent;
+      transition: all var(--transition-normal);
+    }
+    .profile-card:hover {
+      background: color-mix(in srgb, var(--surface-warm) 85%, var(--primary-container));
+      box-shadow: var(--shadow-sm);
+    }
+    .profile-card.active {
+      border-color: var(--primary);
+      box-shadow: var(--shadow-md);
+    }
+    .profile-card .profile-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--sp-md);
+    }
+    .profile-card .profile-icon {
+      font-size: 24px;
+    }
+    .profile-card .active-badge {
+      background: var(--primary);
+      color: var(--on-primary);
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .profile-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-sm);
+    }
+    .profile-grid .grid-label {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      letter-spacing: 0.4px;
+    }
+    .profile-grid .grid-value {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--on-surface);
+    }
+    .profile-actions {
+      display: flex;
+      gap: var(--sp-sm);
+      margin-top: var(--sp-md);
+    }
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+      padding: var(--sp-sm) var(--sp-md);
+      background: color-mix(in srgb, var(--secondary) 10%, transparent);
+      border-radius: var(--radius-full);
+      margin-bottom: var(--sp-lg);
+      width: fit-content;
+    }
+    .status-indicator .status-text {
+      font-size: 12px;
+      color: var(--secondary);
+      font-weight: 600;
+      letter-spacing: 0.4px;
+    }
+    .switch-note {
+      background: var(--surface-variant);
+      border-radius: var(--radius-sm);
+      padding: var(--sp-md);
+      margin-bottom: var(--sp-lg);
+    }
+    .switch-note span {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      line-height: 1.5;
+      letter-spacing: 0.4px;
+    }
+  </style>
   <script src="shared.js"></script>
 </head>
 <body>
@@ -28,51 +111,53 @@
         <div class="content-padding">
 
           <!-- Active Profile Indicator -->
-          <div style="display:flex;align-items:center;gap:var(--sp-sm);padding:var(--sp-sm) var(--sp-md);background:color-mix(in srgb, var(--secondary) 10%, transparent);border-radius:var(--radius-full);margin-bottom:var(--sp-lg);width:fit-content;">
+          <div class="status-indicator">
             <span class="status-dot linked"></span>
-            <span class="body-small" style="color:var(--secondary);font-weight:600;">Currently using: ${profileData[activeProfile]?.title || 'Home'}</span>
+            <span class="status-text">Currently using: ${profileData[activeProfile]?.title || 'Home'}</span>
           </div>
 
           <!-- Profile Cards -->
+          <div class="stagger-list">
           ${Object.entries(profileData).map(([key, p]) => `
-            <div class="card" style="margin-bottom:var(--sp-md);border:2px solid ${key === activeProfile ? 'var(--primary)' : 'transparent'};">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-md);">
+            <div class="profile-card ${key === activeProfile ? 'active' : ''}">
+              <div class="profile-header">
                 <div style="display:flex;align-items:center;gap:var(--sp-sm);">
-                  <span style="font-size:24px;">${p.icon}</span>
+                  <span class="profile-icon">${p.icon}</span>
                   <div class="title-medium" style="font-weight:600;">${p.title}</div>
-                  ${key === activeProfile ? '<span style="background:var(--primary);color:var(--on-primary);padding:2px 8px;border-radius:var(--radius-full);font-size:10px;font-weight:700;">ACTIVE</span>' : ''}
+                  ${key === activeProfile ? '<span class="active-badge">ACTIVE</span>' : ''}
                 </div>
               </div>
 
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-sm);">
+              <div class="profile-grid">
                 <div>
-                  <div class="body-small" style="color:var(--on-surface-variant);">Diet</div>
-                  <div class="body-medium" style="font-weight:500;">${p.diet}</div>
+                  <div class="grid-label">Diet</div>
+                  <div class="grid-value">${p.diet}</div>
                 </div>
                 <div>
-                  <div class="body-small" style="color:var(--on-surface-variant);">Cuisine</div>
-                  <div class="body-medium" style="font-weight:500;">${p.cuisine}</div>
+                  <div class="grid-label">Cuisine</div>
+                  <div class="grid-value">${p.cuisine}</div>
                 </div>
                 <div>
-                  <div class="body-small" style="color:var(--on-surface-variant);">Cooking Time</div>
-                  <div class="body-medium" style="font-weight:500;">${p.time}</div>
+                  <div class="grid-label">Cooking Time</div>
+                  <div class="grid-value">${p.time}</div>
                 </div>
                 <div>
-                  <div class="body-small" style="color:var(--on-surface-variant);">Allergies</div>
-                  <div class="body-medium" style="font-weight:500;">${p.allergies}</div>
+                  <div class="grid-label">Allergies</div>
+                  <div class="grid-value">${p.allergies}</div>
                 </div>
               </div>
 
-              <div style="display:flex;gap:var(--sp-sm);margin-top:var(--sp-md);">
+              <div class="profile-actions">
                 <button class="btn btn-outlined" style="flex:1;height:36px;padding:0;">Edit</button>
                 ${key !== activeProfile ? `<button class="btn btn-filled" style="flex:1;height:36px;padding:0;" onclick="setState('active_profile','${key}');location.reload();">Set Active</button>` : ''}
               </div>
             </div>
           `).join('')}
+          </div>
 
           <!-- Switch Note -->
-          <div style="background:var(--surface-variant);border-radius:var(--radius-sm);padding:var(--sp-md);margin-bottom:var(--sp-lg);">
-            <span class="body-small" style="color:var(--on-surface-variant);line-height:1.5;">Switching profiles changes your meal generation preferences. Your current meal plan will be regenerated.</span>
+          <div class="switch-note">
+            <span>Switching profiles changes your meal generation preferences. Your current meal plan will be regenerated.</span>
           </div>
 
           <!-- Add Profile FAB -->

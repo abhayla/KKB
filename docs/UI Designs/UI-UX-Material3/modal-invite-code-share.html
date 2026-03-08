@@ -6,6 +6,97 @@
   <title>RasoiAI - Share Invite</title>
   <link rel="stylesheet" href="shared.css">
   <script src="shared.js"></script>
+  <style>
+    .invite-sheet .handle {
+      background: var(--outline-variant);
+    }
+    .invite-sheet-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: var(--sp-lg);
+      color: var(--on-surface);
+    }
+    .invite-code-card {
+      background: var(--surface-warm);
+      border-radius: var(--radius-md);
+      padding: var(--sp-lg) var(--sp-md);
+      text-align: center;
+      margin-bottom: var(--sp-sm);
+      border: 1px dashed var(--outline-variant);
+    }
+    .invite-code-value {
+      font-family: 'Courier New', monospace;
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      color: var(--primary);
+      user-select: all;
+    }
+    .invite-code-label {
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--on-surface-variant);
+      margin-top: var(--sp-xs);
+    }
+    .invite-expiry {
+      text-align: center;
+      color: var(--on-surface-variant);
+      margin-bottom: var(--sp-lg);
+    }
+    .qr-placeholder {
+      width: 160px;
+      height: 160px;
+      margin: 0 auto var(--sp-lg);
+      background: var(--surface-variant);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--outline-variant);
+    }
+    .qr-placeholder span {
+      font-size: 48px;
+      opacity: 0.3;
+    }
+    .invite-actions {
+      display: flex;
+      gap: var(--sp-sm);
+      margin-bottom: var(--sp-md);
+    }
+    .btn-copy {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-copy.copied {
+      background: var(--secondary) !important;
+    }
+    .btn-whatsapp {
+      flex: 1;
+      background: #25D366 !important;
+      color: #FFFFFF !important;
+      box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
+    }
+    .btn-whatsapp:hover {
+      box-shadow: 0 4px 16px rgba(37, 211, 102, 0.4) !important;
+      filter: brightness(1.05);
+    }
+    .copy-feedback {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--secondary);
+      color: var(--on-secondary);
+      border-radius: var(--radius-full);
+      animation: fadeScale 0.2s ease-out;
+    }
+  </style>
 </head>
 <body>
   <div class="phone-frame bottom-sheet-page" id="app"></div>
@@ -27,25 +118,41 @@
       </div>
 
       <div class="bottom-sheet-overlay">
-        <div class="bottom-sheet">
+        <div class="bottom-sheet invite-sheet">
           <div class="handle"></div>
-          <div class="title-large" style="font-size:18px;font-weight:600;text-align:center;margin-bottom:var(--sp-lg);">Share Invite Code</div>
+          <div class="invite-sheet-title">Share Invite Code</div>
 
-          <div class="invite-code-display" style="margin:0 auto var(--sp-md);">${hh ? hh.invite_code : 'A1B2C3D4'}</div>
-          <div class="body-small" style="text-align:center;color:var(--on-surface-variant);margin-bottom:var(--sp-lg);">Code expires ${hh ? hh.invite_code_expires : 'in 7 days'}</div>
+          <div class="invite-code-card">
+            <div class="invite-code-label">Invite Code</div>
+            <div class="invite-code-value">${hh ? hh.invite_code : 'A1B2C3D4'}</div>
+          </div>
+          <div class="body-small invite-expiry">Code expires ${hh ? hh.invite_code_expires : 'in 7 days'}</div>
 
           <!-- QR Placeholder -->
-          <div style="width:160px;height:160px;margin:0 auto var(--sp-lg);background:var(--surface-variant);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;">
-            <span style="font-size:48px;opacity:0.3;">&#9638;</span>
+          <div class="qr-placeholder">
+            <span>&#9638;</span>
           </div>
 
-          <div style="display:flex;gap:var(--sp-sm);margin-bottom:var(--sp-md);">
-            <button class="btn btn-filled" style="flex:1;" onclick="copyInviteCode()">Copy Code</button>
-            <button class="btn btn-outlined" style="flex:1;">Share via WhatsApp</button>
+          <div class="invite-actions">
+            <button class="btn btn-filled btn-copy" id="copy-btn" onclick="copyInviteCode()">
+              <span id="copy-label">&#128203; Copy Code</span>
+            </button>
+            <button class="btn btn-filled btn-whatsapp">&#128172; WhatsApp</button>
           </div>
         </div>
       </div>
     `;
+
+    function copyInviteCode() {
+      const btn = document.getElementById('copy-btn');
+      const label = document.getElementById('copy-label');
+      label.textContent = '\\u2713 Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        label.innerHTML = '&#128203; Copy Code';
+        btn.classList.remove('copied');
+      }, 2000);
+    }
   </script>
 </body>
 </html>

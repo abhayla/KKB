@@ -13,7 +13,7 @@
   <script>
     initPage();
 
-    const chipStyle = 'display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:var(--radius-full);background:var(--surface-variant);font-size:14px;margin:0 var(--sp-xs) var(--sp-xs) 0;';
+    const chipStyle = 'display:inline-flex;align-items:center;gap:4px;padding:6px 14px;border-radius:var(--radius-full);background:var(--surface-variant);font-size:14px;margin:0 var(--sp-xs) var(--sp-xs) 0;transition:all 0.15s ease;';
     const suggestions = ['Lauki', 'Turai', 'Tinda', 'Arbi', 'Methi', 'Parwal'];
 
     // Initialize state from mock data
@@ -76,25 +76,24 @@
         }
       } else {
         // --- Solo User: Personal only ---
-        content += `<div class="section-header">
-          <span class="section-title">Disliked Ingredients</span>
-          <span class="body-small" style="color:var(--on-surface-variant);">${personal_dislikes.length} items</span>
-        </div>`;
+        content += `<div class="section-header-label">Disliked Ingredients <span style="font-weight:400;text-transform:none;letter-spacing:0;">(${personal_dislikes.length} items)</span></div>`;
+        content += `<div class="card-filled" style="margin-bottom:var(--sp-lg);">`;
         content += `<p class="body-small" style="color:var(--on-surface-variant);margin:0 0 var(--sp-md) 0;">Ingredients you personally want to avoid in your meals.</p>`;
         content += `<div style="flex-wrap:wrap;display:flex;margin-bottom:var(--sp-sm);">`;
         content += renderDislikeChips(personal_dislikes, true, 'removePersonalDislike');
         content += `</div>`;
         content += renderAddInput('personal-input', 'addPersonalFromInput');
+        content += `</div>`;
 
         // --- Suggestions (solo only, preserving original behavior) ---
         const remaining = suggestions.filter(s => !personal_dislikes.includes(s));
-        content += `<div class="section-header" style="margin-top:var(--sp-lg);">
-          <span class="section-title">Suggestions</span>
-        </div>`;
+        content += `<div class="section-header-label">Suggestions</div>`;
+        content += `<div class="card-filled">`;
         content += `<div class="chip-group">`;
         content += remaining.length > 0
           ? remaining.map(s => `<span class="chip" onclick="addPersonalDislike('${s}')">+ ${s}</span>`).join('')
           : '<span class="body-small" style="color:var(--on-surface-variant);">All suggestions added</span>';
+        content += `</div>`;
         content += `</div>`;
       }
 
@@ -103,7 +102,7 @@
         ${renderTopBar({ title: 'Disliked Ingredients', backLink: 'settings-main.html' })}
         ${!solo ? renderScopeToggle('settings_dislikes', 'Household', 'My Preferences') : ''}
         <div class="screen-content">
-          <div class="content-padding">
+          <div class="content-padding stagger-list">
             ${content}
           </div>
         </div>

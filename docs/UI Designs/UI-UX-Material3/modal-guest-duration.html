@@ -6,6 +6,104 @@
   <title>RasoiAI - Guest Duration</title>
   <link rel="stylesheet" href="shared.css">
   <script src="shared.js"></script>
+  <style>
+    .guest-sheet-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .guest-header {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+      margin-bottom: var(--sp-lg);
+    }
+    .guest-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--primary-container);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .guest-info {
+      flex: 1;
+    }
+    .guest-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .guest-role {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      margin-top: 2px;
+    }
+    .date-field-group {
+      display: flex;
+      gap: var(--sp-md);
+      margin-bottom: var(--sp-md);
+    }
+    .date-field-wrapper {
+      flex: 1;
+    }
+    .date-field-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--on-surface-variant);
+      margin-bottom: var(--sp-xs);
+    }
+    .date-field-wrapper .text-field {
+      height: 48px;
+      font-size: 14px;
+      background: var(--surface-warm);
+      border: 1px solid var(--outline-variant);
+    }
+    .date-field-wrapper .text-field:focus {
+      border-color: var(--primary);
+      background: var(--surface);
+    }
+    .duration-badge {
+      background: var(--primary-container);
+      border-radius: var(--radius-md);
+      padding: var(--sp-md);
+      margin-bottom: var(--sp-md);
+      text-align: center;
+      animation: warmPulse 2s ease-in-out infinite;
+    }
+    .duration-badge .duration-value {
+      font-family: 'Outfit', sans-serif;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--on-primary-container);
+    }
+    .guest-info-note {
+      background: var(--surface-warm);
+      border-radius: var(--radius-sm);
+      padding: var(--sp-sm) var(--sp-md);
+      margin-bottom: var(--sp-lg);
+      display: flex;
+      align-items: flex-start;
+      gap: var(--sp-sm);
+    }
+    .guest-info-note .note-icon {
+      color: var(--on-surface-variant);
+      flex-shrink: 0;
+      margin-top: 1px;
+      font-size: 14px;
+    }
+    .guest-actions {
+      display: flex;
+      gap: var(--sp-sm);
+    }
+  </style>
 </head>
 <body>
   <div class="phone-frame bottom-sheet-page" id="app"></div>
@@ -27,27 +125,43 @@
       <div class="bottom-sheet-overlay">
         <div class="bottom-sheet">
           <div class="handle"></div>
-          <div class="title-large" style="font-size:18px;font-weight:600;margin-bottom:var(--sp-lg);">Guest Duration</div>
 
-          <div style="display:flex;gap:var(--sp-md);margin-bottom:var(--sp-md);">
-            <div style="flex:1;">
-              <div class="label-large" style="margin-bottom:var(--sp-xs);color:var(--on-surface-variant);">Arrival</div>
-              <input type="date" class="text-field" style="height:48px;font-size:14px;" value="2026-03-07">
+          <!-- Guest Header with avatar -->
+          <div class="guest-header">
+            <div class="guest-avatar">&#128102;</div>
+            <div class="guest-info">
+              <div class="guest-name">Rahul Uncle</div>
+              <div class="guest-role">Guest member</div>
             </div>
-            <div style="flex:1;">
-              <div class="label-large" style="margin-bottom:var(--sp-xs);color:var(--on-surface-variant);">Departure</div>
-              <input type="date" class="text-field" style="height:48px;font-size:14px;" value="2026-03-14">
+            <a href="settings-household-members.html" class="icon-btn" style="text-decoration:none;">&#10005;</a>
+          </div>
+
+          <!-- Date Fields -->
+          <div class="date-field-group">
+            <div class="date-field-wrapper">
+              <div class="date-field-label">Arrival</div>
+              <input type="date" class="text-field" value="2026-03-07">
+            </div>
+            <div class="date-field-wrapper">
+              <div class="date-field-label">Departure</div>
+              <input type="date" class="text-field" value="2026-03-14">
             </div>
           </div>
 
-          <div style="background:var(--primary-container);border-radius:var(--radius-sm);padding:var(--sp-md);margin-bottom:var(--sp-lg);text-align:center;">
-            <span class="title-medium" style="color:var(--on-primary-container);">Staying for 7 days</span>
+          <!-- Duration Badge -->
+          <div class="duration-badge">
+            <span class="duration-value">&#128197; Staying for 7 days</span>
           </div>
 
-          <div class="body-small" style="color:var(--on-surface-variant);margin-bottom:var(--sp-lg);line-height:1.5;">Guest will be automatically removed from the household after the departure date. Their dietary constraints and meal history will be cleaned up.</div>
+          <!-- Info Note -->
+          <div class="guest-info-note">
+            <span class="note-icon">&#9432;</span>
+            <span class="body-small" style="color:var(--on-surface-variant);line-height:1.5;">Guest will be automatically removed after departure. Their dietary constraints and meal history will be cleaned up.</span>
+          </div>
 
-          <div style="display:flex;gap:var(--sp-sm);">
-            <a href="settings-household-members.html" class="btn btn-outlined" style="flex:1;text-decoration:none;">Cancel</a>
+          <!-- Actions -->
+          <div class="guest-actions">
+            <a href="settings-household-members.html" class="btn btn-text" style="flex:1;text-decoration:none;">Cancel</a>
             <a href="settings-household-members.html" class="btn btn-filled" style="flex:1;text-decoration:none;">Confirm</a>
           </div>
         </div>

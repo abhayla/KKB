@@ -12,11 +12,14 @@
       font-weight: 600;
       color: var(--on-surface);
       margin-bottom: var(--sp-xs);
+      animation: fadeInUp 0.4s ease-out backwards;
     }
     .step-subtitle {
       font-size: 14px;
       color: var(--on-surface-variant);
       margin-bottom: var(--sp-lg);
+      animation: fadeInUp 0.4s ease-out backwards;
+      animation-delay: 0.05s;
     }
     .field-label {
       font-family: 'Poppins', sans-serif;
@@ -36,10 +39,13 @@
       margin-bottom: var(--sp-xs);
     }
     .radio-option:hover {
-      background: var(--surface-variant);
+      background: var(--surface-warm);
+      box-shadow: var(--shadow-sm);
     }
     .radio-option.active {
       background: color-mix(in srgb, var(--primary-container) 40%, transparent);
+      border-left: 3px solid var(--primary);
+      padding-left: calc(var(--sp-md) - 3px);
     }
     .radio-option .radio-label {
       flex: 1;
@@ -61,10 +67,12 @@
       margin-bottom: var(--sp-xs);
     }
     .checkbox-option:hover {
-      background: var(--surface-variant);
+      background: var(--surface-warm);
     }
     .checkbox-option.active {
       background: color-mix(in srgb, var(--secondary-container) 30%, transparent);
+      border-left: 3px solid var(--secondary);
+      padding-left: calc(var(--sp-md) - 3px);
     }
     .checkbox-label-group {
       flex: 1;
@@ -86,6 +94,9 @@
     }
     .bottom-buttons .btn {
       flex: 1;
+    }
+    .bottom-buttons {
+      background: var(--gradient-warm);
     }
   </style>
   <script src="shared.js"></script>
@@ -110,7 +121,7 @@
         <!-- Primary Diet -->
         <div class="mb-lg">
           <div class="field-label">Primary Diet</div>
-
+          <div class="stagger-list">
           <div class="radio-option active" onclick="selectDiet(this)">
             <div class="radio selected"></div>
             <div style="flex:1">
@@ -137,12 +148,13 @@
             </div>
             <span class="dietary-badge nonveg">NON-VEG</span>
           </div>
+          </div>
         </div>
 
         <!-- Dietary Restrictions -->
         <div class="mb-lg">
           <div class="field-label">Dietary Restrictions</div>
-
+          <div class="stagger-list">
           <div class="checkbox-option" onclick="toggleCheck(this)">
             <div class="checkbox"></div>
             <div class="checkbox-label-group">
@@ -181,6 +193,7 @@
               <span class="label-text">No Gluten</span>
               <span class="dietary-badge fasting">GLUTEN-FREE</span>
             </div>
+          </div>
           </div>
         </div>
       </div>

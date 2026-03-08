@@ -6,6 +6,67 @@
   <title>RasoiAI - Edit Grocery Item</title>
   <link rel="stylesheet" href="shared.css">
   <script src="shared.js"></script>
+  <style>
+    .edit-grocery-sheet .handle {
+      background: var(--outline-variant);
+    }
+    .sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--sp-lg);
+    }
+    .sheet-header-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .field-group {
+      margin-bottom: var(--sp-md);
+    }
+    .field-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--on-surface-variant);
+      margin-bottom: var(--sp-xs);
+    }
+    .field-group .text-field {
+      height: 48px;
+      font-size: 14px;
+      background: var(--surface-warm);
+      border: 1px solid var(--outline-variant);
+      transition: all var(--transition-normal);
+    }
+    .field-group .text-field:focus {
+      background: var(--surface);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 12%, transparent);
+    }
+    .field-group .dropdown-trigger {
+      background: var(--surface-warm);
+      border: 1px solid var(--outline-variant);
+    }
+    .field-row {
+      display: flex;
+      gap: var(--sp-sm);
+      margin-bottom: var(--sp-lg);
+    }
+    .sheet-actions {
+      display: flex;
+      gap: var(--sp-sm);
+    }
+    .btn-delete-item {
+      background: var(--error) !important;
+      color: var(--on-error) !important;
+      box-shadow: 0 2px 6px rgba(186, 26, 26, 0.2);
+    }
+    .btn-delete-item:hover {
+      box-shadow: 0 4px 12px rgba(186, 26, 26, 0.3) !important;
+    }
+  </style>
 </head>
 <body>
   <div class="phone-frame bottom-sheet-page" id="app"></div>
@@ -36,23 +97,23 @@
 
       <!-- Bottom Sheet Overlay -->
       <div class="bottom-sheet-overlay">
-        <div class="bottom-sheet" style="max-height:60%;">
+        <div class="bottom-sheet edit-grocery-sheet" style="max-height:60%;">
           <div class="handle"></div>
 
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-lg);">
-            <span class="title-large" style="font-size:18px;font-weight:600;">Edit Item</span>
+          <div class="sheet-header">
+            <span class="sheet-header-title">Edit Item</span>
             <a href="main-grocery.html" class="icon-btn" style="text-decoration:none;">&#10005;</a>
           </div>
 
           <!-- Name Field (pre-filled) -->
-          <div style="margin-bottom:var(--sp-md);">
-            <div class="label-large" style="margin-bottom:var(--sp-xs);color:var(--on-surface-variant);">Name</div>
-            <input type="text" class="text-field" value="Potato" style="height:48px;font-size:14px;">
+          <div class="field-group">
+            <div class="field-label">Name</div>
+            <input type="text" class="text-field" value="Potato">
           </div>
 
           <!-- Category Dropdown (pre-filled) -->
-          <div style="margin-bottom:var(--sp-md);">
-            <div class="label-large" style="margin-bottom:var(--sp-xs);color:var(--on-surface-variant);">Category</div>
+          <div class="field-group">
+            <div class="field-label">Category</div>
             <div class="dropdown">
               <button class="dropdown-trigger" style="height:48px;" onclick="this.nextElementSibling.classList.toggle('open');">
                 <span id="cat-val">Vegetables</span>
@@ -67,13 +128,13 @@
           </div>
 
           <!-- Quantity + Unit Row (pre-filled) -->
-          <div style="display:flex;gap:var(--sp-sm);margin-bottom:var(--sp-lg);">
-            <div style="flex:1;">
-              <div class="label-large" style="margin-bottom:var(--sp-xs);color:var(--on-surface-variant);">Quantity</div>
-              <input type="number" class="text-field" value="1" style="height:48px;font-size:14px;">
+          <div class="field-row">
+            <div class="field-group" style="flex:1;margin-bottom:0;">
+              <div class="field-label">Quantity</div>
+              <input type="number" class="text-field" value="1">
             </div>
-            <div style="flex:1;">
-              <div class="label-large" style="margin-bottom:var(--sp-xs);color:var(--on-surface-variant);">Unit</div>
+            <div class="field-group" style="flex:1;margin-bottom:0;">
+              <div class="field-label">Unit</div>
               <div class="dropdown">
                 <button class="dropdown-trigger" style="height:48px;" onclick="this.nextElementSibling.classList.toggle('open');">
                   <span id="unit-val">kg</span>
@@ -89,9 +150,9 @@
           </div>
 
           <!-- Actions -->
-          <div style="display:flex;gap:var(--sp-sm);">
+          <div class="sheet-actions">
             <a href="main-grocery.html" class="btn btn-filled" style="flex:2;text-decoration:none;">Save</a>
-            <a href="main-grocery.html" class="btn btn-filled" style="flex:1;text-decoration:none;background:var(--error);color:var(--on-error);">Delete</a>
+            <a href="main-grocery.html" class="btn btn-filled btn-delete-item" style="flex:1;text-decoration:none;">Delete</a>
           </div>
         </div>
       </div>

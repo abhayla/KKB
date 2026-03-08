@@ -560,6 +560,15 @@ function copyInviteCode() {
   }).catch(() => alert('Code: ' + code));
 }
 
+// --- Warm Modern Helpers ---
+function getWarmGradient() {
+  return 'var(--gradient-warm)';
+}
+
+function getHeroGradient() {
+  return 'var(--gradient-hero)';
+}
+
 // --- Page Init ---
 function initPage() {
   applyTheme();

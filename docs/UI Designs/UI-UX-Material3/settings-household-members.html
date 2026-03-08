@@ -6,6 +6,22 @@
   <title>RasoiAI - Household Members</title>
   <link rel="stylesheet" href="shared.css">
   <script src="shared.js"></script>
+  <style>
+    .member-list-card {
+      background: var(--surface-warm);
+      border-radius: var(--radius-md);
+      padding: var(--sp-md);
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+      transition: all 0.2s ease-out;
+      margin-bottom: var(--sp-sm);
+    }
+    .member-list-card:hover {
+      box-shadow: var(--shadow-md);
+      background: color-mix(in srgb, var(--surface-warm) 85%, var(--primary-container));
+    }
+  </style>
 </head>
 <body>
   <div class="phone-frame" id="app"></div>
@@ -22,7 +38,7 @@
         <div class="content-padding">
 
           <!-- Member Count -->
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-lg);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-md);">
             <div class="body-medium" style="color:var(--on-surface-variant);">${members.length} members (max 6)</div>
             <a href="modal-invite-code-share.html" style="text-decoration:none;">
               <button class="btn btn-filled" style="height:36px;padding:0 16px;font-size:13px;">Invite</button>
@@ -30,31 +46,33 @@
           </div>
 
           <!-- Member Cards -->
-          ${members.map((m, i) => `
-            <a href="settings-household-member-detail.html" style="text-decoration:none;">
-              <div class="hh-member-card" style="animation-delay:${i * 0.05}s;">
-                ${renderMemberAvatar(m.name, 48)}
-                <div style="flex:1;min-width:0;">
-                  <div style="display:flex;align-items:center;gap:var(--sp-sm);flex-wrap:wrap;">
-                    <span class="title-small" style="font-weight:600;color:var(--on-surface);">${m.name}</span>
-                    ${renderRoleBadge(m.role)}
-                  </div>
-                  <div style="display:flex;align-items:center;gap:var(--sp-xs);margin-top:2px;">
-                    <span class="status-dot ${m.user_id ? 'linked' : 'unlinked'}"></span>
-                    <span class="body-small" style="color:var(--on-surface-variant);">${m.user_id ? 'App linked' : 'Metadata only'}</span>
-                    ${m.phone ? `<span class="body-small" style="color:var(--on-surface-variant);">&middot; ${m.phone}</span>` : ''}
-                  </div>
-                  ${m.health && m.health.length > 0 ? `
-                    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:var(--sp-xs);">
-                      ${m.health.map(h => `<span class="health-chip" style="background:var(--error-container);color:var(--on-error-container);padding:2px 8px;border-radius:var(--radius-xs);font-size:10px;font-weight:600;text-transform:uppercase;">${h.replace('_', ' ')}</span>`).join('')}
+          <div class="stagger-list">
+            ${members.map(m => `
+              <a href="settings-household-member-detail.html" style="text-decoration:none;">
+                <div class="member-list-card">
+                  ${renderMemberAvatar(m.name, 48)}
+                  <div style="flex:1;min-width:0;">
+                    <div style="display:flex;align-items:center;gap:var(--sp-sm);flex-wrap:wrap;">
+                      <span class="title-small" style="font-weight:600;color:var(--on-surface);">${m.name}</span>
+                      ${renderRoleBadge(m.role)}
                     </div>
-                  ` : ''}
-                  ${m.is_temporary ? `<div class="body-small" style="color:var(--tertiary);margin-top:2px;">Leaving ${m.leave_date || 'TBD'}</div>` : ''}
+                    <div style="display:flex;align-items:center;gap:var(--sp-xs);margin-top:2px;">
+                      <span class="status-dot ${m.user_id ? 'linked' : 'unlinked'}"></span>
+                      <span class="body-small" style="color:var(--on-surface-variant);">${m.user_id ? 'App linked' : 'Metadata only'}</span>
+                      ${m.phone ? `<span class="body-small" style="color:var(--on-surface-variant);">&middot; ${m.phone}</span>` : ''}
+                    </div>
+                    ${m.health && m.health.length > 0 ? `
+                      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:var(--sp-xs);">
+                        ${m.health.map(h => `<span class="health-chip" style="background:var(--error-container);color:var(--on-error-container);padding:2px 8px;border-radius:var(--radius-xs);font-size:10px;font-weight:600;text-transform:uppercase;">${h.replace('_', ' ')}</span>`).join('')}
+                      </div>
+                    ` : ''}
+                    ${m.is_temporary ? `<div class="body-small" style="color:var(--tertiary);margin-top:2px;">Leaving ${m.leave_date || 'TBD'}</div>` : ''}
+                  </div>
+                  <span style="color:var(--on-surface-variant);font-size:18px;">&#8250;</span>
                 </div>
-                <span style="color:var(--on-surface-variant);font-size:18px;">&#8250;</span>
-              </div>
-            </a>
-          `).join('')}
+              </a>
+            `).join('')}
+          </div>
 
           <!-- Add by Phone -->
           <button class="btn btn-text" style="width:100%;margin-top:var(--sp-md);color:var(--primary);">+ Add by Phone Number</button>

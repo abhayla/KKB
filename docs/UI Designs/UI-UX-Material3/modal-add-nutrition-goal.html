@@ -6,6 +6,103 @@
   <title>RasoiAI - Add Nutrition Goal</title>
   <link rel="stylesheet" href="shared.css">
   <script src="shared.js"></script>
+  <style>
+    .nutrition-sheet .handle {
+      background: var(--outline-variant);
+    }
+    .sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--sp-lg);
+    }
+    .sheet-header-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .field-group {
+      margin-bottom: var(--sp-lg);
+    }
+    .field-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--on-surface-variant);
+      margin-bottom: var(--sp-sm);
+    }
+    .field-group .dropdown-trigger {
+      background: var(--surface-warm);
+      border: 1px solid var(--outline-variant);
+    }
+    .target-selector {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+    }
+    .target-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid var(--outline-variant);
+      background: var(--surface);
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-normal);
+      color: var(--on-surface);
+    }
+    .target-btn:hover {
+      border-color: var(--primary);
+      background: var(--primary-container);
+    }
+    .target-btn:active {
+      transform: scale(0.92);
+    }
+    .target-display {
+      width: 64px;
+      height: 64px;
+      border-radius: var(--radius-md);
+      background: var(--primary-container);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-normal);
+    }
+    .target-value {
+      font-family: 'Outfit', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--on-primary-container);
+    }
+    .target-label {
+      color: var(--on-surface-variant);
+      white-space: nowrap;
+    }
+    .enforcement-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--sp-md);
+      background: var(--surface-warm);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--sp-lg);
+    }
+    .enforcement-toggle-group {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+    }
+    .sheet-actions {
+      display: flex;
+      gap: var(--sp-sm);
+    }
+  </style>
 </head>
 <body>
   <div class="phone-frame bottom-sheet-page" id="app"></div>
@@ -31,17 +128,17 @@
 
       <!-- Bottom Sheet Overlay -->
       <div class="bottom-sheet-overlay">
-        <div class="bottom-sheet" style="max-height:65%;">
+        <div class="bottom-sheet nutrition-sheet" style="max-height:65%;">
           <div class="handle"></div>
 
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-lg);">
-            <span class="title-large" style="font-size:18px;font-weight:600;">Add Nutrition Goal</span>
+          <div class="sheet-header">
+            <span class="sheet-header-title">Add Nutrition Goal</span>
             <a href="feature-recipe-rules.html" class="icon-btn" style="text-decoration:none;">&#10005;</a>
           </div>
 
           <!-- Category Dropdown -->
-          <div style="margin-bottom:var(--sp-lg);">
-            <div class="label-large" style="margin-bottom:var(--sp-sm);color:var(--on-surface-variant);">Category</div>
+          <div class="field-group">
+            <div class="field-label">Category</div>
             <div class="dropdown">
               <button class="dropdown-trigger" onclick="this.nextElementSibling.classList.toggle('open');">
                 <span id="cat-selected">Select category...</span>
@@ -56,25 +153,25 @@
           </div>
 
           <!-- Weekly Target -->
-          <div style="margin-bottom:var(--sp-lg);">
-            <div class="label-large" style="margin-bottom:var(--sp-sm);color:var(--on-surface-variant);">Weekly Target</div>
-            <div style="display:flex;align-items:center;gap:var(--sp-md);">
-              <button class="icon-btn" style="border:1px solid var(--outline-variant);width:36px;height:36px;font-size:18px;" onclick="const el=document.getElementById('target-val');let v=parseInt(el.textContent);if(v>1){el.textContent=v-1;}">&#8722;</button>
-              <div style="width:56px;height:56px;border-radius:var(--radius-md);background:var(--primary-container);display:flex;align-items:center;justify-content:center;">
-                <span id="target-val" style="font-size:24px;font-weight:700;color:var(--on-primary-container);">5</span>
+          <div class="field-group">
+            <div class="field-label">Weekly Target</div>
+            <div class="target-selector">
+              <button class="target-btn" onclick="const el=document.getElementById('target-val');let v=parseInt(el.textContent);if(v>1){el.textContent=v-1;}">&#8722;</button>
+              <div class="target-display">
+                <span id="target-val" class="target-value">5</span>
               </div>
-              <button class="icon-btn" style="border:1px solid var(--outline-variant);width:36px;height:36px;font-size:18px;" onclick="const el=document.getElementById('target-val');let v=parseInt(el.textContent);if(v<14){el.textContent=v+1;}">+</button>
-              <span class="body-medium" style="color:var(--on-surface-variant);">times per week</span>
+              <button class="target-btn" onclick="const el=document.getElementById('target-val');let v=parseInt(el.textContent);if(v<14){el.textContent=v+1;}">+</button>
+              <span class="body-medium target-label">times per week</span>
             </div>
           </div>
 
           <!-- Enforcement Toggle -->
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-lg);padding:var(--sp-sm) 0;">
+          <div class="enforcement-row">
             <div>
               <div class="title-small" style="font-weight:600;">Enforcement</div>
               <div class="body-small" style="color:var(--on-surface-variant);">Strict goals are always tracked</div>
             </div>
-            <div style="display:flex;align-items:center;gap:var(--sp-sm);">
+            <div class="enforcement-toggle-group">
               <span class="body-small" style="color:var(--on-surface-variant);">Flexible</span>
               <button class="toggle on" onclick="this.classList.toggle('on');"></button>
               <span class="body-small" style="font-weight:500;">Strict</span>
@@ -82,8 +179,8 @@
           </div>
 
           <!-- Actions -->
-          <div style="display:flex;gap:var(--sp-sm);">
-            <a href="feature-recipe-rules.html" class="btn btn-outlined" style="flex:1;text-decoration:none;">Cancel</a>
+          <div class="sheet-actions">
+            <a href="feature-recipe-rules.html" class="btn btn-text" style="flex:1;text-decoration:none;">Cancel</a>
             <a href="feature-recipe-rules.html" class="btn btn-filled" style="flex:1;text-decoration:none;">Add Goal</a>
           </div>
         </div>

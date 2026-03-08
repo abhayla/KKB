@@ -94,8 +94,10 @@
       setState('chat_messages', messages);
       render();
 
-      // Simulate AI response after 500ms
+      // Show typing indicator, then AI response
+      showTypingIndicator();
       setTimeout(() => {
+        hideTypingIndicator();
         const response = AI_RESPONSES[Math.floor(Math.random() * AI_RESPONSES.length)];
         messages.push({ id: 'a' + Date.now(), role: 'ai', text: response, time: getCurrentTime() });
         setState('chat_messages', messages);
@@ -108,13 +110,35 @@
       setState('chat_messages', messages);
       render();
 
+      showTypingIndicator();
       setTimeout(() => {
+        hideTypingIndicator();
         const response = AI_RESPONSES[Math.floor(Math.random() * AI_RESPONSES.length)];
         messages.push({ id: 'a' + Date.now(), role: 'ai', text: response, time: getCurrentTime() });
         setState('chat_messages', messages);
         render();
       }, 500);
     };
+
+    function showTypingIndicator() {
+      const container = document.getElementById('chat-messages');
+      if (container && !document.getElementById('typing-indicator')) {
+        const div = document.createElement('div');
+        div.id = 'typing-indicator';
+        div.style.cssText = 'display:flex;gap:var(--sp-sm);align-items:flex-start;';
+        div.innerHTML = `
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--primary-container);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">&#129302;</div>
+          <div class="chat-typing-indicator">Typing...</div>`;
+        container.appendChild(div);
+        const scroll = document.getElementById('chat-scroll');
+        if (scroll) scroll.scrollTop = scroll.scrollHeight;
+      }
+    }
+
+    function hideTypingIndicator() {
+      const el = document.getElementById('typing-indicator');
+      if (el) el.remove();
+    }
 
     window.clearChat = function() {
       messages = [MOCK_CHAT[0]]; // Keep welcome message

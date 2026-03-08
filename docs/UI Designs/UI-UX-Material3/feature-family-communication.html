@@ -5,6 +5,63 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RasoiAI - Family Activity</title>
   <link rel="stylesheet" href="shared.css">
+  <style>
+    .suggestion-card {
+      background: var(--surface-warm);
+      border-radius: var(--radius-md);
+      padding: var(--card-padding);
+      margin-bottom: var(--sp-md);
+      transition: all var(--transition-normal);
+    }
+    .suggestion-card:hover {
+      box-shadow: var(--shadow-sm);
+    }
+    .suggestion-header {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--sp-sm);
+      margin-bottom: var(--sp-md);
+    }
+    .suggestion-recipe {
+      background: var(--surface);
+      border-radius: var(--radius-sm);
+      padding: var(--sp-md);
+      margin-bottom: var(--sp-md);
+      box-shadow: var(--shadow-sm);
+    }
+    .suggestion-actions {
+      display: flex;
+      gap: var(--sp-sm);
+    }
+    .activity-item {
+      display: flex;
+      gap: var(--sp-sm);
+      padding: var(--sp-sm) 0;
+      border-bottom: 1px solid var(--outline-variant);
+      animation: fadeInUp 0.3s ease-out both;
+    }
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+    .activity-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .activity-dot.recent { background: color-mix(in srgb, var(--primary) 15%, transparent); }
+    .activity-dot.cooked { background: color-mix(in srgb, var(--secondary) 15%, transparent); }
+    .activity-dot.reaction { background: color-mix(in srgb, var(--error) 15%, transparent); }
+    .activity-dot.older { background: var(--surface-variant); }
+    .suggest-input-row {
+      display: flex;
+      gap: var(--sp-sm);
+    }
+  </style>
   <script src="shared.js"></script>
 </head>
 <body>
@@ -23,26 +80,26 @@
           <div class="content-padding">
 
             <!-- Tabs -->
-            <div class="segment-control" style="margin-bottom:var(--sp-lg);">
-              <button class="segment-btn ${activeTab === 'suggestions' ? 'active' : ''}" onclick="switchTab('suggestions')">Suggestions</button>
-              <button class="segment-btn ${activeTab === 'activity' ? 'active' : ''}" onclick="switchTab('activity')">Activity Feed</button>
+            <div class="tab-bar" style="margin-bottom:var(--sp-lg);padding:0;">
+              <button class="tab ${activeTab === 'suggestions' ? 'active' : ''}" onclick="switchTab('suggestions')">Suggestions</button>
+              <button class="tab ${activeTab === 'activity' ? 'active' : ''}" onclick="switchTab('activity')">Activity Feed</button>
             </div>
 
             ${activeTab === 'suggestions' ? `
               <!-- Suggestion Card -->
-              <div class="card" style="margin-bottom:var(--sp-md);">
-                <div style="display:flex;align-items:flex-start;gap:var(--sp-sm);margin-bottom:var(--sp-md);">
+              <div class="suggestion-card">
+                <div class="suggestion-header">
                   ${renderMemberAvatar('Aarav', 36)}
                   <div style="flex:1;">
                     <div class="body-medium" style="font-weight:500;color:var(--on-surface);"><strong>Aarav</strong> suggested a recipe</div>
                     <div class="body-small" style="color:var(--on-surface-variant);">2 hours ago</div>
                   </div>
                 </div>
-                <div style="background:var(--surface-variant);border-radius:var(--radius-sm);padding:var(--sp-md);margin-bottom:var(--sp-md);">
-                  <div class="title-small" style="font-weight:600;">Chocolate Cake</div>
+                <div class="suggestion-recipe">
+                  <div class="title-small" style="font-weight:600;color:var(--on-surface);">Chocolate Cake</div>
                   <div class="body-small" style="color:var(--on-surface-variant);">For Saturday snacks</div>
                 </div>
-                <div style="display:flex;gap:var(--sp-sm);">
+                <div class="suggestion-actions">
                   <button class="btn btn-outlined" style="flex:1;height:36px;padding:0;">Decline</button>
                   <button class="btn btn-filled" style="flex:1;height:36px;padding:0;">Accept</button>
                 </div>
@@ -52,30 +109,31 @@
               <div class="section-header" style="margin-top:var(--sp-lg);">
                 <span class="section-title">Suggest a Recipe</span>
               </div>
-              <div style="display:flex;gap:var(--sp-sm);">
+              <div class="suggest-input-row">
                 <input type="text" class="text-field" placeholder="Search for a recipe..." style="flex:1;height:44px;font-size:14px;">
                 <button class="btn btn-filled" style="height:44px;padding:0 16px;">Send</button>
               </div>
             ` : `
               <!-- Activity Feed -->
-              <div class="timeline-item" style="animation-delay:0s;">
-                <div class="timeline-dot" style="background:var(--secondary);"></div>
+              <div class="stagger-list">
+              <div class="activity-item">
+                <div class="activity-dot cooked"></div>
                 <div style="flex:1;">
                   <div class="body-medium" style="color:var(--on-surface);"><strong>Sunita</strong> marked Monday dinner as <span style="color:var(--secondary);font-weight:600;">Cooked</span></div>
                   <div class="body-small" style="color:var(--on-surface-variant);">Paneer Masala + Naan &middot; 1 hour ago</div>
                 </div>
               </div>
 
-              <div class="timeline-item" style="animation-delay:0.05s;">
-                <div class="timeline-dot" style="background:var(--primary);"></div>
+              <div class="activity-item">
+                <div class="activity-dot recent"></div>
                 <div style="flex:1;">
                   <div class="body-medium" style="color:var(--on-surface);"><strong>Ramesh</strong> swapped Wednesday lunch</div>
                   <div class="body-small" style="color:var(--on-surface-variant);">Dal Fry &#8594; Rajma Chawal &middot; 3 hours ago</div>
                 </div>
               </div>
 
-              <div class="timeline-item" style="animation-delay:0.1s;">
-                <div class="timeline-dot" style="background:var(--error);"></div>
+              <div class="activity-item">
+                <div class="activity-dot reaction"></div>
                 <div style="flex:1;">
                   <div class="body-medium" style="color:var(--on-surface);"><strong>Aarav</strong> loved Tuesday snacks</div>
                   <div class="body-small" style="color:var(--on-surface-variant);">Samosa + Chai &middot; Yesterday</div>
@@ -85,20 +143,21 @@
                 </div>
               </div>
 
-              <div class="timeline-item" style="animation-delay:0.15s;">
-                <div class="timeline-dot" style="background:var(--outline);"></div>
+              <div class="activity-item">
+                <div class="activity-dot older"></div>
                 <div style="flex:1;">
                   <div class="body-medium" style="color:var(--on-surface);"><strong>Sunita</strong> marked Tuesday dinner as <span style="color:var(--on-surface-variant);">Skipped</span></div>
                   <div class="body-small" style="color:var(--on-surface-variant);">Ordered out &middot; Yesterday</div>
                 </div>
               </div>
 
-              <div class="timeline-item" style="animation-delay:0.2s;">
-                <div class="timeline-dot" style="background:var(--tertiary);"></div>
+              <div class="activity-item">
+                <div class="activity-dot older"></div>
                 <div style="flex:1;">
                   <div class="body-medium" style="color:var(--on-surface);"><strong>Ramesh</strong> locked weekend meals</div>
                   <div class="body-small" style="color:var(--on-surface-variant);">Sat + Sun all slots &middot; 2 days ago</div>
                 </div>
+              </div>
               </div>
             `}
 

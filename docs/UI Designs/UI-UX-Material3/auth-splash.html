@@ -12,30 +12,49 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(165deg, #FF6838 0%, #FF8A65 40%, #FFDBD0 100%);
+      background: var(--gradient-hero);
       padding: var(--sp-lg);
       text-align: center;
       gap: var(--sp-lg);
+      position: relative;
+      overflow: hidden;
     }
+
+    /* Decorative floating food emojis */
+    .splash-decor {
+      position: absolute;
+      font-size: 32px;
+      opacity: 0.12;
+      animation: floatUp 6s ease-in-out infinite;
+    }
+
+    @keyframes floatUp {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(10deg); }
+    }
+
     .splash-logo {
-      font-family: 'Poppins', sans-serif;
+      font-family: 'Outfit', sans-serif;
       font-size: 52px;
       font-weight: 700;
       color: white;
-      text-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      text-shadow: 0 2px 16px rgba(0,0,0,0.15);
       line-height: 1.1;
+      animation: bounceIn 0.8s ease-out;
     }
     .splash-hindi {
       font-size: 22px;
       font-weight: 500;
       color: rgba(255,255,255,0.9);
       margin-top: -4px;
+      animation: fadeInUp 0.5s ease-out 0.3s backwards;
     }
     .splash-tagline {
       font-size: 16px;
       color: rgba(255,255,255,0.85);
       line-height: 1.5;
       max-width: 260px;
+      animation: fadeInUp 0.5s ease-out 0.5s backwards;
     }
     .splash-spinner-wrap {
       display: flex;
@@ -51,20 +70,27 @@
     }
     .splash-bottom {
       padding: var(--sp-lg) var(--sp-lg) var(--sp-xxl);
-      background: linear-gradient(to top, #FFDBD0 0%, transparent 100%);
+      background: linear-gradient(to top, rgba(255,240,232,0.95) 0%, transparent 100%);
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: var(--sp-sm);
+      gap: var(--sp-md);
+      animation: fadeInUp 0.5s ease-out 0.7s backwards;
     }
     .splash-bottom .btn-filled {
       background: white;
       color: var(--primary);
       font-weight: 600;
-      box-shadow: 0 4px 16px rgba(255,104,56,0.25);
+      box-shadow: var(--shadow-lg);
+      width: 100%;
     }
     .splash-bottom .btn-filled:hover {
-      box-shadow: 0 6px 24px rgba(255,104,56,0.35);
+      box-shadow: var(--shadow-xl);
+    }
+    .splash-secondary-link {
+      font-size: 14px;
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
     }
   </style>
   <script src="shared.js"></script>
@@ -77,6 +103,12 @@
     </div>
 
     <div class="splash-body">
+      <!-- Decorative food emojis -->
+      <span class="splash-decor" style="top:10%;left:10%;animation-delay:0s;">&#x1F35B;</span>
+      <span class="splash-decor" style="top:20%;right:15%;animation-delay:1s;">&#xAB;&#x1FAB6;</span>
+      <span class="splash-decor" style="bottom:25%;left:20%;animation-delay:2s;">&#x1F958;</span>
+      <span class="splash-decor" style="bottom:15%;right:10%;animation-delay:3s;">&#x1F35A;</span>
+
       <div>
         <div class="splash-logo">RasoiAI</div>
         <div class="splash-hindi">&#x0930;&#x0938;&#x094B;&#x0908; AI</div>
@@ -86,13 +118,14 @@
         <div class="progress-circular"></div>
       </div>
 
-      <p class="splash-tagline">Your AI-powered Indian kitchen</p>
+      <p class="splash-tagline">Your AI-powered Indian kitchen assistant</p>
     </div>
 
     <div class="splash-bottom">
       <a href="auth-phone.html" class="btn-filled btn-large w-full" style="text-align:center; text-decoration:none; display:flex; align-items:center; justify-content:center;">
         Get Started
       </a>
+      <a href="auth-phone.html" class="splash-secondary-link">Already have an account?</a>
     </div>
   </div>
 

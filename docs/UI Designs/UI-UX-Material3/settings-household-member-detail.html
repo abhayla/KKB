@@ -6,6 +6,15 @@
   <title>RasoiAI - Member Detail</title>
   <link rel="stylesheet" href="shared.css">
   <script src="shared.js"></script>
+  <style>
+    .profile-header {
+      text-align: center;
+      padding: var(--sp-md) 0 var(--sp-lg);
+      background: var(--gradient-warm);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--sp-lg);
+    }
+  </style>
 </head>
 <body>
   <div class="phone-frame" id="app"></div>
@@ -20,10 +29,10 @@
       ${renderTopBar({ title: 'Member Details', backLink: 'settings-household-members.html' })}
 
       <div class="screen-content">
-        <div class="content-padding">
+        <div class="content-padding stagger-list">
 
           <!-- Profile Header -->
-          <div style="text-align:center;padding:var(--sp-md) 0 var(--sp-lg);">
+          <div class="profile-header">
             ${renderMemberAvatar(member.name, 64)}
             <div class="title-large" style="color:var(--on-surface);margin-top:var(--sp-sm);">${member.name}</div>
             <div style="display:flex;align-items:center;justify-content:center;gap:var(--sp-xs);margin-top:4px;">
@@ -34,10 +43,8 @@
           </div>
 
           <!-- Role -->
-          <div class="section-header">
-            <span class="section-title">Role</span>
-          </div>
-          <div class="card" style="margin-bottom:var(--sp-lg);">
+          <div class="section-header-label">Role</div>
+          <div class="card-filled" style="margin-bottom:var(--sp-lg);">
             <div class="segment-control">
               <button class="segment-btn" onclick="selectSegment(this)">Owner</button>
               <button class="segment-btn active" onclick="selectSegment(this)">Member</button>
@@ -46,10 +53,8 @@
           </div>
 
           <!-- Permissions -->
-          <div class="section-header">
-            <span class="section-title">Permissions</span>
-          </div>
-          <div class="card" style="margin-bottom:var(--sp-lg);">
+          <div class="section-header-label">Permissions</div>
+          <div class="card-filled" style="margin-bottom:var(--sp-lg);">
             <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--sp-xs) 0;">
               <div>
                 <div class="title-small" style="font-weight:500;">Can edit shared meals</div>
@@ -60,10 +65,8 @@
           </div>
 
           <!-- Health Conditions -->
-          <div class="section-header">
-            <span class="section-title">Health Conditions</span>
-          </div>
-          <div class="card" style="margin-bottom:var(--sp-lg);">
+          <div class="section-header-label">Health Conditions</div>
+          <div class="card-filled" style="margin-bottom:var(--sp-lg);">
             <div class="chip-group">
               ${member.health.map(h => `<button class="chip selected" onclick="this.classList.toggle('selected')">${h.replace('_', ' ')}</button>`).join('')}
               <button class="chip" onclick="this.classList.toggle('selected')">Diabetic</button>
@@ -73,10 +76,8 @@
           </div>
 
           <!-- Meal Slot Participation -->
-          <div class="section-header">
-            <span class="section-title">Meal Slot Participation</span>
-          </div>
-          <div class="card" style="margin-bottom:var(--sp-lg);">
+          <div class="section-header-label">Meal Slot Participation</div>
+          <div class="card-filled" style="margin-bottom:var(--sp-lg);">
             <div class="body-small" style="color:var(--on-surface-variant);margin-bottom:var(--sp-sm);">Uncheck slots this member doesn't eat at home</div>
             ${['Breakfast', 'Lunch', 'Dinner', 'Snacks'].map((slot, i) => {
               const active = member.active_slots.includes(slot.toLowerCase());
@@ -90,10 +91,8 @@
           </div>
 
           <!-- Portion Size -->
-          <div class="section-header">
-            <span class="section-title">Portion Size</span>
-          </div>
-          <div class="card" style="margin-bottom:var(--sp-lg);">
+          <div class="section-header-label">Portion Size</div>
+          <div class="card-filled" style="margin-bottom:var(--sp-lg);">
             <div class="segment-control">
               <button class="segment-btn" onclick="selectSegment(this)">Small</button>
               <button class="segment-btn active" onclick="selectSegment(this)">Regular</button>
@@ -102,7 +101,7 @@
           </div>
 
           <!-- Actions -->
-          <button class="btn btn-filled" style="width:100%;margin-bottom:var(--sp-md);">Save Changes</button>
+          <button class="btn btn-filled btn-large" style="width:100%;margin-bottom:var(--sp-md);">Save Changes</button>
           <button class="btn btn-outlined" style="width:100%;color:var(--error);border-color:var(--error);">Remove from Household</button>
 
           <div style="height:var(--sp-xl);"></div>

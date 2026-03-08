@@ -6,6 +6,33 @@
   <title>RasoiAI - Add Recipe</title>
   <link rel="stylesheet" href="shared.css">
   <script src="shared.js"></script>
+  <style>
+    .add-recipe-sheet .handle {
+      background: var(--outline-variant);
+    }
+    .sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--sp-sm);
+    }
+    .sheet-header-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .recipe-grid-item {
+      transition: all var(--transition-normal);
+    }
+    .recipe-grid-item:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .recipe-thumb {
+      background: linear-gradient(135deg, var(--primary-container), var(--tertiary-container));
+    }
+  </style>
 </head>
 <body>
   <div class="phone-frame bottom-sheet-page" id="app"></div>
@@ -40,12 +67,12 @@
 
       <!-- Bottom Sheet Overlay -->
       <div class="bottom-sheet-overlay">
-        <div class="bottom-sheet" style="max-height:72%;">
+        <div class="bottom-sheet add-recipe-sheet" style="max-height:72%;">
           <div class="handle"></div>
 
           <!-- Header -->
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-sm);">
-            <span class="title-large" style="font-size:18px;font-weight:600;">Add Recipe</span>
+          <div class="sheet-header">
+            <span class="sheet-header-title">Add Recipe</span>
             <a href="main-home.html" class="icon-btn" style="text-decoration:none;">&#10005;</a>
           </div>
 

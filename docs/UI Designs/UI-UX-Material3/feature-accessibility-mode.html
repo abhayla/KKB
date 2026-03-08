@@ -5,6 +5,85 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RasoiAI - Accessibility</title>
   <link rel="stylesheet" href="shared.css">
+  <style>
+    .mode-card {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--sp-md);
+      padding: var(--sp-md);
+      margin-bottom: var(--sp-md);
+      border-radius: var(--radius-md);
+      background: var(--surface-warm);
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all var(--transition-normal);
+    }
+    .mode-card:hover {
+      background: color-mix(in srgb, var(--surface-warm) 85%, var(--primary-container));
+      box-shadow: var(--shadow-sm);
+    }
+    .mode-card.selected {
+      border-color: var(--primary);
+      background: var(--primary-container);
+    }
+    .mode-card .mode-icon {
+      font-size: 32px;
+      flex-shrink: 0;
+    }
+    .mode-card .mode-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .mode-card .mode-desc {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      margin-top: 2px;
+      line-height: 1.4;
+    }
+    .mode-card .mode-radio {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--outline);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+      transition: border-color var(--transition-fast);
+    }
+    .mode-card.selected .mode-radio {
+      border-color: var(--primary);
+    }
+    .mode-card .mode-radio-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: transparent;
+      transition: background var(--transition-fast);
+    }
+    .mode-card.selected .mode-radio-dot {
+      background: var(--primary);
+    }
+    .preview-area {
+      border: 2px solid var(--outline-variant);
+      border-radius: var(--radius-lg);
+      padding: var(--sp-lg);
+      background: var(--surface-warm);
+    }
+    .preview-slot {
+      background: var(--surface);
+      border-radius: var(--radius-md);
+      padding: var(--sp-md);
+      margin-bottom: var(--sp-sm);
+      box-shadow: var(--shadow-sm);
+    }
+    .preview-slot:last-child {
+      margin-bottom: 0;
+    }
+  </style>
   <script src="shared.js"></script>
 </head>
 <body>
@@ -32,27 +111,29 @@
             <span class="section-title">Display Mode</span>
           </div>
 
+          <div class="stagger-list">
           ${modes.map(m => `
-            <div class="radio-card ${mode === m.id ? 'selected' : ''}" style="margin-bottom:var(--sp-md);flex-direction:row;gap:var(--sp-md);align-items:flex-start;" onclick="selectMode('${m.id}')">
-              <span style="font-size:32px;">${m.icon}</span>
+            <div class="mode-card ${mode === m.id ? 'selected' : ''}" onclick="selectMode('${m.id}')">
+              <span class="mode-icon">${m.icon}</span>
               <div style="flex:1;">
-                <div class="title-small" style="font-weight:600;">${m.title}</div>
-                <div class="body-small" style="color:var(--on-surface-variant);margin-top:2px;line-height:1.4;">${m.desc}</div>
+                <div class="mode-title">${m.title}</div>
+                <div class="mode-desc">${m.desc}</div>
               </div>
-              <div class="radio ${mode === m.id ? 'selected' : ''}" style="${mode === m.id ? 'border-color:var(--primary);' : ''}"><div style="width:10px;height:10px;border-radius:50%;${mode === m.id ? 'background:var(--primary);' : ''}"></div></div>
+              <div class="mode-radio"><div class="mode-radio-dot"></div></div>
             </div>
           `).join('')}
+          </div>
 
           <!-- Simplified Preview -->
           <div class="section-header" style="margin-top:var(--sp-lg);">
             <span class="section-title">Simplified Mode Preview</span>
           </div>
-          <div style="border:2px solid var(--outline-variant);border-radius:var(--radius-lg);padding:var(--sp-lg);background:var(--surface);">
-            <div class="title-large" style="text-align:center;margin-bottom:var(--sp-lg);">Today's Meals</div>
+          <div class="preview-area">
+            <div class="title-large" style="text-align:center;margin-bottom:var(--sp-lg);color:var(--on-surface);">Today's Meals</div>
             ${['Breakfast', 'Lunch', 'Dinner', 'Snacks'].map(slot => `
-              <div style="background:var(--surface-variant);border-radius:var(--radius-md);padding:var(--sp-md);margin-bottom:var(--sp-sm);">
+              <div class="preview-slot">
                 <div class="title-small" style="font-weight:700;color:var(--primary);margin-bottom:2px;">${slot}</div>
-                <div class="title-medium" style="font-weight:500;">Masala Chai + Aloo Paratha</div>
+                <div class="title-medium" style="font-weight:500;color:var(--on-surface);">Masala Chai + Aloo Paratha</div>
               </div>
             `).join('')}
           </div>
@@ -61,7 +142,7 @@
           <div class="section-header" style="margin-top:var(--sp-lg);">
             <span class="section-title">Language</span>
           </div>
-          <div class="card">
+          <div class="card-filled" style="padding:var(--sp-md);">
             <select class="text-field" style="height:48px;font-size:14px;">
               <option selected>English</option>
               <option>Hindi</option>

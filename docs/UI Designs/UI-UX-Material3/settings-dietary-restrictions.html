@@ -30,10 +30,11 @@
 
     function renderRestrictionList(items, selectedList, toggleFn, disabled) {
       const disabledStyle = disabled ? 'opacity: 0.6; pointer-events: none;' : '';
-      return items.map(r => {
+      return `<div class="card-filled" style="${disabledStyle}">` + items.map((r, i) => {
         const isChecked = selectedList.includes(r.id);
+        const borderTop = i > 0 ? 'border-top:1px solid var(--outline-variant);' : '';
         return `
-          <div class="list-item" onclick="${disabled ? '' : toggleFn + "('" + r.id + "')"}" style="margin-bottom:var(--sp-xs);${disabledStyle}">
+          <div class="list-item" onclick="${disabled ? '' : toggleFn + "('" + r.id + "')"}" style="${borderTop}">
             <div class="checkbox ${isChecked ? 'checked' : ''}" id="cb-${toggleFn}-${r.id}">${isChecked ? '&#10003;' : ''}</div>
             <div class="list-content">
               <div style="display:flex;align-items:center;gap:var(--sp-sm);">
@@ -44,7 +45,7 @@
             </div>
           </div>
         `;
-      }).join('');
+      }).join('') + '</div>';
     }
 
     function render() {
@@ -88,14 +89,14 @@
         ${!isSoloUser() ? renderScopeToggle('settings_dietary', 'Household', 'My Preferences') : ''}
 
         <div class="screen-content">
-          <div class="content-padding">
+          <div class="content-padding stagger-list">
             ${contentHtml}
           </div>
         </div>
 
         <!-- Save Button -->
         <div style="padding:var(--sp-md);flex-shrink:0;">
-          <button class="btn btn-filled" style="width:100%;" onclick="saveRestrictions()">Save</button>
+          <button class="btn btn-filled btn-large" style="width:100%;" onclick="saveRestrictions()">Save</button>
         </div>
       `;
     }

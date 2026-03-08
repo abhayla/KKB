@@ -22,16 +22,18 @@
       padding: var(--sp-lg) var(--sp-md);
       text-align: center;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s ease-out;
       border: 2px solid var(--outline-variant);
-      background: var(--surface);
+      background: var(--surface-warm);
     }
     .cuisine-card:hover {
       box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
     }
     .cuisine-card.selected {
       border-color: var(--primary);
       background: var(--primary-container);
+      box-shadow: var(--shadow-md);
     }
     .cuisine-card .cuisine-emoji {
       font-size: 40px;
@@ -117,12 +119,13 @@
         renderTopBar({ title: 'Cuisine Preferences', backLink: 'settings-main.html' }) +
         (!solo ? renderScopeToggle('settings_cuisine', 'Household', 'My Preferences') : '') +
         '<div class="screen-content">' +
-          '<div class="content-padding">' +
+          '<div class="content-padding stagger-list">' +
+            '<div class="section-header-label">Select Cuisines</div>' +
             content +
           '</div>' +
         '</div>' +
         '<div style="padding:var(--sp-md);flex-shrink:0;">' +
-          '<button class="btn btn-filled" style="width:100%;" onclick="saveCuisines()">Save</button>' +
+          '<button class="btn btn-filled btn-large" style="width:100%;" onclick="saveCuisines()">Save</button>' +
         '</div>';
     }
 

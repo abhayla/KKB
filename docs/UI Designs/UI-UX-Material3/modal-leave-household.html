@@ -6,6 +6,63 @@
   <title>RasoiAI - Leave Household</title>
   <link rel="stylesheet" href="shared.css">
   <script src="shared.js"></script>
+  <style>
+    .leave-dialog {
+      max-width: 320px;
+    }
+    .leave-icon-circle {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--error-container);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      animation: bounceIn 0.5s ease-out;
+    }
+    .leave-warning-banner {
+      background: var(--error-container);
+      border-radius: var(--radius-md);
+      padding: var(--sp-md);
+      margin: var(--sp-md) 0 var(--sp-lg);
+      border-left: 3px solid var(--error);
+    }
+    .leave-warning-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--sp-sm);
+      margin-bottom: var(--sp-sm);
+    }
+    .leave-warning-item:last-child {
+      margin-bottom: 0;
+    }
+    .leave-warning-bullet {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--on-error-container);
+      flex-shrink: 0;
+      margin-top: 6px;
+    }
+    .leave-warning-text {
+      font-size: 13px;
+      color: var(--on-error-container);
+      line-height: 1.4;
+    }
+    .btn-leave {
+      background: var(--error) !important;
+      color: var(--on-error) !important;
+      box-shadow: 0 2px 8px rgba(186, 26, 26, 0.25);
+    }
+    .btn-leave:hover {
+      box-shadow: 0 4px 16px rgba(186, 26, 26, 0.35) !important;
+      filter: brightness(1.08);
+    }
+    .btn-stay {
+      box-shadow: var(--shadow-sm);
+    }
+  </style>
 </head>
 <body>
   <div class="phone-frame bottom-sheet-page" id="app"></div>
@@ -25,30 +82,31 @@
       </div>
 
       <div class="dialog-overlay">
-        <div class="dialog" style="max-width:320px;">
+        <div class="dialog leave-dialog">
           <div style="text-align:center;margin-bottom:var(--sp-md);">
-            <div style="width:56px;height:56px;border-radius:50%;background:var(--error-container);display:inline-flex;align-items:center;justify-content:center;font-size:28px;">&#9888;</div>
+            <div class="leave-icon-circle">&#9888;</div>
           </div>
           <div class="dialog-title" style="text-align:center;">Leave Sharma Family?</div>
 
-          <div style="background:var(--error-container);border-radius:var(--radius-sm);padding:var(--sp-md);margin:var(--sp-md) 0 var(--sp-lg);">
-            <div style="display:flex;align-items:flex-start;gap:var(--sp-sm);margin-bottom:var(--sp-sm);">
-              <span style="color:var(--on-error-container);flex-shrink:0;">&#8226;</span>
-              <span class="body-small" style="color:var(--on-error-container);">Your dietary constraints will be removed from shared meals</span>
+          <!-- Warning banner -->
+          <div class="leave-warning-banner">
+            <div class="leave-warning-item">
+              <div class="leave-warning-bullet"></div>
+              <span class="leave-warning-text">Your dietary constraints will be removed from shared meals</span>
             </div>
-            <div style="display:flex;align-items:flex-start;gap:var(--sp-sm);margin-bottom:var(--sp-sm);">
-              <span style="color:var(--on-error-container);flex-shrink:0;">&#8226;</span>
-              <span class="body-small" style="color:var(--on-error-container);">Shared meal plan will be regenerated without you</span>
+            <div class="leave-warning-item">
+              <div class="leave-warning-bullet"></div>
+              <span class="leave-warning-text">Shared meal plan will be regenerated without you</span>
             </div>
-            <div style="display:flex;align-items:flex-start;gap:var(--sp-sm);">
-              <span style="color:var(--on-error-container);flex-shrink:0;">&#8226;</span>
-              <span class="body-small" style="color:var(--on-error-container);">Your meal history will be preserved</span>
+            <div class="leave-warning-item">
+              <div class="leave-warning-bullet"></div>
+              <span class="leave-warning-text">Your meal history will be preserved</span>
             </div>
           </div>
 
           <div class="dialog-actions" style="justify-content:stretch;">
-            <a href="settings-household.html" class="btn btn-outlined" style="flex:1;text-decoration:none;">Cancel</a>
-            <a href="settings-household.html" class="btn btn-filled" style="flex:1;text-decoration:none;background:var(--error);color:var(--on-error);">Leave Household</a>
+            <a href="settings-household.html" class="btn btn-filled btn-stay" style="flex:1;text-decoration:none;">Stay</a>
+            <a href="settings-household.html" class="btn btn-filled btn-leave" style="flex:1;text-decoration:none;">Leave</a>
           </div>
         </div>
       </div>

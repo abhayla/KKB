@@ -6,25 +6,31 @@
   <title>RasoiAI - Edit Profile</title>
   <link rel="stylesheet" href="shared.css">
   <script src="shared.js"></script>
-</head>
-<body>
-  <div class="phone-frame" id="app"></div>
-
   <style>
+    .avatar-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: var(--sp-lg) 0 var(--sp-xl);
+    }
     .avatar-edit {
       width: 96px;
       height: 96px;
       border-radius: 50%;
-      background: var(--primary-container);
-      color: var(--on-primary-container);
+      background: var(--gradient-hero);
+      color: var(--on-primary);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 36px;
       font-weight: 700;
-      margin: 0 auto var(--sp-lg);
       position: relative;
       cursor: pointer;
+      box-shadow: var(--shadow-lg);
+      transition: transform var(--transition-normal);
+    }
+    .avatar-edit:hover {
+      transform: scale(1.05);
     }
     .avatar-edit .camera-overlay {
       position: absolute;
@@ -33,25 +39,59 @@
       width: 32px;
       height: 32px;
       border-radius: 50%;
-      background: var(--primary);
-      color: var(--on-primary);
+      background: var(--surface);
+      color: var(--primary);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 16px;
       border: 2px solid var(--background);
+      box-shadow: var(--shadow-sm);
+    }
+    .avatar-hint {
+      font-size: 13px;
+      color: var(--on-surface-variant);
+      margin-top: var(--sp-sm);
     }
     .form-group {
       margin-bottom: var(--sp-lg);
     }
     .form-label {
       font-size: 12px;
-      font-weight: 500;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
       color: var(--on-surface-variant);
       margin-bottom: var(--sp-xs);
       display: block;
     }
+    .form-field {
+      width: 100%;
+      height: 52px;
+      padding: 0 var(--sp-md);
+      border: 1px solid var(--outline-variant);
+      border-radius: var(--radius-md);
+      background: var(--surface-warm);
+      font-size: 15px;
+      color: var(--on-surface);
+      font-family: inherit;
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+      box-sizing: border-box;
+    }
+    .form-field:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
+    }
+    .form-field:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: var(--surface-variant);
+    }
   </style>
+</head>
+<body>
+  <div class="phone-frame" id="app"></div>
 
   <script>
     initPage();
@@ -67,30 +107,32 @@
       ${renderTopBar({ title: 'Edit Profile', backLink: 'settings-main.html' })}
 
       <div class="screen-content">
-        <div class="content-padding">
+        <div class="content-padding stagger-list">
 
           <!-- Avatar -->
-          <div class="avatar-edit">
-            RS
-            <div class="camera-overlay">&#128247;</div>
+          <div class="avatar-section">
+            <div class="avatar-edit">
+              RS
+              <div class="camera-overlay">&#128247;</div>
+            </div>
+            <div class="avatar-hint">Tap to change photo</div>
           </div>
 
-          <!-- Name -->
-          <div class="form-group">
-            <label class="form-label">Name</label>
-            <input type="text" class="text-field" id="input-name" value="${profileName}">
-          </div>
-
-          <!-- Phone (disabled) -->
-          <div class="form-group">
-            <label class="form-label">Phone</label>
-            <input type="tel" class="text-field" value="${phone}" disabled style="opacity:0.5;cursor:not-allowed;background:var(--surface-variant);">
-          </div>
-
-          <!-- Email -->
-          <div class="form-group">
-            <label class="form-label">Email</label>
-            <input type="email" class="text-field" id="input-email" value="${profileEmail}">
+          <!-- Form Fields -->
+          <div class="section-header-label">Personal Information</div>
+          <div class="card-filled" style="margin-bottom:var(--sp-lg);">
+            <div class="form-group" style="margin-bottom:var(--sp-md);">
+              <label class="form-label">Full Name</label>
+              <input type="text" class="form-field" id="input-name" value="${profileName}">
+            </div>
+            <div class="form-group" style="margin-bottom:var(--sp-md);">
+              <label class="form-label">Phone Number</label>
+              <input type="tel" class="form-field" value="${phone}" disabled>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Email Address</label>
+              <input type="email" class="form-field" id="input-email" value="${profileEmail}">
+            </div>
           </div>
 
         </div>
@@ -98,7 +140,7 @@
 
       <!-- Save Button -->
       <div style="padding:var(--sp-md);flex-shrink:0;">
-        <button class="btn btn-filled" style="width:100%;" onclick="saveProfile()">Save Changes</button>
+        <button class="btn btn-filled btn-large" style="width:100%;" onclick="saveProfile()">Save Changes</button>
       </div>
     `;
 

@@ -6,13 +6,119 @@
   <title>RasoiAI - Meal Status</title>
   <link rel="stylesheet" href="shared.css">
   <script src="shared.js"></script>
+  <style>
+    .status-sheet .handle {
+      background: var(--outline-variant);
+    }
+    .status-sheet-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--on-surface);
+      margin-bottom: var(--sp-xs);
+    }
+    .status-meal-name {
+      color: var(--on-surface-variant);
+      margin-bottom: var(--sp-lg);
+    }
+    .status-option {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+      padding: var(--sp-md);
+      border: 2px solid var(--outline-variant);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--sp-sm);
+      cursor: pointer;
+      transition: all var(--transition-normal);
+      background: transparent;
+    }
+    .status-option:hover {
+      background: var(--surface-warm);
+    }
+    .status-option.selected {
+      border-color: var(--primary);
+      background: color-mix(in srgb, var(--primary) 5%, transparent);
+    }
+    .status-option .status-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+      width: 32px;
+      text-align: center;
+    }
+    .status-option .status-info {
+      flex: 1;
+    }
+    .status-option .status-label {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .status-option .status-desc {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      margin-top: 2px;
+    }
+    .status-option .radio-indicator {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--outline);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all var(--transition-normal);
+    }
+    .status-option.selected .radio-indicator {
+      border-color: var(--primary);
+    }
+    .status-radio-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: transparent;
+      transition: background var(--transition-normal);
+    }
+    .status-option.selected .status-radio-dot {
+      background: var(--primary);
+    }
+    #rating-section {
+      margin: var(--sp-md) 0;
+      padding: var(--sp-md);
+      background: var(--surface-warm);
+      border-radius: var(--radius-md);
+    }
+    .rating-label {
+      font-weight: 500;
+      margin-bottom: var(--sp-xs);
+    }
+    .star-rating {
+      font-size: 28px;
+    }
+    .star-rating .star {
+      cursor: pointer;
+      color: var(--outline-variant);
+      transition: color var(--transition-fast), transform var(--transition-fast);
+    }
+    .star-rating .star:hover {
+      transform: scale(1.15);
+    }
+    .star-rating .star.filled {
+      color: #FFB800;
+    }
+    .btn-update-status {
+      width: 100%;
+      margin-top: var(--sp-md);
+      box-shadow: var(--shadow-sm);
+    }
+  </style>
 </head>
 <body>
   <div class="phone-frame bottom-sheet-page" id="app"></div>
 
   <script>
     initPage();
-    let selectedStatus = 'planned';
 
     document.getElementById('app').innerHTML = `
       ${renderStatusBar()}
@@ -27,37 +133,37 @@
       </div>
 
       <div class="bottom-sheet-overlay">
-        <div class="bottom-sheet">
+        <div class="bottom-sheet status-sheet">
           <div class="handle"></div>
-          <div class="title-large" style="font-size:18px;font-weight:600;margin-bottom:var(--sp-xs);">Update Meal Status</div>
-          <div class="body-medium" style="color:var(--on-surface-variant);margin-bottom:var(--sp-lg);">Monday Dinner - Paneer Masala + Naan</div>
+          <div class="status-sheet-title">Update Meal Status</div>
+          <div class="body-medium status-meal-name">Monday Dinner - Paneer Masala + Naan</div>
 
           <!-- Status Options -->
           ${[
-            { id: 'planned', icon: '&#128197;', label: 'Planned', desc: 'Default - meal is in the plan', color: 'var(--outline)' },
-            { id: 'cooked', icon: '&#9989;', label: 'Cooked', desc: 'Mark as prepared and eaten', color: 'var(--secondary)' },
-            { id: 'skipped', icon: '&#10060;', label: 'Skipped', desc: 'Nobody ate this meal', color: 'var(--on-surface-variant)' },
-            { id: 'ordered', icon: '&#128188;', label: 'Ordered Out', desc: 'Ate out or ordered delivery', color: 'var(--tertiary)' }
+            { id: 'planned', icon: '&#128197;', label: 'Planned', desc: 'Default - meal is in the plan' },
+            { id: 'cooked', icon: '&#9989;', label: 'Cooked', desc: 'Mark as prepared and eaten' },
+            { id: 'skipped', icon: '&#10060;', label: 'Skipped', desc: 'Nobody ate this meal' },
+            { id: 'ordered', icon: '&#128188;', label: 'Ordered Out', desc: 'Ate out or ordered delivery' }
           ].map((s, i) => `
-            <label style="display:flex;align-items:center;gap:var(--sp-md);padding:var(--sp-md);border:2px solid ${i === 0 ? 'var(--primary)' : 'var(--outline-variant)'};border-radius:var(--radius-sm);margin-bottom:var(--sp-sm);cursor:pointer;" onclick="document.querySelectorAll('.status-option').forEach(l=>{l.style.borderColor='var(--outline-variant)';l.style.background='transparent';});this.style.borderColor='var(--primary)';this.style.background='color-mix(in srgb, var(--primary) 5%, transparent)';document.getElementById('rating-section').style.display=this.dataset.id==='cooked'?'block':'none';" class="status-option" data-id="${s.id}">
-              <span style="font-size:24px;color:${s.color};">${s.icon}</span>
-              <div style="flex:1;">
-                <div class="title-small" style="font-weight:600;">${s.label}</div>
-                <div class="body-small" style="color:var(--on-surface-variant);">${s.desc}</div>
+            <div class="status-option ${i === 0 ? 'selected' : ''}" data-id="${s.id}" onclick="document.querySelectorAll('.status-option').forEach(o => o.classList.remove('selected')); this.classList.add('selected'); document.getElementById('rating-section').style.display = this.dataset.id === 'cooked' ? 'block' : 'none';">
+              <span class="status-icon">${s.icon}</span>
+              <div class="status-info">
+                <div class="status-label">${s.label}</div>
+                <div class="status-desc">${s.desc}</div>
               </div>
-              <div class="radio ${i === 0 ? 'selected' : ''}" style="${i === 0 ? 'border-color:var(--primary);' : ''}"><div style="width:10px;height:10px;border-radius:50%;${i === 0 ? 'background:var(--primary);' : ''}"></div></div>
-            </label>
+              <div class="radio-indicator"><div class="status-radio-dot"></div></div>
+            </div>
           `).join('')}
 
           <!-- Rating (shown when Cooked) -->
-          <div id="rating-section" style="display:none;margin:var(--sp-md) 0;">
-            <div class="body-medium" style="font-weight:500;margin-bottom:var(--sp-xs);">How was it?</div>
-            <div class="star-rating" style="font-size:28px;">
-              ${[1,2,3,4,5].map(i => `<span class="star" onclick="document.querySelectorAll('.star-rating .star').forEach((s,j)=>s.classList.toggle('filled',j<${i}));" style="cursor:pointer;">&#9733;</span>`).join('')}
+          <div id="rating-section" style="display:none;">
+            <div class="body-medium rating-label">How was it?</div>
+            <div class="star-rating">
+              ${[1,2,3,4,5].map(i => `<span class="star" onclick="document.querySelectorAll('.star-rating .star').forEach((s,j)=>s.classList.toggle('filled',j<${i}));" >&#9733;</span>`).join('')}
             </div>
           </div>
 
-          <button class="btn btn-filled" style="width:100%;margin-top:var(--sp-md);">Update</button>
+          <button class="btn btn-filled btn-update-status">Update</button>
         </div>
       </div>
     `;

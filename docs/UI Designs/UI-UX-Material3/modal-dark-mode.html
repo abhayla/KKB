@@ -6,6 +6,86 @@
   <title>RasoiAI - Appearance</title>
   <link rel="stylesheet" href="shared.css">
   <script src="shared.js"></script>
+  <style>
+    .appearance-dialog {
+      max-width: 300px;
+    }
+    .theme-options {
+      display: flex;
+      gap: var(--sp-sm);
+      margin-bottom: var(--sp-lg);
+    }
+    .theme-card {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--sp-sm);
+      padding: var(--sp-md) var(--sp-sm);
+      border-radius: var(--radius-md);
+      border: 2px solid var(--outline-variant);
+      cursor: pointer;
+      transition: all var(--transition-normal);
+      background: transparent;
+      text-align: center;
+    }
+    .theme-card:hover {
+      background: var(--surface-warm);
+      transform: translateY(-2px);
+    }
+    .theme-card.selected {
+      border-color: var(--primary);
+      background: var(--primary-container);
+    }
+    .theme-card-emoji {
+      font-size: 32px;
+      line-height: 1;
+      transition: transform var(--transition-normal);
+    }
+    .theme-card.selected .theme-card-emoji {
+      transform: scale(1.15);
+      animation: warmPulse 2s ease-in-out infinite;
+    }
+    .theme-card-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .theme-card.selected .theme-card-label {
+      color: var(--on-primary-container);
+    }
+    .theme-card-desc {
+      font-size: 11px;
+      color: var(--on-surface-variant);
+      line-height: 1.3;
+    }
+    .theme-card.selected .theme-card-desc {
+      color: var(--on-primary-container);
+      opacity: 0.8;
+    }
+    .theme-check {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: var(--on-primary);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      animation: bounceIn 0.3s ease-out;
+    }
+    .theme-card.selected .theme-check {
+      display: flex;
+    }
+    .theme-card {
+      position: relative;
+    }
+  </style>
 </head>
 <body>
   <div class="phone-frame bottom-sheet-page" id="app"></div>
@@ -35,29 +115,28 @@
 
         <!-- Dialog Overlay -->
         <div class="dialog-overlay">
-          <div class="dialog" style="max-width:280px;">
+          <div class="dialog appearance-dialog">
             <div class="dialog-title" style="text-align:center;">Appearance</div>
+            <p class="body-small" style="color:var(--on-surface-variant);text-align:center;margin-bottom:var(--sp-lg);">Choose your preferred theme</p>
 
-            <!-- Theme Options -->
-            <div style="display:flex;flex-direction:column;gap:var(--sp-xs);">
+            <!-- Theme Options as Visual Cards -->
+            <div class="theme-options">
               ${[
-                { id: 'system', label: 'System Default', icon: '&#128241;', desc: 'Match device settings' },
-                { id: 'light', label: 'Light', icon: '&#9728;', desc: 'Always light theme' },
-                { id: 'dark', label: 'Dark', icon: '&#127769;', desc: 'Always dark theme' }
+                { id: 'light', emoji: '&#9728;&#65039;', label: 'Light', desc: 'Bright & warm' },
+                { id: 'dark', emoji: '&#127769;', label: 'Dark', desc: 'Easy on eyes' },
+                { id: 'system', emoji: '&#128241;', label: 'System', desc: 'Match device' }
               ].map(opt => `
-                <div class="list-item" style="border-radius:var(--radius-sm);${currentTheme === opt.id ? 'background:color-mix(in srgb, var(--primary) 8%, transparent);' : ''}" onclick="setTheme('${opt.id}');renderPage();">
-                  <div class="list-icon" style="background:${currentTheme === opt.id ? 'var(--primary-container)' : 'var(--surface-variant)'};font-size:18px;">${opt.icon}</div>
-                  <div class="list-content">
-                    <div class="list-title" style="font-size:15px;${currentTheme === opt.id ? 'font-weight:600;color:var(--primary);' : ''}">${opt.label}</div>
-                    <div class="list-subtitle" style="font-size:12px;">${opt.desc}</div>
-                  </div>
-                  <div class="radio ${currentTheme === opt.id ? 'selected' : ''}"></div>
+                <div class="theme-card ${currentTheme === opt.id ? 'selected' : ''}" onclick="setTheme('${opt.id}');renderPage();">
+                  <div class="theme-check">&#10003;</div>
+                  <div class="theme-card-emoji">${opt.emoji}</div>
+                  <div class="theme-card-label">${opt.label}</div>
+                  <div class="theme-card-desc">${opt.desc}</div>
                 </div>
               `).join('')}
             </div>
 
-            <div class="dialog-actions" style="justify-content:center;margin-top:var(--sp-lg);">
-              <a href="settings-main.html" class="btn btn-filled" style="text-decoration:none;min-width:100px;">Done</a>
+            <div class="dialog-actions" style="justify-content:center;">
+              <a href="settings-main.html" class="btn btn-filled" style="text-decoration:none;min-width:120px;">Done</a>
             </div>
           </div>
         </div>

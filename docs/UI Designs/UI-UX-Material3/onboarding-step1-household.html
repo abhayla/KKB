@@ -7,11 +7,17 @@
   <link rel="stylesheet" href="shared.css">
   <style>
     .family-card {
-      background: var(--surface);
+      background: var(--surface-warm);
       border-radius: var(--radius-md);
       padding: var(--sp-md);
       box-shadow: var(--shadow-sm);
       margin-bottom: var(--sp-sm);
+      transition: all 0.2s ease;
+    }
+    .family-card:hover {
+      background: color-mix(in srgb, var(--surface-warm) 85%, var(--primary-container));
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
     }
     .family-card-header {
       display: flex;
@@ -71,11 +77,14 @@
       font-weight: 600;
       color: var(--on-surface);
       margin-bottom: var(--sp-xs);
+      animation: fadeInUp 0.4s ease-out backwards;
     }
     .step-subtitle {
       font-size: 14px;
       color: var(--on-surface-variant);
       margin-bottom: var(--sp-lg);
+      animation: fadeInUp 0.4s ease-out backwards;
+      animation-delay: 0.05s;
     }
     .bottom-buttons {
       display: flex;
@@ -125,6 +134,10 @@
       border-color: var(--primary);
       border-width: 2px;
       padding: 0 15px;
+      box-shadow: 0 0 0 3px rgba(232, 93, 44, 0.1);
+    }
+    .bottom-buttons {
+      background: var(--gradient-warm);
     }
   </style>
   <script src="shared.js"></script>
@@ -170,7 +183,7 @@
         </div>
 
         <!-- Ramesh -->
-        <div class="family-card">
+        <div class="family-card" style="animation: fadeInUp 0.35s ease-out backwards; animation-delay: 0.1s;">
           <div class="family-card-header">
             <div class="flex items-center gap-md">
               <div class="member-avatar">&#x1F468;</div>
@@ -188,7 +201,7 @@
         </div>
 
         <!-- Sunita -->
-        <div class="family-card">
+        <div class="family-card" style="animation: fadeInUp 0.35s ease-out backwards; animation-delay: 0.16s;">
           <div class="family-card-header">
             <div class="flex items-center gap-md">
               <div class="member-avatar">&#x1F469;</div>
@@ -205,7 +218,7 @@
         </div>
 
         <!-- Aarav -->
-        <div class="family-card">
+        <div class="family-card" style="animation: fadeInUp 0.35s ease-out backwards; animation-delay: 0.22s;">
           <div class="family-card-header">
             <div class="flex items-center gap-md">
               <div class="member-avatar">&#x1F466;</div>

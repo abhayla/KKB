@@ -12,7 +12,7 @@
 
   <style>
     .member-card {
-      background: var(--surface);
+      background: var(--surface-warm);
       border-radius: var(--radius-md);
       padding: var(--sp-md);
       box-shadow: var(--shadow-sm);
@@ -20,6 +20,10 @@
       display: flex;
       align-items: flex-start;
       gap: var(--sp-md);
+      transition: all 0.2s ease-out;
+    }
+    .member-card:hover {
+      box-shadow: var(--shadow-md);
     }
     .member-avatar {
       width: 48px;
@@ -99,7 +103,7 @@
         ${renderTopBar({ title: 'Family Members', backLink: 'settings-main.html' })}
 
         <div class="screen-content">
-          <div class="content-padding">
+          <div class="content-padding stagger-list">
 
             ${getHousehold() ? `
               <a href="settings-household-members.html" style="text-decoration:none;">

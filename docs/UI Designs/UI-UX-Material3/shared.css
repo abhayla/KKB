@@ -12,39 +12,41 @@
    ============================================ */
 :root,
 [data-theme="light"] {
-  /* Primary - Saffron Orange */
-  --primary: #FF6838;
+  /* Primary - Saffron Orange (warmer, deeper) */
+  --primary: #E85D2C;
   --on-primary: #FFFFFF;
-  --primary-container: #FFDBD0;
+  --primary-container: #FFF0E8;
   --on-primary-container: #3A0A00;
 
-  /* Secondary - Green */
-  --secondary: #5A822B;
+  /* Secondary - Curry Leaf Green (richer) */
+  --secondary: #4A7A20;
   --on-secondary: #FFFFFF;
   --secondary-container: #C8F09A;
   --on-secondary-container: #0F2000;
 
-  /* Tertiary - Brown */
-  --tertiary: #8B5A2B;
+  /* Tertiary - Clay Brown (earthier) */
+  --tertiary: #7A4E22;
   --on-tertiary: #FFFFFF;
   --tertiary-container: #FFDDB8;
   --on-tertiary-container: #2E1500;
 
-  /* Error */
+  /* Error — unchanged */
   --error: #BA1A1A;
   --on-error: #FFFFFF;
   --error-container: #FFDAD6;
   --on-error-container: #410002;
 
-  /* Background & Surface */
-  --background: #FDFAF4;
+  /* Background & Surface — warmer base */
+  --background: #FFF8F2;
   --on-background: #1C1B1F;
   --surface: #FFFFFF;
   --on-surface: #1C1B1F;
-  --surface-variant: #F5EDE5;
+  --surface-variant: #F7EDE3;
   --on-surface-variant: #49454F;
+  --surface-warm: #FFF5ED;
+  --surface-container: #F8F0E8;
 
-  /* Outline */
+  /* Outline — unchanged */
   --outline: #7A757F;
   --outline-variant: #CAC4D0;
 
@@ -53,18 +55,23 @@
   --inverse-on-surface: #F4EFF4;
   --inverse-primary: #FFB59C;
 
-  /* Scrim */
+  /* Scrim — unchanged */
   --scrim: rgba(0,0,0,0.32);
   --scrim-heavy: rgba(0,0,0,0.6);
 
-  /* Shadows — soft, layered for depth */
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04), 0 1px 4px rgba(0,0,0,0.06);
-  --shadow-md: 0 2px 4px rgba(0,0,0,0.04), 0 4px 8px rgba(0,0,0,0.08);
-  --shadow-lg: 0 4px 8px rgba(0,0,0,0.04), 0 8px 16px rgba(0,0,0,0.08), 0 16px 32px rgba(0,0,0,0.04);
-  --shadow-xl: 0 8px 16px rgba(0,0,0,0.06), 0 16px 32px rgba(0,0,0,0.08), 0 32px 64px rgba(0,0,0,0.04);
+  /* Shadows — warm brown-tinted */
+  --shadow-sm: 0 1px 3px rgba(139,90,43,0.06), 0 1px 2px rgba(139,90,43,0.08);
+  --shadow-md: 0 2px 6px rgba(139,90,43,0.06), 0 4px 12px rgba(139,90,43,0.08);
+  --shadow-lg: 0 4px 12px rgba(139,90,43,0.06), 0 8px 24px rgba(139,90,43,0.10);
+  --shadow-xl: 0 8px 16px rgba(139,90,43,0.08), 0 16px 32px rgba(139,90,43,0.10), 0 32px 64px rgba(139,90,43,0.06);
+
+  /* Gradients */
+  --gradient-hero: linear-gradient(165deg, #E85D2C 0%, #F4845F 50%, #FFF0E8 100%);
+  --gradient-warm: linear-gradient(135deg, #FFF8F2 0%, #FFF0E8 100%);
+  --gradient-card: linear-gradient(180deg, #FFFFFF 0%, #FFF8F2 100%);
 
   /* Status bar */
-  --status-bar-bg: #E8E4DE;
+  --status-bar-bg: #F0E8E0;
 }
 
 /* ============================================
@@ -103,15 +110,24 @@
 
   --inverse-surface: #E6E1E5;
   --inverse-on-surface: #313033;
-  --inverse-primary: #FF6838;
+  --inverse-primary: #E85D2C;
 
   --scrim: rgba(0,0,0,0.5);
   --scrim-heavy: rgba(0,0,0,0.75);
 
+  /* Dark shadows stay neutral */
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.2), 0 1px 4px rgba(0,0,0,0.25);
   --shadow-md: 0 2px 4px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.3);
   --shadow-lg: 0 4px 8px rgba(0,0,0,0.2), 0 8px 16px rgba(0,0,0,0.3), 0 16px 32px rgba(0,0,0,0.15);
   --shadow-xl: 0 8px 16px rgba(0,0,0,0.25), 0 16px 32px rgba(0,0,0,0.3), 0 32px 64px rgba(0,0,0,0.15);
+
+  /* Gradients — dark variants */
+  --gradient-hero: linear-gradient(165deg, #862200 0%, #5F1600 50%, #2D2520 100%);
+  --gradient-warm: linear-gradient(135deg, #1C1B1F 0%, #2D2520 100%);
+  --gradient-card: linear-gradient(180deg, #2B2930 0%, #1C1B1F 100%);
+
+  --surface-warm: #2D2520;
+  --surface-container: #352E28;
 
   --status-bar-bg: #141316;
 }
@@ -520,6 +536,176 @@ textarea:focus-visible,
 }
 
 /* ============================================
+   Card Variants — Warm Modern
+   Compose: ElevatedCard / Card / OutlinedCard
+   ============================================ */
+.card-filled {
+  /* Compose: Card(colors = CardDefaults.cardColors(containerColor = SurfaceWarm)) */
+  background: var(--surface-warm);
+  border-radius: var(--radius-md);
+  padding: var(--card-padding);
+  transition: all var(--transition-normal);
+}
+
+.card-filled:hover {
+  background: color-mix(in srgb, var(--surface-warm) 85%, var(--primary-container));
+}
+
+/* ============================================
+   Section Header — Label Style
+   Compose: Text(style = LabelLarge, color = OnSurfaceVariant)
+   ============================================ */
+.section-header-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--on-surface-variant);
+  padding: var(--sp-lg) 0 var(--sp-sm);
+}
+
+/* ============================================
+   Empty State
+   Compose: Column(horizontalAlignment = CenterHorizontally) { ... }
+   ============================================ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--sp-xxl) var(--sp-lg);
+  gap: var(--sp-md);
+  text-align: center;
+  animation: fadeInUp 0.4s ease-out;
+}
+
+.empty-state .empty-icon {
+  font-size: 48px;
+  line-height: 1;
+  opacity: 0.8;
+}
+
+.empty-state .empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--on-surface);
+}
+
+.empty-state .empty-subtitle {
+  font-size: 14px;
+  color: var(--on-surface-variant);
+  max-width: 260px;
+  line-height: 1.5;
+}
+
+/* ============================================
+   Gradient Header
+   Compose: Box(Modifier.background(Brush.linearGradient(HeroGradient)))
+   ============================================ */
+.gradient-header {
+  background: var(--gradient-hero);
+  padding: var(--sp-lg) var(--screen-padding);
+  color: white;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.gradient-header .gradient-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
+}
+
+.gradient-header .gradient-subtitle {
+  font-size: 14px;
+  color: rgba(255,255,255,0.85);
+  margin-top: 4px;
+}
+
+/* ============================================
+   Warm Pulse Animation (for selected states)
+   Compose: animateFloatAsState(tween(600)) scale 1.0→1.02→1.0
+   ============================================ */
+@keyframes warmPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+/* ============================================
+   Shimmer Loading Skeleton
+   Compose: Brush.linearGradient + infiniteTransition
+   ============================================ */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-variant) 25%, var(--surface-warm) 50%, var(--surface-variant) 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.2s linear infinite;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-text {
+  height: 14px;
+  width: 80%;
+  margin-bottom: 8px;
+}
+
+.skeleton-text.short {
+  width: 50%;
+}
+
+.skeleton-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+}
+
+.skeleton-card {
+  height: 72px;
+  margin-bottom: var(--sp-sm);
+}
+
+/* ============================================
+   Stagger List — children animate with delay
+   Compose: animateItemPlacement + LaunchedEffect delay
+   ============================================ */
+.stagger-list > * {
+  animation: fadeInUp 0.35s ease-out backwards;
+}
+
+.stagger-list > *:nth-child(1) { animation-delay: 0s; }
+.stagger-list > *:nth-child(2) { animation-delay: 0.04s; }
+.stagger-list > *:nth-child(3) { animation-delay: 0.04s; }
+.stagger-list > *:nth-child(4) { animation-delay: 0.12s; }
+.stagger-list > *:nth-child(5) { animation-delay: 0.16s; }
+.stagger-list > *:nth-child(6) { animation-delay: 0.20s; }
+.stagger-list > *:nth-child(7) { animation-delay: 0.24s; }
+.stagger-list > *:nth-child(8) { animation-delay: 0.28s; }
+.stagger-list > *:nth-child(9) { animation-delay: 0.32s; }
+.stagger-list > *:nth-child(10) { animation-delay: 0.36s; }
+.stagger-list > *:nth-child(n+11) { animation-delay: 0.4s; }
+
+/* ============================================
+   Category Progress (for grocery, pantry)
+   Compose: LinearProgressIndicator
+   ============================================ */
+.category-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  font-size: 12px;
+  color: var(--on-surface-variant);
+}
+
+.category-progress .progress-bar {
+  flex: 1;
+  height: 3px;
+}
+
+.category-progress .progress-label {
+  min-width: 32px;
+  text-align: right;
+  font-weight: 500;
+}
+
+/* ============================================
    Meal Card
    ============================================ */
 .meal-section {
@@ -608,7 +794,7 @@ textarea:focus-visible,
 }
 
 .meal-card .recipe-name {
-  font-weight: 500;
+  font-weight: 600;  /* was 500 — bolder for readability */
   font-size: 14px;
   color: var(--on-surface);
   margin-bottom: 4px;
@@ -1259,7 +1445,7 @@ textarea:focus-visible,
    ============================================ */
 .progress-bar {
   height: 4px;
-  background: var(--surface-variant);
+  background: var(--surface-warm);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -1829,11 +2015,11 @@ textarea:focus-visible,
   margin-bottom: var(--sp-sm);
   font-size: 14px;
   line-height: 1.5;
-  animation: fadeInUp 0.25s ease-out;
+  animation: fadeInUp 0.3s ease-out;
 }
 
 .chat-bubble.ai {
-  background: var(--surface);
+  background: var(--surface-warm);
   color: var(--on-surface);
   border-bottom-left-radius: var(--radius-xs);
   box-shadow: var(--shadow-sm);
@@ -1862,6 +2048,30 @@ textarea:focus-visible,
   padding: var(--sp-sm) var(--sp-md);
   border-top: 1px solid var(--outline-variant);
   background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+
+.chat-input-bar .icon-btn.active {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-typing-indicator {
+  background: var(--surface-warm);
+  padding: var(--sp-sm) var(--sp-md);
+  border-radius: var(--radius-md);
+  border-bottom-left-radius: var(--radius-xs);
+  font-size: 13px;
+  color: var(--on-surface-variant);
+  animation: fadeInUp 0.3s ease-out;
+  align-self: flex-start;
+  max-width: 80%;
 }
 
 .chat-input-bar input {
@@ -1997,7 +2207,7 @@ textarea:focus-visible,
   flex: 1;
   height: 4px;
   border-radius: 2px;
-  background: var(--outline-variant);
+  background: var(--surface-warm);
   transition: background 0.3s;
 }
 

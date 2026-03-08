@@ -12,11 +12,14 @@
       font-weight: 600;
       color: var(--on-surface);
       margin-bottom: var(--sp-xs);
+      animation: fadeInUp 0.4s ease-out backwards;
     }
     .step-subtitle {
       font-size: 14px;
       color: var(--on-surface-variant);
       margin-bottom: var(--sp-lg);
+      animation: fadeInUp 0.4s ease-out backwards;
+      animation-delay: 0.05s;
     }
     .field-label {
       font-family: 'Poppins', sans-serif;
@@ -52,6 +55,7 @@
       border-color: var(--primary);
       border-width: 2px;
       padding: 0 15px;
+      box-shadow: 0 0 0 3px rgba(232, 93, 44, 0.1);
     }
     .time-cards {
       display: grid;
@@ -60,12 +64,19 @@
       margin-bottom: var(--sp-lg);
     }
     .time-card {
-      background: var(--surface);
+      background: var(--surface-warm);
       border-radius: var(--radius-md);
       padding: var(--sp-md);
       box-shadow: var(--shadow-sm);
       text-align: center;
+      transition: all 0.2s ease;
     }
+    .time-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+    .time-cards .time-card:nth-child(1) { animation: fadeInUp 0.35s ease-out backwards; animation-delay: 0.08s; }
+    .time-cards .time-card:nth-child(2) { animation: fadeInUp 0.35s ease-out backwards; animation-delay: 0.14s; }
     .time-card .time-icon {
       font-size: 28px;
       margin-bottom: var(--sp-sm);
@@ -89,18 +100,21 @@
       padding: var(--sp-sm) 0;
       border-radius: var(--radius-sm);
       border: 2px solid var(--outline-variant);
-      background: transparent;
+      background: var(--surface-warm);
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.2s ease;
       font-family: inherit;
     }
     .day-toggle:hover {
       border-color: var(--primary);
+      background: color-mix(in srgb, var(--surface-warm) 80%, var(--primary-container));
+      transform: translateY(-1px);
     }
     .day-toggle.selected {
       border-color: var(--primary);
       background: var(--primary);
       color: var(--on-primary);
+      box-shadow: 0 2px 8px rgba(232, 93, 44, 0.3);
     }
     .day-toggle .day-abbr {
       font-size: 11px;
@@ -123,6 +137,9 @@
     }
     .bottom-buttons .btn {
       flex: 1;
+    }
+    .bottom-buttons {
+      background: var(--gradient-warm);
     }
     .section-divider {
       height: 1px;
@@ -184,7 +201,7 @@
           <div class="field-label">Busy Days</div>
           <div class="field-hint">On busy days, we'll suggest quicker recipes (max weekday time).</div>
 
-          <div class="day-toggle-grid">
+          <div class="day-toggle-grid stagger-list">
             <button class="day-toggle selected" onclick="toggleDay(this)">
               <span class="day-abbr">Mon</span>
               <span class="day-icon">&#x1F525;</span>

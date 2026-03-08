@@ -6,6 +6,137 @@
   <title>RasoiAI - Stats</title>
   <link rel="stylesheet" href="shared.css">
   <script src="shared.js"></script>
+  <style>
+    /* === Warm-Modern Stats Enhancements === */
+
+    /* Streak card — gradient warm header */
+    .streak-card {
+      background: var(--gradient-warm);
+      border: 1px solid color-mix(in srgb, var(--primary) 12%, transparent);
+      position: relative;
+      overflow: hidden;
+    }
+    .streak-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -30%;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, color-mix(in srgb, var(--primary) 8%, transparent) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .streak-card .streak-number {
+      font-family: 'Outfit', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    /* Calendar grid — warm background for cooked days */
+    .calendar-cooked-day {
+      background: var(--surface-warm);
+      font-weight: 600;
+    }
+
+    /* Stat cards — warm filled variant */
+    .stat-card {
+      background: var(--surface-warm);
+      border: 1px solid color-mix(in srgb, var(--outline-variant) 40%, transparent);
+    }
+    .stat-card .stat-value {
+      font-family: 'Outfit', sans-serif;
+    }
+
+    /* Achievement cards — card-filled warm */
+    .achievement-card {
+      background: var(--surface-warm);
+      border: 1px solid color-mix(in srgb, var(--outline-variant) 30%, transparent);
+      box-shadow: var(--shadow-md);
+    }
+    .achievement-card:hover {
+      box-shadow: var(--shadow-lg);
+    }
+    .achievement-card .achievement-icon {
+      background: color-mix(in srgb, var(--primary-container) 80%, var(--surface-warm));
+    }
+
+    /* Cuisine progress bars — primary/secondary fills */
+    .cuisine-progress .progress-bar {
+      height: 8px;
+      border-radius: 4px;
+      background: var(--surface-warm);
+    }
+    .cuisine-progress .progress-fill {
+      border-radius: 4px;
+      transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    /* Section headers — warm label style */
+    .section-header .section-title {
+      font-family: 'Outfit', sans-serif;
+    }
+
+    /* Stagger animation on stat sections */
+    .stats-stagger > * {
+      animation: fadeSlideIn 0.35s ease-out both;
+    }
+    .stats-stagger > *:nth-child(1) { animation-delay: 0s; }
+    .stats-stagger > *:nth-child(2) { animation-delay: 0.06s; }
+    .stats-stagger > *:nth-child(3) { animation-delay: 0.12s; }
+    .stats-stagger > *:nth-child(4) { animation-delay: 0.18s; }
+    .stats-stagger > *:nth-child(5) { animation-delay: 0.24s; }
+    .stats-stagger > *:nth-child(6) { animation-delay: 0.30s; }
+    .stats-stagger > *:nth-child(7) { animation-delay: 0.36s; }
+    .stats-stagger > *:nth-child(8) { animation-delay: 0.42s; }
+    .stats-stagger > *:nth-child(9) { animation-delay: 0.48s; }
+    .stats-stagger > *:nth-child(10) { animation-delay: 0.54s; }
+
+    /* Leaderboard entries — warm surface */
+    .leaderboard-entry {
+      transition: all var(--transition-normal);
+    }
+    .leaderboard-entry:hover {
+      background: var(--surface-warm);
+      border-radius: var(--radius-sm);
+    }
+
+    /* Household header card */
+    .household-header-card {
+      background: var(--gradient-warm);
+      border: 1px solid color-mix(in srgb, var(--primary) 12%, transparent);
+      position: relative;
+      overflow: hidden;
+    }
+    .household-header-card::before {
+      content: '';
+      position: absolute;
+      top: -40%;
+      left: -20%;
+      width: 180px;
+      height: 180px;
+      background: radial-gradient(circle, color-mix(in srgb, var(--primary) 6%, transparent) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    /* Family leaderboard cards */
+    .family-leaderboard-card {
+      box-shadow: var(--shadow-md);
+      border: 1px solid color-mix(in srgb, var(--outline-variant) 30%, transparent);
+    }
+    .family-leaderboard-card:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+
+    /* Streak badge in family leaderboard */
+    .streak-badge {
+      background: color-mix(in srgb, var(--primary-container) 80%, var(--surface-warm));
+      transition: all var(--transition-normal);
+    }
+  </style>
 </head>
 <body>
   <div class="phone-frame" id="app"></div>
@@ -36,11 +167,11 @@
       for (let d = 1; d <= daysInMonth; d++) {
         const isCooked = cookedDays.includes(d);
         const isToday = d === 7;
-        let style = 'width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;margin:auto;position:relative;';
+        let style = 'width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;margin:auto;position:relative;transition:all 0.2s ease;';
         if (isToday) {
-          style += 'background:var(--primary);color:var(--on-primary);font-weight:700;';
+          style += 'background:var(--primary);color:var(--on-primary);font-weight:700;box-shadow:0 2px 8px color-mix(in srgb, var(--primary) 30%, transparent);';
         } else if (isCooked) {
-          style += 'color:var(--on-surface);';
+          style += 'background:var(--surface-warm);color:var(--on-surface);font-weight:600;';
         } else {
           style += 'color:var(--on-surface-variant);';
         }
@@ -53,13 +184,13 @@
     }
 
     function buildCuisineBar(label, pct, color) {
-      return `<div style="margin-bottom:var(--sp-sm);">
+      return `<div class="cuisine-progress" style="margin-bottom:var(--sp-sm);">
         <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
-          <span style="color:var(--on-surface);">${label}</span>
-          <span style="color:var(--on-surface-variant);">${pct}%</span>
+          <span style="font-weight:500;color:var(--on-surface);">${label}</span>
+          <span style="font-family:'Outfit',sans-serif;font-weight:600;color:var(--on-surface-variant);">${pct}%</span>
         </div>
-        <div class="progress-bar" style="height:8px;border-radius:4px;">
-          <div class="progress-fill" style="width:${pct}%;background:${color};border-radius:4px;"></div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:${pct}%;background:${color};"></div>
         </div>
       </div>`;
     }
@@ -67,11 +198,11 @@
     function buildPersonalStats() {
       const unlockedAchievements = MOCK_ACHIEVEMENTS.filter(a => a.unlocked);
 
-      return `
+      return `<div class="stats-stagger">
           <!-- Streak Card -->
-          <div class="card card-elevated" style="text-align:center;margin-bottom:var(--sp-lg);padding:var(--sp-lg);">
+          <div class="card card-elevated streak-card" style="text-align:center;margin-bottom:var(--sp-lg);padding:var(--sp-lg);">
             <div style="font-size:48px;margin-bottom:var(--sp-sm);">&#128293;</div>
-            <div style="font-family:'Poppins',sans-serif;font-size:24px;font-weight:700;color:var(--primary);">7 Day Streak!</div>
+            <div class="streak-number">7 Day Streak!</div>
             <div style="font-size:14px;color:var(--on-surface-variant);margin-top:4px;">Best: 12 days</div>
           </div>
 
@@ -141,7 +272,7 @@
               { rank: 2, name: 'Priya Mehta', meals: 38, emoji: '&#129352;' },
               { rank: 3, name: 'Ramesh Sharma', meals: 28, emoji: '&#129353;' }
             ].map(p => `
-              <div style="display:flex;align-items:center;gap:var(--sp-md);padding:var(--sp-sm) 0;${p.rank < 3 ? 'border-bottom:1px solid var(--outline-variant);' : ''}">
+              <div class="leaderboard-entry" style="display:flex;align-items:center;gap:var(--sp-md);padding:var(--sp-sm) var(--sp-xs);${p.rank < 3 ? 'border-bottom:1px solid var(--outline-variant);' : ''}">
                 <span style="font-size:20px;width:28px;text-align:center;">${p.emoji}</span>
                 <div style="flex:1;">
                   <div style="font-size:14px;font-weight:500;color:var(--on-surface);">${p.name}</div>
@@ -149,7 +280,8 @@
                 </div>
               </div>
             `).join('')}
-          </div>`;
+          </div>
+        </div>`;
     }
 
     function buildFamilyStats() {
@@ -159,11 +291,11 @@
       const sortedMembers = [...stats.members].sort((a, b) => b.meals_cooked - a.meals_cooked);
       const unlockedAchievements = MOCK_ACHIEVEMENTS.filter(a => a.unlocked);
 
-      return `
+      return `<div class="stats-stagger">
           <!-- Household Header -->
-          <div class="card card-elevated" style="text-align:center;margin-bottom:var(--sp-lg);padding:var(--sp-lg);">
+          <div class="card card-elevated household-header-card" style="text-align:center;margin-bottom:var(--sp-lg);padding:var(--sp-lg);">
             <div style="font-size:36px;margin-bottom:var(--sp-sm);">&#127968;</div>
-            <div style="font-family:'Poppins',sans-serif;font-size:20px;font-weight:700;color:var(--primary);">${household.name} Stats</div>
+            <div style="font-family:'Outfit',sans-serif;font-size:20px;font-weight:700;color:var(--primary);">${household.name} Stats</div>
             <div style="font-size:14px;color:var(--on-surface-variant);margin-top:4px;">${stats.members.length} members cooking together</div>
           </div>
 
@@ -192,18 +324,18 @@
           </div>
           <div style="display:flex;flex-direction:column;gap:var(--card-gap);margin-bottom:var(--sp-lg);">
             ${sortedMembers.map((member, i) => `
-              <div class="card" style="display:flex;align-items:center;gap:var(--sp-md);padding:var(--sp-md);">
+              <div class="card family-leaderboard-card" style="display:flex;align-items:center;gap:var(--sp-md);padding:var(--sp-md);">
                 <div style="position:relative;">
                   ${renderMemberAvatar(member.name, 36)}
                   <span style="position:absolute;top:-6px;right:-6px;font-size:14px;">${medals[i] || ''}</span>
                 </div>
                 <div style="flex:1;">
                   <div style="font-weight:600;font-size:14px;color:var(--on-surface);">${member.name}</div>
-                  <div style="font-size:12px;color:var(--on-surface-variant);">${member.meals_cooked} meals cooked</div>
+                  <div style="font-size:12px;color:var(--on-surface-variant);"><span style="font-family:'Outfit',sans-serif;font-weight:600;">${member.meals_cooked}</span> meals cooked</div>
                 </div>
-                <div style="display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:12px;background:var(--primary-container);">
+                <div class="streak-badge" style="display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:12px;">
                   <span style="font-size:12px;">&#128293;</span>
-                  <span style="font-size:12px;font-weight:600;color:var(--on-primary-container);">${member.streak}d</span>
+                  <span style="font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;color:var(--on-primary-container);">${member.streak}d</span>
                 </div>
               </div>
             `).join('')}
@@ -225,7 +357,8 @@
                 </div>
               </div>
             `).join('')}
-          </div>`;
+          </div>
+        </div>`;
     }
 
     function render() {

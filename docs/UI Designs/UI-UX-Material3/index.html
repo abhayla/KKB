@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RasoiAI - Material 3 Enhanced</title>
+  <title>RasoiAI - Warm Modern Design System</title>
   <link rel="stylesheet" href="shared.css">
   <style>
     body {
@@ -16,7 +16,8 @@
       justify-content: center;
       flex-wrap: wrap;
     }
-    .index-actions button {
+    .index-actions button,
+    .index-actions a {
       padding: 8px 20px;
       border-radius: var(--radius-full);
       border: 2px solid rgba(255,255,255,0.5);
@@ -26,8 +27,10 @@
       font-weight: 500;
       cursor: pointer;
       transition: all 0.15s;
+      text-decoration: none;
     }
-    .index-actions button:hover {
+    .index-actions button:hover,
+    .index-actions a:hover {
       background: rgba(255,255,255,0.3);
       border-color: white;
     }
@@ -38,11 +41,12 @@
   <div class="index-page">
     <div class="index-header">
       <h1>RasoiAI</h1>
-      <p>Material 3 Enhanced - 63 Screens</p>
-      <p style="font-size: 13px; opacity: 0.8; margin-top: 4px;">Enhanced with animations, micro-interactions, and refined typography</p>
+      <p>Warm Modern Design System - 63 Screens</p>
+      <p style="font-size: 13px; opacity: 0.8; margin-top: 4px;">Indian kitchen warmth meets Material You cleanliness — saffron palette, warm shadows, stagger animations</p>
       <div class="index-actions">
         <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
         <button onclick="clearAllState(); location.reload();">Reset All Data</button>
+        <a href="COMPOSE-MAPPING.md" target="_blank">View Compose Mapping</a>
       </div>
     </div>
 
