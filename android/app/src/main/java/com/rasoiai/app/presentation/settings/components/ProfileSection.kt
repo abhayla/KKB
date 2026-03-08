@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.rasoiai.app.presentation.theme.LocalRasoiColors
 import com.rasoiai.app.presentation.theme.RasoiAITheme
 import com.rasoiai.app.presentation.theme.spacing
 
@@ -40,11 +41,12 @@ fun ProfileSection(
     onEditProfileClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val rasoiColors = LocalRasoiColors.current
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = rasoiColors.surfaceWarm
         )
     ) {
         Column(

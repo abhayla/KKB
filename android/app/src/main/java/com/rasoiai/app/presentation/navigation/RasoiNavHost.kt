@@ -32,6 +32,12 @@ import com.rasoiai.app.presentation.settings.screens.FriendsLeaderboardScreen
 import com.rasoiai.app.presentation.settings.screens.UnitsScreen
 import com.rasoiai.app.presentation.splash.SplashScreen
 import com.rasoiai.app.presentation.achievements.AchievementsScreen
+import com.rasoiai.app.presentation.household.HouseholdMealPlanRoute
+import com.rasoiai.app.presentation.household.HouseholdNotificationsRoute
+import com.rasoiai.app.presentation.settings.screens.HouseholdMemberDetailRoute
+import com.rasoiai.app.presentation.settings.screens.HouseholdMembersRoute
+import com.rasoiai.app.presentation.settings.screens.HouseholdRoute
+import com.rasoiai.app.presentation.settings.screens.JoinHouseholdRoute
 import com.rasoiai.app.presentation.stats.StatsScreen
 
 @Composable
@@ -354,6 +360,12 @@ fun RasoiNavHost(
                 },
                 onNavigateToPantry = {
                     navController.navigate(Screen.Pantry.route)
+                },
+                onNavigateToHousehold = {
+                    navController.navigate(Screen.HouseholdSettings.route)
+                },
+                onNavigateToJoinHousehold = {
+                    navController.navigate(Screen.JoinHousehold.route)
                 }
             )
         }
@@ -435,6 +447,68 @@ fun RasoiNavHost(
         // Achievements
         composable(route = Screen.Achievements.route) {
             AchievementsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Household Settings
+        composable(route = Screen.HouseholdSettings.route) {
+            HouseholdRoute(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToMembers = {
+                    navController.navigate(Screen.HouseholdMembers.route)
+                }
+            )
+        }
+
+        // Household Members
+        composable(route = Screen.HouseholdMembers.route) {
+            HouseholdMembersRoute(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToMemberDetail = { memberId ->
+                    navController.navigate(Screen.HouseholdMemberDetail.createRoute(memberId))
+                }
+            )
+        }
+
+        // Household Member Detail
+        composable(
+            route = Screen.HouseholdMemberDetail.route,
+            arguments = listOf(
+                navArgument(Screen.HouseholdMemberDetail.ARG_MEMBER_ID) {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val memberId = backStackEntry.arguments?.getString(Screen.HouseholdMemberDetail.ARG_MEMBER_ID) ?: return@composable
+            HouseholdMemberDetailRoute(
+                memberId = memberId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Join Household
+        composable(route = Screen.JoinHousehold.route) {
+            JoinHouseholdRoute(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToHousehold = {
+                    navController.navigate(Screen.HouseholdSettings.route) {
+                        popUpTo(Screen.Settings.route)
+                    }
+                }
+            )
+        }
+
+        // Household Meal Plan
+        composable(route = Screen.HouseholdMealPlan.route) {
+            HouseholdMealPlanRoute(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Household Notifications
+        composable(route = Screen.HouseholdNotifications.route) {
+            HouseholdNotificationsRoute(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

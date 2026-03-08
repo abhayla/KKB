@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.rasoiai.domain.model.Achievement
 import com.rasoiai.domain.model.CookingDay
 import com.rasoiai.domain.model.CookingStreak
+import com.rasoiai.domain.model.DataScope
 import com.rasoiai.domain.model.LeaderboardEntry
 import com.rasoiai.domain.model.MonthlyStats
 import com.rasoiai.domain.model.WeeklyChallenge
@@ -45,7 +46,8 @@ data class StatsUiState(
     val leaderboard: List<LeaderboardEntry> = emptyList(),
     val selectedYearMonth: YearMonth = YearMonth.now(),
     val isJoiningChallenge: Boolean = false,
-    val cuisineBreakdown: List<CuisineBreakdown> = emptyList()
+    val cuisineBreakdown: List<CuisineBreakdown> = emptyList(),
+    val selectedScope: DataScope = DataScope.PERSONAL
 ) {
     val unlockedAchievements: List<Achievement>
         get() = achievements.filter { it.isUnlocked }
@@ -304,6 +306,14 @@ class StatsViewModel @Inject constructor(
 
     fun onViewFullLeaderboard() {
         _navigationEvent.trySend(StatsNavigationEvent.NavigateToFullLeaderboard)
+    }
+
+    // endregion
+
+    // region Scope
+
+    fun setScope(scope: DataScope) {
+        _uiState.update { it.copy(selectedScope = scope) }
     }
 
     // endregion

@@ -1,5 +1,6 @@
 package com.rasoiai.data.remote.api
 
+import com.rasoiai.data.remote.dto.AddMemberByPhoneRequest
 import com.rasoiai.data.remote.dto.AiRecipeCatalogResponse
 import com.rasoiai.data.remote.dto.AuthRequest
 import com.rasoiai.data.remote.dto.AuthResponse
@@ -10,6 +11,16 @@ import com.rasoiai.data.remote.dto.FamilyMembersListResponse
 import com.rasoiai.data.remote.dto.ChatImageRequest
 import com.rasoiai.data.remote.dto.ChatImageResponse
 import com.rasoiai.data.remote.dto.FcmTokenRequest
+import com.rasoiai.data.remote.dto.HouseholdCreateRequest
+import com.rasoiai.data.remote.dto.HouseholdDetailResponse
+import com.rasoiai.data.remote.dto.HouseholdMemberResponse
+import com.rasoiai.data.remote.dto.HouseholdNotificationResponse
+import com.rasoiai.data.remote.dto.HouseholdStatsResponse
+import com.rasoiai.data.remote.dto.HouseholdUpdateRequest
+import com.rasoiai.data.remote.dto.InviteCodeResponse
+import com.rasoiai.data.remote.dto.JoinHouseholdRequest
+import com.rasoiai.data.remote.dto.TransferOwnershipRequest
+import com.rasoiai.data.remote.dto.UpdateMemberRequest
 import com.rasoiai.data.remote.dto.GenerateMealPlanRequest
 import com.rasoiai.data.remote.dto.MealPlanResponse
 import com.rasoiai.data.remote.dto.NotificationsResponse
@@ -220,4 +231,93 @@ interface RasoiApiService {
 
     @DELETE("api/v1/nutrition-goals/{id}")
     suspend fun deleteNutritionGoal(@Path("id") id: String)
+
+    // Households
+    @POST("api/v1/households")
+    suspend fun createHousehold(@Body request: HouseholdCreateRequest): HouseholdDetailResponse
+
+    @GET("api/v1/households/{id}")
+    suspend fun getHousehold(@Path("id") id: String): HouseholdDetailResponse
+
+    @PUT("api/v1/households/{id}")
+    suspend fun updateHousehold(
+        @Path("id") id: String,
+        @Body request: HouseholdUpdateRequest
+    ): HouseholdDetailResponse
+
+    @DELETE("api/v1/households/{id}")
+    suspend fun deactivateHousehold(@Path("id") id: String): SuccessResponse
+
+    // Household Members
+    @GET("api/v1/households/{id}/members")
+    suspend fun getHouseholdMembers(@Path("id") id: String): List<HouseholdMemberResponse>
+
+    @POST("api/v1/households/{id}/members")
+    suspend fun addHouseholdMember(
+        @Path("id") id: String,
+        @Body request: AddMemberByPhoneRequest
+    ): HouseholdMemberResponse
+
+    @PUT("api/v1/households/{id}/members/{memberId}")
+    suspend fun updateHouseholdMember(
+        @Path("id") id: String,
+        @Path("memberId") memberId: String,
+        @Body request: UpdateMemberRequest
+    ): HouseholdMemberResponse
+
+    @DELETE("api/v1/households/{id}/members/{memberId}")
+    suspend fun removeHouseholdMember(
+        @Path("id") id: String,
+        @Path("memberId") memberId: String
+    ): SuccessResponse
+
+    // Household Invite & Membership
+    @POST("api/v1/households/{id}/invite-code")
+    suspend fun refreshInviteCode(@Path("id") id: String): InviteCodeResponse
+
+    @POST("api/v1/households/join")
+    suspend fun joinHousehold(@Body request: JoinHouseholdRequest): HouseholdDetailResponse
+
+    @POST("api/v1/households/{id}/leave")
+    suspend fun leaveHousehold(@Path("id") id: String): SuccessResponse
+
+    @POST("api/v1/households/{id}/transfer-ownership")
+    suspend fun transferOwnership(
+        @Path("id") id: String,
+        @Body request: TransferOwnershipRequest
+    ): SuccessResponse
+
+    // Household Scoped Data
+    @GET("api/v1/households/{id}/recipe-rules")
+    suspend fun getHouseholdRecipeRules(@Path("id") id: String): RecipeRulesListResponse
+
+    @POST("api/v1/households/{id}/recipe-rules")
+    suspend fun createHouseholdRecipeRule(
+        @Path("id") id: String,
+        @Body rule: RecipeRuleCreateRequest
+    ): retrofit2.Response<RecipeRuleDto>
+
+    @DELETE("api/v1/households/{id}/recipe-rules/{ruleId}")
+    suspend fun deleteHouseholdRecipeRule(
+        @Path("id") id: String,
+        @Path("ruleId") ruleId: String
+    ): SuccessResponse
+
+    @GET("api/v1/households/{id}/meal-plans/current")
+    suspend fun getHouseholdMealPlan(@Path("id") id: String): MealPlanResponse
+
+    @GET("api/v1/households/{id}/notifications")
+    suspend fun getHouseholdNotifications(@Path("id") id: String): List<HouseholdNotificationResponse>
+
+    @PUT("api/v1/households/{id}/notifications/{notificationId}/read")
+    suspend fun markHouseholdNotificationRead(
+        @Path("id") id: String,
+        @Path("notificationId") notificationId: String
+    ): SuccessResponse
+
+    @GET("api/v1/households/{id}/stats/monthly")
+    suspend fun getHouseholdStats(
+        @Path("id") id: String,
+        @Query("month") month: String? = null
+    ): HouseholdStatsResponse
 }

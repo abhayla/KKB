@@ -12,6 +12,7 @@ import com.rasoiai.data.local.dao.StatsDao
 import com.rasoiai.data.local.dao.RecipeRulesDao
 import com.rasoiai.data.local.dao.ChatDao
 import com.rasoiai.data.local.dao.NotificationDao
+import com.rasoiai.data.local.dao.HouseholdDao
 import com.rasoiai.data.local.dao.OfflineQueueDao
 import com.rasoiai.data.remote.api.RasoiApiService
 import com.rasoiai.data.remote.interceptor.AuthInterceptor
@@ -172,6 +173,12 @@ object DataModule {
     @Singleton
     fun provideOfflineQueueDao(database: RasoiDatabase): OfflineQueueDao {
         return database.offlineQueueDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideHouseholdDao(database: RasoiDatabase): HouseholdDao {
+        return database.householdDao()
     }
 
     // Repository bindings moved to RepositoryModule using @Binds for efficiency

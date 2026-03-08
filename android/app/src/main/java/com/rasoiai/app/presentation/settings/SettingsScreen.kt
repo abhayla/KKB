@@ -72,6 +72,8 @@ fun SettingsScreen(
     onNavigateToFriendsLeaderboard: () -> Unit = {},
     onNavigateToConnectedAccounts: () -> Unit = {},
     onNavigateToPantry: () -> Unit = {},
+    onNavigateToHousehold: () -> Unit = {},
+    onNavigateToJoinHousehold: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -146,6 +148,8 @@ fun SettingsScreen(
                 SettingsNavigationEvent.NavigateToFriendsLeaderboard -> onNavigateToFriendsLeaderboard()
                 SettingsNavigationEvent.NavigateToConnectedAccounts -> onNavigateToConnectedAccounts()
                 SettingsNavigationEvent.NavigateToPantry -> onNavigateToPantry()
+                SettingsNavigationEvent.NavigateToHousehold -> onNavigateToHousehold()
+                SettingsNavigationEvent.NavigateToJoinHousehold -> onNavigateToJoinHousehold()
             }
         }
     }
@@ -189,7 +193,9 @@ fun SettingsScreen(
         onRateAppClick = viewModel::onRateAppClick,
         onPrivacyPolicyClick = viewModel::onPrivacyPolicyClick,
         onTermsOfServiceClick = viewModel::onTermsOfServiceClick,
-        onSignOutClick = viewModel::showSignOutDialog
+        onSignOutClick = viewModel::showSignOutDialog,
+        onHouseholdClick = viewModel::onHouseholdClick,
+        onJoinHouseholdClick = viewModel::onJoinHouseholdClick
     )
 
     // Dialogs
@@ -250,7 +256,9 @@ internal fun SettingsScreenContent(
     onRateAppClick: () -> Unit,
     onPrivacyPolicyClick: () -> Unit,
     onTermsOfServiceClick: () -> Unit,
-    onSignOutClick: () -> Unit
+    onSignOutClick: () -> Unit,
+    onHouseholdClick: () -> Unit = {},
+    onJoinHouseholdClick: () -> Unit = {}
 ) {
     Scaffold(
         modifier = Modifier.testTag(TestTags.SETTINGS_SCREEN),
@@ -317,6 +325,30 @@ internal fun SettingsScreenContent(
                             currentUserId = uiState.familyMembers.firstOrNull()?.id ?: "",
                             onEditMemberClick = onEditMemberClick,
                             onAddMemberClick = onAddMemberClick,
+                            modifier = Modifier.padding(horizontal = spacing.md)
+                        )
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(spacing.lg))
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = spacing.md))
+                        Spacer(modifier = Modifier.height(spacing.md))
+                    }
+
+                    // Household Section
+                    item {
+                        SettingsSection(
+                            title = "HOUSEHOLD",
+                            items = listOf(
+                                SettingsItem(
+                                    title = "My Household",
+                                    onClick = onHouseholdClick
+                                ),
+                                SettingsItem(
+                                    title = "Join Household",
+                                    onClick = onJoinHouseholdClick
+                                )
+                            ),
                             modifier = Modifier.padding(horizontal = spacing.md)
                         )
                     }
@@ -587,7 +619,9 @@ private fun SettingsScreenPreview() {
                 onRateAppClick = {},
                 onPrivacyPolicyClick = {},
                 onTermsOfServiceClick = {},
-                onSignOutClick = {}
+                onSignOutClick = {},
+                onHouseholdClick = {},
+                onJoinHouseholdClick = {}
             )
         }
     }

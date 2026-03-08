@@ -3,6 +3,7 @@ package com.rasoiai.app.presentation.favorites
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rasoiai.domain.model.CuisineType
+import com.rasoiai.domain.model.DataScope
 import com.rasoiai.domain.model.FavoriteCollection
 import com.rasoiai.domain.model.Recipe
 import com.rasoiai.domain.repository.FavoritesRepository
@@ -34,7 +35,8 @@ data class FavoritesUiState(
     val showSearchBar: Boolean = false,
     val searchQuery: String = "",
     val selectedCuisineFilter: CuisineType? = null,
-    val selectedTimeFilter: TimeFilter? = null
+    val selectedTimeFilter: TimeFilter? = null,
+    val selectedScope: DataScope = DataScope.PERSONAL
 ) {
     val selectedCollection: FavoriteCollection?
         get() = collections.find { it.id == selectedCollectionId }
@@ -372,6 +374,14 @@ class FavoritesViewModel @Inject constructor(
 
     fun navigateToStats() {
         _navigationEvent.trySend(FavoritesNavigationEvent.NavigateToStats)
+    }
+
+    // endregion
+
+    // region Scope
+
+    fun setScope(scope: DataScope) {
+        _uiState.update { it.copy(selectedScope = scope) }
     }
 
     // endregion

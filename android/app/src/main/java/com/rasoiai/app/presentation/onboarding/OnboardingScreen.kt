@@ -95,6 +95,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rasoiai.app.R
 import com.rasoiai.app.presentation.splash.components.AppLogo
+import com.rasoiai.app.presentation.theme.LocalRasoiColors
 import com.rasoiai.app.presentation.theme.RasoiAITheme
 import com.rasoiai.app.presentation.theme.spacing
 import com.rasoiai.domain.model.CuisineType
@@ -412,12 +413,13 @@ private fun HouseholdSizeStep(
 
         Spacer(modifier = Modifier.height(spacing.sm))
 
+        val rasoiColors = LocalRasoiColors.current
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag(TestTags.FAMILY_MEMBERS_LIST),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
+                containerColor = rasoiColors.surfaceWarm
             ),
             shape = RoundedCornerShape(spacing.md)
         ) {

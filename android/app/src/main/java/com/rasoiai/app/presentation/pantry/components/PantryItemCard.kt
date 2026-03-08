@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.rasoiai.app.presentation.theme.LocalRasoiColors
 import com.rasoiai.app.presentation.theme.spacing
 import com.rasoiai.domain.model.PantryItem
 
@@ -34,6 +35,7 @@ fun PantryItemCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val rasoiColors = LocalRasoiColors.current
     Card(
         modifier = modifier
             .width(80.dp)
@@ -45,7 +47,7 @@ fun PantryItemCard(
             else if (item.isExpiringSoon)
                 MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
             else
-                MaterialTheme.colorScheme.surfaceVariant
+                rasoiColors.surfaceWarm
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -110,6 +112,7 @@ fun PantryItemCardLarge(
     onRemoveClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val rasoiColors = LocalRasoiColors.current
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
@@ -119,7 +122,7 @@ fun PantryItemCardLarge(
             else if (item.isExpiringSoon)
                 MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
             else
-                MaterialTheme.colorScheme.surfaceVariant
+                rasoiColors.surfaceWarm
         )
     ) {
         Row(

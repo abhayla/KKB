@@ -1,6 +1,7 @@
 package com.rasoiai.app.presentation.grocery
 
 import app.cash.turbine.test
+import com.rasoiai.domain.model.DataScope
 import com.rasoiai.domain.model.GroceryItem
 import com.rasoiai.domain.model.GroceryList
 import com.rasoiai.domain.model.IngredientCategory
@@ -469,6 +470,107 @@ class GroceryViewModelTest {
 
                 val state = awaitItem()
                 assertEquals(2, state.unpurchasedItems) // Tomatoes and Milk
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Scope Toggle")
+    inner class ScopeToggleTests {
+
+        @Test
+        @DisplayName("initial selectedScope should be PERSONAL")
+        fun `initial selectedScope should be PERSONAL`() = runTest {
+            coEvery { mockGroceryRepository.getCurrentGroceryList() } returns flowOf(null)
+
+            val viewModel = GroceryViewModel(mockGroceryRepository)
+
+            viewModel.uiState.test {
+                val state = awaitItem()
+                assertEquals(DataScope.PERSONAL, state.selectedScope)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("setScope to FAMILY should update selectedScope")
+        fun `setScope to FAMILY should update selectedScope`() = runTest {
+            coEvery { mockGroceryRepository.getCurrentGroceryList() } returns flowOf(testGroceryList)
+
+            val viewModel = GroceryViewModel(mockGroceryRepository)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial
+
+                viewModel.setScope(DataScope.FAMILY)
+
+                val state = awaitItem()
+                assertEquals(DataScope.FAMILY, state.selectedScope)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("setScope back to PERSONAL should restore selectedScope")
+        fun `setScope back to PERSONAL should restore selectedScope`() = runTest {
+            coEvery { mockGroceryRepository.getCurrentGroceryList() } returns flowOf(testGroceryList)
+
+            val viewModel = GroceryViewModel(mockGroceryRepository)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial
+
+                viewModel.setScope(DataScope.FAMILY)
+                awaitItem() // FAMILY
+
+                viewModel.setScope(DataScope.PERSONAL)
+
+                val state = awaitItem()
+                assertEquals(DataScope.PERSONAL, state.selectedScope)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("setScope should not affect other state fields")
+        fun `setScope should not affect other state fields`() = runTest {
+            coEvery { mockGroceryRepository.getCurrentGroceryList() } returns flowOf(testGroceryList)
+
+            val viewModel = GroceryViewModel(mockGroceryRepository)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial
+
+                testDispatcher.scheduler.advanceUntilIdle()
+                val beforeScope = expectMostRecentItem()
+
+                viewModel.setScope(DataScope.FAMILY)
+                val afterScope = awaitItem()
+
+                assertEquals(beforeScope.groceryList, afterScope.groceryList)
+                assertEquals(beforeScope.totalItems, afterScope.totalItems)
+                assertEquals(DataScope.FAMILY, afterScope.selectedScope)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("setScope should not trigger additional repository calls")
+        fun `setScope should not trigger additional repository calls`() = runTest {
+            coEvery { mockGroceryRepository.getCurrentGroceryList() } returns flowOf(testGroceryList)
+
+            val viewModel = GroceryViewModel(mockGroceryRepository)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial
+                testDispatcher.scheduler.advanceUntilIdle()
+                expectMostRecentItem()
+
+                viewModel.setScope(DataScope.FAMILY)
+                awaitItem()
+
+                // setScope only updates local state, no new repository calls
                 cancelAndIgnoreRemainingEvents()
             }
         }

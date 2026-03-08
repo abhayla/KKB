@@ -28,6 +28,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -36,6 +37,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rasoiai.app.R
 import com.rasoiai.app.presentation.splash.components.AppLogo
+import com.rasoiai.app.presentation.theme.LocalRasoiColors
 import com.rasoiai.app.presentation.theme.spacing
 
 @Composable
@@ -58,10 +60,11 @@ fun SplashScreen(
         }
     }
 
+    val rasoiColors = LocalRasoiColors.current
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(rasoiColors.heroGradient)
     ) {
         // Main content
         Column(
@@ -81,7 +84,7 @@ fun SplashScreen(
                 text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = Color.White
             )
 
             Spacer(modifier = Modifier.height(spacing.sm))
@@ -90,7 +93,7 @@ fun SplashScreen(
             Text(
                 text = stringResource(R.string.splash_tagline),
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color.White.copy(alpha = 0.85f),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = spacing.xl)
             )
@@ -104,14 +107,14 @@ fun SplashScreen(
             ) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
-                    color = MaterialTheme.colorScheme.primary,
+                    color = Color.White,
                     strokeWidth = 3.dp
                 )
                 Spacer(modifier = Modifier.width(spacing.md))
                 Text(
                     text = stringResource(R.string.loading),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = Color.White.copy(alpha = 0.85f)
                 )
             }
         }
@@ -189,10 +192,11 @@ private fun SplashScreenOfflinePreview() {
 
 @Composable
 internal fun SplashScreenContent(isOnline: Boolean) {
+    val rasoiColors = LocalRasoiColors.current
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(rasoiColors.heroGradient)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -205,13 +209,13 @@ internal fun SplashScreenContent(isOnline: Boolean) {
                 text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = Color.White
             )
             Spacer(modifier = Modifier.height(spacing.sm))
             Text(
                 text = stringResource(R.string.splash_tagline),
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color.White.copy(alpha = 0.85f),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = spacing.xl)
             )
@@ -222,14 +226,14 @@ internal fun SplashScreenContent(isOnline: Boolean) {
             ) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
-                    color = MaterialTheme.colorScheme.primary,
+                    color = Color.White,
                     strokeWidth = 3.dp
                 )
                 Spacer(modifier = Modifier.width(spacing.md))
                 Text(
                     text = stringResource(R.string.loading),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = Color.White.copy(alpha = 0.85f)
                 )
             }
         }

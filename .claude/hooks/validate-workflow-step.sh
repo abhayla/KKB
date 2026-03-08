@@ -193,7 +193,7 @@ case "$HOOK_TOOL_NAME" in
             INCOMPLETE=$(check_all_steps_complete)
             if [ "$INCOMPLETE" != "all" ]; then
                 echo ""; echo "WORKFLOW BLOCKED: Cannot commit. Incomplete step: $INCOMPLETE"
-                echo "Complete all 7 steps. See: docs/rules/Claude Code Enforced Workflow Rules.md"; echo ""
+                echo "Complete all 7 steps. See: .claude/rules/workflow.md"; echo ""
                 log_event "BLOCKED" "reason=commit_incomplete" "missing=$INCOMPLETE"; exit 2
             fi
             ACTIVE_CMD=$(get_state_field ".activeCommand")

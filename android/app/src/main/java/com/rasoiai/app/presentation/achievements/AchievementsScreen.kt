@@ -55,6 +55,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.rasoiai.app.presentation.common.TestTags
+import com.rasoiai.app.presentation.theme.LocalRasoiColors
 import com.rasoiai.app.presentation.theme.RasoiAITheme
 import com.rasoiai.app.presentation.theme.spacing
 import com.rasoiai.domain.model.Achievement
@@ -487,6 +488,7 @@ private fun AchievementDetailCard(
         animationSpec = tween(durationMillis = 600),
         label = "progress"
     )
+    val rasoiColors = LocalRasoiColors.current
 
     Card(
         modifier = modifier
@@ -497,7 +499,7 @@ private fun AchievementDetailCard(
             containerColor = if (isUnlocked) {
                 MaterialTheme.colorScheme.secondaryContainer
             } else {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                rasoiColors.surfaceWarm
             }
         )
     ) {

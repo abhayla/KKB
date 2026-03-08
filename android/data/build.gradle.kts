@@ -49,6 +49,10 @@ android {
         buildConfig = true
     }
 
+    sourceSets {
+        getByName("androidTest").assets.srcDirs("$projectDir/schemas")
+    }
+
     lint {
         abortOnError = false
         warningsAsErrors = false

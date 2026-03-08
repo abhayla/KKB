@@ -2,6 +2,7 @@ package com.rasoiai.app.presentation.reciperules
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rasoiai.domain.model.DataScope
 import com.rasoiai.domain.model.FoodCategory
 import com.rasoiai.domain.model.MealType
 import com.rasoiai.domain.model.NutritionGoal
@@ -117,7 +118,9 @@ data class RecipeRulesUiState(
     // Family safety conflict dialog
     val showConflictDialog: Boolean = false,
     val pendingConflictDetails: List<com.rasoiai.domain.model.ConflictDetail> = emptyList(),
-    val pendingConflictRule: RecipeRule? = null
+    val pendingConflictRule: RecipeRule? = null,
+
+    val selectedScope: DataScope = DataScope.PERSONAL
 ) {
     /**
      * Rules sorted: active first (newest first), then paused (newest first).
@@ -791,6 +794,14 @@ class RecipeRulesViewModel @Inject constructor(
 
             dismissDeleteConfirmation()
         }
+    }
+
+    // endregion
+
+    // region Scope
+
+    fun setScope(scope: DataScope) {
+        _uiState.update { it.copy(selectedScope = scope) }
     }
 
     // endregion

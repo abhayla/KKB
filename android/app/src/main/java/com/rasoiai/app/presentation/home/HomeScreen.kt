@@ -99,6 +99,7 @@ import com.rasoiai.core.ui.OfflineBanner
 import com.rasoiai.app.presentation.navigation.Screen
 import com.rasoiai.domain.model.Recipe
 import com.rasoiai.app.presentation.theme.DietaryColors
+import com.rasoiai.app.presentation.theme.LocalRasoiColors
 import com.rasoiai.app.presentation.theme.RasoiAITheme
 import com.rasoiai.app.presentation.theme.spacing
 import com.rasoiai.domain.model.DietaryTag
@@ -827,6 +828,7 @@ private fun MealSection(
     val totalCalories = meals.sumOf { it.calories }
     // Meal is effectively locked if day is locked OR meal itself is locked
     val isEffectivelyLocked = isDayLocked || isMealLocked
+    val rasoiColors = LocalRasoiColors.current
 
     Card(
         modifier = modifier
@@ -834,7 +836,7 @@ private fun MealSection(
             .padding(horizontal = spacing.md, vertical = spacing.sm)
             .testTag("${TestTags.MEAL_CARD_PREFIX}${mealType.name.lowercase()}"),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = rasoiColors.surfaceWarm
         ),
         shape = RoundedCornerShape(spacing.md)
     ) {

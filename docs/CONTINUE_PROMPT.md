@@ -4,9 +4,9 @@ Use this prompt to start a new conversation/context and continue the project fro
 
 ---
 
-## Current State: Pre-Production Hardened (24 Security Items Complete)
+## Current State: Household UI + Visual Refresh Complete
 
-Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 routers). Android app with Compose UI, Hilt DI, Room DB v12. Full E2E tests passing with real API calls. All 18 Settings sub-screens implemented. **Pre-production hardening complete: 24 items across 3 batches.**
+Backend running on PostgreSQL with SQLAlchemy async ORM (~62 endpoints, 13+ routers). Android app with Compose UI, Hilt DI, Room DB v13. Full E2E tests passing with real API calls. All 18 Settings sub-screens + 7 Household screens implemented. **Warm-modern design system applied. Family/Personal scope toggle on 5 screens.**
 
 **Test Results:**
 | Platform | Tests | Status |
@@ -14,7 +14,7 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 route
 | Backend | ~580 (46 files) | PASS |
 | Android Unit | ~580 | PASS |
 | Android UI | 750+ | PASS |
-| Android E2E | 67+ (+ 45 @Ignore household) | PASS |
+| Android E2E | 67+ (+ 45 @Ignore household E2E with real test bodies) | PASS |
 
 ---
 
@@ -74,7 +74,11 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 route
 | Multi-User Load Testing | DONE | fake-firebase-token-{suffix}, Locust profiles, raised DEBUG rate limits |
 | Meal Gen Performance | DONE | 180s timeout, ~35s generation (was ~90s), response_json_schema |
 | Household Backend Endpoints | DONE | ~18 endpoints, ~120+ backend tests across 7 files |
-| Household Android E2E (Placeholder) | PLACEHOLDER | 5 flow tests, 45 @Ignore tests, 3 journey suites (J15-J17) |
+| Household Android E2E | DONE (@Ignore) | 5 flow tests, 45 @Ignore tests with real bodies, 3 journey suites (J15-J17), 3 robots |
+| Household Android UI | DONE | 7 screens: Household, Members, MemberDetail, Join, MealPlan, Notifications + Settings integration |
+| Visual Refresh (Warm-Modern) | DONE | Updated Color.kt, Type.kt (Outfit+DM Sans), Theme.kt (extended colors, gradients), RasoiComponents.kt |
+| Family/Personal Toggle | DONE | ScopeToggle on Stats, Grocery, Favorites, RecipeRules, Chat screens |
+| Room DB v13 | DONE | Migration 12→13: household + household_members tables |
 
 ---
 
@@ -82,6 +86,7 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 route
 
 | Session | Milestone |
 |---------|-----------|
+| 47+ | Household Android UI (7 screens), warm-modern design system (Color/Type/Theme), Family/Personal scope toggle (5 screens), Room DB v13, RasoiComponents |
 | 46+ | Gemini structured output (response_json_schema + short keys), generation tracker, meal gen performance (180s timeout, ~35s gen), multi-user load testing |
 | 45 | Customer journey test suites: 14 JUnit @Suite classes (J01-J14), 100% test file coverage, documentation |
 | 44 | E2E test suite consolidation: 33→23 files, removed 34 duplicates, added 9 gap-filling tests, merged Home Screen (6→1), FullJourney (2→1), RecipeRules (4→3), RecipeInteraction (3→1) |
@@ -93,6 +98,6 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~44 endpoints, 13 route
 
 ---
 
-*Last Updated: March 6, 2026*
-*E2E suite: 28 files, ~170 tests (125 active + 45 @Ignore household), 17 customer journey suites (J01-J17). ~580 backend tests (46 files). ~580 Android unit tests. 750+ UI tests.*
-*~62 API endpoints across 13+ routers. 3,580 recipes. ~525 requirements across 12 screen files. Room DB v12.*
+*Last Updated: March 8, 2026*
+*E2E suite: 28 files, ~170 tests (125 active + 45 @Ignore household with real bodies), 17 customer journey suites (J01-J17). ~580 backend tests (46 files). ~630+ Android unit tests. 750+ UI tests.*
+*~62 API endpoints across 13+ routers. 3,580 recipes. ~525 requirements across 12 screen files. Room DB v13. 25+ screens.*

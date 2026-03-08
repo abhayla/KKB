@@ -110,7 +110,7 @@ PYTHONPATH=. pytest tests/test_your_feature.py -v
 
 ## E2E Test Execution Flow
 
-The tests follow a **15-phase sequence** that mimics a complete user journey:
+The tests follow a **16-phase sequence** that mimics a complete user journey:
 
 ```
 Phase 1: AUTH ──► Phase 2: ONBOARDING (5 steps) ──► Phase 3: GENERATION
@@ -129,6 +129,9 @@ Phase 1: AUTH ──► Phase 2: ONBOARDING (5 steps) ──► Phase 3: GENERAT
                                                                        │
                                                                        ▼
                     Phase 13: OFFLINE ──► Phase 14: EDGE CASES ──► Phase 15: PERFORMANCE
+                                                                       │
+                                                                       ▼
+                                                              Phase 16: HOUSEHOLD
 ```
 
 ### Phase Summary
@@ -150,8 +153,9 @@ Phase 1: AUTH ──► Phase 2: ONBOARDING (5 steps) ──► Phase 3: GENERAT
 | 13 | Offline | 7 | Cached data, local mutations, sync |
 | 14 | Edge Cases | 11 | Error handling, validation, session |
 | 15 | Performance | 6 | Cold start, FPS, memory |
+| 16 | Household | ~45 | Household CRUD, member management, invite codes, scope toggle, shared meal plan, notifications |
 
-**Total: ~400 tests**
+**Total: ~445 tests**
 
 **For detailed test steps, expected results, and verification SQL for each phase, see [E2E-Phase-Details.md](./E2E-Phase-Details.md).**
 
@@ -325,7 +329,7 @@ adb shell settings put global airplane_mode_on 0 && adb shell am broadcast -a an
 
 ## Customer Journey Test Suites
 
-14 journey-based suites group the 23 E2E test files into realistic user scenarios. Each journey is a runnable JUnit `@Suite` class in `e2e/journeys/`.
+17 journey-based suites group the 28 E2E test files into realistic user scenarios. Each journey is a runnable JUnit `@Suite` class in `e2e/journeys/`.
 
 **Full documentation:** [Customer-Journey-Test-Suites.md](./Customer-Journey-Test-Suites.md)
 
@@ -355,6 +359,9 @@ adb shell settings put global airplane_mode_on 0 && adb shell am broadcast -a an
 | J12 | Offline and Error Resilience | 2 |
 | J13 | Returning User Quick Check | 3 |
 | J14 | AI Chat and Recipe Discovery | 3 |
+| J15 | Household Setup & Member Management | 2 |
+| J16 | Household Meal Collaboration | 2 |
+| J17 | Household Notifications & Awareness | 2 |
 
 ---
 
@@ -366,5 +373,5 @@ adb shell settings put global airplane_mode_on 0 && adb shell am broadcast -a an
 
 ---
 
-*Last Updated: March 2026*
+*Last Updated: March 8, 2026*
 *Recipe Database: 3,580 recipes (imported from khanakyabanega)*

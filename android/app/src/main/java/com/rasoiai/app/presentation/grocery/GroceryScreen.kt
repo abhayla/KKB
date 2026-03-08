@@ -75,6 +75,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.rasoiai.app.presentation.common.components.ScopeToggle
 import com.rasoiai.app.presentation.grocery.components.AddItemDialog
 import com.rasoiai.app.presentation.grocery.components.EditItemDialog
 import com.rasoiai.app.presentation.grocery.components.WhatsAppShareDialog
@@ -82,6 +83,7 @@ import com.rasoiai.app.presentation.home.components.RasoiBottomNavigation
 import com.rasoiai.app.presentation.navigation.Screen
 import com.rasoiai.app.presentation.theme.RasoiAITheme
 import com.rasoiai.app.presentation.theme.spacing
+import com.rasoiai.domain.model.DataScope
 import com.rasoiai.domain.model.GroceryCategory
 import com.rasoiai.domain.model.GroceryItem
 import com.rasoiai.domain.model.IngredientCategory
@@ -151,6 +153,7 @@ fun GroceryScreen(
         onDismissMoreOptions = viewModel::dismissMoreOptionsMenu,
         onClearPurchasedClick = viewModel::clearPurchasedItems,
         onShareAsTextClick = viewModel::shareAsText,
+        onScopeChanged = viewModel::setScope,
         onBottomNavItemClick = { screen ->
             when (screen) {
                 Screen.Home -> viewModel.navigateToHome()
@@ -214,6 +217,7 @@ internal fun GroceryScreenContent(
     onDismissMoreOptions: () -> Unit,
     onClearPurchasedClick: () -> Unit,
     onShareAsTextClick: () -> Unit,
+    onScopeChanged: (DataScope) -> Unit = {},
     onBottomNavItemClick: (Screen) -> Unit
 ) {
     Scaffold(
@@ -298,6 +302,14 @@ internal fun GroceryScreenContent(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = spacing.md)
                 ) {
+                    // Scope Toggle
+                    item {
+                        ScopeToggle(
+                            selectedScope = uiState.selectedScope,
+                            onScopeChange = onScopeChanged
+                        )
+                    }
+
                     // Week Header
                     item {
                         WeekHeader(

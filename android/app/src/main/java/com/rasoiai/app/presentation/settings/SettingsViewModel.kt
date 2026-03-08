@@ -103,6 +103,8 @@ sealed class SettingsNavigationEvent {
     data object NavigateToPrivacyPolicy : SettingsNavigationEvent()
     data object NavigateToTermsOfService : SettingsNavigationEvent()
     data object NavigateToAuth : SettingsNavigationEvent()
+    data object NavigateToHousehold : SettingsNavigationEvent()
+    data object NavigateToJoinHousehold : SettingsNavigationEvent()
 }
 
 @HiltViewModel
@@ -285,6 +287,14 @@ class SettingsViewModel @Inject constructor(
 
     fun onTermsOfServiceClick() {
         _navigationEvent.trySend(SettingsNavigationEvent.NavigateToTermsOfService)
+    }
+
+    fun onHouseholdClick() {
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateToHousehold)
+    }
+
+    fun onJoinHouseholdClick() {
+        _navigationEvent.trySend(SettingsNavigationEvent.NavigateToJoinHousehold)
     }
 
     // endregion

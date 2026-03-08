@@ -807,3 +807,132 @@ fun NutritionGoalEntity.toSyncItem(): NutritionGoalSyncItem = NutritionGoalSyncI
     isActive = isActive,
     localUpdatedAt = updatedAt
 )
+
+// ==================== Household Entity Mappers ====================
+
+fun com.rasoiai.data.local.entity.HouseholdEntity.toDomain(): com.rasoiai.domain.model.Household {
+    val slotConfigMap: Map<String, Int>? = try {
+        slotConfigJson?.let { gson.fromJson(it, object : TypeToken<Map<String, Int>>() {}.type) }
+    } catch (e: Exception) {
+        null
+    }
+
+    return com.rasoiai.domain.model.Household(
+        id = id,
+        name = name,
+        inviteCode = inviteCode,
+        ownerId = ownerId,
+        slotConfig = slotConfigMap,
+        maxMembers = maxMembers,
+        memberCount = memberCount,
+        isActive = isActive,
+        createdAt = LocalDateTime.parse(createdAt, dateTimeFormatter),
+        updatedAt = LocalDateTime.parse(updatedAt, dateTimeFormatter)
+    )
+}
+
+fun com.rasoiai.domain.model.Household.toEntity(): com.rasoiai.data.local.entity.HouseholdEntity =
+    com.rasoiai.data.local.entity.HouseholdEntity(
+        id = id,
+        name = name,
+        inviteCode = inviteCode,
+        ownerId = ownerId,
+        slotConfigJson = slotConfig?.let { gson.toJson(it) },
+        maxMembers = maxMembers,
+        memberCount = memberCount,
+        isActive = isActive,
+        createdAt = createdAt.format(dateTimeFormatter),
+        updatedAt = updatedAt.format(dateTimeFormatter)
+    )
+
+fun com.rasoiai.data.local.entity.HouseholdMemberEntity.toDomain(): com.rasoiai.domain.model.HouseholdMember =
+    com.rasoiai.domain.model.HouseholdMember(
+        id = id,
+        userId = userId,
+        familyMemberId = familyMemberId,
+        name = name,
+        role = com.rasoiai.domain.model.HouseholdRole.fromValue(role),
+        canEditSharedPlan = canEditSharedPlan,
+        isTemporary = isTemporary,
+        joinDate = LocalDateTime.parse(joinDate, dateTimeFormatter),
+        leaveDate = leaveDate?.let { LocalDateTime.parse(it, dateTimeFormatter) },
+        portionSize = portionSize,
+        status = com.rasoiai.domain.model.MemberStatus.fromValue(status)
+    )
+
+fun com.rasoiai.domain.model.HouseholdMember.toEntity(householdId: String): com.rasoiai.data.local.entity.HouseholdMemberEntity =
+    com.rasoiai.data.local.entity.HouseholdMemberEntity(
+        id = id,
+        householdId = householdId,
+        userId = userId,
+        familyMemberId = familyMemberId,
+        name = name,
+        role = role.value,
+        canEditSharedPlan = canEditSharedPlan,
+        isTemporary = isTemporary,
+        joinDate = joinDate.format(dateTimeFormatter),
+        leaveDate = leaveDate?.format(dateTimeFormatter),
+        portionSize = portionSize,
+        status = status.value
+    )
+
+// ==================== Household DTO to Entity Mappers ====================
+
+fun com.rasoiai.data.remote.dto.HouseholdResponse.toEntity(): com.rasoiai.data.local.entity.HouseholdEntity =
+    com.rasoiai.data.local.entity.HouseholdEntity(
+        id = id,
+        name = name,
+        inviteCode = inviteCode,
+        ownerId = ownerId,
+        slotConfigJson = slotConfig?.let { gson.toJson(it) },
+        maxMembers = maxMembers,
+        memberCount = memberCount,
+        isActive = isActive,
+        createdAt = createdAt,
+        updatedAt = updatedAt
+    )
+
+fun com.rasoiai.data.remote.dto.HouseholdMemberResponse.toEntity(): com.rasoiai.data.local.entity.HouseholdMemberEntity =
+    com.rasoiai.data.local.entity.HouseholdMemberEntity(
+        id = id,
+        householdId = householdId,
+        userId = userId,
+        familyMemberId = familyMemberId,
+        name = name,
+        role = role,
+        canEditSharedPlan = canEditSharedPlan,
+        isTemporary = isTemporary,
+        joinDate = joinDate,
+        leaveDate = leaveDate,
+        portionSize = portionSize,
+        status = status
+    )
+
+fun com.rasoiai.data.remote.dto.HouseholdDetailResponse.toDomain(): com.rasoiai.domain.model.HouseholdDetail {
+    val householdEntity = household.toEntity()
+    val memberEntities = members.map { it.toEntity() }
+    return com.rasoiai.domain.model.HouseholdDetail(
+        household = householdEntity.toDomain(),
+        members = memberEntities.map { it.toDomain() }
+    )
+}
+
+fun com.rasoiai.data.remote.dto.HouseholdNotificationResponse.toDomain(): com.rasoiai.domain.model.HouseholdNotification =
+    com.rasoiai.domain.model.HouseholdNotification(
+        id = id,
+        householdId = householdId,
+        type = com.rasoiai.domain.model.HouseholdNotificationType.fromValue(type),
+        title = title,
+        message = message,
+        isRead = isRead,
+        metadata = metadata,
+        createdAt = LocalDateTime.parse(createdAt, dateTimeFormatter)
+    )
+
+fun com.rasoiai.data.remote.dto.HouseholdStatsResponse.toDomain(): com.rasoiai.domain.model.HouseholdStats =
+    com.rasoiai.domain.model.HouseholdStats(
+        totalMeals = totalMeals,
+        cookedCount = cookedCount,
+        skippedCount = skippedCount,
+        orderedOutCount = orderedOutCount
+    )

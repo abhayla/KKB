@@ -2,6 +2,7 @@ package com.rasoiai.app.presentation.favorites
 
 import app.cash.turbine.test
 import com.rasoiai.domain.model.CuisineType
+import com.rasoiai.domain.model.DataScope
 import com.rasoiai.domain.model.DietaryTag
 import com.rasoiai.domain.model.Difficulty
 import com.rasoiai.domain.model.FavoriteCollection
@@ -496,6 +497,97 @@ class FavoritesViewModelTest {
                 // Only Poha (15 min total) should match UNDER_15
                 assertEquals(1, state.filteredRecipes.size)
                 assertEquals("Poha", state.filteredRecipes[0].name)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Scope Toggle")
+    inner class ScopeToggleTests {
+
+        @Test
+        @DisplayName("initial selectedScope should be PERSONAL")
+        fun `initial selectedScope should be PERSONAL`() = runTest {
+            val viewModel = FavoritesViewModel(mockFavoritesRepository, mockRecipeRepository)
+
+            viewModel.uiState.test {
+                val state = awaitItem()
+                assertEquals(DataScope.PERSONAL, state.selectedScope)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("setScope to FAMILY should update selectedScope")
+        fun `setScope to FAMILY should update selectedScope`() = runTest {
+            val viewModel = FavoritesViewModel(mockFavoritesRepository, mockRecipeRepository)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial
+
+                viewModel.setScope(DataScope.FAMILY)
+
+                val state = awaitItem()
+                assertEquals(DataScope.FAMILY, state.selectedScope)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("setScope back to PERSONAL should restore selectedScope")
+        fun `setScope back to PERSONAL should restore selectedScope`() = runTest {
+            val viewModel = FavoritesViewModel(mockFavoritesRepository, mockRecipeRepository)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial
+
+                viewModel.setScope(DataScope.FAMILY)
+                awaitItem() // FAMILY
+
+                viewModel.setScope(DataScope.PERSONAL)
+
+                val state = awaitItem()
+                assertEquals(DataScope.PERSONAL, state.selectedScope)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("setScope should not affect other state fields")
+        fun `setScope should not affect other state fields`() = runTest {
+            val viewModel = FavoritesViewModel(mockFavoritesRepository, mockRecipeRepository)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial
+
+                testDispatcher.scheduler.advanceUntilIdle()
+                val beforeScope = expectMostRecentItem()
+
+                viewModel.setScope(DataScope.FAMILY)
+                val afterScope = awaitItem()
+
+                assertEquals(beforeScope.collections, afterScope.collections)
+                assertEquals(beforeScope.searchQuery, afterScope.searchQuery)
+                assertEquals(DataScope.FAMILY, afterScope.selectedScope)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("setScope should not trigger additional repository calls")
+        fun `setScope should not trigger additional repository calls`() = runTest {
+            val viewModel = FavoritesViewModel(mockFavoritesRepository, mockRecipeRepository)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial
+                testDispatcher.scheduler.advanceUntilIdle()
+                expectMostRecentItem()
+
+                viewModel.setScope(DataScope.FAMILY)
+                awaitItem()
+
+                // setScope only updates local state, no new repository calls
                 cancelAndIgnoreRemainingEvents()
             }
         }

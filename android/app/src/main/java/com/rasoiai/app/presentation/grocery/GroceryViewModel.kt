@@ -2,6 +2,7 @@ package com.rasoiai.app.presentation.grocery
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rasoiai.domain.model.DataScope
 import com.rasoiai.domain.model.GroceryCategory
 import com.rasoiai.domain.model.GroceryItem
 import com.rasoiai.domain.model.GroceryList
@@ -35,7 +36,8 @@ data class GroceryUiState(
     val showAddItemDialog: Boolean = false,
     val showMoreOptionsMenu: Boolean = false,
     val selectedItem: GroceryItem? = null,
-    val shareOption: ShareOption = ShareOption.FULL_LIST
+    val shareOption: ShareOption = ShareOption.FULL_LIST,
+    val selectedScope: DataScope = DataScope.PERSONAL
 ) {
     val formattedDateRange: String
         get() = groceryList?.let {
@@ -348,6 +350,14 @@ class GroceryViewModel @Inject constructor(
 
     fun navigateToStats() {
         _navigationEvent.trySend(GroceryNavigationEvent.NavigateToStats)
+    }
+
+    // endregion
+
+    // region Scope
+
+    fun setScope(scope: DataScope) {
+        _uiState.update { it.copy(selectedScope = scope) }
     }
 
     // endregion

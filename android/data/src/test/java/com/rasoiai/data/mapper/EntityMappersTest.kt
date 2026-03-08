@@ -1,6 +1,8 @@
 package com.rasoiai.data.mapper
 
 import com.rasoiai.data.local.entity.AchievementEntity
+import com.rasoiai.data.local.entity.HouseholdEntity
+import com.rasoiai.data.local.entity.HouseholdMemberEntity
 import com.rasoiai.data.local.entity.ChatMessageEntity
 import com.rasoiai.data.local.entity.CookingDayEntity
 import com.rasoiai.data.local.entity.CookingStreakEntity
@@ -18,6 +20,10 @@ import com.rasoiai.data.local.mapper.toDomain
 import com.rasoiai.data.local.mapper.toEntity
 import com.rasoiai.data.local.mapper.toGroceryList
 import com.rasoiai.domain.model.Achievement
+import com.rasoiai.domain.model.Household
+import com.rasoiai.domain.model.HouseholdMember
+import com.rasoiai.domain.model.HouseholdRole
+import com.rasoiai.domain.model.MemberStatus
 import com.rasoiai.domain.model.ChatMessage
 import com.rasoiai.domain.model.CookingDay
 import com.rasoiai.domain.model.CookingStreak
@@ -673,6 +679,137 @@ class EntityMappersTest {
             assertEquals("Weeknight Dinners", domain.name)
             assertEquals(3, domain.recipeIds.size)
             assertFalse(domain.isDefault)
+        }
+    }
+
+    @Nested
+    @DisplayName("Household Entity Mappers")
+    inner class HouseholdEntityMappers {
+
+        @Test
+        @DisplayName("Should map HouseholdEntity to Household domain model")
+        fun `should map HouseholdEntity to Household domain model`() {
+            // Given
+            val entity = HouseholdEntity(
+                id = "hh-1",
+                name = "Sharma Family",
+                inviteCode = "ABC123",
+                ownerId = "user-1",
+                slotConfigJson = """{"breakfast":2,"lunch":2,"dinner":2,"snacks":1}""",
+                maxMembers = 8,
+                memberCount = 3,
+                isActive = true,
+                createdAt = "2026-03-01T10:00:00",
+                updatedAt = "2026-03-01T12:00:00"
+            )
+
+            // When
+            val domain = entity.toDomain()
+
+            // Then
+            assertEquals("hh-1", domain.id)
+            assertEquals("Sharma Family", domain.name)
+            assertEquals("ABC123", domain.inviteCode)
+            assertEquals("user-1", domain.ownerId)
+            assertNotNull(domain.slotConfig)
+            assertEquals(2, domain.slotConfig?.get("breakfast"))
+            assertEquals(1, domain.slotConfig?.get("snacks"))
+            assertEquals(8, domain.maxMembers)
+            assertEquals(3, domain.memberCount)
+            assertTrue(domain.isActive)
+            assertEquals(LocalDateTime.of(2026, 3, 1, 10, 0, 0), domain.createdAt)
+        }
+
+        @Test
+        @DisplayName("Should map HouseholdEntity with null slotConfig")
+        fun `should map HouseholdEntity with null slotConfig`() {
+            // Given
+            val entity = HouseholdEntity(
+                id = "hh-2",
+                name = "Test Household",
+                inviteCode = "XYZ789",
+                ownerId = "user-2",
+                slotConfigJson = null,
+                maxMembers = 4,
+                memberCount = 1,
+                isActive = true,
+                createdAt = "2026-03-01T10:00:00",
+                updatedAt = "2026-03-01T10:00:00"
+            )
+
+            // When
+            val domain = entity.toDomain()
+
+            // Then
+            assertNull(domain.slotConfig)
+        }
+
+        @Test
+        @DisplayName("Should map HouseholdMemberEntity to HouseholdMember domain model")
+        fun `should map HouseholdMemberEntity to HouseholdMember domain model`() {
+            // Given
+            val entity = HouseholdMemberEntity(
+                id = "mem-1",
+                householdId = "hh-1",
+                userId = "user-1",
+                familyMemberId = null,
+                name = "Ramesh Sharma",
+                role = "owner",
+                canEditSharedPlan = true,
+                isTemporary = false,
+                joinDate = "2026-03-01T10:00:00",
+                leaveDate = null,
+                portionSize = 1.0f,
+                status = "active"
+            )
+
+            // When
+            val domain = entity.toDomain()
+
+            // Then
+            assertEquals("mem-1", domain.id)
+            assertEquals("user-1", domain.userId)
+            assertNull(domain.familyMemberId)
+            assertEquals("Ramesh Sharma", domain.name)
+            assertEquals(HouseholdRole.OWNER, domain.role)
+            assertTrue(domain.canEditSharedPlan)
+            assertFalse(domain.isTemporary)
+            assertNull(domain.leaveDate)
+            assertEquals(1.0f, domain.portionSize)
+            assertEquals(MemberStatus.ACTIVE, domain.status)
+        }
+
+        @Test
+        @DisplayName("Should map HouseholdMemberEntity with guest fields")
+        fun `should map HouseholdMemberEntity with guest fields`() {
+            // Given
+            val entity = HouseholdMemberEntity(
+                id = "mem-2",
+                householdId = "hh-1",
+                userId = null,
+                familyMemberId = "fam-1",
+                name = "Guest User",
+                role = "guest",
+                canEditSharedPlan = false,
+                isTemporary = true,
+                joinDate = "2026-03-01T10:00:00",
+                leaveDate = "2026-03-08T10:00:00",
+                portionSize = 0.5f,
+                status = "inactive"
+            )
+
+            // When
+            val domain = entity.toDomain()
+
+            // Then
+            assertNull(domain.userId)
+            assertEquals("fam-1", domain.familyMemberId)
+            assertEquals(HouseholdRole.GUEST, domain.role)
+            assertTrue(domain.isTemporary)
+            assertNotNull(domain.leaveDate)
+            assertEquals(LocalDateTime.of(2026, 3, 8, 10, 0, 0), domain.leaveDate)
+            assertEquals(0.5f, domain.portionSize)
+            assertEquals(MemberStatus.INACTIVE, domain.status)
         }
     }
 }

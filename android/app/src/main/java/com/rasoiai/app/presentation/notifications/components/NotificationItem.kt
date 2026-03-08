@@ -46,6 +46,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.rasoiai.app.presentation.common.TestTags
+import com.rasoiai.app.presentation.theme.LocalRasoiColors
 import com.rasoiai.app.presentation.theme.spacing
 import com.rasoiai.domain.model.Notification
 import com.rasoiai.domain.model.NotificationType
@@ -111,9 +112,10 @@ private fun NotificationContent(
     notification: Notification,
     onClick: () -> Unit
 ) {
+    val rasoiColors = LocalRasoiColors.current
     val backgroundColor by animateColorAsState(
         targetValue = if (notification.isRead) {
-            MaterialTheme.colorScheme.surface
+            rasoiColors.surfaceWarm
         } else {
             MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
         },

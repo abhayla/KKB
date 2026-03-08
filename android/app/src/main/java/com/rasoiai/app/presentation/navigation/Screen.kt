@@ -46,6 +46,19 @@ sealed class Screen(val route: String) {
     data object RecipeRules : Screen("recipe-rules")
     data object Achievements : Screen("achievements")
 
+    // Household screens
+    data object HouseholdSettings : Screen("settings/household")
+    data object HouseholdMembers : Screen("settings/household/members")
+    data object HouseholdMemberDetail : Screen("settings/household/members/{memberId}") {
+        fun createRoute(memberId: String) = "settings/household/members/$memberId"
+        const val ARG_MEMBER_ID = "memberId"
+    }
+    data object JoinHousehold : Screen("settings/join-household")
+    data object HouseholdMealPlan : Screen("household/meal-plan")
+    data object HouseholdRecipeRules : Screen("household/recipe-rules")
+    data object HouseholdNotifications : Screen("household/notifications")
+    data object HouseholdStats : Screen("household/stats")
+
     // Settings sub-screens
     data object DietaryRestrictions : Screen("settings/dietary-restrictions")
     data object DislikedIngredients : Screen("settings/disliked-ingredients")

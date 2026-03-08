@@ -56,10 +56,12 @@ import com.rasoiai.app.presentation.chat.components.ChatInputBar
 import com.rasoiai.app.presentation.chat.components.ChatMessageItem
 import com.rasoiai.app.presentation.chat.components.ImageSourceDialog
 import com.rasoiai.app.presentation.common.TestTags
+import com.rasoiai.app.presentation.common.components.ScopeToggle
 import com.rasoiai.app.presentation.home.components.RasoiBottomNavigation
 import com.rasoiai.app.presentation.navigation.Screen
 import com.rasoiai.app.presentation.theme.RasoiAITheme
 import com.rasoiai.app.presentation.theme.spacing
+import com.rasoiai.domain.model.DataScope
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -169,6 +171,7 @@ fun ChatScreen(
         onQuickActionClick = viewModel::onQuickActionClick,
         onRecipeClick = viewModel::navigateToRecipeDetail,
         onAddToMealPlan = viewModel::addRecipeToMealPlan,
+        onScopeChanged = viewModel::setScope,
         onAttachmentClick = viewModel::onAttachmentButtonClick,
         onVoiceClick = {
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -255,6 +258,7 @@ internal fun ChatScreenContent(
     onQuickActionClick: (String) -> Unit,
     onRecipeClick: (String) -> Unit,
     onAddToMealPlan: (String) -> Unit,
+    onScopeChanged: (DataScope) -> Unit = {},
     onAttachmentClick: () -> Unit,
     onVoiceClick: () -> Unit,
     onBottomNavItemClick: (Screen) -> Unit
@@ -355,6 +359,14 @@ internal fun ChatScreenContent(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(vertical = spacing.sm)
                 ) {
+                    // Scope Toggle
+                    item(key = "scope_toggle") {
+                        ScopeToggle(
+                            selectedScope = uiState.selectedScope,
+                            onScopeChange = onScopeChanged
+                        )
+                    }
+
                     items(
                         items = uiState.messages,
                         key = { it.id }

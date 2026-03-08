@@ -17,7 +17,10 @@ import com.rasoiai.data.local.dao.StatsDao
 import com.rasoiai.data.local.dao.RecipeRulesDao
 import com.rasoiai.data.local.dao.ChatDao
 import com.rasoiai.data.local.dao.NotificationDao
+import com.rasoiai.data.local.dao.HouseholdDao
 import com.rasoiai.data.local.dao.OfflineQueueDao
+import com.rasoiai.data.local.entity.HouseholdEntity
+import com.rasoiai.data.local.entity.HouseholdMemberEntity
 import com.rasoiai.data.local.entity.MealPlanEntity
 import com.rasoiai.data.local.entity.MealPlanFestivalEntity
 import com.rasoiai.data.local.entity.MealPlanItemEntity
@@ -60,9 +63,11 @@ import com.rasoiai.data.local.entity.KnownIngredientEntity
         NotificationEntity::class,
         OfflineQueueEntity::class,
         CookedRecipeEntity::class,
-        KnownIngredientEntity::class
+        KnownIngredientEntity::class,
+        HouseholdEntity::class,
+        HouseholdMemberEntity::class
     ],
-    version = 12,
+    version = 13,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -79,6 +84,7 @@ abstract class RasoiDatabase : RoomDatabase() {
     abstract fun chatDao(): ChatDao
     abstract fun notificationDao(): NotificationDao
     abstract fun offlineQueueDao(): OfflineQueueDao
+    abstract fun householdDao(): HouseholdDao
 
     companion object {
         private const val DATABASE_NAME = "rasoi_database"
@@ -270,13 +276,55 @@ abstract class RasoiDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migration from version 12 to 13: Add household tables.
+         * Households and household_members for family/household management.
+         */
+        val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS households (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        name TEXT NOT NULL,
+                        inviteCode TEXT NOT NULL,
+                        ownerId TEXT NOT NULL,
+                        slotConfigJson TEXT,
+                        maxMembers INTEGER NOT NULL DEFAULT 8,
+                        memberCount INTEGER NOT NULL DEFAULT 0,
+                        isActive INTEGER NOT NULL DEFAULT 1,
+                        createdAt TEXT NOT NULL,
+                        updatedAt TEXT NOT NULL
+                    )
+                """)
+
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS household_members (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        householdId TEXT NOT NULL,
+                        userId TEXT,
+                        familyMemberId TEXT,
+                        name TEXT NOT NULL,
+                        role TEXT NOT NULL,
+                        canEditSharedPlan INTEGER NOT NULL DEFAULT 0,
+                        isTemporary INTEGER NOT NULL DEFAULT 0,
+                        joinDate TEXT NOT NULL,
+                        leaveDate TEXT,
+                        portionSize REAL NOT NULL DEFAULT 1.0,
+                        status TEXT NOT NULL DEFAULT 'active',
+                        FOREIGN KEY (householdId) REFERENCES households(id) ON DELETE CASCADE
+                    )
+                """)
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_household_members_householdId ON household_members (householdId)")
+            }
+        }
+
         fun create(context: Context): RasoiDatabase {
             return Room.databaseBuilder(
                 context.applicationContext,
                 RasoiDatabase::class.java,
                 DATABASE_NAME
             )
-                .addMigrations(MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
+                .addMigrations(MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
                 .addCallback(object : Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)

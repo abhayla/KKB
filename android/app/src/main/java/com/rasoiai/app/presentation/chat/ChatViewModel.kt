@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rasoiai.app.presentation.navigation.Screen
 import com.rasoiai.domain.model.ChatMessage
+import com.rasoiai.domain.model.DataScope
 import com.rasoiai.domain.model.MealType
 import com.rasoiai.domain.repository.ChatRepository
 import com.rasoiai.domain.repository.MealPlanRepository
@@ -38,7 +39,8 @@ data class ChatUiState(
     // Image attachment state
     val showImageSourceDialog: Boolean = false,
     val selectedImageUri: Uri? = null,
-    val isUploadingImage: Boolean = false
+    val isUploadingImage: Boolean = false,
+    val selectedScope: DataScope = DataScope.PERSONAL
 )
 
 /**
@@ -281,6 +283,14 @@ class ChatViewModel @Inject constructor(
                 _uiState.update { it.copy(errorMessage = "Failed to access meal plan") }
             }
         }
+    }
+
+    // endregion
+
+    // region Scope
+
+    fun setScope(scope: DataScope) {
+        _uiState.update { it.copy(selectedScope = scope) }
     }
 
     // endregion

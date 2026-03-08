@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.rasoiai.app.presentation.common.components.ScopeToggle
 import com.rasoiai.app.presentation.reciperules.components.AddNutritionGoalSheet
 import com.rasoiai.app.presentation.reciperules.components.AddRuleBottomSheet
 import com.rasoiai.app.presentation.reciperules.components.AddRuleButton
@@ -47,6 +48,7 @@ import com.rasoiai.app.presentation.reciperules.components.RulesTabBar
 import com.rasoiai.app.presentation.reciperules.components.SectionHeader
 import com.rasoiai.app.presentation.theme.RasoiAITheme
 import com.rasoiai.app.presentation.theme.spacing
+import com.rasoiai.domain.model.DataScope
 import com.rasoiai.domain.model.FoodCategory
 import com.rasoiai.domain.model.MealType
 import com.rasoiai.domain.model.NutritionGoal
@@ -86,6 +88,7 @@ fun RecipeRulesScreen(
         snackbarHostState = snackbarHostState,
         onBackClick = viewModel::navigateBack,
         onTabSelected = viewModel::selectTab,
+        onScopeChanged = viewModel::setScope,
         onAddRuleClick = viewModel::showAddRuleSheet,
         onEditRule = viewModel::showEditRuleSheet,
         onToggleRuleActive = viewModel::toggleRuleActive,
@@ -154,6 +157,7 @@ internal fun RecipeRulesScreenContent(
     snackbarHostState: SnackbarHostState,
     onBackClick: () -> Unit,
     onTabSelected: (RulesTab) -> Unit,
+    onScopeChanged: (DataScope) -> Unit = {},
     onAddRuleClick: () -> Unit,
     onEditRule: (RecipeRule) -> Unit,
     onToggleRuleActive: (RecipeRule) -> Unit,
@@ -201,6 +205,12 @@ internal fun RecipeRulesScreenContent(
                 )
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
+                    // Scope Toggle
+                    ScopeToggle(
+                        selectedScope = uiState.selectedScope,
+                        onScopeChange = onScopeChanged
+                    )
+
                     // Tab Bar
                     RulesTabBar(
                         selectedTab = uiState.selectedTab,

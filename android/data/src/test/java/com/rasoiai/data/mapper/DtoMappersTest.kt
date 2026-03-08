@@ -1,6 +1,13 @@
 package com.rasoiai.data.mapper
 
+import com.rasoiai.data.local.mapper.toDomain
+import com.rasoiai.data.local.mapper.toEntity
 import com.rasoiai.data.remote.dto.FestivalDto
+import com.rasoiai.data.remote.dto.HouseholdResponse
+import com.rasoiai.data.remote.dto.HouseholdMemberResponse
+import com.rasoiai.data.remote.dto.HouseholdDetailResponse
+import com.rasoiai.data.remote.dto.HouseholdNotificationResponse
+import com.rasoiai.data.remote.dto.HouseholdStatsResponse
 import com.rasoiai.data.remote.dto.IngredientDto
 import com.rasoiai.data.remote.dto.InstructionDto
 import com.rasoiai.data.remote.dto.MealItemDto
@@ -13,6 +20,9 @@ import com.rasoiai.data.remote.dto.UserPreferencesDto
 import com.rasoiai.data.remote.dto.UserResponse
 import com.rasoiai.data.remote.mapper.toDomain
 import com.rasoiai.domain.model.CuisineType
+import com.rasoiai.domain.model.HouseholdNotificationType
+import com.rasoiai.domain.model.HouseholdRole
+import com.rasoiai.domain.model.MemberStatus
 import com.rasoiai.domain.model.DietaryTag
 import com.rasoiai.domain.model.Difficulty
 import com.rasoiai.domain.model.IngredientCategory
@@ -468,6 +478,152 @@ class DtoMappersTest {
             // Then
             assertNull(domain.substituteFor)
             assertEquals(IngredientCategory.SPICES, domain.category)
+        }
+    }
+
+    @Nested
+    @DisplayName("Household DTO Mappers")
+    inner class HouseholdDtoMappers {
+
+        @Test
+        @DisplayName("Should map HouseholdResponse to HouseholdEntity")
+        fun `should map HouseholdResponse to HouseholdEntity`() {
+            // Given
+            val dto = HouseholdResponse(
+                id = "hh-1",
+                name = "Sharma Family",
+                inviteCode = "ABC123",
+                ownerId = "user-1",
+                slotConfig = mapOf("breakfast" to 2, "lunch" to 2),
+                maxMembers = 8,
+                memberCount = 3,
+                isActive = true,
+                createdAt = "2026-03-01T10:00:00",
+                updatedAt = "2026-03-01T12:00:00"
+            )
+
+            // When
+            val entity = dto.toEntity()
+
+            // Then
+            assertEquals("hh-1", entity.id)
+            assertEquals("Sharma Family", entity.name)
+            assertEquals("ABC123", entity.inviteCode)
+            assertEquals("user-1", entity.ownerId)
+            assertNotNull(entity.slotConfigJson)
+            assertEquals(8, entity.maxMembers)
+            assertEquals(3, entity.memberCount)
+            assertTrue(entity.isActive)
+            assertEquals("2026-03-01T10:00:00", entity.createdAt)
+        }
+
+        @Test
+        @DisplayName("Should map HouseholdMemberResponse to HouseholdMemberEntity")
+        fun `should map HouseholdMemberResponse to HouseholdMemberEntity`() {
+            // Given
+            val dto = HouseholdMemberResponse(
+                id = "mem-1",
+                householdId = "hh-1",
+                userId = "user-1",
+                familyMemberId = null,
+                name = "Ramesh Sharma",
+                role = "owner",
+                canEditSharedPlan = true,
+                isTemporary = false,
+                joinDate = "2026-03-01T10:00:00",
+                leaveDate = null,
+                portionSize = 1.0f,
+                status = "active"
+            )
+
+            // When
+            val entity = dto.toEntity()
+
+            // Then
+            assertEquals("mem-1", entity.id)
+            assertEquals("hh-1", entity.householdId)
+            assertEquals("user-1", entity.userId)
+            assertNull(entity.familyMemberId)
+            assertEquals("Ramesh Sharma", entity.name)
+            assertEquals("owner", entity.role)
+            assertTrue(entity.canEditSharedPlan)
+            assertFalse(entity.isTemporary)
+            assertNull(entity.leaveDate)
+        }
+
+        @Test
+        @DisplayName("Should map HouseholdDetailResponse to HouseholdDetail domain")
+        fun `should map HouseholdDetailResponse to HouseholdDetail domain`() {
+            // Given
+            val householdDto = HouseholdResponse(
+                id = "hh-1",
+                name = "Sharma Family",
+                inviteCode = "ABC123",
+                ownerId = "user-1",
+                slotConfig = null,
+                maxMembers = 8,
+                memberCount = 2,
+                isActive = true,
+                createdAt = "2026-03-01T10:00:00",
+                updatedAt = "2026-03-01T10:00:00"
+            )
+            val memberDto = HouseholdMemberResponse(
+                id = "mem-1",
+                householdId = "hh-1",
+                userId = "user-1",
+                familyMemberId = null,
+                name = "Ramesh",
+                role = "owner",
+                canEditSharedPlan = true,
+                isTemporary = false,
+                joinDate = "2026-03-01T10:00:00",
+                leaveDate = null,
+                portionSize = 1.0f,
+                status = "active"
+            )
+            val dto = HouseholdDetailResponse(
+                household = householdDto,
+                members = listOf(memberDto)
+            )
+
+            // When
+            val domain = dto.toDomain()
+
+            // Then
+            assertEquals("hh-1", domain.household.id)
+            assertEquals("Sharma Family", domain.household.name)
+            assertEquals(1, domain.members.size)
+            assertEquals("Ramesh", domain.members[0].name)
+            assertEquals(HouseholdRole.OWNER, domain.members[0].role)
+        }
+
+        @Test
+        @DisplayName("Should map HouseholdNotificationResponse to HouseholdNotification domain")
+        fun `should map HouseholdNotificationResponse to HouseholdNotification domain`() {
+            // Given
+            val dto = HouseholdNotificationResponse(
+                id = "notif-1",
+                householdId = "hh-1",
+                type = "member_joined",
+                title = "New Member",
+                message = "Sunita joined the household",
+                isRead = false,
+                metadata = mapOf("member_name" to "Sunita"),
+                createdAt = "2026-03-01T10:00:00"
+            )
+
+            // When
+            val domain = dto.toDomain()
+
+            // Then
+            assertEquals("notif-1", domain.id)
+            assertEquals("hh-1", domain.householdId)
+            assertEquals(HouseholdNotificationType.MEMBER_JOINED, domain.type)
+            assertEquals("New Member", domain.title)
+            assertEquals("Sunita joined the household", domain.message)
+            assertFalse(domain.isRead)
+            assertNotNull(domain.metadata)
+            assertEquals("Sunita", domain.metadata?.get("member_name"))
         }
     }
 }

@@ -269,6 +269,7 @@ object TestTags {
     const val HOUSEHOLD_MEMBER_PORTION_SIZE_PREFIX = "household_member_portion_size_"
 
     // Household Invite
+    const val HOUSEHOLD_INVITE_CODE = "household_invite_code"
     const val HOUSEHOLD_INVITE_CODE_DISPLAY = "household_invite_code_display"
     const val HOUSEHOLD_INVITE_SHARE_BUTTON = "household_invite_share_button"
     const val HOUSEHOLD_INVITE_REFRESH_BUTTON = "household_invite_refresh_button"

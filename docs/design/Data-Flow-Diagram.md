@@ -459,4 +459,86 @@ filtered = _filter_by_exclude_rules(recipes, exclude_rules, allergies, dislikes)
 
 ---
 
-*Last updated: March 7, 2026*
+## Household Data Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          HOUSEHOLD DATA FLOW                                     │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│   Household Screens (6 screens)                                                 │
+│   ┌────────────────────────────────────────────────────────────────────────┐    │
+│   │  HouseholdScreen → HouseholdMembersScreen → HouseholdMemberDetail    │    │
+│   │  JoinHouseholdScreen → HouseholdMealPlanScreen                        │    │
+│   │  HouseholdNotificationsScreen                                         │    │
+│   └────────────────────────────────┬───────────────────────────────────────┘    │
+│                                    │                                            │
+│                                    ▼                                            │
+│   HouseholdViewModel / HouseholdMembersViewModel / etc.                        │
+│   ┌────────────────────────────────────────────────────────────────────────┐    │
+│   │  HouseholdRepository (domain interface)                                │    │
+│   │  └─ HouseholdRepositoryImpl (data layer)                               │    │
+│   │     ├─ Room: HouseholdDao (households, household_members tables)       │    │
+│   │     └─ Retrofit: RasoiApiService (~18 household endpoints)             │    │
+│   └────────────────────────────────────────────────────────────────────────┘    │
+│                                                                                 │
+│   Room DB v13 (new tables):                                                     │
+│   ┌──────────────────┐  ┌───────────────────────┐                              │
+│   │   households     │  │  household_members    │                              │
+│   │ ──────────────── │  │ ───────────────────── │                              │
+│   │ id (PK)          │  │ id (PK)               │                              │
+│   │ name             │  │ householdId (FK)       │                              │
+│   │ inviteCode       │  │ userId                 │                              │
+│   │ ownerId          │  │ role (OWNER/ADMIN/     │                              │
+│   │ isActive         │  │       MEMBER)           │                              │
+│   │ createdAt        │  │ joinedAt               │                              │
+│   └──────────────────┘  └───────────────────────┘                              │
+│                                                                                 │
+│   Backend API (~18 endpoints):                                                  │
+│   ┌────────────────────────────────────────────────────────────────────────┐    │
+│   │  POST   /api/v1/households              Create household               │    │
+│   │  GET    /api/v1/households/me            Get user's household           │    │
+│   │  PUT    /api/v1/households/{id}          Update household               │    │
+│   │  DELETE /api/v1/households/{id}          Deactivate household           │    │
+│   │  POST   /api/v1/households/{id}/invite   Generate invite code          │    │
+│   │  POST   /api/v1/households/join          Join via invite code           │    │
+│   │  GET    /api/v1/households/{id}/members  List members                   │    │
+│   │  DELETE /api/v1/households/{id}/members/{mid}  Remove member            │    │
+│   │  PUT    /api/v1/households/{id}/members/{mid}/role  Update role         │    │
+│   │  GET    /api/v1/households/{id}/meal-plans  Household meal plans        │    │
+│   │  GET    /api/v1/households/{id}/notifications  Household notifications  │    │
+│   │  ... (+ constraints, stats, etc.)                                       │    │
+│   └────────────────────────────────────────────────────────────────────────┘    │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Scope Toggle (DataScope)
+
+Five screens support switching between personal and household-scoped data:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     SCOPE TOGGLE (ScopeToggle composable)       │
+│                                                                 │
+│   ┌──────────────┐      ┌──────────────┐                       │
+│   │   PERSONAL   │◄────►│    FAMILY    │                       │
+│   │  (DataScope) │      │  (DataScope) │                       │
+│   └──────┬───────┘      └──────┬───────┘                       │
+│          │                     │                                │
+│          ▼                     ▼                                │
+│   Existing repos         HouseholdRepository                   │
+│   (user-scoped data)     (household-scoped data)               │
+│                                                                 │
+│   Screens with scope toggle:                                    │
+│   • Stats        — personal vs household cooking stats          │
+│   • Grocery      — personal vs household grocery list           │
+│   • Favorites    — personal vs household favorites              │
+│   • Recipe Rules — personal vs household rules                  │
+│   • Chat         — personal vs household context                │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+*Last updated: March 8, 2026*

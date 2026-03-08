@@ -52,6 +52,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.rasoiai.app.presentation.common.components.ScopeToggle
 import com.rasoiai.app.presentation.favorites.components.AddCollectionCard
 import com.rasoiai.app.presentation.favorites.components.AddToCollectionDialog
 import com.rasoiai.app.presentation.favorites.components.CollectionCard
@@ -62,6 +63,7 @@ import com.rasoiai.app.presentation.home.components.RasoiBottomNavigation
 import com.rasoiai.app.presentation.navigation.Screen
 import com.rasoiai.app.presentation.theme.RasoiAITheme
 import com.rasoiai.app.presentation.theme.spacing
+import com.rasoiai.domain.model.DataScope
 import com.rasoiai.domain.model.FavoriteCollection
 
 @Composable
@@ -138,6 +140,7 @@ fun FavoritesScreen(
             }
         },
         onMoveRecipe = viewModel::onReorderRecipes,
+        onScopeChanged = viewModel::setScope,
         onBottomNavItemClick = { screen ->
             when (screen) {
                 Screen.Home -> viewModel.navigateToHome()
@@ -175,6 +178,7 @@ internal fun FavoritesScreenContent(
     onTimeFilterChange: (TimeFilter?) -> Unit,
     onReorderClick: () -> Unit,
     onMoveRecipe: (fromIndex: Int, toIndex: Int) -> Unit,
+    onScopeChanged: (DataScope) -> Unit = {},
     onBottomNavItemClick: (Screen) -> Unit
 ) {
     var showAddToCollectionDialog by remember { mutableStateOf<String?>(null) }
@@ -247,6 +251,12 @@ internal fun FavoritesScreenContent(
                 )
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
+                    // Scope Toggle
+                    ScopeToggle(
+                        selectedScope = uiState.selectedScope,
+                        onScopeChange = onScopeChanged
+                    )
+
                     // Collections Row
                     if (!uiState.isReorderMode) {
                         CollectionsRow(

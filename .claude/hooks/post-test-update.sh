@@ -80,6 +80,7 @@ fi
 append_test_run_evidence "$CMD" "$TARGET" "$RESULT"
 
 TS=$(date +%Y%m%d-%H%M%S 2>/dev/null || echo "$$")
+TS_DETAIL_DASH=$(date -Iseconds 2>/dev/null || date +"%Y-%m-%dT%H:%M:%S" 2>/dev/null || echo "unknown")
 # Use temp file for command text to avoid shell expansion issues
 EJ_CMD_TMP=$(mktemp 2>/dev/null || echo ".claude/.tmp_hook_ej_cmd_$$.txt")
 printf '%s' "$CMD" | head -c 200 > "$EJ_CMD_TMP"
@@ -94,5 +95,63 @@ print(json.dumps({'timestamp':'$TS','command':cmd,'target':'$TARGET','claimedRes
 " "$EJ_CMD_TMP" 2>/dev/null)
 rm -f "$EJ_CMD_TMP" 2>/dev/null
 if [ -n "$EJ" ]; then write_evidence "$EVIDENCE_DIR" "run-${TS}.json" "$EJ" >/dev/null; fi
+
+# --- Test Dashboard Update ---
+DASHBOARD_FILE="$PROJECT_DIR/.claude/logs/test-dashboard.json"
+
+# Extract pass/fail counts from test output
+PASS_COUNT=0; FAIL_COUNT=0; TOTAL_COUNT=0
+if [ "$PLATFORM" = "backend" ]; then
+    # pytest output: "580 passed" / "2 failed"
+    PASS_COUNT=$(echo "$HOOK_TOOL_OUTPUT" | grep -oP '\d+(?= passed)' | tail -1 2>/dev/null)
+    FAIL_COUNT=$(echo "$HOOK_TOOL_OUTPUT" | grep -oP '\d+(?= failed)' | tail -1 2>/dev/null)
+elif [ "$PLATFORM" = "android-unit" ] || [ "$PLATFORM" = "android-e2e" ]; then
+    # Gradle output: "580 tests, 578 passed, 2 failed" or "X tests completed, Y failed"
+    PASS_COUNT=$(echo "$HOOK_TOOL_OUTPUT" | grep -oP '\d+(?= passed)' | tail -1 2>/dev/null)
+    FAIL_COUNT=$(echo "$HOOK_TOOL_OUTPUT" | grep -oP '\d+(?= failed)' | tail -1 2>/dev/null)
+    # Fallback for Gradle "X tests completed" format
+    if [ -z "$PASS_COUNT" ] && [ -z "$FAIL_COUNT" ]; then
+        TOTAL_FROM_OUTPUT=$(echo "$HOOK_TOOL_OUTPUT" | grep -oP '\d+(?= tests? completed)' | tail -1 2>/dev/null)
+        FAIL_FROM_OUTPUT=$(echo "$HOOK_TOOL_OUTPUT" | grep -oP '\d+(?= failed)' | tail -1 2>/dev/null)
+        if [ -n "$TOTAL_FROM_OUTPUT" ]; then
+            FAIL_COUNT=${FAIL_FROM_OUTPUT:-0}
+            PASS_COUNT=$((TOTAL_FROM_OUTPUT - FAIL_COUNT))
+        fi
+    fi
+fi
+PASS_COUNT=${PASS_COUNT:-0}; FAIL_COUNT=${FAIL_COUNT:-0}
+TOTAL_COUNT=$((PASS_COUNT + FAIL_COUNT))
+
+# Write dashboard update via Python (handles JSON safely)
+DASH_CMD_TMP=$(mktemp 2>/dev/null || echo ".claude/.tmp_hook_dash_cmd_$$.txt")
+printf '%s' "$CMD" | head -c 200 > "$DASH_CMD_TMP"
+python -c "
+import json, os, sys, tempfile
+dashboard_path = '$DASHBOARD_FILE'
+cmd_text = ''
+try:
+    with open(sys.argv[1]) as f:
+        cmd_text = f.read()
+except: pass
+try:
+    with open(dashboard_path) as f: d = json.load(f)
+except: d = {'sessionId': None, 'platforms': {}}
+
+d['lastUpdated'] = '$TS_DETAIL_DASH'
+d['platforms']['$PLATFORM'] = {
+    'lastRun': '$TS_DETAIL_DASH',
+    'result': '$RESULT',
+    'passed': $PASS_COUNT,
+    'failed': $FAIL_COUNT,
+    'total': $TOTAL_COUNT,
+    'target': '$TARGET',
+    'command': cmd_text
+}
+os.makedirs(os.path.dirname(dashboard_path), exist_ok=True)
+fd, tmp = tempfile.mkstemp(dir=os.path.dirname(dashboard_path))
+with os.fdopen(fd, 'w') as f: json.dump(d, f, indent=2)
+os.replace(tmp, dashboard_path)
+" "$DASH_CMD_TMP" 2>/dev/null
+rm -f "$DASH_CMD_TMP" 2>/dev/null
 
 exit 0

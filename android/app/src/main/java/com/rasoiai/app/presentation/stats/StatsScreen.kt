@@ -35,12 +35,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import com.rasoiai.app.presentation.common.TestTags
+import com.rasoiai.app.presentation.common.components.ScopeToggle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rasoiai.app.presentation.home.components.RasoiBottomNavigation
 import com.rasoiai.app.presentation.navigation.Screen
 import com.rasoiai.app.presentation.stats.components.AchievementsSection
+import com.rasoiai.domain.model.DataScope
 import com.rasoiai.app.presentation.stats.components.ChallengeCard
 import com.rasoiai.app.presentation.stats.components.CookingCalendar
 import com.rasoiai.app.presentation.stats.components.CuisineBreakdownSection
@@ -112,6 +114,7 @@ fun StatsScreen(
         onShareAchievement = viewModel::onShareAchievement,
         onJoinChallenge = viewModel::onJoinChallenge,
         onViewFullLeaderboard = viewModel::onViewFullLeaderboard,
+        onScopeChanged = viewModel::setScope,
         onBottomNavItemClick = { screen ->
             when (screen) {
                 Screen.Home -> viewModel.navigateToHome()
@@ -139,6 +142,7 @@ internal fun StatsScreenContent(
     onShareAchievement: (Achievement) -> Unit,
     onJoinChallenge: () -> Unit,
     onViewFullLeaderboard: () -> Unit,
+    onScopeChanged: (DataScope) -> Unit = {},
     onBottomNavItemClick: (Screen) -> Unit
 ) {
     Scaffold(
@@ -196,6 +200,14 @@ internal fun StatsScreenContent(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(vertical = spacing.md)
                 ) {
+                    // Scope Toggle
+                    item {
+                        ScopeToggle(
+                            selectedScope = uiState.selectedScope,
+                            onScopeChange = onScopeChanged
+                        )
+                    }
+
                     // Streak Card
                     item {
                         uiState.cookingStreak?.let { streak ->

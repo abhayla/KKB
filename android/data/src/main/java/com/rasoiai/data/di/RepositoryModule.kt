@@ -1,6 +1,7 @@
 package com.rasoiai.data.di
 
 import com.rasoiai.data.repository.AuthRepositoryImpl
+import com.rasoiai.data.repository.HouseholdRepositoryImpl
 import com.rasoiai.data.repository.ChatRepositoryImpl
 import com.rasoiai.data.repository.FavoritesRepositoryImpl
 import com.rasoiai.data.repository.GroceryRepositoryImpl
@@ -12,6 +13,7 @@ import com.rasoiai.data.repository.RecipeRulesRepositoryImpl
 import com.rasoiai.data.repository.SettingsRepositoryImpl
 import com.rasoiai.data.repository.StatsRepositoryImpl
 import com.rasoiai.domain.repository.AuthRepository
+import com.rasoiai.domain.repository.HouseholdRepository
 import com.rasoiai.domain.repository.ChatRepository
 import com.rasoiai.domain.repository.FavoritesRepository
 import com.rasoiai.domain.repository.GroceryRepository
@@ -79,4 +81,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindNotificationRepository(impl: NotificationRepositoryImpl): NotificationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindHouseholdRepository(impl: HouseholdRepositoryImpl): HouseholdRepository
 }
