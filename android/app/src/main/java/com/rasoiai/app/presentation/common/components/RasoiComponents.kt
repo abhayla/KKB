@@ -33,6 +33,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import com.rasoiai.app.presentation.common.TestTags
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -217,12 +218,13 @@ fun ScopeToggle(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .testTag("scope_toggle")
+            .testTag(TestTags.SCOPE_TOGGLE)
     ) {
         SegmentedButton(
             selected = selectedScope == DataScope.FAMILY,
             onClick = { onScopeChange(DataScope.FAMILY) },
             shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+            modifier = Modifier.testTag(TestTags.SCOPE_TOGGLE_FAMILY),
             colors = SegmentedButtonDefaults.colors(
                 activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
                 activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -234,6 +236,7 @@ fun ScopeToggle(
             selected = selectedScope == DataScope.PERSONAL,
             onClick = { onScopeChange(DataScope.PERSONAL) },
             shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+            modifier = Modifier.testTag(TestTags.SCOPE_TOGGLE_PERSONAL),
             colors = SegmentedButtonDefaults.colors(
                 activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
                 activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer

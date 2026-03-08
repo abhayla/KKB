@@ -79,6 +79,7 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~62 endpoints, 13+ rout
 | Visual Refresh (Warm-Modern) | DONE | Updated Color.kt, Type.kt (Outfit+DM Sans), Theme.kt (extended colors, gradients), RasoiComponents.kt |
 | Family/Personal Toggle | DONE | ScopeToggle on Stats, Grocery, Favorites, RecipeRules, Chat screens |
 | Room DB v13 | DONE | Migration 12→13: household + household_members tables |
+| Gap Analysis E2E Coverage | DONE | ScopeToggleFlowTest (11 tests), AchievementsFlowTest (6 tests), NotificationsFlowTest (7 tests), J10 expanded (4→6), J16 expanded (2→3) |
 
 ---
 
@@ -86,6 +87,7 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~62 endpoints, 13+ rout
 
 | Session | Milestone |
 |---------|-----------|
+| 48+ | Gap analysis: 3 new E2E flow tests (ScopeToggle 11, Achievements 6, Notifications 7), TestTags SCOPE_TOGGLE constants, J10 expanded (4→6 files), J16 expanded (2→3 files) |
 | 47+ | Household Android UI (7 screens), warm-modern design system (Color/Type/Theme), Family/Personal scope toggle (5 screens), Room DB v13, RasoiComponents |
 | 46+ | Gemini structured output (response_json_schema + short keys), generation tracker, meal gen performance (180s timeout, ~35s gen), multi-user load testing |
 | 45 | Customer journey test suites: 14 JUnit @Suite classes (J01-J14), 100% test file coverage, documentation |
@@ -98,6 +100,6 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~62 endpoints, 13+ rout
 
 ---
 
-*Last Updated: March 8, 2026*
-*E2E suite: 28 files, ~170 tests (125 active + 45 @Ignore household with real bodies), 17 customer journey suites (J01-J17). ~580 backend tests (46 files). ~630+ Android unit tests. 750+ UI tests.*
+*Last Updated: March 9, 2026*
+*E2E suite: 31 files, ~194 tests (125 active + 69 @Ignore with real bodies), 17 customer journey suites (J01-J17). ~580 backend tests (46 files). ~630+ Android unit tests. 750+ UI tests.*
 *~62 API endpoints across 13+ routers. 3,580 recipes. ~525 requirements across 12 screen files. Room DB v13. 25+ screens.*

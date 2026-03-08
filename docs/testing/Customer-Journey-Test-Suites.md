@@ -1,6 +1,6 @@
 # Customer Journey Test Suites
 
-17 journey-based test suites that group the 28 E2E test files into realistic user scenarios. Each journey has a runnable JUnit `@Suite` class.
+17 journey-based test suites that group the 31 E2E test files into realistic user scenarios. Each journey has a runnable JUnit `@Suite` class.
 
 **Location:** `android/app/src/androidTest/java/com/rasoiai/app/e2e/journeys/`
 
@@ -31,13 +31,13 @@ cd android
 | `J07` | Managing Dietary Preferences | 3 |
 | `J08` | AI Meal Plan Quality Assurance | 2 |
 | `J09` | Family Profile Management | 2 |
-| `J10` | Exploring App Features | 4 |
+| `J10` | Exploring App Features | 6 |
 | `J11` | Customizing App Settings | 3 |
 | `J12` | Offline and Error Resilience | 2 |
 | `J13` | Returning User Quick Check | 3 |
 | `J14` | AI Chat and Recipe Discovery | 3 |
 | `J15` | Household Setup & Member Management | 2 |
-| `J16` | Household Meal Collaboration | 2 |
+| `J16` | Household Meal Collaboration | 3 |
 | `J17` | Household Notifications & Awareness | 2 |
 
 ---
@@ -129,7 +129,7 @@ User manages family members, verifies data persists across onboarding and settin
 
 ### J10: Exploring App Features
 
-User browses favorites, chats with AI, checks cooking stats, manages pantry.
+User browses favorites, chats with AI, checks cooking stats, manages pantry, views achievements, and checks notifications.
 
 | Order | Test File | What It Covers |
 |:-----:|-----------|----------------|
@@ -137,6 +137,8 @@ User browses favorites, chats with AI, checks cooking stats, manages pantry.
 | 2 | `ChatFlowTest` | AI chat, context awareness, recipe suggestions |
 | 3 | `StatsScreenTest` | Cooking streak, calendar, achievements |
 | 4 | `PantryFlowTest` | Pantry items, expiry tracking, smart suggestions |
+| 5 | `AchievementsFlowTest` | Navigation from Stats, badge display, achievement list |
+| 6 | `NotificationsFlowTest` | Notification list, filtering, mark read, empty state |
 
 ### J11: Customizing App Settings
 
@@ -188,12 +190,13 @@ User creates a household, manages members, generates and shares invite codes.
 
 ### J16: Household Meal Collaboration
 
-Household members manage shared recipe rules and collaborate on meal plans.
+Household members manage shared recipe rules, collaborate on meal plans, and use the Family/Personal scope toggle across screens.
 
 | Order | Test File | What It Covers |
 |:-----:|-----------|----------------|
 | 1 | `HouseholdRecipeRulesFlowTest` | Household INCLUDE/EXCLUDE rules, merged constraints |
 | 2 | `HouseholdMealPlanFlowTest` | Shared meal plan, item status (cooked/skipped/ordered out), monthly stats |
+| 3 | `ScopeToggleFlowTest` | Family/Personal toggle on Stats, Grocery, Favorites, RecipeRules, Chat |
 
 ### J17: Household Notifications & Awareness
 
