@@ -202,6 +202,116 @@ async def test_update_meal_item_status(client, db_session, test_user):
     assert resp.json()["meal_status"] == "COOKED"
 
 
+async def test_update_meal_item_status_with_edit_access(client, db_session, test_user):
+    """Member WITH can_edit_shared_plan can update status."""
+    other = make_user(name="Edit Owner", phone_number="+911111100031")
+    db_session.add(other)
+    await db_session.flush()
+
+    household = make_household(owner_id=other.id)
+    db_session.add(household)
+    await db_session.flush()
+
+    owner_member = make_household_member(
+        household_id=household.id,
+        user_id=other.id,
+        role="OWNER",
+        can_edit_shared_plan=True,
+    )
+    editor_member = make_household_member(
+        household_id=household.id,
+        user_id=test_user.id,
+        role="MEMBER",
+        can_edit_shared_plan=True,
+    )
+    db_session.add(owner_member)
+    db_session.add(editor_member)
+    await db_session.flush()
+
+    plan = MealPlan(
+        id=str(uuid.uuid4()),
+        user_id=other.id,
+        household_id=household.id,
+        week_start_date=date(2026, 3, 9),
+        week_end_date=date(2026, 3, 15),
+        is_active=True,
+    )
+    db_session.add(plan)
+    await db_session.flush()
+
+    item = MealPlanItem(
+        id=str(uuid.uuid4()),
+        meal_plan_id=plan.id,
+        date=date(2026, 3, 9),
+        meal_type="dinner",
+        recipe_name="Paneer Masala",
+    )
+    db_session.add(item)
+    await db_session.commit()
+
+    resp = await client.put(
+        f"/api/v1/households/{household.id}/meal-plans/{plan.id}/items/{item.id}/status",
+        params={"status": "COOKED"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["meal_status"] == "COOKED"
+
+
+async def test_update_meal_item_status_no_edit_access(client, db_session, test_user):
+    """Member without can_edit_shared_plan cannot update status."""
+    other = make_user(name="Status Owner", phone_number="+911111100030")
+    db_session.add(other)
+    await db_session.flush()
+
+    household = make_household(owner_id=other.id)
+    db_session.add(household)
+    await db_session.flush()
+
+    owner_member = make_household_member(
+        household_id=household.id,
+        user_id=other.id,
+        role="OWNER",
+        can_edit_shared_plan=True,
+    )
+    # Add test_user as regular member WITHOUT edit access
+    regular_member = make_household_member(
+        household_id=household.id,
+        user_id=test_user.id,
+        role="MEMBER",
+        can_edit_shared_plan=False,
+    )
+    db_session.add(owner_member)
+    db_session.add(regular_member)
+    await db_session.flush()
+
+    plan = MealPlan(
+        id=str(uuid.uuid4()),
+        user_id=other.id,
+        household_id=household.id,
+        week_start_date=date(2026, 3, 9),
+        week_end_date=date(2026, 3, 15),
+        is_active=True,
+    )
+    db_session.add(plan)
+    await db_session.flush()
+
+    item = MealPlanItem(
+        id=str(uuid.uuid4()),
+        meal_plan_id=plan.id,
+        date=date(2026, 3, 9),
+        meal_type="lunch",
+        recipe_name="Dal Fry",
+    )
+    db_session.add(item)
+    await db_session.commit()
+
+    resp = await client.put(
+        f"/api/v1/households/{household.id}/meal-plans/{plan.id}/items/{item.id}/status",
+        params={"status": "COOKED"},
+    )
+    assert resp.status_code == 403
+
+
 async def test_update_meal_item_status_not_found(client, db_session, test_user):
     """Returns 404 for non-existent item."""
     create_resp = await client.post("/api/v1/households", json={"name": "Not Found HH"})

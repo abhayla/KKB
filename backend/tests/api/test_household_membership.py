@@ -143,6 +143,34 @@ async def test_join_already_member(client, db_session):
     assert resp.status_code == 409
 
 
+async def test_join_at_capacity(client, db_session):
+    """Join when household is at max capacity — 400."""
+    other_user = make_user(name="Full Host", phone_number="+919000000020")
+    db_session.add(other_user)
+    await db_session.flush()
+
+    household = make_household(owner_id=other_user.id, max_members=1)
+    db_session.add(household)
+    await db_session.flush()
+
+    owner_member = make_household_member(
+        household_id=household.id,
+        user_id=other_user.id,
+        role="OWNER",
+        can_edit_shared_plan=True,
+    )
+    db_session.add(owner_member)
+
+    household.invite_code = "FULLHH01"
+    household.invite_code_expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    await db_session.commit()
+
+    resp = await client.post(
+        "/api/v1/households/join", json={"invite_code": "FULLHH01"}
+    )
+    assert resp.status_code == 400
+
+
 # ── Leave ────────────────────────────────────────────────────────────────────
 
 
@@ -306,6 +334,63 @@ async def test_update_member_change_owner_role_blocked(client, db_session):
     assert resp.status_code == 400
 
 
+async def test_update_member_not_owner(client, db_session, test_user):
+    """Non-owner cannot update member attributes — 403."""
+    other_user = make_user(name="Update Owner", phone_number="+919000000021")
+    db_session.add(other_user)
+    await db_session.flush()
+
+    household = make_household(owner_id=other_user.id)
+    db_session.add(household)
+    await db_session.flush()
+
+    owner_member = make_household_member(
+        household_id=household.id,
+        user_id=other_user.id,
+        role="OWNER",
+        can_edit_shared_plan=True,
+    )
+    test_member = make_household_member(
+        household_id=household.id, user_id=test_user.id, role="MEMBER"
+    )
+    db_session.add_all([owner_member, test_member])
+    await db_session.commit()
+
+    resp = await client.put(
+        f"/api/v1/households/{household.id}/members/{test_member.id}",
+        json={"portion_size": "LARGE"},
+    )
+    assert resp.status_code == 403
+
+
+async def test_update_member_can_edit_shared_plan(client, db_session):
+    """Owner grants can_edit_shared_plan to a member — 200."""
+    resp = await client.post(
+        "/api/v1/households", json={"name": "Edit Perm Test"}
+    )
+    assert resp.status_code == 201
+    household_id = resp.json()["id"]
+
+    second_user = make_user(name="Edit User", phone_number="+919000000022")
+    db_session.add(second_user)
+    await db_session.commit()
+
+    resp = await client.post(
+        f"/api/v1/households/{household_id}/members",
+        json={"phone_number": "+919000000022"},
+    )
+    assert resp.status_code == 201
+    member_id = resp.json()["id"]
+    assert resp.json()["can_edit_shared_plan"] is False
+
+    resp = await client.put(
+        f"/api/v1/households/{household_id}/members/{member_id}",
+        json={"can_edit_shared_plan": True},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["can_edit_shared_plan"] is True
+
+
 # ── Remove Member ────────────────────────────────────────────────────────────
 
 
@@ -346,3 +431,47 @@ async def test_remove_self_blocked(client, db_session):
         f"/api/v1/households/{household_id}/members/{owner_member['id']}"
     )
     assert resp.status_code == 400
+
+
+async def test_remove_member_not_owner(client, db_session, test_user):
+    """Non-owner cannot remove a member — 403."""
+    other_user = make_user(name="Remove Owner", phone_number="+919000000023")
+    db_session.add(other_user)
+    await db_session.flush()
+
+    household = make_household(owner_id=other_user.id)
+    db_session.add(household)
+    await db_session.flush()
+
+    owner_member = make_household_member(
+        household_id=household.id,
+        user_id=other_user.id,
+        role="OWNER",
+        can_edit_shared_plan=True,
+    )
+    test_member = make_household_member(
+        household_id=household.id, user_id=test_user.id, role="MEMBER"
+    )
+    db_session.add_all([owner_member, test_member])
+    await db_session.commit()
+
+    resp = await client.delete(
+        f"/api/v1/households/{household.id}/members/{owner_member.id}"
+    )
+    assert resp.status_code == 403
+
+
+async def test_remove_member_not_found(client, db_session):
+    """Remove non-existent member — 404."""
+    import uuid
+
+    resp = await client.post(
+        "/api/v1/households", json={"name": "Remove 404 Test"}
+    )
+    assert resp.status_code == 201
+    household_id = resp.json()["id"]
+
+    resp = await client.delete(
+        f"/api/v1/households/{household_id}/members/{uuid.uuid4()}"
+    )
+    assert resp.status_code == 404

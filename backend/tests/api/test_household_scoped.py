@@ -166,6 +166,31 @@ async def test_list_rules_not_member(client, db_session):
     assert resp.status_code == 403
 
 
+async def test_delete_rule_not_owner(client, db_session):
+    """Non-owner cannot delete household rules."""
+    second_user = make_user(name="Del Rule Owner", phone_number="+911111100013")
+    db_session.add(second_user)
+    await db_session.flush()
+
+    household = make_household(owner_id=second_user.id)
+    db_session.add(household)
+    await db_session.flush()
+
+    owner_member = make_household_member(
+        household_id=household.id,
+        user_id=second_user.id,
+        role="OWNER",
+        can_edit_shared_plan=True,
+    )
+    db_session.add(owner_member)
+    await db_session.commit()
+
+    resp = await client.delete(
+        f"/api/v1/households/{household.id}/recipe-rules/{uuid.uuid4()}"
+    )
+    assert resp.status_code == 403
+
+
 async def test_create_include_rule_with_details(client):
     """Create INCLUDE rule with frequency_count and meal_slot."""
     create_resp = await client.post(

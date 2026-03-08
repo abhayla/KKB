@@ -194,6 +194,29 @@ async def test_list_members(client):
     assert len(members) == 1
 
 
+async def test_list_members_not_member(client, db_session):
+    """Non-member cannot list household members."""
+    other = make_user(name="List Owner", phone_number="+911111100050")
+    db_session.add(other)
+    await db_session.flush()
+
+    household = make_household(owner_id=other.id)
+    db_session.add(household)
+    await db_session.flush()
+
+    owner_member = make_household_member(
+        household_id=household.id,
+        user_id=other.id,
+        role="OWNER",
+        can_edit_shared_plan=True,
+    )
+    db_session.add(owner_member)
+    await db_session.commit()
+
+    resp = await client.get(f"/api/v1/households/{household.id}/members")
+    assert resp.status_code == 403
+
+
 # ──────────────────────────────────────────────
 # ADD MEMBER
 # ──────────────────────────────────────────────
