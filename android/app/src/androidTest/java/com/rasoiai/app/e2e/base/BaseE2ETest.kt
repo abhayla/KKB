@@ -650,8 +650,8 @@ abstract class BaseE2ETest {
     companion object {
         private const val TAG = "BaseE2ETest"
 
-        // Backend URL - use 10.0.2.2 for Android emulator to access localhost
-        const val BACKEND_BASE_URL = "http://10.0.2.2:8000"
+        // Backend URL - use 10.0.2.2 for emulator, 192.168.1.3 for physical device
+        const val BACKEND_BASE_URL = "http://192.168.1.3:8000"
 
         // One-time flag: generate meal plan via Gemini only once across all tests
         private var backendMealPlanGenerated = false

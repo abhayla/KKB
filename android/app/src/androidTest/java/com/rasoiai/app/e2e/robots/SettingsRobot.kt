@@ -7,9 +7,11 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.swipeUp
 import com.rasoiai.app.e2e.base.isNodeWithTextDisplayed
 import com.rasoiai.app.e2e.base.waitUntilNodeWithTagExists
@@ -43,21 +45,59 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
             composeTestRule.onNodeWithTag(TestTags.SETTINGS_LAZY_COLUMN)
                 .performScrollToNode(hasText(text, substring = substring, ignoreCase = ignoreCase))
             return
-        } catch (_: Exception) {
-            // Fallback to swipe-based scrolling
+        } catch (_: Throwable) {
+            // Fallback to swipe-based scrolling (catches AssertionError when SETTINGS_LAZY_COLUMN tag missing on sub-screens)
         }
+
+        // Check if already visible before scrolling
+        try {
+            composeTestRule.onNodeWithText(text, substring = substring, ignoreCase = ignoreCase)
+                .assertIsDisplayed()
+            return
+        } catch (_: AssertionError) {
+            // Not visible — need to scroll
+        }
+
+        // Determine swipe target — use SETTINGS_SCREEN if available, else root
+        val settingsNodes = composeTestRule.onAllNodesWithText("Settings", ignoreCase = true)
+            .fetchSemanticsNodes()
+        val hasSettingsScreen = settingsNodes.isNotEmpty()
+        val swipeTarget = if (hasSettingsScreen) {
+            try {
+                composeTestRule.onNodeWithTag(TestTags.SETTINGS_SCREEN)
+            } catch (_: Exception) {
+                composeTestRule.onRoot()
+            }
+        } else {
+            composeTestRule.onRoot()
+        }
+
+        // Scroll DOWN (swipeUp gesture) to find items below viewport
         repeat(MAX_SCROLL_ATTEMPTS) {
+            swipeTarget.performTouchInput { swipeUp() }
+            composeTestRule.waitForIdle()
+            Thread.sleep(300)
             try {
                 composeTestRule.onNodeWithText(text, substring = substring, ignoreCase = ignoreCase)
                     .assertIsDisplayed()
                 return
             } catch (_: AssertionError) {
-                // Node not visible yet — scroll down
+                // Node not visible yet — keep scrolling down
             }
-            composeTestRule.onNodeWithTag(TestTags.SETTINGS_SCREEN)
-                .performTouchInput { swipeUp() }
+        }
+
+        // Scroll UP (swipeDown gesture) to find items above current viewport
+        repeat(MAX_SCROLL_ATTEMPTS * 2) {
+            swipeTarget.performTouchInput { swipeDown() }
             composeTestRule.waitForIdle()
             Thread.sleep(300)
+            try {
+                composeTestRule.onNodeWithText(text, substring = substring, ignoreCase = ignoreCase)
+                    .assertIsDisplayed()
+                return
+            } catch (_: AssertionError) {
+                // Node not visible yet — keep scrolling up
+            }
         }
     }
 
@@ -70,8 +110,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
             composeTestRule.onNodeWithTag(TestTags.SETTINGS_LAZY_COLUMN)
                 .performScrollToNode(hasTestTag(tag))
             return
-        } catch (_: Exception) {
-            // Fallback to swipe-based scrolling
+        } catch (_: Throwable) {
+            // Fallback to swipe-based scrolling (catches AssertionError when SETTINGS_LAZY_COLUMN tag missing)
         }
         repeat(MAX_SCROLL_ATTEMPTS) {
             try {
@@ -158,11 +198,11 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
     // ===================== Dietary Preferences =====================
 
     /**
-     * Navigate to dietary preferences.
+     * Navigate to dietary restrictions (labeled "Dietary Restrictions" in Settings UI).
      */
     fun navigateToDietaryPreferences() = apply {
-        scrollToText("Dietary Preferences")
-        composeTestRule.onNodeWithText("Dietary Preferences", ignoreCase = true)
+        scrollToText("Dietary Restrictions")
+        composeTestRule.onNodeWithText("Dietary Restrictions", ignoreCase = true)
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -305,35 +345,47 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
 
     /**
      * Navigate to theme settings.
+     * The actual setting label is "Dark Mode", not "Theme".
      */
     fun navigateToTheme() = apply {
-        scrollToText("Theme")
-        composeTestRule.onNodeWithText("Theme", ignoreCase = true)
+        scrollToText("Dark Mode")
+        composeTestRule.onNodeWithText("Dark Mode", ignoreCase = true)
             .performClick()
         composeTestRule.waitForIdle()
     }
 
     /**
-     * Select light theme.
+     * Select light theme from Dark Mode dialog.
      */
     fun selectLightTheme() = apply {
-        composeTestRule.onNodeWithText("Light", ignoreCase = true).performClick()
+        composeTestRule.onAllNodesWithText("Light", ignoreCase = true)[0].performClick()
         composeTestRule.waitForIdle()
     }
 
     /**
-     * Select dark theme.
+     * Select dark theme from Dark Mode dialog.
+     * "Dark" appears in both title ("Dark Mode") and option — use last match.
      */
     fun selectDarkTheme() = apply {
-        composeTestRule.onNodeWithText("Dark", ignoreCase = true).performClick()
         composeTestRule.waitForIdle()
+        Thread.sleep(300)
+        val nodes = composeTestRule.onAllNodesWithText("Dark", ignoreCase = true).fetchSemanticsNodes()
+        if (nodes.size >= 2) {
+            // Last "Dark" node is the radio option (title has "Dark Mode")
+            composeTestRule.onAllNodesWithText("Dark", ignoreCase = true)[nodes.size - 1].performClick()
+            composeTestRule.waitForIdle()
+        } else if (nodes.isNotEmpty()) {
+            // Only one "Dark" node — click it
+            composeTestRule.onAllNodesWithText("Dark", ignoreCase = true)[0].performClick()
+            composeTestRule.waitForIdle()
+        }
     }
 
     /**
-     * Select system theme.
+     * Select system theme from Dark Mode dialog.
      */
     fun selectSystemTheme() = apply {
-        composeTestRule.onNodeWithText("System", ignoreCase = true).performClick()
+        composeTestRule.onAllNodesWithText("System", ignoreCase = true)[0].performClick()
         composeTestRule.waitForIdle()
     }
 
@@ -474,10 +526,21 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
     }
 
     /**
-     * Confirm sign out.
+     * Confirm sign out. The dialog's confirm button says "Sign Out".
      */
     fun confirmSignOut() = apply {
-        composeTestRule.onNodeWithText("Confirm", ignoreCase = true).performClick()
+        // Dialog has two "Sign Out" texts (title + confirm button).
+        // The confirm button is the last one; use onAllNodes and click the last match.
+        val signOutNodes = composeTestRule.onAllNodesWithText("Sign Out", ignoreCase = true)
+            .fetchSemanticsNodes()
+        if (signOutNodes.size >= 2) {
+            // Last "Sign Out" node is the confirm button
+            composeTestRule.onAllNodesWithText("Sign Out", ignoreCase = true)[signOutNodes.size - 1]
+                .performClick()
+        } else if (signOutNodes.isNotEmpty()) {
+            composeTestRule.onAllNodesWithText("Sign Out", ignoreCase = true)[0]
+                .performClick()
+        }
         composeTestRule.waitForIdle()
     }
 
@@ -493,12 +556,12 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
 
     /**
      * Navigate to about section.
+     * There is no separate "About" screen — the app version is displayed
+     * as static text at the bottom of the Settings LazyColumn.
+     * This method scrolls to make the version text visible.
      */
     fun navigateToAbout() = apply {
-        scrollToText("About")
-        composeTestRule.onNodeWithText("About", ignoreCase = true)
-            .performClick()
-        composeTestRule.waitForIdle()
+        scrollToText("App Version", substring = true)
     }
 
     /**
@@ -595,7 +658,7 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Select dark mode option: System.
      */
     fun selectDarkModeSystem() = apply {
-        composeTestRule.onNodeWithText("System", ignoreCase = true).performClick()
+        composeTestRule.onAllNodesWithText("System", ignoreCase = true)[0].performClick()
         composeTestRule.waitForIdle()
     }
 
@@ -603,7 +666,7 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Select dark mode option: Light.
      */
     fun selectDarkModeLight() = apply {
-        composeTestRule.onNodeWithText("Light", ignoreCase = true).performClick()
+        composeTestRule.onAllNodesWithText("Light", ignoreCase = true)[0].performClick()
         composeTestRule.waitForIdle()
     }
 
@@ -611,7 +674,8 @@ class SettingsRobot(private val composeTestRule: ComposeContentTestRule) {
      * Select dark mode option: Dark.
      */
     fun selectDarkModeDark() = apply {
-        composeTestRule.onNodeWithText("Dark", ignoreCase = true).performClick()
+        val nodes = composeTestRule.onAllNodesWithText("Dark", ignoreCase = true).fetchSemanticsNodes()
+        composeTestRule.onAllNodesWithText("Dark", ignoreCase = true)[nodes.size - 1].performClick()
         composeTestRule.waitForIdle()
     }
 

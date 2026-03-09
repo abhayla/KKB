@@ -681,16 +681,23 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
         Thread.sleep(800)
         composeTestRule.waitForIdle()
 
-        // Step 3: Find and click the category in the expanded dropdown menu
+        // Step 3: Find and click the category in the expanded dropdown menu (with retry)
+        // Categories may not render immediately after dropdown opens — poll for up to 5 seconds
         Log.d(TAG, "Searching for category '$categoryText' in dropdown menu...")
-        val nodes = composeTestRule.onAllNodesWithText(categoryText, substring = true, ignoreCase = true)
-            .fetchSemanticsNodes()
-        Log.d(TAG, "Found ${nodes.size} nodes with text '$categoryText' via Compose")
-        if (nodes.isNotEmpty()) {
-            composeTestRule.onAllNodesWithText(categoryText, substring = true, ignoreCase = true)[0]
-                .performClick()
+        val maxWaitMs = 5000L
+        val pollStartTime = System.currentTimeMillis()
+        while ((System.currentTimeMillis() - pollStartTime) < maxWaitMs) {
+            val nodes = composeTestRule.onAllNodesWithText(categoryText, substring = true, ignoreCase = true)
+                .fetchSemanticsNodes()
+            if (nodes.isNotEmpty()) {
+                Log.d(TAG, "Found ${nodes.size} nodes with text '$categoryText' via Compose")
+                composeTestRule.onAllNodesWithText(categoryText, substring = true, ignoreCase = true)[0]
+                    .performClick()
+                composeTestRule.waitForIdle()
+                return@apply
+            }
+            Thread.sleep(300)
             composeTestRule.waitForIdle()
-            return@apply
         }
 
         // Fallback to UiAutomator with longer wait
@@ -699,9 +706,38 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
             Log.d(TAG, "Found category '$categoryText' via UiAutomator, clicking")
             categoryElement.click()
         } else {
-            throw AssertionError("Could not find category '$categoryText' in dropdown menu")
+            throw AssertionError("Could not find category '$categoryText' in dropdown menu after ${maxWaitMs}ms polling + UiAutomator wait")
         }
         composeTestRule.waitForIdle()
+    }
+
+    /**
+     * Wait for food categories to load in the AddNutritionGoalSheet.
+     * Categories are populated asynchronously via repository.getAvailableFoodCategories().
+     * The sheet renders "Available categories:" text only when the list is non-empty.
+     */
+    private fun waitForCategoriesToLoad(timeoutMillis: Long = 8000) {
+        Log.d(TAG, "Waiting for food categories to load...")
+        val startTime = System.currentTimeMillis()
+        while ((System.currentTimeMillis() - startTime) < timeoutMillis) {
+            val nodes = composeTestRule.onAllNodesWithText("Available categories:", substring = true, ignoreCase = true)
+                .fetchSemanticsNodes()
+            if (nodes.isNotEmpty()) {
+                Log.d(TAG, "Food categories loaded (found 'Available categories:' text)")
+                composeTestRule.waitForIdle()
+                return
+            }
+            // Also check if "All categories have goals" is shown (all used up)
+            val allUsedNodes = composeTestRule.onAllNodesWithText("All categories have goals", substring = true, ignoreCase = true)
+                .fetchSemanticsNodes()
+            if (allUsedNodes.isNotEmpty()) {
+                Log.d(TAG, "All food categories already have goals")
+                composeTestRule.waitForIdle()
+                return
+            }
+            Thread.sleep(300)
+        }
+        Log.w(TAG, "Timed out waiting for categories to load after ${timeoutMillis}ms — proceeding anyway")
     }
 
     /**
@@ -711,6 +747,10 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
         Log.d(TAG, "Adding nutrition goal: ${goal.foodCategory}")
         tapAddNutritionGoal()
         Thread.sleep(500) // Wait for sheet to open
+
+        // Wait for categories to load asynchronously before interacting with dropdown.
+        // The sheet shows "Available categories:" text only when availableFoodCategories is non-empty.
+        waitForCategoriesToLoad()
 
         selectFoodCategory(goal.foodCategory)
         Thread.sleep(300)
