@@ -536,7 +536,7 @@ class OnboardingRobot(private val composeTestRule: ComposeContentTestRule) {
     /**
      * Wait for generating screen after onboarding.
      */
-    fun waitForGeneratingScreen(timeoutMillis: Long = 5000) = apply {
+    fun waitForGeneratingScreen(timeoutMillis: Long = 10000) = apply {
         composeTestRule.waitUntilNodeWithTagExists(TestTags.GENERATING_SCREEN, timeoutMillis)
     }
 }

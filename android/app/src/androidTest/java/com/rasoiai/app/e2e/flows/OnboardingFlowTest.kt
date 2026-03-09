@@ -45,7 +45,7 @@ class OnboardingFlowTest : BaseE2ETest() {
         authRobot.waitForAuthScreen()
         authRobot.enterPhoneNumber()
         authRobot.tapSendOtp()
-        authRobot.assertNavigatedToOnboarding()
+        authRobot.assertNavigatedToOnboarding(15000)
     }
 
     /**
@@ -231,7 +231,7 @@ class OnboardingFlowTest : BaseE2ETest() {
         onboardingRobot.tapCreateMealPlan()
 
         // Should navigate to generating screen
-        onboardingRobot.waitForGeneratingScreen()
+        onboardingRobot.waitForGeneratingScreen(10000)
     }
 
     /**

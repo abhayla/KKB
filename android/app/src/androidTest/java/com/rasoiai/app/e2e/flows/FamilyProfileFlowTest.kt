@@ -89,7 +89,7 @@ class FamilyProfileFlowTest : BaseE2ETest() {
             Log.d(TAG, "Auth screen displayed")
             authRobot.enterPhoneNumber()
             authRobot.tapSendOtp()
-            authRobot.assertNavigatedToOnboarding()
+            authRobot.assertNavigatedToOnboarding(15000)
             Log.d(TAG, "Navigated to onboarding")
 
             // Step 3: Complete onboarding with Sharma Family data

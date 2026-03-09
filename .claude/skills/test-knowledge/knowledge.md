@@ -49,7 +49,12 @@ Always compare recipe IDs as strings in queries. `uuid.UUID` vs `String(36)` col
 **Tags:** #e2e #auth #splash #timing
 SplashViewModel has a 2-second delay before checking `phoneAuthClient.isSignedIn`. Tokens must be in DataStore before this fires. `FakePhoneAuthClient` handles this automatically, but custom auth setups need to account for the timing.
 
-### [TMG-002] Meal generation timeout configuration (2026-03-06)
+### [TMG-002] Auth flow timeout on cold emulator (2026-03-09)
+**Source:** J01 journey test failure analysis
+**Tags:** #e2e #auth #timeout #emulator #cold-start
+On cold emulator, FakePhoneAuth → backend auth → navigation can take >10s. Use 15000ms timeout for `assertNavigatedToOnboarding()` and 10000ms for `waitForGeneratingScreen()`. Default 5000ms is too short for auth-dependent flows. The 2-second SplashViewModel delay + backend HTTP roundtrip + Compose recomposition adds up.
+
+### [TMG-003] Meal generation timeout configuration (2026-03-06)
 **Source:** docs/design/Meal-Generation-Algorithm.md
 **Tags:** #timeout #gemini #mealgen
 Endpoint uses `asyncio.wait_for(180)` in `meal_plans.py`. Previous 120s was too tight for retries + thinking tokens. Gemini AI takes ~30-40s with `response_json_schema` + `thinking_budget=0`. E2E tests use 30-second timeout for waiting.
@@ -62,6 +67,16 @@ Endpoint uses `asyncio.wait_for(180)` in `meal_plans.py`. Previous 120s was too 
 **Source:** CLAUDE.md troubleshooting
 **Tags:** #e2e #flaky #compose #waituntil
 Use `waitUntil {}` blocks in E2E tests for UI state changes. `Thread.sleep()` causes flakiness. See `RetryUtils.kt` for retry patterns at the action level.
+
+### [FLK-002] FullJourneyFlowTest setUp static state interference (2026-03-09)
+**Source:** J03 journey test failure analysis
+**Tags:** #e2e #auth #static #setup #fulljourney
+FullJourneyFlowTest must call `clearAllState()` + `fakePhoneAuthClient.setSignInSuccess()` in `@Before setUp()`. Without this, `FakePhoneAuthClient.initialSignedIn` static state from previous tests persists across JVM, causing splash to skip auth screen. Also must handle both new-user (→Onboarding) and returning-user (→Home) paths since backend user may already be onboarded from previous test runs.
+
+### [FLK-003] Back navigation from Settings sub-screens unreliable (2026-03-09)
+**Source:** J03 FullJourneyFlowTest step7 failure
+**Tags:** #e2e #navigation #settings #pressback
+`uiDevice.pressBack()` from Recipe Rules or other Settings sub-screens doesn't reliably reach Home. Bottom nav is NOT visible on sub-screens. Use multiple pressBack() with fallback checks, or navigate back to Home at the end of each step that enters Settings sub-screens. The MealPlanGenerationFlowTest had the same issue (removed Recipe Rules navigation entirely).
 
 ---
 

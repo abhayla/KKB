@@ -79,7 +79,7 @@ class AuthFlowTest : BaseE2ETest() {
         authRobot.tapSendOtp()
 
         // Then: Should navigate to onboarding (new user)
-        authRobot.assertNavigatedToOnboarding(LONG_TIMEOUT)
+        authRobot.assertNavigatedToOnboarding(15000)
     }
 
     /**

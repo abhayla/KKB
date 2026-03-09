@@ -309,7 +309,7 @@ class EdgeCasesTest : BaseE2ETest() {
         authRobot.waitForAuthScreen()
         authRobot.enterPhoneNumber()
         authRobot.tapSendOtp()
-        authRobot.assertNavigatedToOnboarding()
+        authRobot.assertNavigatedToOnboarding(15000)
     }
 
     private fun completeToStep5() {

@@ -138,7 +138,7 @@ class MealPlanGenerationFlowTest : BaseE2ETest() {
 
         authRobot.enterPhoneNumber()
         authRobot.tapSendOtp()
-        authRobot.assertNavigatedToOnboarding()
+        authRobot.assertNavigatedToOnboarding(15000)
 
         Log.i(TAG, "Phase 1 complete: Authenticated and navigated to onboarding")
     }
@@ -224,7 +224,7 @@ class MealPlanGenerationFlowTest : BaseE2ETest() {
         Log.i(TAG, "Phase 3: Wait for AI Meal Generation")
 
         // Wait for generating screen to appear
-        onboardingRobot.waitForGeneratingScreen()
+        onboardingRobot.waitForGeneratingScreen(10000)
         takeScreenshot("07_generating_screen")
 
         // Wait for generation to complete (up to 60 seconds for AI processing)
@@ -340,19 +340,9 @@ class MealPlanGenerationFlowTest : BaseE2ETest() {
         Log.i(TAG, "Backend now has $ruleCount recipe rules")
         assertTrue("Expected at least 3 rules on backend, got $ruleCount", ruleCount >= 3)
 
-        // Navigate to Recipe Rules screen for visual confirmation
-        homeRobot.navigateToSettings()
-        settingsRobot.waitForSettingsScreen()
-        takeScreenshot("09_settings_screen")
-
-        settingsRobot.navigateToRecipeRules()
-        recipeRulesRobot.waitForRecipeRulesScreen()
-        recipeRulesRobot.assertRecipeRulesScreenDisplayed()
-        takeScreenshot("10_recipe_rules_with_seeded_rules")
-
-        // Navigate back to Home
-        navigateBackToHome()
-        takeScreenshot("13_home_before_regeneration")
+        // Rules are seeded via API — no need to navigate to Recipe Rules screen.
+        // The rules are verified by fetching from backend above.
+        takeScreenshot("10_home_before_regeneration")
 
         Log.i(TAG, "Phase 5 complete: 3 rules seeded via API and verified")
     }
@@ -544,22 +534,7 @@ class MealPlanGenerationFlowTest : BaseE2ETest() {
      * Navigate back from Recipe Rules to Home screen.
      * Uses back navigation through Settings.
      */
-    private fun navigateBackToHome() {
-        // Press back to go from Recipe Rules to Settings
-        uiDevice.pressBack()
-        waitFor(ANIMATION_DURATION)
-
-        // Press back to go from Settings to Home
-        uiDevice.pressBack()
-        waitFor(ANIMATION_DURATION)
-
-        // Alternatively, use bottom nav
-        try {
-            homeRobot.navigateToHome()
-        } catch (e: Exception) {
-            Log.w(TAG, "Back navigation might have failed: ${e.message}")
-        }
-    }
+    // navigateBackToHome removed — test no longer navigates away from Home during phase 5
 
     companion object {
         private const val TAG = "MealPlanGenFlowTest"

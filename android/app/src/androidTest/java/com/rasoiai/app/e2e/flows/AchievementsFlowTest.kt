@@ -49,10 +49,17 @@ class AchievementsFlowTest : BaseE2ETest() {
 
         composeTestRule.onNodeWithTag(TestTags.STATS_SCREEN).assertIsDisplayed()
 
-        // Swipe up on the stats screen to scroll to the achievements section
+        // Wait for stats data to load (loading spinner to disappear, LazyColumn to appear)
+        composeTestRule.waitUntil(15000) {
+            composeTestRule.onAllNodes(
+                hasTestTag("stats_lazy_column")
+            ).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Swipe up on the LazyColumn to scroll to the achievements section
         // AchievementsSection is ~8th item in the LazyColumn, needs several swipes
-        repeat(3) {
-            composeTestRule.onNodeWithTag(TestTags.STATS_SCREEN)
+        repeat(5) {
+            composeTestRule.onNodeWithTag("stats_lazy_column")
                 .performTouchInput { swipeUp() }
             composeTestRule.waitForIdle()
         }

@@ -197,7 +197,9 @@ internal fun StatsScreenContent(
                 )
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .testTag("stats_lazy_column"),
                     contentPadding = PaddingValues(vertical = spacing.md)
                 ) {
                     // Scope Toggle — only visible when user has active household

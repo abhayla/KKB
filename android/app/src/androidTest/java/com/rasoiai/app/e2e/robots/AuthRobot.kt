@@ -91,7 +91,7 @@ class AuthRobot(private val composeTestRule: ComposeContentTestRule) {
     /**
      * Verify navigation to onboarding after successful sign-in.
      */
-    fun assertNavigatedToOnboarding(timeoutMillis: Long = 5000) = apply {
+    fun assertNavigatedToOnboarding(timeoutMillis: Long = 15000) = apply {
         composeTestRule.waitUntilNodeWithTagExists(
             TestTags.ONBOARDING_PROGRESS_BAR,
             timeoutMillis
