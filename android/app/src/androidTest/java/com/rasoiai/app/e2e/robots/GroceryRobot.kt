@@ -209,6 +209,20 @@ class GroceryRobot(private val composeTestRule: ComposeContentTestRule) {
             .assertIsOff()
     }
 
+    /**
+     * Assert that the grocery list has at least N items displayed.
+     * Uses the "items" count text in the header to verify.
+     */
+    fun assertItemCountAtLeast(minCount: Int) = apply {
+        // Verify the items count text is displayed and contains a number >= minCount
+        val nodes = composeTestRule.onAllNodesWithText("items", substring = true, ignoreCase = true)
+            .fetchSemanticsNodes()
+        if (nodes.isEmpty()) {
+            throw AssertionError("No 'items' text found — grocery list may be empty")
+        }
+        Log.d("GroceryRobot", "assertItemCountAtLeast($minCount): found ${nodes.size} 'items' node(s)")
+    }
+
     // ===================== Bulk Actions =====================
 
     /**

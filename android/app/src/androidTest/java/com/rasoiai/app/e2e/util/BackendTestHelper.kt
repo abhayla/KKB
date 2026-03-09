@@ -907,6 +907,164 @@ object BackendTestHelper {
     }
 
     /**
+     * Makes a generic POST request to the backend with retry.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param path The API path (e.g., "/api/v1/households")
+     * @param body JSONObject for the request body
+     * @param authToken Optional authorization token
+     * @param maxRetries Maximum retry attempts
+     * @return Response body as String, or null if failed
+     */
+    fun postWithRetry(
+        baseUrl: String,
+        path: String,
+        body: JSONObject,
+        authToken: String? = null,
+        maxRetries: Int = DEFAULT_MAX_RETRIES
+    ): String? {
+        return retryBackendCall(maxRetries = maxRetries) {
+            val client = createClient()
+
+            val requestBody = body.toString()
+                .toRequestBody("application/json".toMediaType())
+
+            val requestBuilder = Request.Builder()
+                .url("$baseUrl$path")
+                .post(requestBody)
+
+            authToken?.let {
+                requestBuilder.addHeader("Authorization", "Bearer $it")
+            }
+
+            client.newCall(requestBuilder.build()).execute().use { response ->
+                if (response.isSuccessful) {
+                    response.body?.string()
+                } else {
+                    Log.w(TAG, "POST $path failed: ${response.code}")
+                    null
+                }
+            }
+        }
+    }
+
+    /**
+     * Makes a generic DELETE request to the backend.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param path The API path
+     * @param authToken Authorization token
+     * @return true if successful (2xx), false otherwise
+     */
+    fun deleteWithRetry(
+        baseUrl: String,
+        path: String,
+        authToken: String,
+        maxRetries: Int = DEFAULT_MAX_RETRIES
+    ): Boolean {
+        return retryBackendCall(maxRetries = maxRetries) {
+            val client = createClient()
+
+            val request = Request.Builder()
+                .url("$baseUrl$path")
+                .addHeader("Authorization", "Bearer $authToken")
+                .delete()
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful || response.code == 204) {
+                    true
+                } else {
+                    Log.w(TAG, "DELETE $path failed: ${response.code}")
+                    null
+                }
+            }
+        } ?: false
+    }
+
+    /**
+     * Creates a household via the backend API.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param authToken JWT Bearer token
+     * @param name Household name
+     * @return JSONObject containing the created household, or null if failed
+     */
+    fun createHousehold(baseUrl: String, authToken: String, name: String): JSONObject? {
+        Log.d(TAG, "Creating household: $name")
+        val body = JSONObject().put("name", name)
+        val response = postWithRetry(baseUrl, "/api/v1/households", body, authToken)
+        return response?.let {
+            try {
+                JSONObject(it).also { json ->
+                    Log.d(TAG, "createHousehold success: id=${json.optString("id")}")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "createHousehold parse error: ${e.message}")
+                null
+            }
+        }
+    }
+
+    /**
+     * Gets the current user's household.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param authToken JWT Bearer token
+     * @return JSONObject containing household data, or null if user has no household
+     */
+    fun getMyHousehold(baseUrl: String, authToken: String): JSONObject? {
+        Log.d(TAG, "Fetching user's household from: $baseUrl/api/v1/households/me")
+        val response = getWithRetry(baseUrl, "/api/v1/households/me", authToken)
+        return response?.let {
+            try {
+                JSONObject(it)
+            } catch (e: Exception) {
+                Log.w(TAG, "getMyHousehold parse error: ${e.message}")
+                null
+            }
+        }
+    }
+
+    /**
+     * Deactivates (soft-deletes) a household.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param authToken JWT Bearer token
+     * @param householdId The household ID to deactivate
+     * @return true if successful
+     */
+    fun deactivateHousehold(baseUrl: String, authToken: String, householdId: String): Boolean {
+        Log.d(TAG, "Deactivating household: $householdId")
+        return deleteWithRetry(baseUrl, "/api/v1/households/$householdId", authToken)
+    }
+
+    /**
+     * Ensures the current user is a member of an active household.
+     * Creates one if none exists.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param authToken JWT Bearer token
+     * @param householdName Name for the household (if creating)
+     * @return JSONObject containing household data, or null if setup failed
+     */
+    fun ensureHouseholdExists(
+        baseUrl: String,
+        authToken: String,
+        householdName: String = "Test Household"
+    ): JSONObject? {
+        // Check if user already has a household
+        val existing = getMyHousehold(baseUrl, authToken)
+        if (existing != null && existing.optBoolean("is_active", true)) {
+            Log.d(TAG, "User already has active household: ${existing.optString("id")}")
+            return existing
+        }
+
+        // Create a new household
+        return createHousehold(baseUrl, authToken, householdName)
+    }
+
+    /**
      * Checks backend connectivity and logs diagnostic information.
      * Useful for debugging test setup issues.
      *

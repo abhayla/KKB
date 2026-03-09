@@ -29,7 +29,7 @@ app/
 ├── core/          # firebase.py, security.py, exceptions.py
 ├── db/            # postgres.py, database.py, firestore.py (legacy)
 ├── main.py        # FastAPI app, Sentry init, lifespan
-├── models/        # SQLAlchemy ORM (13 files, incl. usage_log, refresh_token)
+├── models/        # SQLAlchemy ORM (14 files, incl. usage_log, refresh_token, household)
 ├── repositories/  # Data access (5 files)
 ├── schemas/       # Pydantic request/response
 └── services/      # Business logic (21 files, incl. ai_meal_service, generation_tracker, cleanup, usage_limit, user_deletion)

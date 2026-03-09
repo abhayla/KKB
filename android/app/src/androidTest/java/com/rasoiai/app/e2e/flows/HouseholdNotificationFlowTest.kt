@@ -9,20 +9,19 @@ import com.rasoiai.app.e2e.base.BaseE2ETest
 import com.rasoiai.app.e2e.robots.HomeRobot
 import com.rasoiai.app.e2e.robots.HouseholdNotificationsRobot
 import com.rasoiai.app.e2e.robots.SettingsRobot
+import com.rasoiai.app.e2e.util.BackendTestHelper
 import com.rasoiai.app.presentation.common.TestTags
 import dagger.hilt.android.testing.HiltAndroidTest
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
 
 /**
  * Household Notification Flow Tests - List notifications, mark read, badge count,
  * and access control.
  *
- * All tests are @Ignore because they require:
- * - Running backend with household endpoints active
- * - The current user to be a member of a household that has generated notifications
- *   (e.g. from a meal status update by another member)
+ * Tests ensure household exists via API before UI navigation.
  *
  * Navigation path: Home → Settings → "My Household" → Notifications section
  */
@@ -31,6 +30,7 @@ class HouseholdNotificationFlowTest : BaseE2ETest() {
 
     companion object {
         private const val TAG = "HouseholdNotificationFlowTest"
+        private const val TEST_HOUSEHOLD_NAME = "Sharma Family"
     }
 
     private lateinit var homeRobot: HomeRobot
@@ -45,14 +45,16 @@ class HouseholdNotificationFlowTest : BaseE2ETest() {
         homeRobot = HomeRobot(composeTestRule)
         settingsRobot = SettingsRobot(composeTestRule)
         notificationsRobot = HouseholdNotificationsRobot(composeTestRule)
+
+        // Ensure household exists
+        val authToken = runBlocking { userPreferencesDataStore.accessToken.first() }
+        if (authToken != null) {
+            BackendTestHelper.ensureHouseholdExists(BACKEND_BASE_URL, authToken, TEST_HOUSEHOLD_NAME)
+        }
     }
 
     // ===================== Navigation helper =====================
 
-    /**
-     * Navigate to the household notifications screen.
-     * The path goes through Settings → My Household → Notifications.
-     */
     private fun navigateToHouseholdNotifications() {
         homeRobot.waitForHomeScreen(60000)
         homeRobot.navigateToSettings()
@@ -69,14 +71,11 @@ class HouseholdNotificationFlowTest : BaseE2ETest() {
     // ===================== Tests =====================
 
     @Test
-    @Ignore("Household E2E requires running backend with household endpoints")
     fun testListHouseholdNotifications() {
         navigateToHouseholdNotifications()
 
-        // The notifications screen should be visible
         notificationsRobot.assertNotificationsScreenDisplayed()
 
-        // The notification list should be present
         notificationsRobot.assertNotificationListDisplayed()
 
         // At least the first notification item should be displayed (seeded in backend fixture)
@@ -86,7 +85,6 @@ class HouseholdNotificationFlowTest : BaseE2ETest() {
     }
 
     @Test
-    @Ignore("Household E2E requires running backend with household endpoints")
     fun testEmptyNotificationState() {
         navigateToHouseholdNotifications()
 
@@ -99,7 +97,6 @@ class HouseholdNotificationFlowTest : BaseE2ETest() {
     }
 
     @Test
-    @Ignore("Household E2E requires running backend with household endpoints")
     fun testMarkNotificationRead() {
         navigateToHouseholdNotifications()
 
@@ -111,26 +108,18 @@ class HouseholdNotificationFlowTest : BaseE2ETest() {
         notificationsRobot.tapMarkRead(0)
         composeTestRule.waitForIdle()
 
-        // After marking read, the item should no longer appear as unread
-        // Typically the item changes style (loses bold/highlight) or disappears
-        // from an "unread only" filter. We verify the screen is still displayed.
         notificationsRobot.assertNotificationsScreenDisplayed()
 
         Log.i(TAG, "testMarkNotificationRead: first notification marked as read")
     }
 
     @Test
-    @Ignore("Household E2E requires running backend with household endpoints")
     fun testNonMemberCannotSeeNotifications() {
-        // This test verifies that a user who is NOT a member of any household
-        // sees an appropriate error or empty state instead of notifications.
-
         navigateToHouseholdNotifications()
 
         notificationsRobot.assertNotificationsScreenDisplayed()
 
         // The user is not in a household, so no notifications list appears
-        // Instead we expect either the empty state or a "Join a household" prompt
         composeTestRule.onNodeWithText(
             "household",
             substring = true,
@@ -141,11 +130,7 @@ class HouseholdNotificationFlowTest : BaseE2ETest() {
     }
 
     @Test
-    @Ignore("Household E2E requires running backend with household endpoints")
     fun testNotificationBadgeCount() {
-        // Badge count is visible on the household screen entry point (e.g. in Settings)
-        // before navigating to the notifications screen.
-
         homeRobot.waitForHomeScreen(60000)
         homeRobot.navigateToSettings()
         settingsRobot.waitForSettingsScreen()
@@ -184,24 +169,16 @@ class HouseholdNotificationFlowTest : BaseE2ETest() {
     }
 
     @Test
-    @Ignore("Household E2E requires running backend with household endpoints")
     fun testMarkNonexistentNotificationError() {
         navigateToHouseholdNotifications()
 
-        // This scenario is only reachable if the UI allows an action on a
-        // notification that has already been deleted server-side.
-        // We simulate it by attempting to mark an out-of-range index as read.
-
         notificationsRobot.assertNotificationsScreenDisplayed()
 
-        // Attempt to tap mark-read for an index beyond the current list size (e.g. index 999)
-        // The tag will not exist in the semantics tree, so assertDoesNotExist verifies
-        // the UI correctly does not render phantom items.
+        // Verify phantom items don't appear
         composeTestRule.onNodeWithTag(
             "${TestTags.HOUSEHOLD_NOTIFICATION_MARK_READ_PREFIX}999"
         ).assertDoesNotExist()
 
-        // The screen should remain in a stable state without crashing
         notificationsRobot.assertNotificationsScreenDisplayed()
 
         Log.i(TAG, "testMarkNonexistentNotificationError: no phantom mark-read button at index 999")

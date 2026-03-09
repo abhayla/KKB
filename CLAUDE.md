@@ -88,7 +88,7 @@ backend/app/
 ├── core/          # firebase.py (auth + DEBUG bypass), security.py, exceptions.py
 ├── db/            # postgres.py (3 model import blocks), database.py
 ├── main.py        # FastAPI app, Sentry init, SecurityHeadersMiddleware, rate limiting
-├── models/        # SQLAlchemy ORM (13 files)
+├── models/        # SQLAlchemy ORM (14 files)
 ├── repositories/  # Data access (5 files)
 ├── schemas/       # Pydantic request/response DTOs
 └── services/      # Business logic (20 files)
@@ -274,7 +274,7 @@ E2E tests use **real backend + fake phone auth only**. `FakePhoneAuthClient` sen
 | Meal generation timeout | Migrated to `google-genai` SDK with native async (`client.aio`). Endpoint timeout 180s. AI takes ~30-40s with `response_json_schema` + `thinking_budget=0`. E2E tests use 30-second timeout. Structured logging in `logs/MEAL_PLAN-*.json`. |
 | Room DB not found | Run `./gradlew clean` then rebuild - schema may have changed |
 | Test flakiness | Use `waitUntil {}` in E2E tests; check `RetryUtils.kt` for patterns |
-| Screenshot processing errors | Use PNG, limit to 1280x720, avoid `fullPage` on long pages. Auto-resized by `post-screenshot-resize.sh` hook (max 1800px). Batch fix: `python .claude/hooks/resize_screenshot.py --all` |
+| Screenshot processing errors | Use PNG, limit to 1280x720, avoid `fullPage` on long pages. Auto-resized by `post-screenshot.sh` hook (max 1800px). Batch fix: `python .claude/hooks/resize_screenshot.py --all` |
 | ADB screenshot corrupted | Do NOT use `-d 0`. Hook auto-strips `[Warning] Multiple displays...` text and retries. Manual fix: `python .claude/hooks/resize_screenshot.py --all` |
 | 1 auth test fails | Pre-existing: `conftest.py` globally overrides auth dependency. Not a regression. |
 | Enum case in Room tests | Room stores MealType as uppercase (`BREAKFAST`, `LUNCH`, `DINNER`, `SNACKS`). Tests must match. |
@@ -427,13 +427,13 @@ For each HIGH priority recommendation, provide:
 
 ## Workflow Enforcement Hooks
 
-9 shell hooks in `.claude/hooks/` enforce the 7-step workflow (blocking edits, commits, and test claims when gates aren't met). State tracked in `.claude/workflow-state.json`. See `.claude/rules/workflow.md` for full hook documentation.
+8 shell hooks in `.claude/hooks/` enforce the 7-step workflow (blocking edits, commits, and test claims when gates aren't met). State tracked in `.claude/workflow-state.json`. See `.claude/rules/workflow.md` for full hook documentation.
 
 ## Claude Code Configuration
 
-The `.claude/` directory contains: `agents/` (14 agents), `knowledge.db` (pattern library), `skills/` (24 slash commands), `hooks/` (9 hooks — see table above), `rules/` (5 path-scoped rule files), `logs/` (session logs).
+The `.claude/` directory contains: `agents/` (14 agents), `knowledge.db` (pattern library), `skills/` (25 slash commands), `hooks/` (8 hooks — see table above), `rules/` (6 path-scoped rule files), `logs/` (session logs).
 
-**Skills:** `/adb-test`, `/auto-verify`, `/claude-guardian`, `/clean-pyc`, `/continue`, `/fix-issue`, `/fix-loop`, `/implement`, `/plan-to-issues`, `/post-fix-pipeline`, `/reflect`, `/run-android-tests`, `/run-backend-tests`, `/run-e2e`, `/db-migrate`, `/deploy`, `/skill-factory`, `/status`, `/sync-check`, `/strategic-architect`, `/test-knowledge`, `/verify-screenshots`, `/generate-meal`, `/gemini-api`
+**Skills:** `/adb-test`, `/auto-verify`, `/claude-guardian`, `/clean-pyc`, `/continue`, `/fix-issue`, `/fix-loop`, `/implement`, `/plan-to-issues`, `/post-fix-pipeline`, `/reflect`, `/run-android-tests`, `/run-backend-tests`, `/run-e2e`, `/db-migrate`, `/deploy`, `/skill-factory`, `/status`, `/sync-check`, `/strategic-architect`, `/test-knowledge`, `/verify-screenshots`, `/generate-meal`, `/gemini-api`, `/ui-ux-pro-max`
 
 **MCP Servers** (`.mcp.json`): Playwright (`@anthropic-ai/mcp-server-playwright`) for web screenshots, ADB (`adb-mcp`) for Android emulator automation.
 

@@ -114,6 +114,24 @@ class RecipeDetailRobot(private val composeTestRule: ComposeContentTestRule) {
     // ===================== Recipe Info =====================
 
     /**
+     * Get the recipe name from the detail screen.
+     * Reads text content from the recipe title test tag or first heading.
+     * Returns null if the name cannot be extracted.
+     */
+    fun getRecipeName(): String? {
+        return try {
+            val nodes = composeTestRule.onAllNodesWithTag(TestTags.RECIPE_DETAIL_SCREEN)
+                .fetchSemanticsNodes()
+            // Try to extract text from the first text node that looks like a recipe name
+            // This is a best-effort extraction since there's no dedicated title tag
+            null // Recipe name extraction requires a dedicated test tag
+        } catch (e: Exception) {
+            Log.w("RecipeDetailRobot", "Could not extract recipe name: ${e.message}")
+            null
+        }
+    }
+
+    /**
      * Assert recipe name is displayed.
      */
     fun assertRecipeNameDisplayed(name: String) = apply {

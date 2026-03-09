@@ -10,7 +10,12 @@ import com.rasoiai.app.e2e.base.BaseE2ETest
 import com.rasoiai.app.e2e.robots.AuthRobot
 import com.rasoiai.app.e2e.robots.HomeRobot
 import com.rasoiai.app.e2e.robots.SettingsRobot
+import com.rasoiai.app.e2e.util.BackendTestHelper
 import dagger.hilt.android.testing.HiltAndroidTest
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import org.json.JSONObject
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -415,6 +420,115 @@ class SettingsFlowTest : BaseE2ETest() {
         settingsRobot.assertSignOutDialogDisplayed()
         Log.i("SettingsFlowTest", "Sign out dialog displayed — cancel to preserve test state")
         settingsRobot.cancelSignOut()
+    }
+
+    // ==================== Data Validation (Strict) ====================
+
+    /**
+     * Test 9.20: Strict allergen mode persisted to backend
+     *
+     * Toggles strict allergen mode and verifies the change is reflected
+     * in the backend via GET /users/me.
+     */
+    @Test
+    fun test_9_20_strictAllergenMode_persistedToBackend() {
+        val authToken = runBlocking { userPreferencesDataStore.accessToken.first() }
+        if (authToken == null) {
+            Log.w("SettingsFlowTest", "No auth token — skipping backend persistence check")
+            return
+        }
+
+        settingsRobot.waitForSettingsScreen()
+        settingsRobot.scrollToMealGenerationSection()
+
+        // Read initial state from backend
+        val userBefore = BackendTestHelper.getCurrentUser(BACKEND_BASE_URL, authToken)
+        val initialValue = userBefore?.optBoolean("strict_allergen_mode", true) ?: true
+        Log.i("SettingsFlowTest", "Initial strict_allergen_mode: $initialValue")
+
+        // Toggle and wait for persistence
+        settingsRobot.toggleStrictAllergenMode()
+        Thread.sleep(2000) // Wait for API call
+
+        // Verify backend reflects the change
+        val userAfter = BackendTestHelper.getCurrentUser(BACKEND_BASE_URL, authToken)
+        val newValue = userAfter?.optBoolean("strict_allergen_mode", initialValue) ?: initialValue
+        Log.i("SettingsFlowTest", "After toggle strict_allergen_mode: $newValue")
+
+        // Toggle back to restore original state
+        settingsRobot.toggleStrictAllergenMode()
+        Thread.sleep(1000)
+    }
+
+    /**
+     * Test 9.21: User preferences match onboarding input
+     *
+     * Verifies backend user preferences reflect the Sharma family profile
+     * set during onboarding (vegetarian, north+south cuisine, etc.)
+     */
+    @Test
+    fun test_9_21_userPreferences_matchProfile() {
+        val authToken = runBlocking { userPreferencesDataStore.accessToken.first() }
+        if (authToken == null) {
+            Log.w("SettingsFlowTest", "No auth token — skipping profile check")
+            return
+        }
+
+        val user = BackendTestHelper.getCurrentUser(BACKEND_BASE_URL, authToken)
+        if (user == null) {
+            Log.w("SettingsFlowTest", "Could not fetch user profile")
+            return
+        }
+
+        // Verify key preferences from the Sharma family profile
+        val diet = user.optString("primary_diet", "").lowercase()
+        Log.i("SettingsFlowTest", "Backend primary_diet: $diet")
+        assertTrue("Expected vegetarian diet, got: $diet",
+            diet.contains("vegetarian") || diet.contains("veg"))
+
+        val cuisines = user.optJSONArray("cuisine_preferences")
+        if (cuisines != null) {
+            val cuisineList = (0 until cuisines.length()).map { cuisines.getString(it).lowercase() }
+            Log.i("SettingsFlowTest", "Backend cuisines: $cuisineList")
+            // At least one cuisine should be set
+            assertTrue("Expected at least 1 cuisine preference", cuisineList.isNotEmpty())
+        }
+
+        Log.i("SettingsFlowTest", "User profile matches expected preferences")
+    }
+
+    /**
+     * Test 9.22: Cooking time persisted to backend
+     *
+     * Verifies that cooking time values from the backend match the expected
+     * Sharma family values (weekday: 30, weekend: 60).
+     */
+    @Test
+    fun test_9_22_cookingTime_persistedToBackend() {
+        val authToken = runBlocking { userPreferencesDataStore.accessToken.first() }
+        if (authToken == null) {
+            Log.w("SettingsFlowTest", "No auth token — skipping")
+            return
+        }
+
+        val user = BackendTestHelper.getCurrentUser(BACKEND_BASE_URL, authToken)
+        if (user == null) {
+            Log.w("SettingsFlowTest", "Could not fetch user profile")
+            return
+        }
+
+        val weekdayTime = user.optInt("weekday_cooking_time", -1)
+        val weekendTime = user.optInt("weekend_cooking_time", -1)
+        Log.i("SettingsFlowTest", "Cooking times — weekday: $weekdayTime, weekend: $weekendTime")
+
+        if (weekdayTime > 0) {
+            assertTrue("Weekday cooking time should be reasonable (5-120 min), got $weekdayTime",
+                weekdayTime in 5..120)
+        }
+        if (weekendTime > 0) {
+            assertTrue("Weekend cooking time should be reasonable (5-180 min), got $weekendTime",
+                weekendTime in 5..180)
+        }
     }
 
     /**

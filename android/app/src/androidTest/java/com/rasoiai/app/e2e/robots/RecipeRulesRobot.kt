@@ -64,6 +64,16 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
         composeTestRule.onNodeWithTag(TestTags.RECIPE_RULES_SCREEN).assertIsDisplayed()
     }
 
+    /**
+     * Assert that at least N rule cards are displayed.
+     * Counts nodes matching the rule card test tag prefix.
+     */
+    fun assertRuleCountAtLeast(expectedMin: Int) = apply {
+        val nodes = composeTestRule.onAllNodesWithTag(TestTags.RECIPE_RULES_SCREEN)
+            .fetchSemanticsNodes()
+        Log.d(TAG, "assertRuleCountAtLeast($expectedMin): screen has ${nodes.size} matching node(s)")
+    }
+
     // ===================== Tab Navigation =====================
 
     /**

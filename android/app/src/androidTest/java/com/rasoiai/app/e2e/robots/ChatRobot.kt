@@ -3,6 +3,7 @@ package com.rasoiai.app.e2e.robots
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -114,6 +115,18 @@ class ChatRobot(private val composeTestRule: ComposeContentTestRule) {
     fun assertTypingIndicatorDisplayed() = apply {
         composeTestRule.onNodeWithText("Typing", substring = true, ignoreCase = true)
             .assertIsDisplayed()
+    }
+
+    /**
+     * Assert no visible chat message contains the given keyword.
+     * Checks all rendered text nodes in the chat for the keyword.
+     */
+    fun assertMessageNotContaining(keyword: String) = apply {
+        val nodes = composeTestRule.onAllNodesWithText(keyword, substring = true, ignoreCase = true)
+            .fetchSemanticsNodes()
+        if (nodes.isNotEmpty()) {
+            throw AssertionError("Found '$keyword' in ${nodes.size} chat message(s)")
+        }
     }
 
     // ===================== Recipe Suggestions =====================

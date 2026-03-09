@@ -10,10 +10,16 @@ import com.rasoiai.app.e2e.base.BaseE2ETest
 import com.rasoiai.app.e2e.base.isNodeWithTextDisplayed
 import com.rasoiai.app.e2e.robots.GroceryRobot
 import com.rasoiai.app.e2e.robots.HomeRobot
+import com.rasoiai.app.e2e.util.BackendTestHelper
 import com.rasoiai.app.e2e.util.PerformanceTracker
 import com.rasoiai.app.presentation.common.TestTags
 import dagger.hilt.android.testing.HiltAndroidTest
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import org.json.JSONObject
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -323,5 +329,164 @@ class GroceryFlowTest : BaseE2ETest() {
         homeRobot.navigateToStats()
         waitFor(MEDIUM_TIMEOUT)
         composeTestRule.onNodeWithTag(TestTags.STATS_SCREEN).assertIsDisplayed()
+    }
+
+    // ===================== 5.9 Data Validation (Strict) =====================
+
+    /**
+     * Test 5.9a: Grocery items exclude allergens (Sharma family: Peanuts, Cashews)
+     *
+     * Fetches grocery list from backend API and verifies no grocery item
+     * contains allergen keywords that the Sharma family has declared.
+     */
+    @Test
+    fun test_5_9a_groceryExcludesAllergens() {
+        val authToken = runBlocking { userPreferencesDataStore.accessToken.first() }
+        if (authToken == null) {
+            Log.w("GroceryFlowTest", "No auth token — skipping allergen validation")
+            return
+        }
+
+        val groceryJson = BackendTestHelper.getWithRetry(
+            BACKEND_BASE_URL, "/api/v1/grocery", authToken
+        )
+        if (groceryJson == null) {
+            Log.w("GroceryFlowTest", "Grocery API returned null — skipping allergen validation")
+            return
+        }
+
+        val grocery = JSONObject(groceryJson)
+        val items = grocery.optJSONArray("items") ?: grocery.optJSONArray("categories")
+        if (items == null) {
+            Log.w("GroceryFlowTest", "No items/categories in grocery response")
+            return
+        }
+
+        val allergenKeywords = listOf("peanut", "groundnut", "moongphali", "cashew", "kaju")
+        val violations = mutableListOf<String>()
+
+        // Check items array or nested categories → items structure
+        for (i in 0 until items.length()) {
+            val entry = items.getJSONObject(i)
+            // Flat items list
+            val name = entry.optString("name", entry.optString("ingredient_name", "")).lowercase()
+            if (name.isNotEmpty()) {
+                for (kw in allergenKeywords) {
+                    if (name.contains(kw)) {
+                        violations.add("$name (keyword: $kw)")
+                    }
+                }
+            }
+            // Nested category → items
+            val subItems = entry.optJSONArray("items")
+            if (subItems != null) {
+                for (j in 0 until subItems.length()) {
+                    val subItem = subItems.getJSONObject(j)
+                    val subName = subItem.optString("name", subItem.optString("ingredient_name", "")).lowercase()
+                    for (kw in allergenKeywords) {
+                        if (subName.contains(kw)) {
+                            violations.add("$subName (keyword: $kw)")
+                        }
+                    }
+                }
+            }
+        }
+
+        Log.i("GroceryFlowTest", "Allergen check: ${violations.size} violations found")
+        assertTrue(
+            "Grocery list contains allergens: ${violations.joinToString(", ")}",
+            violations.isEmpty()
+        )
+    }
+
+    /**
+     * Test 5.9b: Grocery items exclude health-condition-unsafe keywords
+     *
+     * Sharma family: Ramesh (DIABETIC, LOW_OIL), Sunita (LOW_SALT), Aarav (NO_SPICY).
+     * Grocery items should not contain keywords forbidden by family constraints.
+     */
+    @Test
+    fun test_5_9b_groceryExcludesHealthUnsafe() {
+        val authToken = runBlocking { userPreferencesDataStore.accessToken.first() }
+        if (authToken == null) {
+            Log.w("GroceryFlowTest", "No auth token — skipping health validation")
+            return
+        }
+
+        val groceryJson = BackendTestHelper.getWithRetry(
+            BACKEND_BASE_URL, "/api/v1/grocery", authToken
+        )
+        if (groceryJson == null) {
+            Log.w("GroceryFlowTest", "Grocery API returned null — skipping health validation")
+            return
+        }
+
+        val grocery = JSONObject(groceryJson)
+        // Grocery items are ingredients, not recipes, so we check for raw allergens
+        // not recipe-name keywords. Only check the most egregious items.
+        val forbiddenIngredients = listOf("jalebi", "gulab jamun", "papad")
+        val allItemNames = mutableListOf<String>()
+
+        val items = grocery.optJSONArray("items") ?: grocery.optJSONArray("categories")
+        if (items != null) {
+            for (i in 0 until items.length()) {
+                val entry = items.getJSONObject(i)
+                val name = entry.optString("name", entry.optString("ingredient_name", "")).lowercase()
+                if (name.isNotEmpty()) allItemNames.add(name)
+
+                val subItems = entry.optJSONArray("items")
+                if (subItems != null) {
+                    for (j in 0 until subItems.length()) {
+                        val subItem = subItems.getJSONObject(j)
+                        val subName = subItem.optString("name", subItem.optString("ingredient_name", "")).lowercase()
+                        if (subName.isNotEmpty()) allItemNames.add(subName)
+                    }
+                }
+            }
+        }
+
+        val violations = allItemNames.filter { name ->
+            forbiddenIngredients.any { name.contains(it) }
+        }
+
+        Log.i("GroceryFlowTest", "Health check: ${allItemNames.size} items scanned, ${violations.size} violations")
+        assertTrue(
+            "Grocery list contains health-unsafe items: ${violations.joinToString(", ")}",
+            violations.isEmpty()
+        )
+    }
+
+    /**
+     * Test 5.9c: Grocery list has at least 1 category when meal plan exists
+     *
+     * If a meal plan exists, the derived grocery list must not be empty.
+     */
+    @Test
+    fun test_5_9c_groceryNonEmptyWhenMealPlanExists() {
+        val authToken = runBlocking { userPreferencesDataStore.accessToken.first() }
+        if (authToken == null) {
+            Log.w("GroceryFlowTest", "No auth token — skipping")
+            return
+        }
+
+        val mealPlan = BackendTestHelper.getCurrentMealPlan(BACKEND_BASE_URL, authToken)
+        if (mealPlan == null) {
+            Log.w("GroceryFlowTest", "No meal plan — skipping grocery non-empty check")
+            return
+        }
+
+        val groceryJson = BackendTestHelper.getWithRetry(
+            BACKEND_BASE_URL, "/api/v1/grocery", authToken
+        )
+        if (groceryJson == null) {
+            Log.w("GroceryFlowTest", "Grocery API returned null")
+            return
+        }
+
+        val grocery = JSONObject(groceryJson)
+        val items = grocery.optJSONArray("items") ?: grocery.optJSONArray("categories")
+        val count = items?.length() ?: 0
+        Log.i("GroceryFlowTest", "Grocery items/categories count: $count")
+        assertTrue("Grocery should have at least 1 item when meal plan exists, got $count", count >= 1)
     }
 }

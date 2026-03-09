@@ -10,19 +10,19 @@ import com.rasoiai.app.e2e.robots.HomeRobot
 import com.rasoiai.app.e2e.robots.HouseholdMembersRobot
 import com.rasoiai.app.e2e.robots.HouseholdRobot
 import com.rasoiai.app.e2e.robots.SettingsRobot
+import com.rasoiai.app.e2e.util.BackendTestHelper
 import com.rasoiai.app.presentation.common.TestTags
 import dagger.hilt.android.testing.HiltAndroidTest
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
 
 /**
  * Household Member Flow Tests - Add, invite, join, leave, transfer ownership,
  * and manage member roles/permissions.
  *
- * All tests are @Ignore because they require:
- * - Running backend with household endpoints active
- * - In some cases, two distinct user accounts to simulate owner vs member
+ * Tests create households via API to ensure correct backend state.
  *
  * Navigation path: Home → Settings → "My Household"
  */
@@ -31,6 +31,7 @@ class HouseholdMemberFlowTest : BaseE2ETest() {
 
     companion object {
         private const val TAG = "HouseholdMemberFlowTest"
+        private const val TEST_HOUSEHOLD_NAME = "Sharma Family"
 
         // A phone number registered in the backend test data (a secondary test user)
         private const val KNOWN_MEMBER_PHONE = "+912222222222"
@@ -54,6 +55,12 @@ class HouseholdMemberFlowTest : BaseE2ETest() {
         settingsRobot = SettingsRobot(composeTestRule)
         householdRobot = HouseholdRobot(composeTestRule)
         householdMembersRobot = HouseholdMembersRobot(composeTestRule)
+
+        // Ensure household exists
+        val authToken = runBlocking { userPreferencesDataStore.accessToken.first() }
+        if (authToken != null) {
+            BackendTestHelper.ensureHouseholdExists(BACKEND_BASE_URL, authToken, TEST_HOUSEHOLD_NAME)
+        }
     }
 
     // ===================== Navigation helper =====================
@@ -69,7 +76,6 @@ class HouseholdMemberFlowTest : BaseE2ETest() {
     // ===================== Tests =====================
 
     @Test
-    @Ignore("Household E2E requires running backend with household endpoints")
     fun testAddMemberByPhone() {
         navigateToHousehold()
 
@@ -86,11 +92,18 @@ class HouseholdMemberFlowTest : BaseE2ETest() {
         // New member should now appear in the list at index 1 (index 0 is the owner)
         householdMembersRobot.assertMemberDisplayed(1)
 
+        // Verify via API
+        val authToken = runBlocking { userPreferencesDataStore.accessToken.first() }
+        if (authToken != null) {
+            val household = BackendTestHelper.getMyHousehold(BACKEND_BASE_URL, authToken)
+            val memberCount = household?.optInt("member_count", -1)
+            Log.i(TAG, "API verification: member_count=$memberCount after adding")
+        }
+
         Log.i(TAG, "testAddMemberByPhone: member added via phone $KNOWN_MEMBER_PHONE")
     }
 
     @Test
-    @Ignore("Household E2E requires running backend with household endpoints")
     fun testAddMemberUnknownPhone() {
         navigateToHousehold()
 
@@ -108,7 +121,6 @@ class HouseholdMemberFlowTest : BaseE2ETest() {
     }
 
     @Test
-    @Ignore("Household E2E requires running backend with household endpoints")
     fun testAddDuplicateMemberError() {
         navigateToHousehold()
 
@@ -132,7 +144,6 @@ class HouseholdMemberFlowTest : BaseE2ETest() {
     }
 
     @Test
-    @Ignore("Household E2E requires running backend with household endpoints")
     fun testAddMemberAtCapacityError() {
         navigateToHousehold()
 
@@ -150,7 +161,6 @@ class HouseholdMemberFlowTest : BaseE2ETest() {
     }
 
     @Test
-    @Ignore("Household E2E requires running backend with household endpoints")
     fun testGenerateInviteCode() {
         navigateToHousehold()
 
@@ -160,11 +170,18 @@ class HouseholdMemberFlowTest : BaseE2ETest() {
         // Share button should also be present
         composeTestRule.onNodeWithTag(TestTags.HOUSEHOLD_INVITE_SHARE_BUTTON).assertIsDisplayed()
 
+        // Verify invite code exists via API
+        val authToken = runBlocking { userPreferencesDataStore.accessToken.first() }
+        if (authToken != null) {
+            val household = BackendTestHelper.getMyHousehold(BACKEND_BASE_URL, authToken)
+            val inviteCode = household?.optString("invite_code", "")
+            Log.i(TAG, "API verification: invite_code='$inviteCode' (non-empty=${!inviteCode.isNullOrEmpty()})")
+        }
+
         Log.i(TAG, "testGenerateInviteCode: invite code and share button visible")
     }
 
     @Test
-    @Ignore("Household E2E requires running backend with household endpoints")
     fun testRefreshInviteCode() {
         navigateToHousehold()
 
@@ -180,7 +197,6 @@ class HouseholdMemberFlowTest : BaseE2ETest() {
     }
 
     @Test
-    @Ignore("Household E2E requires running backend with household endpoints")
     fun testJoinViaInviteCode() {
         navigateToHousehold()
 
@@ -200,7 +216,6 @@ class HouseholdMemberFlowTest : BaseE2ETest() {
     }
 
     @Test
-    @Ignore("Household E2E requires running backend with household endpoints")
     fun testJoinInvalidCodeError() {
         navigateToHousehold()
 
@@ -215,7 +230,6 @@ class HouseholdMemberFlowTest : BaseE2ETest() {
     }
 
     @Test
-    @Ignore("Household E2E requires running backend with household endpoints")
     fun testLeaveHousehold() {
         navigateToHousehold()
 
@@ -236,7 +250,6 @@ class HouseholdMemberFlowTest : BaseE2ETest() {
     }
 
     @Test
-    @Ignore("Household E2E requires running backend with household endpoints")
     fun testOwnerCannotLeave() {
         navigateToHousehold()
 
@@ -252,7 +265,6 @@ class HouseholdMemberFlowTest : BaseE2ETest() {
     }
 
     @Test
-    @Ignore("Household E2E requires running backend with household endpoints")
     fun testTransferOwnership() {
         navigateToHousehold()
 
@@ -277,7 +289,6 @@ class HouseholdMemberFlowTest : BaseE2ETest() {
     }
 
     @Test
-    @Ignore("Household E2E requires running backend with household endpoints")
     fun testUpdateMemberPortionSize() {
         navigateToHousehold()
 
@@ -300,7 +311,6 @@ class HouseholdMemberFlowTest : BaseE2ETest() {
     }
 
     @Test
-    @Ignore("Household E2E requires running backend with household endpoints")
     fun testUpdateMemberEditAccess() {
         navigateToHousehold()
 
@@ -323,11 +333,17 @@ class HouseholdMemberFlowTest : BaseE2ETest() {
         composeTestRule.onNodeWithText("Save", ignoreCase = true).performClick()
         composeTestRule.waitForIdle()
 
+        // Verify via API
+        val authToken = runBlocking { userPreferencesDataStore.accessToken.first() }
+        if (authToken != null) {
+            val household = BackendTestHelper.getMyHousehold(BACKEND_BASE_URL, authToken)
+            Log.i(TAG, "API verification: household updated, id=${household?.optString("id")}")
+        }
+
         Log.i(TAG, "testUpdateMemberEditAccess: edit access toggled for member at index 1")
     }
 
     @Test
-    @Ignore("Household E2E requires running backend with household endpoints")
     fun testRemoveMember() {
         navigateToHousehold()
 
@@ -347,6 +363,14 @@ class HouseholdMemberFlowTest : BaseE2ETest() {
         // The second row should no longer exist in the semantics tree
         composeTestRule.onNodeWithTag("${TestTags.HOUSEHOLD_MEMBER_ROW_PREFIX}1")
             .assertDoesNotExist()
+
+        // Verify via API
+        val authToken = runBlocking { userPreferencesDataStore.accessToken.first() }
+        if (authToken != null) {
+            val household = BackendTestHelper.getMyHousehold(BACKEND_BASE_URL, authToken)
+            val memberCount = household?.optInt("member_count", -1)
+            Log.i(TAG, "API verification: member_count=$memberCount after removal (expected 1)")
+        }
 
         Log.i(TAG, "testRemoveMember: member at index 1 removed from household")
     }

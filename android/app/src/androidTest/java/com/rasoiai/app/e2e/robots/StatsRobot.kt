@@ -57,6 +57,15 @@ class StatsRobot(private val composeTestRule: ComposeContentTestRule) {
             .assertIsDisplayed()
     }
 
+    /**
+     * Assert streak value is displayed with specific count.
+     * Useful for verifying scope toggle changes the displayed data.
+     */
+    fun assertStreakValueDisplayed(expected: Int) = apply {
+        composeTestRule.onNodeWithText("$expected", substring = true)
+            .assertIsDisplayed()
+    }
+
     // ===================== Calendar =====================
 
     /**

@@ -500,6 +500,74 @@ class MealPlanGenerationFlowTest : BaseE2ETest() {
             dalCount >= 2
         )
 
+        // Health condition enforcement checks
+        // Sharma family: Ramesh (DIABETIC, LOW_OIL), Sunita (LOW_SALT), Aarav (NO_SPICY)
+        val diabeticKeywords = listOf(
+            "gulab jamun", "jalebi", "halwa", "ladoo", "barfi", "kheer",
+            "mithai", "rasgulla", "rasmalai", "kulfi", "rabri", "sandesh", "peda"
+        )
+        val lowSaltKeywords = listOf("pickle", "papad", "achaar")
+        val noSpicyKeywords = listOf("green chili", "red chili", "chilli", "mirchi")
+        val lowOilKeywords = listOf("pakora", "pakoda", "bhajiya", "puri", "kachori", "deep fried")
+
+        var diabeticViolations = 0
+        var lowSaltViolations = 0
+        var noSpicyViolations = 0
+        var lowOilViolations = 0
+
+        for (i in 0 until days.length()) {
+            val day = days.getJSONObject(i)
+            val dayName = day.optString("day_name", "Day $i")
+            val meals = day.optJSONObject("meals") ?: continue
+
+            for (slot in listOf("breakfast", "lunch", "dinner", "snacks")) {
+                val items = meals.optJSONArray(slot) ?: continue
+                for (j in 0 until items.length()) {
+                    val recipeName = items.getJSONObject(j).optString("recipe_name", "").lowercase()
+
+                    for (kw in diabeticKeywords) {
+                        if (recipeName.contains(kw)) {
+                            diabeticViolations++
+                            Log.w(TAG, "DIABETIC VIOLATION: $dayName $slot — $recipeName (keyword: $kw)")
+                            break
+                        }
+                    }
+                    for (kw in lowSaltKeywords) {
+                        if (recipeName.contains(kw)) {
+                            lowSaltViolations++
+                            Log.w(TAG, "LOW_SALT VIOLATION: $dayName $slot — $recipeName (keyword: $kw)")
+                            break
+                        }
+                    }
+                    for (kw in noSpicyKeywords) {
+                        if (recipeName.contains(kw)) {
+                            noSpicyViolations++
+                            Log.w(TAG, "NO_SPICY VIOLATION: $dayName $slot — $recipeName (keyword: $kw)")
+                            break
+                        }
+                    }
+                    for (kw in lowOilKeywords) {
+                        if (recipeName.contains(kw)) {
+                            lowOilViolations++
+                            Log.w(TAG, "LOW_OIL VIOLATION: $dayName $slot — $recipeName (keyword: $kw)")
+                            break
+                        }
+                    }
+                }
+            }
+        }
+
+        Log.i(TAG, "Health condition check results:")
+        Log.i(TAG, "  DIABETIC violations: $diabeticViolations")
+        Log.i(TAG, "  LOW_SALT violations: $lowSaltViolations")
+        Log.i(TAG, "  NO_SPICY violations: $noSpicyViolations")
+        Log.i(TAG, "  LOW_OIL violations: $lowOilViolations")
+
+        assertEquals("DIABETIC health condition violated — unsafe items in meal plan", 0, diabeticViolations)
+        assertEquals("LOW_SALT health condition violated — high-salt items in meal plan", 0, lowSaltViolations)
+        assertEquals("NO_SPICY health condition violated — spicy items in meal plan", 0, noSpicyViolations)
+        assertEquals("LOW_OIL health condition violated — deep-fried items in meal plan", 0, lowOilViolations)
+
         // Navigate to Tuesday to capture day-specific view
         try {
             homeRobot.selectDay(DayOfWeek.TUESDAY)

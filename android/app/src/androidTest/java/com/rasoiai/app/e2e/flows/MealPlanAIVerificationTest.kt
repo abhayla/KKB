@@ -39,6 +39,11 @@ import java.io.File
  * - SEM-05: Weekday prep <= 30 min (hard)
  * - SEM-06: Weekend prep <= 60 min (hard)
  * - SEM-07..09: INCLUDE frequency checks (soft — logged, not asserted)
+ * - SEM-10: No DIABETIC-unsafe items (sugar, jalebi, halwa, ladoo, mithai, gulab jamun)
+ * - SEM-11: No LOW_SALT items (pickle, papad, achaar) (hard)
+ * - SEM-12: No NO_SPICY items (green chili, mirchi) (hard)
+ * - SEM-13: No LOW_OIL items (pakora, puri, kachori, deep fried) (hard)
+ * - SEM-14: No SATTVIC violations (onion, garlic) (hard)
  *
  * Artifacts written to app external files:
  *   /storage/emulated/0/Android/data/com.rasoiai.app/files/ai_verification/
@@ -63,6 +68,25 @@ class MealPlanAIVerificationTest : BaseE2ETest() {
     private val nonVegExclusions = listOf("eggplant", "eggless")
 
     private val dislikedItems = listOf("karela", "baingan", "mushroom")
+
+    // Health condition forbidden keywords (mirrors family_constraints.py FAMILY_CONSTRAINT_MAP)
+    // Ramesh: DIABETIC + LOW_OIL, Sunita: LOW_SALT, Aarav: NO_SPICY
+    private val diabeticKeywords = listOf(
+        "sugar", "jaggery", "gulab jamun", "jalebi", "halwa", "ladoo", "barfi",
+        "kheer", "sweet", "mithai", "rasgulla", "rasmalai", "kulfi", "rabri",
+        "sandesh", "peda"
+    )
+    private val diabeticExclusions = listOf("unsweetened", "bittersweet", "sweet potato")
+
+    private val lowSaltKeywords = listOf("pickle", "papad", "achaar")
+
+    private val noSpicyKeywords = listOf(
+        "green chili", "red chili", "chilli", "mirchi", "hari mirch", "lal mirch"
+    )
+
+    private val lowOilKeywords = listOf(
+        "pakora", "pakoda", "bhajiya", "puri", "kachori", "deep fried"
+    )
 
     // Weekend day names from the API response
     private val weekendDays = setOf("Saturday", "Sunday")
@@ -558,6 +582,91 @@ class MealPlanAIVerificationTest : BaseE2ETest() {
         logValidation("SEM-09", "Paneer in L/D 1-3 times (SOFT)", sem09Pass,
             "paneer found $paneerCount times in lunch/dinner")
         if (!sem09Pass) Log.w(TAG, "SOFT FAIL SEM-09: Paneer found $paneerCount times (expected 1-3)")
+
+        // SEM-10: No DIABETIC-unsafe items (Ramesh has diabetes)
+        val diabeticFound = mutableListOf<String>()
+        forEachMealItem(days) { dayName, slot, item ->
+            val recipeName = item.optString("recipe_name", "").lowercase()
+            for (keyword in diabeticKeywords) {
+                if (recipeName.contains(keyword)) {
+                    // Check for false positives (unsweetened, bittersweet, sweet potato)
+                    val isFalsePositive = diabeticExclusions.any { recipeName.contains(it) }
+                    if (!isFalsePositive) {
+                        diabeticFound.add("$dayName/$slot: ${item.optString("recipe_name")} (keyword: $keyword)")
+                        break
+                    }
+                }
+            }
+        }
+        val sem10Pass = diabeticFound.isEmpty()
+        logValidation("SEM-10", "No DIABETIC-unsafe items", sem10Pass,
+            if (sem10Pass) "no diabetic-unsafe items found" else "found: ${diabeticFound.joinToString("; ")}")
+        if (!sem10Pass) hardFailures.add("SEM-10: DIABETIC-unsafe items: ${diabeticFound.joinToString("; ")}")
+
+        // SEM-11: No LOW_SALT items (Sunita has low_salt condition)
+        val lowSaltFound = mutableListOf<String>()
+        forEachMealItem(days) { dayName, slot, item ->
+            val recipeName = item.optString("recipe_name", "").lowercase()
+            for (keyword in lowSaltKeywords) {
+                if (recipeName.contains(keyword)) {
+                    lowSaltFound.add("$dayName/$slot: ${item.optString("recipe_name")} (keyword: $keyword)")
+                    break
+                }
+            }
+        }
+        val sem11Pass = lowSaltFound.isEmpty()
+        logValidation("SEM-11", "No LOW_SALT items", sem11Pass,
+            if (sem11Pass) "no low-salt-violating items found" else "found: ${lowSaltFound.joinToString("; ")}")
+        if (!sem11Pass) hardFailures.add("SEM-11: LOW_SALT-violating items: ${lowSaltFound.joinToString("; ")}")
+
+        // SEM-12: No NO_SPICY items (Aarav has no_spicy condition)
+        val noSpicyFound = mutableListOf<String>()
+        forEachMealItem(days) { dayName, slot, item ->
+            val recipeName = item.optString("recipe_name", "").lowercase()
+            for (keyword in noSpicyKeywords) {
+                if (recipeName.contains(keyword)) {
+                    noSpicyFound.add("$dayName/$slot: ${item.optString("recipe_name")} (keyword: $keyword)")
+                    break
+                }
+            }
+        }
+        val sem12Pass = noSpicyFound.isEmpty()
+        logValidation("SEM-12", "No NO_SPICY items", sem12Pass,
+            if (sem12Pass) "no spicy-violating items found" else "found: ${noSpicyFound.joinToString("; ")}")
+        if (!sem12Pass) hardFailures.add("SEM-12: NO_SPICY-violating items: ${noSpicyFound.joinToString("; ")}")
+
+        // SEM-13: No LOW_OIL items (Ramesh has low_oil condition)
+        val lowOilFound = mutableListOf<String>()
+        forEachMealItem(days) { dayName, slot, item ->
+            val recipeName = item.optString("recipe_name", "").lowercase()
+            for (keyword in lowOilKeywords) {
+                if (recipeName.contains(keyword)) {
+                    lowOilFound.add("$dayName/$slot: ${item.optString("recipe_name")} (keyword: $keyword)")
+                    break
+                }
+            }
+        }
+        val sem13Pass = lowOilFound.isEmpty()
+        logValidation("SEM-13", "No LOW_OIL items", sem13Pass,
+            if (sem13Pass) "no low-oil-violating items found" else "found: ${lowOilFound.joinToString("; ")}")
+        if (!sem13Pass) hardFailures.add("SEM-13: LOW_OIL-violating items: ${lowOilFound.joinToString("; ")}")
+
+        // SEM-14: No SATTVIC violations (onion, garlic — beyond SEM-01 vegetarian check)
+        val sattvicKeywords = listOf("onion", "garlic", "pyaaz", "pyaz", "lahsun", "lehsun")
+        val sattvicFound = mutableListOf<String>()
+        forEachMealItem(days) { dayName, slot, item ->
+            val recipeName = item.optString("recipe_name", "").lowercase()
+            for (keyword in sattvicKeywords) {
+                if (recipeName.contains(keyword)) {
+                    sattvicFound.add("$dayName/$slot: ${item.optString("recipe_name")} (keyword: $keyword)")
+                    break
+                }
+            }
+        }
+        val sem14Pass = sattvicFound.isEmpty()
+        logValidation("SEM-14", "No SATTVIC violations (onion/garlic)", sem14Pass,
+            if (sem14Pass) "no sattvic-violating items found" else "found: ${sattvicFound.joinToString("; ")}")
+        if (!sem14Pass) hardFailures.add("SEM-14: SATTVIC-violating items: ${sattvicFound.joinToString("; ")}")
 
         // Assert hard failures
         if (hardFailures.isNotEmpty()) {
