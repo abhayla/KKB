@@ -2,56 +2,138 @@
 name: plan-to-issues
 description: >
   Parse a markdown plan into GitHub Issues with labels and duplicate detection.
-  Use when you have a numbered plan, checklist, or task breakdown and want to
-  create tracked GitHub Issues from it. Supports text input or file path.
-  Max 20 issues per invocation.
+  Supports text input or file path. Max 20 issues per invocation.
 allowed-tools: "Bash Read Grep Glob"
-argument-hint: "<plan text or file path>"
+argument-hint: "<plan-file-path or plan text>"
 ---
 
-# Plan to Issues — Markdown Plan to GitHub Issues
+# Plan to Issues
 
-Parse a markdown plan and create GitHub Issues with smart labeling and duplicate detection.
+Parse a structured plan into tracked GitHub Issues.
 
-**Request:** $ARGUMENTS
-
----
-
-## Input Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `input` | string/path | (required) | Markdown plan text or path to a `.md` file |
-| `--dry-run` | flag | false | Show what would be created without actually creating |
-| `--labels` | string | (auto) | Override auto-detected labels (comma-separated) |
+**Input:** $ARGUMENTS
 
 ---
 
-## STEP 1: Extract Items
+## STEP 1: Parse Plan
 
-If input is a file path (ends in `.md`), read the file. Otherwise use the provided text directly.
+Accept input as either:
+- A file path → read the file
+- Inline text → parse directly
 
-Extract actionable items by matching these patterns (in priority order):
-
-1. **Numbered lists:** `1. Description`, `2. Description`
-2. **Checkboxes:** `- [ ] Description`, `- [x] Description` (skip checked items)
-3. **Heading-based:** `### Title` followed by description paragraph
-4. **Bullet points under a heading:** `## Section` → `- item 1`, `- item 2`
+Extract actionable items from:
+- Numbered lists (`1. Do something`)
+- Checkboxes (`- [ ] Do something`)
+- Headings with sub-items
 
 For each item, extract:
-- **Title:** First line or heading (max 80 chars, truncate with `...`)
-- **Body:** Remaining description, sub-items, code blocks
-- **Section:** Parent heading (becomes label context)
+- Title (concise, under 80 chars)
+- Description (details from sub-items or context)
+- Labels (auto-detect: `bug`, `feature`, `enhancement`, `docs`, `test`, `refactor`)
 
-**Max 20 items per invocation.** If more found, warn and take first 20.
+## STEP 2: Check for Duplicates
+
+```bash
+gh issue list --limit 100 --json title,number --jq '.[].title'
+```
+
+Compare each proposed issue title against existing issues. Skip duplicates.
+
+## STEP 3: Organize into Epics (if applicable)
+
+If the plan has logical groupings (sections, atomic plans, milestones), organize issues into epics.
+
+### 3.1 Detect Epic Structure
+
+Look for groupings in the plan:
+- Top-level headings (`## Feature Area`) → each heading becomes an epic
+- Atomic plan groups (`## Atomic Plan 1: <title>`) → each group becomes an epic
+- Milestone markers (`## M1: MVP`) → each milestone becomes an epic
+- PRD user story groups → each user story becomes an epic
+
+### 3.2 Create Milestone (if milestones detected)
+
+```bash
+# Create milestones for each phase/milestone in the plan
+gh api repos/:owner/:repo/milestones -f title="M1: MVP" -f description="Core features" -f due_on="2026-04-01T00:00:00Z"
+```
+
+### 3.3 Create Epic Issues
+
+For each epic, create a tracking issue that references its child tasks:
+
+```bash
+gh issue create --title "Epic: <group title>" --label "epic" --milestone "<milestone>" --body "$(cat <<'EOF'
+## <Group Title>
+
+### Tasks
+- [ ] #<child-issue-1> — <title>
+- [ ] #<child-issue-2> — <title>
+- [ ] #<child-issue-3> — <title>
+
+### Acceptance Criteria
+<from PRD if available>
+
+### Dependencies
+<cross-epic dependencies if any>
+EOF
+)"
+```
+
+### 3.4 Skip Epics When
+
+- Plan has fewer than 5 tasks (flat list is fine)
+- Plan has no logical groupings
+- User explicitly requests flat issues
+
+## STEP 4: Create Task Issues
+
+For each non-duplicate item (max 20):
+
+```bash
+gh issue create --title "Title" --body "Description" --label "label" --milestone "<milestone>"
+```
+
+If epics were created, add a reference to the parent epic in each task's body:
+```
+**Epic:** #<epic-issue-number>
+```
+
+After creating all tasks, update the epic issue body with the actual issue numbers.
+
+## STEP 5: Report
+
+```
+Created N issues:
+  Epics: E
+    Epic #100 — "User Registration" (M1: MVP) [3 tasks]
+    Epic #101 — "Email Verification" (M1: MVP) [2 tasks]
+
+  Tasks: T
+    #102 — Title 1 [label] → Epic #100
+    #103 — Title 2 [label] → Epic #100
+    #104 — Title 3 [label] → Epic #100
+    #105 — Title 4 [label] → Epic #101
+    #106 — Title 5 [label] → Epic #101
+
+  Milestones: M
+    M1: MVP (5 tasks across 2 epics)
+
+Skipped D duplicates:
+  - "Title" (matches #99)
+```
 
 ---
 
-## STEP 2: Auto-Detect Labels
+## RULES
 
-Apply labels based on keyword matching in title and body:
-
-| Keyword Pattern | Label |
+- Maximum 20 issues per invocation
+- Auto-detect labels from content keywords
+- Always check for duplicates before creating
+- Preserve the original plan's ordering
+- Create epics only when plan has logical groupings (5+ tasks with sections)
+- Always link tasks back to their parent epic
+- Update epic checklists with actual issue numbers after creation| Keyword Pattern | Label |
 |----------------|-------|
 | `fix`, `bug`, `broken`, `error` | `bug` |
 | `add`, `new`, `feature`, `implement` | `enhancement` |
@@ -64,79 +146,4 @@ Apply labels based on keyword matching in title and body:
 | `refactor`, `cleanup`, `optimize` | `refactoring` |
 | `ci`, `deploy`, `pipeline` | `infrastructure` |
 
-Each item gets 1-3 labels max. Always include at least one of: `bug`, `enhancement`, `testing`, `documentation`, `refactoring`.
 
----
-
-## STEP 3: Duplicate Check
-
-For each item, search existing open issues:
-
-```bash
-gh issue list --search "${KEYWORDS}" --state open --limit 3 --json number,title
-```
-
-Extract 2-3 keywords from the title for the search. If a match is found with >70% title similarity, mark as **SKIP (duplicate of #N)**.
-
----
-
-## STEP 4: Create Issues (unless --dry-run)
-
-For each non-duplicate item:
-
-```bash
-gh issue create \
-  --title "${TITLE}" \
-  --body "$(cat <<'EOF'
-## Description
-
-${BODY}
-
-## Source
-
-Extracted from plan: ${SOURCE_REFERENCE}
-
----
-*Created by /plan-to-issues*
-EOF
-)" \
-  --label "${LABELS}"
-```
-
-Pause 1 second between creations to avoid rate limiting.
-
----
-
-## STEP 5: Report
-
-```
-Plan to Issues Report
-=====================
-
-Source: {file path or "inline text"}
-Items found: N
-Created: N
-Skipped (duplicate): N
-Skipped (checked): N
-
-Created Issues:
-  #XX  [enhancement,android]  Add logout button to settings
-  #XX  [bug,backend]          Fix 500 error on recipe search
-  #XX  [testing]              Add E2E test for grocery flow
-
-Skipped (duplicates):
-  "Fix auth error" -> duplicate of #45
-  "Update docs" -> duplicate of #38
-
-{If --dry-run: "DRY RUN — no issues were created"}
-```
-
----
-
-## CRITICAL NOTES
-
-- Max 20 issues per invocation to prevent accidental spam
-- Always run duplicate check before creating
-- Use `--dry-run` first to preview what will be created
-- Labels must exist in the repo — if a label doesn't exist, `gh` will error. Stick to known labels: `bug`, `enhancement`, `testing`, `android`, `backend`, `household`, `documentation`
-- Items from checked checkboxes (`- [x]`) are skipped (already done)
