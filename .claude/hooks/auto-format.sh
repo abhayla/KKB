@@ -1,43 +1,66 @@
 #!/bin/bash
-# PostToolUse hook: Auto-format Python files after Edit/Write
-# Runs black + ruff on modified Python files in backend/
+# auto-format.sh — PostToolUse hook for Write|Edit
+# Auto-formats files after Claude writes or edits them.
+#
+# Customize the formatters below to match your project tooling.
+# Only formatters that are installed will run — missing ones are silently skipped.
+#
+# Configuration:
+#   Event: PostToolUse
+#   Matcher: Write|Edit
+#   Exit codes: 0 = success (always non-blocking)
+#
+# Settings.json entry:
+#   {
+#     "hooks": {
+#       "PostToolUse": [
+#         {
+#           "matcher": "Write|Edit",
+#           "command": ".claude/hooks/auto-format.sh"
+#         }
+#       ]
+#     }
+#   }
 
-# Read stdin (hook input JSON)
-INPUT=$(cat)
+FILE=$(echo "$TOOL_INPUT" | jq -r '.file_path // .path // empty')
+if [[ -z "$FILE" ]] || [[ ! -f "$FILE" ]]; then exit 0; fi
 
-# Extract the file path from tool input (use printf to avoid echo mangling)
-FILE_PATH=$(printf '%s' "$INPUT" | python -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    # Handle both Edit and Write tool inputs
-    path = data.get('tool_input', {}).get('file_path', '')
-    print(path)
-except:
-    print('')
-" 2>/dev/null)
+case "$FILE" in
+  # Python
+  *.py)
+    command -v ruff >/dev/null 2>&1 && ruff check --fix --quiet "$FILE" 2>/dev/null
+    command -v ruff >/dev/null 2>&1 && ruff format --quiet "$FILE" 2>/dev/null
+    command -v black >/dev/null 2>&1 && black --quiet "$FILE" 2>/dev/null
+    ;;
+  # JavaScript / TypeScript
+  *.js|*.jsx|*.ts|*.tsx)
+    command -v npx >/dev/null 2>&1 && npx prettier --write "$FILE" 2>/dev/null
+    ;;
+  # JSON / YAML / Markdown / CSS / HTML (prettier handles these too)
+  *.json|*.yml|*.yaml|*.css|*.scss|*.html)
+    command -v npx >/dev/null 2>&1 && npx prettier --write "$FILE" 2>/dev/null
+    ;;
+  # Kotlin
+  *.kt|*.kts)
+    command -v ktfmt >/dev/null 2>&1 && ktfmt "$FILE" 2>/dev/null
+    ;;
+  # Go
+  *.go)
+    command -v gofmt >/dev/null 2>&1 && gofmt -w "$FILE" 2>/dev/null
+    ;;
+  # Rust
+  *.rs)
+    command -v rustfmt >/dev/null 2>&1 && rustfmt "$FILE" 2>/dev/null
+    ;;
+  # Swift
+  *.swift)
+    command -v swift-format >/dev/null 2>&1 && swift-format format -i "$FILE" 2>/dev/null
+    ;;
+  # Shell
+  *.sh|*.bash)
+    command -v shfmt >/dev/null 2>&1 && shfmt -w "$FILE" 2>/dev/null
+    ;;
+esac
 
-# Only format Python files in the backend directory
-if [[ "$FILE_PATH" == *".py" ]] && [[ "$FILE_PATH" == *"backend/"* || "$FILE_PATH" == *"backend\\"* ]]; then
-    # Resolve to absolute path if needed
-    if [[ ! -f "$FILE_PATH" ]]; then
-        exit 0
-    fi
-
-    # Activate backend venv and run formatters
-    BACKEND_DIR="$(cd "$(dirname "$0")/../.." && pwd)/backend"
-
-    if [[ -f "$BACKEND_DIR/venv/Scripts/activate" ]]; then
-        source "$BACKEND_DIR/venv/Scripts/activate" 2>/dev/null
-    elif [[ -f "$BACKEND_DIR/venv/bin/activate" ]]; then
-        source "$BACKEND_DIR/venv/bin/activate" 2>/dev/null
-    fi
-
-    # Run ruff for import sorting and linting fixes (fast, handles isort too)
-    ruff check --fix --quiet "$FILE_PATH" 2>/dev/null
-
-    # Run black for code formatting
-    black --quiet "$FILE_PATH" 2>/dev/null
-fi
-
+# Always exit 0 — formatting failures should not block the workflow
 exit 0
