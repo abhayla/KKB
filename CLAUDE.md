@@ -460,3 +460,33 @@ Path-specific context files loaded automatically when working in these directori
 | Functional Requirements | `docs/testing/Functional-Requirement-Rule.md` |
 | Meal Generation Config | `docs/design/Meal-Generation-Config-Architecture.md` |
 | Session Context | `docs/CONTINUE_PROMPT.md` |
+
+<!-- hub:best-practices:start -->
+
+## Rules for Claude
+
+1. **Bug Fixing**: Use `/fix-loop` or `/fix-issue`. Start by writing a test that reproduces the bug, then fix and prove with a passing test.
+
+### Rules Reference
+
+| Rule File | What It Covers |
+|-----------|---------------|
+| `rules/ai-gemini.md` | AI/Gemini integration rules and patterns. |
+| `rules/android.md` | Android development rules for Kotlin + Jetpack Compose projects. |
+| `rules/android-kotlin.md` | Kotlin language idioms, null safety, scope functions, and KMP-specific patterns for Android projects. |
+| `rules/backend.md` | Backend |
+| `rules/claude-behavior.md` | Universal behavioral rules for how Claude should approach all tasks. |
+| `rules/compose-ui.md` | Compose Ui |
+| `rules/context-management.md` | Rules for managing context window, token usage, and documentation references. |
+| `rules/database.md` | Database |
+| `rules/firebase-auth.md` | Firebase Authentication rules and patterns. |
+| `rules/rule-writing-meta.md` | Meta-guidance for writing effective CLAUDE.md rules, choosing config file placement, and structuring project instructions. |
+| `rules/superpowers.md` | Advanced Claude Code patterns and automation. |
+| `rules/testing.md` | Testing conventions and best practices. |
+| `rules/workflow.md` | Development workflow guidelines for structured feature implementation and bug fixes. |
+
+## Claude Code Configuration
+
+The `.claude/` directory contains skills, agents, and rules for Claude Code.
+
+<!-- hub:best-practices:end -->
