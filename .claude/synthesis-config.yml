@@ -12,8 +12,10 @@
 allow_hub_sharing: false
 
 # Patterns listed here are NEVER shared, even when allow_hub_sharing is true.
+# Use this for patterns that reveal internal architecture you want to keep private.
 private_patterns:
-  - rules/backend-auth-dependency.md
+  - rules/test-fixture-conventions.md
+  - rules/e2e-fake-auth.md
 
 # Project-specific details to strip from patterns before they leave.
 strip_before_sharing:
