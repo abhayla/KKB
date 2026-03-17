@@ -461,6 +461,16 @@ Path-specific context files loaded automatically when working in these directori
 | Meal Generation Config | `docs/design/Meal-Generation-Config-Architecture.md` |
 | Session Context | `docs/CONTINUE_PROMPT.md` |
 
+## Patterns We DON'T Use
+
+<!-- TODO: Explicitly list patterns you avoid WITH alternatives.
+Examples:
+- We don't use Redux — use StateFlow + Single UiState Data Class
+- We don't use raw SQL in Android — use Room DAO with @Query annotations
+- We don't use REST for real-time data — Firestore handles real-time sync
+- We don't use lazy column loading in SQLAlchemy — use selectinload() to avoid MissingGreenlet
+-->
+
 <!-- hub:best-practices:start -->
 
 ## Rules for Claude
@@ -473,17 +483,45 @@ Path-specific context files loaded automatically when working in these directori
 |-----------|---------------|
 | `rules/ai-gemini.md` | AI/Gemini integration rules and patterns. |
 | `rules/android.md` | Android development rules for Kotlin + Jetpack Compose projects. |
-| `rules/android-kotlin.md` | Kotlin language idioms, null safety, scope functions, and KMP-specific patterns for Android projects. |
-| `rules/backend.md` | Backend |
-| `rules/claude-behavior.md` | Universal behavioral rules for how Claude should approach all tasks. |
-| `rules/compose-ui.md` | Compose Ui |
-| `rules/context-management.md` | Rules for managing context window, token usage, and documentation references. |
-| `rules/database.md` | Database |
+| `rules/android-dao-query-conventions.md` | Room DAO query naming, suspend vs Flow, @Transaction usage. |
+| `rules/android-kotlin.md` | Kotlin language idioms, null safety, scope functions, KMP-specific patterns. |
+| `rules/android-navigation-callbacks.md` | Compose screen navigation callback conventions — onNavigate* lambdas. |
+| `rules/backend.md` | Backend API, service patterns, meal generation. |
+| `rules/backend-auth-dependency.md` | Backend auth dependency injection patterns. |
+| `rules/backend-endpoint-structure.md` | FastAPI endpoint structure — rate limiting, DI, response models. |
+| `rules/backend-logging-standards.md` | Module-level loggers, log levels, structured logging. |
+| `rules/backend-service-layer.md` | Service layer conventions and async patterns. |
+| `rules/backend-service-pattern.md` | Service function signatures and repository usage. |
+| `rules/baseviewmodel-pattern.md` | BaseViewModel with StateFlow, UiState, and Resource pattern. |
+| `rules/centralized-mapper-convention.md` | EntityMappers.kt and DtoMappers.kt placement. |
+| `rules/claude-behavior.md` | Universal behavioral rules for Claude. |
+| `rules/compose-testtags-convention.md` | Semantic test tags for Compose UI elements. |
+| `rules/compose-ui.md` | Compose UI design system and patterns. |
+| `rules/context-management.md` | Context window, token usage, documentation references. |
+| `rules/custom-exception-hierarchy.md` | Backend exception classes and error handling. |
+| `rules/database.md` | Room and PostgreSQL schema, migrations. |
+| `rules/e2e-fake-auth.md` | Fake phone auth for E2E testing. |
+| `rules/e2e-robot-pattern.md` | Robot pattern for E2E test readability. |
+| `rules/firebase.md` | Firebase Auth, Firestore, and token verification. |
 | `rules/firebase-auth.md` | Firebase Authentication rules and patterns. |
-| `rules/rule-writing-meta.md` | Meta-guidance for writing effective CLAUDE.md rules, choosing config file placement, and structuring project instructions. |
+| `rules/firestore-vs-postgres-usage.md` | Decision criteria for Firestore vs PostgreSQL data storage. |
+| `rules/gemini-structured-output.md` | Gemini API structured output and response schemas. |
+| `rules/hilt-di-module-convention.md` | Hilt @Binds vs @Provides, module placement. |
+| `rules/hilt-module-organization.md` | Hilt module organization by feature. |
+| `rules/model-import-5-locations.md` | 5-location model import rule for SQLAlchemy. |
+| `rules/module-dependency-direction.md` | Android module dependency direction constraints. |
+| `rules/navigation-screen-pattern.md` | Screen navigation registration and route patterns. |
+| `rules/offline-first-repository.md` | Offline-first repository with Room as source of truth. |
+| `rules/offline-sync-queue.md` | Offline sync queue for pending mutations. |
+| `rules/pydantic-android-schema-sync.md` | Backend Pydantic and Android DTO 1:1 field sync. |
+| `rules/rule-writing-meta.md` | Meta-guidance for writing CLAUDE.md rules. |
+| `rules/settings-configuration-validation.md` | Pydantic Settings — required vs optional, safe defaults. |
 | `rules/superpowers.md` | Advanced Claude Code patterns and automation. |
+| `rules/tdd.md` | Test-driven development red-green-refactor cycle. |
+| `rules/test-fixture-conventions.md` | Backend test fixture selection guide. |
 | `rules/testing.md` | Testing conventions and best practices. |
-| `rules/workflow.md` | Development workflow guidelines for structured feature implementation and bug fixes. |
+| `rules/viewmodel-navigation-events.md` | ViewModel navigation event patterns. |
+| `rules/workflow.md` | Development workflow guidelines. |
 
 ## Claude Code Configuration
 
