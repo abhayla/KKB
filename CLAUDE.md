@@ -136,7 +136,7 @@ Repositories read from Room (source of truth), fetch from API when online. Mutat
 ./gradlew :app:connectedDebugAndroidTest \
   -Pandroid.testInstrumentationRunnerArguments.package=com.rasoiai.app.e2e.flows  # All E2E flows
 
-# Customer journey suites (14 suites: J01-J14, group E2E tests by user scenario)
+# Customer journey suites (17 suites: J01-J17, group E2E tests by user scenario)
 ./gradlew :app:connectedDebugAndroidTest \
   -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.journeys.J01_FirstTimeUserSuite
 ```
@@ -256,7 +256,7 @@ E2E tests use **real backend + fake phone auth only**. `FakePhoneAuthClient` sen
 | `e2e/base/BaseE2ETest.kt` | Base class with Hilt setup, auth state helpers |
 | `e2e/di/FakePhoneAuthClient.kt` | Bypasses Firebase Phone Auth |
 | `e2e/robots/` | Robot pattern (HomeRobot, GroceryRobot, etc.) |
-| `e2e/journeys/` | 14 customer journey suites (J01-J14) grouping 23 test files |
+| `e2e/journeys/` | 17 customer journey suites (J01-J17) grouping 28 test files |
 | `presentation/common/TestTags.kt` | All semantic test tags for UI elements |
 
 **E2E backend URL:** `http://10.0.2.2:8000` (Android emulator maps `10.0.2.2` → host `localhost`).
@@ -431,7 +431,7 @@ For each HIGH priority recommendation, provide:
 
 ## Claude Code Configuration
 
-The `.claude/` directory contains: `agents/` (14 agents), `knowledge.db` (pattern library), `skills/` (25 slash commands), `hooks/` (8 hooks — see table above), `rules/` (6 path-scoped rule files), `logs/` (session logs).
+The `.claude/` directory contains: `agents/` (14 agents), `knowledge.db` (pattern library), `skills/` (25 slash commands), `hooks/` (8 hooks — see table above), `rules/` (40+ path-scoped rule files), `logs/` (session logs).
 
 **Skills:** `/adb-test`, `/auto-verify`, `/claude-guardian`, `/clean-pyc`, `/continue`, `/fix-issue`, `/fix-loop`, `/implement`, `/plan-to-issues`, `/post-fix-pipeline`, `/reflect`, `/run-android-tests`, `/run-backend-tests`, `/run-e2e`, `/db-migrate`, `/deploy`, `/skill-factory`, `/status`, `/sync-check`, `/strategic-architect`, `/test-knowledge`, `/verify-screenshots`, `/generate-meal`, `/gemini-api`, `/ui-ux-pro-max`
 
@@ -463,13 +463,16 @@ Path-specific context files loaded automatically when working in these directori
 
 ## Patterns We DON'T Use
 
-<!-- TODO: Explicitly list patterns you avoid WITH alternatives.
-Examples:
-- We don't use Redux — use StateFlow + Single UiState Data Class
+- We don't use Redux/MVI libraries — use StateFlow + Single UiState Data Class via BaseViewModel
 - We don't use raw SQL in Android — use Room DAO with @Query annotations
 - We don't use REST for real-time data — Firestore handles real-time sync
 - We don't use lazy column loading in SQLAlchemy — use selectinload() to avoid MissingGreenlet
--->
+- We don't use LiveData — use StateFlow exclusively via BaseViewModel
+- We don't use SharedFlow for navigation events — use Channel + receiveAsFlow() for one-shot events
+- We don't use per-feature mapper files — use centralized EntityMappers.kt and DtoMappers.kt
+- We don't use @Provides for simple repository bindings — use @Binds on abstract classes
+- We don't use classes for backend services — use standalone async functions at module level
+- We don't use `google-generativeai` SDK — use `google-genai` with native async (`client.aio`)
 
 <!-- hub:best-practices:start -->
 
@@ -479,52 +482,17 @@ Examples:
 
 ### Rules Reference
 
-| Rule File | What It Covers |
-|-----------|---------------|
-| `rules/ai-gemini.md` | AI/Gemini integration rules and patterns. |
-| `rules/android.md` | Android development rules for Kotlin + Jetpack Compose projects. |
-| `rules/android-dao-query-conventions.md` | Room DAO query naming, suspend vs Flow, @Transaction usage. |
-| `rules/android-kotlin.md` | Kotlin language idioms, null safety, scope functions, KMP-specific patterns. |
-| `rules/android-navigation-callbacks.md` | Compose screen navigation callback conventions — onNavigate* lambdas. |
-| `rules/backend.md` | Backend API, service patterns, meal generation. |
-| `rules/backend-auth-dependency.md` | Backend auth dependency injection patterns. |
-| `rules/backend-endpoint-structure.md` | FastAPI endpoint structure — rate limiting, DI, response models. |
-| `rules/backend-logging-standards.md` | Module-level loggers, log levels, structured logging. |
-| `rules/backend-service-layer.md` | Service layer conventions and async patterns. |
-| `rules/backend-service-pattern.md` | Service function signatures and repository usage. |
-| `rules/baseviewmodel-pattern.md` | BaseViewModel with StateFlow, UiState, and Resource pattern. |
-| `rules/centralized-mapper-convention.md` | EntityMappers.kt and DtoMappers.kt placement. |
-| `rules/claude-behavior.md` | Universal behavioral rules for Claude. |
-| `rules/compose-testtags-convention.md` | Semantic test tags for Compose UI elements. |
-| `rules/compose-ui.md` | Compose UI design system and patterns. |
-| `rules/context-management.md` | Context window, token usage, documentation references. |
-| `rules/custom-exception-hierarchy.md` | Backend exception classes and error handling. |
-| `rules/database.md` | Room and PostgreSQL schema, migrations. |
-| `rules/e2e-fake-auth.md` | Fake phone auth for E2E testing. |
-| `rules/e2e-robot-pattern.md` | Robot pattern for E2E test readability. |
-| `rules/firebase.md` | Firebase Auth, Firestore, and token verification. |
-| `rules/firebase-auth.md` | Firebase Authentication rules and patterns. |
-| `rules/firestore-vs-postgres-usage.md` | Decision criteria for Firestore vs PostgreSQL data storage. |
-| `rules/gemini-structured-output.md` | Gemini API structured output and response schemas. |
-| `rules/hilt-di-module-convention.md` | Hilt @Binds vs @Provides, module placement. |
-| `rules/hilt-module-organization.md` | Hilt module organization by feature. |
-| `rules/model-import-5-locations.md` | 5-location model import rule for SQLAlchemy. |
-| `rules/module-dependency-direction.md` | Android module dependency direction constraints. |
-| `rules/navigation-screen-pattern.md` | Screen navigation registration and route patterns. |
-| `rules/offline-first-repository.md` | Offline-first repository with Room as source of truth. |
-| `rules/offline-sync-queue.md` | Offline sync queue for pending mutations. |
-| `rules/pydantic-android-schema-sync.md` | Backend Pydantic and Android DTO 1:1 field sync. |
-| `rules/rule-writing-meta.md` | Meta-guidance for writing CLAUDE.md rules. |
-| `rules/settings-configuration-validation.md` | Pydantic Settings — required vs optional, safe defaults. |
-| `rules/superpowers.md` | Advanced Claude Code patterns and automation. |
-| `rules/tdd.md` | Test-driven development red-green-refactor cycle. |
-| `rules/test-fixture-conventions.md` | Backend test fixture selection guide. |
-| `rules/testing.md` | Testing conventions and best practices. |
-| `rules/viewmodel-navigation-events.md` | ViewModel navigation event patterns. |
-| `rules/workflow.md` | Development workflow guidelines. |
+40+ path-scoped rules in `.claude/rules/` auto-load when working on matching files. Key categories:
 
-## Claude Code Configuration
-
-The `.claude/` directory contains skills, agents, and rules for Claude Code.
+| Category | Rules (in `.claude/rules/`) |
+|----------|-----------------------------|
+| **Android** | `android.md`, `android-kotlin.md`, `android-dao-query-conventions.md`, `android-navigation-callbacks.md` |
+| **Compose** | `compose-ui.md`, `compose-testtags-convention.md`, `baseviewmodel-pattern.md`, `viewmodel-navigation-events.md` |
+| **Architecture** | `module-dependency-direction.md`, `centralized-mapper-convention.md`, `hilt-di-module-convention.md`, `hilt-module-organization.md`, `navigation-screen-pattern.md`, `offline-first-repository.md`, `offline-sync-queue.md` |
+| **Backend** | `backend.md`, `backend-auth-dependency.md`, `backend-endpoint-structure.md`, `backend-logging-standards.md`, `backend-service-layer.md`, `backend-service-pattern.md` |
+| **Database** | `database.md`, `model-import-5-locations.md`, `firestore-vs-postgres-usage.md`, `pydantic-android-schema-sync.md` |
+| **AI/Gemini** | `ai-gemini.md`, `gemini-structured-output.md` |
+| **Testing** | `testing.md`, `tdd.md`, `test-fixture-conventions.md`, `e2e-fake-auth.md`, `e2e-robot-pattern.md` |
+| **Config/Meta** | `settings-configuration-validation.md`, `custom-exception-hierarchy.md`, `firebase.md`, `firebase-auth.md`, `claude-behavior.md`, `context-management.md`, `workflow.md`, `rule-writing-meta.md` |
 
 <!-- hub:best-practices:end -->
