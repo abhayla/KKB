@@ -1,380 +1,150 @@
 ---
 name: implement
 description: >
-  Implement a feature or fix following the mandatory 7-step workflow: requirements docs,
-  test creation, implementation, test execution, fix-loop delegation, screenshot capture,
-  and verification. Enforces gates at each step. Use when user requests new functionality,
-  feature implementation, or structured bug fixes.
-allowed-tools: "Bash Read Grep Glob Write Edit Skill Task"
+  Implement a feature or fix following a structured workflow: requirements analysis,
+  test creation, implementation, test execution, fix-loop delegation, and verification.
+  Use when user requests new functionality or structured bug fixes.
+allowed-tools: "Bash Read Grep Glob Write Edit Skill"
 argument-hint: "<feature-description>"
+version: "1.0.0"
+type: workflow
 ---
 
 # Implement Feature/Fix
 
-Implement the requested feature or fix following the **mandatory 7-step workflow**.
+Implement the requested feature or fix following a structured workflow.
 
 **Request:** $ARGUMENTS
 
 ---
 
-## STEP 0: Pre-Execution Knowledge Check + Initialize Workflow State
+## STEP 1: Analyze Requirements
 
-### 0a. Knowledge Check
+1. Read the feature request / issue description carefully
+2. Identify affected files and components
+3. Check existing tests and code patterns in the area
+4. Review any related documentation
+5. **Cross-layer impact analysis** — If the change touches one layer, check if other layers need updating:
 
-Before implementation, check the failure index for known issues related to this feature area:
+| Changed Layer | Also Check |
+|--------------|-----------|
+| Backend API (routes, controllers) | Frontend callers, API docs, integration tests, OpenAPI spec |
+| Database (schema, migrations) | ORM models, queries, seed data, backup scripts |
+| Frontend (components, pages) | API contracts match, E2E tests, accessibility |
+| Shared types/interfaces | All importers across frontend + backend |
+| Config/environment | Deployment scripts, CI/CD, documentation, .env.example |
 
-```bash
-python -c "
-import json
-try:
-    with open('.claude/logs/learning/failure-index.json') as f:
-        d = json.load(f)
-    for e in d.get('entries', []):
-        if e.get('skill') == 'implement' or e.get('skill') == 'fix-loop':
-            if e.get('known_workaround'):
-                print(f'Step 0: Known workaround for {e[\"issue_type\"]}: {e[\"known_workaround\"]}')
-            if e.get('auto_fix_eligible'):
-                print(f'AUTO-FIX ELIGIBLE: {e[\"issue_type\"]}')
-except FileNotFoundError:
-    print('Step 0: No failure index found')
-"
+List all affected layers before proceeding. If 3+ layers are affected, suggest using `/writing-plans` first to plan the cross-layer changes.
+
+## STEP 2: Create/Update Tests
+
+Before implementing, write or update tests that define the expected behavior:
+
+1. Identify the appropriate test file(s)
+2. Write tests that will FAIL before implementation (TDD approach)
+3. Follow existing test patterns and conventions in the project
+
+## STEP 3: Implement the Feature
+
+1. Make minimal, focused changes
+2. Follow existing code patterns and conventions
+3. Keep changes reversible where possible
+4. Add comments only where logic isn't self-evident
+
+## STEP 4: Run Tests
+
+Run the relevant test suite to verify implementation:
+
+1. Run targeted tests for the changed area first
+2. If targeted tests pass, run broader test suite
+3. If tests fail, proceed to fix-loop
+
+## STEP 5: Fix Loop (if tests fail)
+
+Delegate to `/fix-loop` with the failing test command:
+
+```
+Skill("fix-loop", args="retest_command: <the failing test command>")
 ```
 
-Read `memory/fix-patterns.md` for code-level patterns that may apply to the feature being implemented. If a pattern matches the current task, apply the known fix proactively instead of rediscovering it.
+Continue until all tests pass.
 
-### 0b. Initialize Workflow State
+## STEP 6: Verification (Mandatory Gate)
 
-Before any other action, initialize the workflow tracking state so hooks can enforce the pipeline:
+Do NOT report completion until ALL checks pass. This is a hard gate, not advisory.
 
-```bash
-# Hooks will auto-initialize on first tool use, but explicitly set activeCommand
-python -c "
-import json, os
-state_file = '.claude/workflow-state.json'
-if os.path.exists(state_file):
-    with open(state_file) as f:
-        d = json.load(f)
-    d['activeCommand'] = 'implement'
-    with open(state_file, 'w') as f:
-        json.dump(d, f, indent=2)
-"
+### 6.1 Multi-Layer Verification Checklist
+
+| Check | Command/Action | Status |
+|-------|---------------|--------|
+| Unit tests | Run targeted test suite | ⬜ |
+| Integration tests | Run broader test suite | ⬜ |
+| Regression check | Run full test suite | ⬜ |
+| Linting/formatting | Run project linter | ⬜ |
+| Type checking | Run type checker if applicable | ⬜ |
+| Build succeeds | Run build command | ⬜ |
+| Edge cases | Verify boundary conditions in tests | ⬜ |
+
+Skip checks that don't apply (e.g., no type checker configured), but never skip tests.
+
+### 6.2 Partial Failure Protocol
+
+If verification partially passes (e.g., 1 flaky test, lint warning):
+1. **Flaky test** — Re-run 2x. If it passes on retry, note it but don't block. Flag to user.
+2. **Lint/format warning** — Fix before proceeding. These are deterministic.
+3. **Unrelated test failure** — Verify it fails on the base branch too (`git stash && run tests && git stash pop`). If pre-existing, note it and proceed.
+4. **Type error in unchanged code** — Note and proceed. Don't fix unrelated type issues.
+
+### 6.3 Verification Report
+
+After all checks pass, output:
+```
+Verification: PASSED
+- Tests: X passed, 0 failed
+- Lint: clean
+- Build: success
+- Regressions: none detected
 ```
 
-This marks the session as an `implement` workflow. Hooks will:
-- Track all Skill invocations (fix-loop, post-fix-pipeline)
-- Independently verify test results via re-run
-- Block commits if required evidence artifacts are missing
+If any check fails after fix attempts, escalate to user with the report showing what passed and what failed.
+
+4. If significant changes were made (3+ files or complex logic), review with `/post-fix-pipeline`
+5. Summarize what was implemented and any decisions made
+
+## STEP 7: Post-Implementation (Optional)
+
+1. If running standalone (not inside `/executing-plans`), invoke `/learn-n-improve session` to capture learnings
+2. Provide summary of changes to the user
+
+## STEP 8: Structured Output
+
+Write machine-readable results to `test-results/implement.json`:
+
+```json
+{
+  "skill": "implement",
+  "timestamp": "<ISO-8601>",
+  "result": "PASSED|FAILED",
+  "summary": {
+    "total_tests": "<count>",
+    "passed": "<count>",
+    "failed": "<count>",
+    "fix_iterations": "<count>"
+  },
+  "quality_gate": "PASSED|WARNED|SKIPPED",
+  "failures": [],
+  "warnings": [],
+  "duration_ms": "<elapsed>"
+}
+```
+
+Create `test-results/` directory if it doesn't exist. This JSON is consumed by stage gates.
 
 ---
 
-## MANDATORY WORKFLOW
-
-You MUST follow these 7 steps in order. Do NOT skip any step.
-
-### STEP 1: Update Requirement Documentation
-
-1. Search for existing issue:
-   ```bash
-   gh issue list --search "$ARGUMENTS"
-   ```
-
-2. If no issue exists, create one:
-   ```bash
-   gh issue create --title "Feature: $ARGUMENTS" --body "## Description
-
-   [Describe the feature/fix]
-
-   ## Acceptance Criteria
-
-   - [ ] [Criterion 1]
-   - [ ] [Criterion 2]
-   "
-   ```
-
-3. Add requirement to the appropriate screen document in `docs/requirements/screens/` using BDD format:
-   ```markdown
-   ### SCREEN-XXX: [Feature Name]
-
-   **Given** [precondition]
-   **When** [action]
-   **Then** [expected result]
-   ```
-
-4. Add traceability entry to `docs/testing/Functional-Requirement-Rule.md`
-
-5. **Define backend verification checks** (if API changes involved):
-   ```bash
-   python -c "
-   import json
-   with open('.claude/workflow-state.json') as f: d = json.load(f)
-   d['backendChecks'] = [
-       # Example: {'endpoint': '/api/v1/...', 'method': 'GET', 'expect': 'status 200, has X field'}
-   ]
-   with open('.claude/workflow-state.json', 'w') as f: json.dump(d, f, indent=2)
-   "
-   ```
-   Skip this substep if the feature is UI-only with no API changes.
-
-**Output Required:**
-```
-Step 1 Complete:
-- GitHub Issue: #XX (created/existing)
-- Requirement ID: SCREEN-XXX
-- Traceability: Added to Functional-Requirement-Rule.md
-- Backend checks: N defined (or "None — UI-only")
-```
-
----
-
-### STEP 2: Create/Update Tests
-
-Based on the acceptance criteria:
-
-1. Create E2E test file in `app/src/androidTest/java/com/rasoiai/app/e2e/flows/`
-2. Add KDoc header:
-   ```kotlin
-   /**
-    * Requirement: #XX - [Description from issue]
-    *
-    * Tests the acceptance criteria defined in the issue.
-    */
-   class [Feature]FlowTest : BaseE2ETest() {
-       // Test methods matching each acceptance criterion
-   }
-   ```
-
-**Output Required:**
-```
-Step 2 Complete:
-- Test file: [Name]FlowTest.kt
-- Test methods: [list of methods]
-```
-
----
-
-### STEP 3: Implement the Feature
-
-Write the minimum code necessary to make the tests pass.
-
-Follow patterns from CLAUDE.md:
-- Hilt for dependency injection
-- StateFlow for state management
-- Room for local storage (offline-first)
-
-**Output Required:**
-```
-Step 3 Complete:
-- Files modified: [list]
-- Key changes: [brief description]
-```
-
----
-
-### STEP 4: Run Functional Tests
-
-Execute the tests:
-
-**Android:**
-```bash
-./gradlew :app:connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.flows.[TestClass]
-```
-
-**Backend (if applicable):**
-```bash
-PYTHONPATH=. pytest tests/test_[feature].py -v
-```
-
-**Output Required:**
-```
-Step 4 Complete:
-- Tests run: X
-- Tests passed: X
-- Tests failed: X
-```
-
----
-
-### STEP 5: Fix Loop (via /fix-loop Skill)
-
-> **ENFORCEMENT GATE:** Hooks track whether you invoke `/fix-loop` via the Skill tool. If test failures were detected and you fix issues inline without using the Skill tool, the `verify-evidence-artifacts.sh` hook will **block your commit**. You MUST use `Skill("fix-loop")`.
-
-IF any tests fail — **regardless of whether the failure is known or pre-existing** — **use the Skill tool** to invoke `/fix-loop` in Full Loop mode. Do NOT read fix-loop.md and follow it inline.
-
-Invoke: `skill: "fix-loop"` with arguments:
-```
-failure_output:         {raw test failure output from Step 4}
-failure_context:        {what was tested and what was expected}
-files_of_interest:      {files modified in Step 3}
-build_command:          {same build command used in Step 4, if applicable}
-retest_command:         {same test command used in Step 4}
-retest_timeout:         300
-max_iterations:         10
-max_attempts_per_issue: 3
-prohibited_actions:     ["@Ignore", "weaken assertions", "delete tests", "fix-later issues"]
-fix_target:             "either"
-log_dir:                ".claude/logs/fix-loop/"
-```
-Budget rationale: `max_iterations: 10` with `max_attempts_per_issue: 3` — generous budget for feature implementation where multiple issues may surface.
-
-The /fix-loop Skill will iterate until all tests pass or budget is exhausted.
-
-**CRITICAL:** Do NOT proceed to Step 6 until the fix-loop process returns status **RESOLVED** (all tests passing).
-
-If it returns UNRESOLVED or MAX_ITERATIONS_EXCEEDED:
-1. **Check failure-index.json** for `(implement, {issue_type})` occurrences
-2. If occurrences >= 2 AND fix-patterns.md has a matching entry with file paths:
-   - Re-invoke `Skill("fix-loop")` with enhanced context:
-     - `force_thinking_level`: "thinkhard" (2-3 occurrences) or "ultrathink" (4+)
-     - `previous_attempts_summary`: all prior attempts from failure-index
-     - `failure_context`: "AUTO-DELEGATED: implement recurring #{count}"
-   - Log: `"Auto-delegating to /fix-loop (occurrence #{count})"`
-3. If still UNRESOLVED after auto-delegation — report the failure and STOP.
-
-**Output Required:**
-```
-Step 5 Complete:
-- Fix-loop status: RESOLVED
-- Iterations: X
-- Issues fixed: X
-- Final result: ALL TESTS PASSING (X/X)
-```
-
----
-
-### STEP 6: Capture Screenshots
-
-Capture before and after screenshots to `docs/testing/screenshots/`:
-
-**Android:**
-```bash
-# Before (should have been captured in Step 1)
-adb exec-out screencap -p > docs/testing/screenshots/[issue]_[feature]_before.png
-
-# After
-adb exec-out screencap -p > docs/testing/screenshots/[issue]_[feature]_after.png
-```
-
-**Web:**
-```javascript
-await browser_take_screenshot({
-  filename: "docs/testing/screenshots/[issue]_[feature]_after.png",
-  type: "png"
-})
-```
-
-**Output Required:**
-```
-Step 6 Complete:
-- Before: docs/testing/screenshots/XX_before.png
-- After: docs/testing/screenshots/XX_after.png
-```
-
----
-
-### STEP 7: Verify Screenshots, Backend, and Post-Fix Pipeline
-
-> **ENFORCEMENT GATE:** Hooks track whether you invoke `/verify-screenshots` and `/post-fix-pipeline` via the Skill tool. If screenshots were captured but not validated, or tests were run without invoking the pipeline, the hooks will **block your commit**. You MUST use both Skills.
-
-1. **Invoke `/verify-screenshots`** to validate all captured screenshots and backend checks:
-   ```
-   Skill("verify-screenshots")
-   ```
-
-2. **If ISSUES_FOUND** — invoke `/fix-loop` with visual flag clearing:
-   ```
-   Skill("fix-loop", args="clear_flags: [\"visualIssuesPending\"]
-   failure_output: {description of visual issues from verify-screenshots}
-   failure_context: Screenshot validation found critical visual issues
-   files_of_interest: {files modified in Step 3}
-   retest_command: null
-   max_iterations: 3")
-   ```
-   After fix-loop — re-capture screenshots — re-invoke `/verify-screenshots`
-   Repeat until PASSED.
-
-3. **Once PASSED** — invoke `/post-fix-pipeline`. Do NOT commit manually.
-
-Invoke: `skill: "post-fix-pipeline"` with arguments:
-```
-fixes_applied:            {list of changes from Steps 3+5}
-files_changed:            {all modified file paths}
-session_summary:          "Implement: #{issue_number} - {description}"
-test_suite_commands:      [
-  { name: "backend", command: "cd backend && PYTHONPATH=. pytest --tb=short -q", timeout: 300 },
-  { name: "android-unit", command: "cd android && ./gradlew test --console=plain", timeout: 600 }
-]
-test_suite_max_fix_attempts: 2
-docs_instructions:        "Update docs/testing/Functional-Requirement-Rule.md with test links. Update docs/CONTINUE_PROMPT.md with session summary."
-commit_format:            "feat({scope}): {summary}\n\nFix #{issue_number}"
-commit_scope:             "{feature-area}"
-push:                     false
-```
-
-The /post-fix-pipeline Skill handles: test suite verification gate, documentation updates, and git commit with Co-Authored-By tag.
-
-**Final Output Required:**
-```
-WORKFLOW COMPLETE:
-- GitHub Issue: #XX
-- Requirement: SCREEN-XXX
-- Tests: X/X passed
-- Screenshots:
-  - Before: docs/testing/screenshots/XX_before.png
-  - After: docs/testing/screenshots/XX_after.png
-- Verification: [describe visible change]
-- Pipeline: COMPLETED | BLOCKED_BY_TEST_SUITE
-- Commit: [hash] — [message]
-
-The feature has been implemented and all tests pass.
-```
-
----
-
-## SELF-ENFORCEMENT GATES
-
-Before proceeding past each major phase, answer these questions:
-
-**Pre-Implementation Gate (Before Step 3):**
-```
-Step 1 complete (Requirements)? -> [YES / NO - STOP]
-Step 2 complete (Tests created)? -> [YES / NO - STOP]
-BEFORE screenshot captured? -> [YES: path / NO - capture now]
-Issue number noted? -> [YES: #___ / NO - STOP]
-```
-
-**Pre-Commit Gate (Before Step 7 commit):**
-```
-ALL tests passing? -> [YES: X/X passed / NO - STOP]
-AFTER screenshot captured? -> [YES: path / NO - STOP]
-/verify-screenshots invoked? -> [YES: result / NO - STOP]
-visualIssuesPending cleared? -> [YES / NO - STOP]
-Backend checks passed? -> [YES: N/N / SKIPPED / NO - STOP]
-Before/after compared? -> [YES: difference is ___ / NO - STOP]
-```
-
----
-
-## POST-WORKFLOW LEARNING CAPTURE
-
-After the workflow completes (Step 7 done, or stopped due to failure), automatically invoke:
-
-```
-Skill("reflect", args="session")
-```
-
-This captures the implementation session outcomes into structured learning logs and updates memory topic files.
-
----
-
-## VIOLATIONS
-
-The following are violations of the workflow:
-
-- Skipping any step
-- Committing with failing tests
-- Using @Ignore to bypass test failures
-- Creating "fix later" issues instead of fixing
-- Proceeding without screenshots
-
-**VIOLATION = PROCESS FAILURE. No exceptions.**
+## CRITICAL RULES
+
+- Always write tests before or alongside implementation
+- Follow existing project conventions (check CLAUDE.md and .claude/rules/)
+- Make minimal changes — don't refactor unrelated code
+- If stuck after 3 fix-loop iterations, ask the user for guidance

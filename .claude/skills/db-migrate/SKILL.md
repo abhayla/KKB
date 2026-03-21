@@ -1,186 +1,439 @@
 ---
 name: db-migrate
 description: >
-  Database migration helper: generates Alembic migrations and auto-updates all 5 model
-  import locations (3 postgres.py blocks, conftest.py, models/__init__.py). Use when
-  adding new SQLAlchemy models, modifying existing models, or running migrations.
-allowed-tools: "Bash Read Grep Glob Write Edit"
-argument-hint: "<model-name or 'run' or 'status'>"
-disable-model-invocation: true
+  Stack-neutral database migration helper supporting Prisma, Knex, Django,
+  TypeORM, Drizzle, SQLAlchemy/Alembic, and raw SQL. Detects the project's
+  migration tool, generates migrations with UP + DOWN, and verifies safety.
+  Use when creating, running, or troubleshooting database migrations.
+triggers:
+  - db migrate
+  - database migration
+  - create migration
+  - run migration
+  - rollback migration
+  - migration status
+allowed-tools: "Bash Read Write Edit Grep Glob"
+argument-hint: "<migration description, or 'run' or 'rollback' or 'status'>"
+version: "1.0.0"
+type: workflow
 ---
 
-# Database Migration Helper
+# Database Migration Helper (Stack-Neutral)
 
-Automates Alembic migration creation and the error-prone 5-location model import update.
+Generate, run, and manage database migrations across any ORM or migration tool.
+
+For schema design decisions, delegate to `/schema-designer`. For deployment ordering
+of migrations in CI/CD pipelines, delegate to `/deploy-strategy`.
 
 **Request:** $ARGUMENTS
 
 ---
 
-## Modes
+## STEP 1: Detect ORM / Migration Tool
 
-| Mode | Trigger | Behavior |
-|------|---------|----------|
-| **new-model** | Model name provided (e.g., `Achievement`) | Create model file + update all 5 import locations + generate migration |
-| **migrate** | `$ARGUMENTS` = "run" or "migrate" | Run `alembic upgrade head` |
-| **status** | `$ARGUMENTS` = "status" | Show current migration status and model registry |
-| **check** | `$ARGUMENTS` = "check" | Verify all 5 import locations are in sync |
+Scan the project to determine which migration tool is in use:
+
+```bash
+ls -la prisma/schema.prisma knexfile.js knexfile.ts manage.py \
+  ormconfig.ts ormconfig.json tsconfig.json drizzle.config.ts \
+  drizzle.config.json alembic.ini alembic/ migrations/ 2>/dev/null
+
+# Also check for Android Room
+grep -rl "androidx.room" build.gradle build.gradle.kts app/build.gradle app/build.gradle.kts 2>/dev/null
+```
+
+### Auto-Detection Table
+
+| Indicator File | Tool | Ecosystem |
+|---------------|------|-----------|
+| `prisma/schema.prisma` | **Prisma** | Node.js / TypeScript |
+| `knexfile.js` or `knexfile.ts` | **Knex** | Node.js |
+| `manage.py` + `django` in requirements | **Django** | Python |
+| `ormconfig.ts` or `data-source.ts` with `typeorm` | **TypeORM** | Node.js / TypeScript |
+| `drizzle.config.ts` or `drizzle.config.json` | **Drizzle** | Node.js / TypeScript |
+| `alembic.ini` or `alembic/` directory | **Alembic** (SQLAlchemy) | Python |
+| `build.gradle*` with `androidx.room` dependency | **Room** | Android / Kotlin |
+| `migrations/*.sql` with no ORM config | **Raw SQL** | Any |
+
+If multiple tools are detected, ask the user which one to use.
+
+If Alembic is detected in a FastAPI project, delegate to `/fastapi-db-migrate` for
+FastAPI-specific model import management.
 
 ---
 
-## STEP 1: Determine Mode
+## STEP 2: Generate Migration
 
-Parse `$ARGUMENTS` to determine which mode to execute.
+### Per-Tool Commands
 
----
+#### Prisma
 
-## STEP 2: For "new-model" Mode
+```bash
+# Generate migration from schema changes
+npx prisma migrate dev --name <migration_name>
 
-### 2a. Create the Model File
+# Generate migration without applying (preview)
+npx prisma migrate dev --name <migration_name> --create-only
+```
 
-Create `backend/app/models/{model_name_snake}.py` following existing patterns:
+Prisma auto-generates DOWN logic internally. After generating, open the migration SQL
+file at `prisma/migrations/<timestamp>_<name>/migration.sql` and verify the statements.
+
+#### Knex
+
+```bash
+# Generate migration stub
+npx knex migrate:make <migration_name>
+```
+
+Edit the generated file in `migrations/` to include both `exports.up` and `exports.down`:
+
+```javascript
+exports.up = function(knex) {
+  return knex.schema.createTable('table_name', (table) => {
+    table.uuid('id').primary().defaultTo(knex.fn.uuid());
+    table.timestamps(true, true);
+  });
+};
+
+exports.down = function(knex) {
+  return knex.schema.dropTableIfExists('table_name');
+};
+```
+
+#### Django
+
+```bash
+# Auto-generate migration from model changes
+python manage.py makemigrations <app_name> --name <migration_name>
+
+# Generate empty migration for custom SQL
+python manage.py makemigrations <app_name> --empty --name <migration_name>
+```
+
+Django auto-generates reverse operations for most DDL. For custom `RunSQL`, always
+provide the `reverse_sql` parameter:
 
 ```python
-from sqlalchemy import Column, String, DateTime, ForeignKey, func
-from sqlalchemy.dialects.postgresql import UUID
-from app.db.postgres import Base
-import uuid
-
-class ModelName(Base):
-    __tablename__ = "table_name"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    # ... fields based on user requirements
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+migrations.RunSQL(
+    sql="ALTER TABLE myapp_table ADD COLUMN status VARCHAR(20) DEFAULT 'active';",
+    reverse_sql="ALTER TABLE myapp_table DROP COLUMN status;",
+)
 ```
 
-### 2b. Update All 5 Import Locations
+#### TypeORM
 
-**This is the critical step that prevents import errors.**
+```bash
+# Auto-generate migration from entity changes
+npx typeorm migration:generate -d src/data-source.ts src/migrations/<MigrationName>
 
-1. **`backend/app/models/__init__.py`** — Add import and `__all__` entry:
-   ```python
-   from app.models.{snake_name} import {ModelName}
-   ```
+# Generate empty migration
+npx typeorm migration:create src/migrations/<MigrationName>
+```
 
-2. **`backend/app/db/postgres.py`** — Update ALL 3 import blocks:
-   - `init_db()` function
-   - `create_tables()` function
-   - `drop_tables()` function
+Verify the generated file includes both `up()` and `down()` methods with correct
+reverse operations in `down()`.
 
-   Search for existing import patterns:
+#### Drizzle
+
+```bash
+# Generate migration from schema changes
+npx drizzle-kit generate --name <migration_name>
+
+# Push schema directly (dev only, no migration file)
+npx drizzle-kit push
+```
+
+Review the generated SQL in `drizzle/` or the configured output directory. Write a
+manual DOWN migration file alongside it if the project requires rollback support.
+
+#### SQLAlchemy / Alembic
+
+```bash
+# Auto-generate migration from model changes
+alembic revision --autogenerate -m "<migration_description>"
+
+# Generate empty migration
+alembic revision -m "<migration_description>"
+```
+
+Verify the generated `upgrade()` and `downgrade()` functions in `alembic/versions/`.
+
+#### Android Room
+
+Room uses `@Database(version = N)` annotations and `Migration(startVersion, endVersion)` classes.
+There is no CLI command to auto-generate migrations — migrations are hand-written Kotlin/Java.
+
+**Step 1: Update the `@Database` version:**
+
+```kotlin
+// app/src/main/java/com/example/data/AppDatabase.kt
+@Database(
+    entities = [UserEntity::class, ProjectEntity::class],
+    version = 2,  // Increment from previous version
+    exportSchema = true  // Required for migration testing
+)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun userDao(): UserDao
+    abstract fun projectDao(): ProjectDao
+}
+```
+
+**Step 2: Write the Migration class:**
+
+```kotlin
+// app/src/main/java/com/example/data/migrations/Migration1To2.kt
+val MIGRATION_1_2 = object : Migration(1, 2) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // UP: Add new table
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS projects (
+                id TEXT NOT NULL PRIMARY KEY,
+                name TEXT NOT NULL,
+                owner_id TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        """)
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_projects_owner ON projects(owner_id)")
+    }
+}
+```
+
+**Step 3: Register the migration in the database builder:**
+
+```kotlin
+Room.databaseBuilder(context, AppDatabase::class.java, "app.db")
+    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+    .build()
+```
+
+**Step 4: Write a DOWN migration (for dev/test rollback only):**
+
+Room does not natively support DOWN migrations. For development, create a helper:
+
+```kotlin
+// Only used in tests — never in production
+fun rollbackMigration2To1(db: SupportSQLiteDatabase) {
+    db.execSQL("DROP TABLE IF EXISTS projects")
+}
+```
+
+**Auto-migrations (Room 2.4+):**
+
+For simple additive changes (new column, new table), use Room's auto-migration:
+
+```kotlin
+@Database(
+    version = 3,
+    autoMigrations = [
+        AutoMigration(from = 2, to = 3)  // Room generates the SQL
+    ]
+)
+abstract class AppDatabase : RoomDatabase()
+```
+
+Auto-migration works for: adding columns (with default values), adding tables, adding indexes.
+Auto-migration does NOT work for: renaming columns/tables, deleting columns, changing types.
+For those, use `@RenameColumn`, `@DeleteColumn`, or `@RenameTable` annotations with an `AutoMigrationSpec`.
+
+**Step 5: Test the migration:**
+
+```kotlin
+@RunWith(AndroidJUnit4::class)
+class MigrationTest {
+    @get:Rule
+    val helper = MigrationTestHelper(
+        InstrumentationRegistry.getInstrumentation(),
+        AppDatabase::class.java,
+    )
+
+    @Test
+    fun migrate1To2() {
+        // Create database at version 1
+        helper.createDatabase("test-db", 1).apply {
+            execSQL("INSERT INTO users (id, email) VALUES ('u1', 'test@example.com')")
+            close()
+        }
+        // Run migration to version 2
+        val db = helper.runMigrationsAndValidate("test-db", 2, true, MIGRATION_1_2)
+        // Verify data survived
+        val cursor = db.query("SELECT * FROM users WHERE id = 'u1'")
+        assertThat(cursor.count).isEqualTo(1)
+        cursor.close()
+    }
+}
+```
+
+#### Raw SQL
+
+Create two files per migration:
+
+```
+migrations/<timestamp>_<description>.up.sql
+migrations/<timestamp>_<description>.down.sql
+```
+
+Use `IF NOT EXISTS` / `IF EXISTS` guards for idempotency:
+
+```sql
+-- UP
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- DOWN
+DROP TABLE IF EXISTS users;
+```
+
+---
+
+## STEP 3: Verify UP + DOWN
+
+After generating, verify both directions work:
+
+### 3.1 Run UP
+
+| Tool | Command |
+|------|---------|
+| Prisma | `npx prisma migrate dev` |
+| Knex | `npx knex migrate:latest` |
+| Django | `python manage.py migrate` |
+| TypeORM | `npx typeorm migration:run -d src/data-source.ts` |
+| Drizzle | `npx drizzle-kit push` |
+| Alembic | `alembic upgrade head` |
+| Room | `./gradlew :app:connectedDebugAndroidTest --tests *MigrationTest` |
+| Raw SQL | `psql -f migrations/<file>.up.sql` (or equivalent) |
+
+### 3.2 Run DOWN (rollback)
+
+| Tool | Command |
+|------|---------|
+| Prisma | `npx prisma migrate reset` (resets all, use with caution) |
+| Knex | `npx knex migrate:rollback` |
+| Django | `python manage.py migrate <app_name> <previous_migration>` |
+| TypeORM | `npx typeorm migration:revert -d src/data-source.ts` |
+| Drizzle | Manual: apply the `.down.sql` file |
+| Alembic | `alembic downgrade -1` |
+| Room | Manual: call `rollbackMigrationNToM()` helper in test (Room has no native rollback) |
+| Raw SQL | `psql -f migrations/<file>.down.sql` (or equivalent) |
+
+### 3.3 Round-Trip Test
+
+Run UP, then DOWN, then UP again. The final state MUST match a fresh UP:
+
+```bash
+# Example for Knex
+npx knex migrate:latest && npx knex migrate:rollback && npx knex migrate:latest
+```
+
+If the round-trip fails, the DOWN migration is incomplete or incorrect.
+
+---
+
+## STEP 4: Check Migration Status
+
+| Tool | Command |
+|------|---------|
+| Prisma | `npx prisma migrate status` |
+| Knex | `npx knex migrate:status` |
+| Django | `python manage.py showmigrations` |
+| TypeORM | `npx typeorm migration:show -d src/data-source.ts` |
+| Drizzle | `npx drizzle-kit check` |
+| Alembic | `alembic current && alembic history --verbose` |
+| Room | Check `@Database(version = N)` annotation + `room_master_table` in SQLite |
+| Raw SQL | Check a `schema_migrations` table or equivalent tracking |
+
+---
+
+## STEP 5: Test Migration
+
+1. **Run against a staging-size dataset** -- Migrations that complete in milliseconds on
+   an empty dev database may lock tables for minutes on production data. Always test with
+   realistic row counts.
+
+2. **Measure execution time** -- For any migration touching tables with >10K rows,
+   wrap in timing:
    ```bash
-   cd backend && grep -n "from app.models" app/db/postgres.py
+   time alembic upgrade head  # or equivalent
    ```
-   Add the new import to each block.
 
-3. **`backend/tests/conftest.py`** — Add import so SQLite test DB creates the table:
-   ```bash
-   cd backend && grep -n "from app.models" tests/conftest.py
+3. **Check for locks** -- DDL statements (ALTER TABLE, CREATE INDEX) acquire locks.
+   Use `CREATE INDEX CONCURRENTLY` (PostgreSQL) or equivalent where available.
+
+4. **Verify data integrity** -- After UP, run spot checks:
+   ```sql
+   SELECT COUNT(*) FROM <table>;
+   SELECT * FROM <table> LIMIT 5;
    ```
-   Add the new import alongside existing model imports.
-
-### 2c. Verify All 5 Locations
-
-Run the sync check:
-
-```bash
-cd backend && python -c "
-from app.models import *
-import app.db.postgres
-import importlib
-print('All model imports successful')
-"
-```
-
-### 2d. Generate Alembic Migration
-
-```bash
-cd backend && alembic revision --autogenerate -m "add {model_name_snake} table"
-```
-
-### 2e. Run the Migration
-
-```bash
-cd backend && alembic upgrade head
-```
-
-### 2f. Verify
-
-```bash
-cd backend && PYTHONPATH=. python -c "
-from app.db.postgres import engine
-import asyncio
-async def check():
-    async with engine.begin() as conn:
-        from sqlalchemy import text
-        result = await conn.execute(text(\"SELECT tablename FROM pg_tables WHERE schemaname='public'\"))
-        tables = [r[0] for r in result.fetchall()]
-        print(f'Tables ({len(tables)}): {sorted(tables)}')
-asyncio.run(check())
-"
-```
-
-**Output Required:**
-```
-Migration Complete:
-- Model: {ModelName}
-- File: backend/app/models/{snake_name}.py
-- Migration: backend/alembic/versions/{hash}_{message}.py
-- Import locations updated: 5/5
-- Table created: {table_name}
-```
 
 ---
 
-## STEP 3: For "check" Mode — Sync Verification
+## STEP 6: Document Migration
 
-Verify all 5 import locations reference the same set of models:
+After successful verification, document the migration:
 
-```bash
-cd backend && echo "=== models/__init__.py ===" && grep "^from app.models" app/models/__init__.py | sort
-echo "=== postgres.py (init_db) ===" && grep "from app.models" app/db/postgres.py | sort
-echo "=== conftest.py ===" && grep "from app.models" tests/conftest.py | sort
+```markdown
+**Migration:** <filename or identifier>
+**Tool:** <Prisma / Knex / Django / TypeORM / Drizzle / Alembic / Raw SQL>
+**Description:** <what this migration does>
+**Backward compatible:** Yes / No
+**Rollback safe:** Yes / No
+**Estimated duration on prod data:** ~<N> seconds/minutes
+**Requires code deploy first:** Yes / No
 ```
 
-Compare the lists and report any mismatches.
-
-**Output Required:**
-```
-Sync Check:
-- models/__init__.py: N models
-- postgres.py init_db: N models
-- postgres.py create_tables: N models
-- postgres.py drop_tables: N models
-- conftest.py: N models
-- Status: IN_SYNC | OUT_OF_SYNC (list differences)
-```
+For deployment ordering (pre-deploy vs post-deploy migrations, expand-contract
+sequencing), follow the guidance in `/deploy-strategy` Step 4.
 
 ---
 
-## STEP 4: For "run" / "migrate" Mode
+## Safety Rules
 
-```bash
-cd backend && alembic upgrade head
-```
+1. **Always generate DOWN** -- Every migration MUST have a working reverse operation.
+   Mark truly irreversible migrations (e.g., DROP COLUMN with data) explicitly.
 
-Report success/failure with migration details.
+2. **Separate DDL and DML** -- Schema changes (CREATE TABLE, ALTER TABLE) and data
+   changes (UPDATE, INSERT backfills) MUST be in separate migration files. Data
+   migrations on large tables can hold locks and should run independently.
+
+3. **Test on staging-size data** -- Never assume a migration is safe based on an
+   empty database. Test with a representative dataset before applying to production.
+
+4. **Idempotent migrations** -- Use `IF NOT EXISTS`, `IF EXISTS`, and conditional
+   checks so that re-running a migration does not fail.
+
+5. **No column renames in one step** -- Add the new column, migrate data, update code,
+   then drop the old column in a later migration. See `/deploy-strategy` for the
+   expand-contract pattern.
+
+6. **Lock-safe index creation** -- Use `CREATE INDEX CONCURRENTLY` on PostgreSQL or
+   equivalent non-blocking index creation where supported.
 
 ---
 
-## STEP 5: For "status" Mode
+## MUST DO
 
-```bash
-cd backend && alembic current && echo "---" && alembic history --verbose | head -30
-```
+- Always detect the migration tool before generating commands -- never assume
+- Always verify both UP and DOWN migrations execute without errors
+- Always run the round-trip test (UP, DOWN, UP) for new migrations
+- Always separate DDL and DML into distinct migration files
+- Always document backward compatibility and rollback safety for each migration
+- Always delegate schema design decisions to `/schema-designer`
+- Always delegate deployment ordering to `/deploy-strategy` for CI/CD integration
+- Always test migrations against a staging-size dataset before production
 
----
+## MUST NOT DO
 
-## CRITICAL RULES
-
-- NEVER skip any of the 5 import locations — missing one causes runtime errors
-- ALWAYS run sync check after adding a model
-- ALWAYS test with `PYTHONPATH=. pytest tests/conftest.py` to verify SQLite table creation
-- Follow existing naming conventions (snake_case files, PascalCase classes)
+- MUST NOT generate migrations without a working DOWN operation -- use manual
+  reverse SQL if the tool does not auto-generate it
+- MUST NOT combine schema changes and data backfills in a single migration file
+- MUST NOT rename or change column types in a single migration -- use the
+  expand-contract pattern across multiple migrations instead
+- MUST NOT run migrations directly on production without testing on staging first
+- MUST NOT skip the round-trip verification (UP, DOWN, UP) for new migrations
+- MUST NOT assume PostgreSQL -- detect the database engine from the project config
+- MUST NOT duplicate Alembic-specific FastAPI workflows that `/fastapi-db-migrate`
+  already handles -- delegate to it when Alembic + FastAPI is detected

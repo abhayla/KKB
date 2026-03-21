@@ -4,10 +4,12 @@ description: >
   Android Clean Architecture with Hilt DI, ViewModel + StateFlow, offline-first data layer
   (Room + Retrofit), Kotlin coroutines/concurrency, accessibility, and ADB debugging.
   Use for building, refactoring, or debugging modern Android apps following Google's
-  Guide to App Architecture.
+  Guide to App Architecture. Includes 24 deep-dive references and Gradle convention plugin templates.
 allowed-tools: "Bash Read Write Edit Grep Glob"
-triggers: "android architecture, clean architecture, viewmodel, stateflow, room, retrofit, repository pattern, kotlin coroutines, offline-first, hilt, android debug"
+triggers: "android architecture, clean architecture, viewmodel, stateflow, room, retrofit, repository pattern, kotlin coroutines, offline-first, hilt, android debug, compose patterns, navigation, gradle convention, android security, android performance, android testing"
 argument-hint: "<feature-name or 'setup' or 'debug' or 'offline-sync'>"
+version: "1.0.0"
+type: workflow
 ---
 
 # Android Architecture
@@ -15,6 +17,75 @@ argument-hint: "<feature-name or 'setup' or 'debug' or 'offline-sync'>"
 Build modern Android applications with Clean Architecture, Hilt DI, offline-first data, and structured concurrency.
 
 **Request:** $ARGUMENTS
+
+---
+
+## Deep-Dive References
+
+For detailed guidance on specific topics, read the relevant reference file:
+
+| Task | Reference File |
+|------|----------------|
+| Project structure & modules | [modularization.md](references/modularization.md) |
+| Architecture layers (UI, Domain, Data) | [architecture.md](references/architecture.md) |
+| Jetpack Compose patterns, animations, effects | [compose-patterns.md](references/compose-patterns.md) |
+| Navigation3 & type-safe routes | [android-navigation.md](references/android-navigation.md) |
+| Testing (unit, integration, screenshot) | [testing.md](references/testing.md) |
+| Security (encryption, biometrics, pinning) | [android-security.md](references/android-security.md) |
+| Performance & recomposition optimization | [android-performance.md](references/android-performance.md) |
+| Material 3 theming & dynamic colors | [android-theming.md](references/android-theming.md) |
+| Accessibility & TalkBack | [android-accessibility.md](references/android-accessibility.md) |
+| Kotlin idioms & best practices | [kotlin-patterns.md](references/kotlin-patterns.md) |
+| Coroutines & Flow deep-dive | [coroutines-patterns.md](references/coroutines-patterns.md) |
+| Gradle & build configuration | [gradle-setup.md](references/gradle-setup.md) |
+| Dependency management | [dependencies.md](references/dependencies.md) |
+| Code quality (Detekt) | [code-quality.md](references/code-quality.md) |
+| Code coverage (JaCoCo) | [android-code-coverage.md](references/android-code-coverage.md) |
+| Crash reporting (Crashlytics) | [crashlytics.md](references/crashlytics.md) |
+| Internationalization & localization | [android-i18n.md](references/android-i18n.md) |
+| Notifications & foreground services | [android-notifications.md](references/android-notifications.md) |
+| Runtime permissions | [android-permissions.md](references/android-permissions.md) |
+| Data sync & offline patterns | [android-data-sync.md](references/android-data-sync.md) |
+| Icons, graphics, custom drawing | [android-graphics.md](references/android-graphics.md) |
+| StrictMode guardrails | [android-strictmode.md](references/android-strictmode.md) |
+| Kotlin delegation patterns | [kotlin-delegation.md](references/kotlin-delegation.md) |
+| Design patterns in Kotlin | [design-patterns.md](references/design-patterns.md) |
+
+### Gradle Convention Plugin Templates
+
+Ready-to-use convention plugins in `templates/convention/`. See [QUICK_REFERENCE.md](templates/convention/QUICK_REFERENCE.md) for setup.
+
+### Project Scaffolding Templates
+
+- `templates/libs.versions.toml.template` — Version catalog
+- `templates/settings.gradle.kts.template` — Settings with module includes
+- `templates/proguard-rules.pro.template` — R8/ProGuard rules
+- `templates/detekt.yml.template` — Detekt configuration
+
+## Workflow Decision Tree
+
+**Creating a new project?**
+→ Start with `templates/settings.gradle.kts.template` and `templates/libs.versions.toml.template`
+→ Copy convention plugins from `templates/convention/` to `build-logic/convention/`
+→ Read [modularization.md](references/modularization.md) for structure
+
+**Adding a new feature/module?**
+→ Follow patterns in [architecture.md](references/architecture.md)
+→ Create Screen + ViewModel + UiState in the feature module
+
+**Building UI screens?**
+→ Read [compose-patterns.md](references/compose-patterns.md)
+→ Use [android-theming.md](references/android-theming.md) for Material 3
+
+**Setting up navigation?**
+→ Read [android-navigation.md](references/android-navigation.md) for Navigation3
+
+**Configuring Gradle?**
+→ Use [gradle-setup.md](references/gradle-setup.md) and convention plugin templates
+
+**Debugging or testing?**
+→ See [testing.md](references/testing.md) for test strategy
+→ See ADB Debugging section below for device testing
 
 ---
 
@@ -128,272 +199,18 @@ object DatabaseModule {
 
 ## STEP 3: ViewModel & State Management
 
-### UI State with StateFlow
 
-```kotlin
-// Sealed interface for exhaustive when-expressions
-sealed interface HomeUiState {
-    data object Loading : HomeUiState
-    data class Success(val items: List<NewsItem>) : HomeUiState
-    data class Error(val message: String) : HomeUiState
-}
-
-@HiltViewModel
-class HomeViewModel @Inject constructor(
-    private val getNewsUseCase: GetNewsUseCase
-) : ViewModel() {
-
-    // Private mutable, public read-only
-    private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
-    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
-
-    // One-off events (toasts, navigation) — replay = 0 prevents re-triggering
-    private val _uiEvent = MutableSharedFlow<HomeUiEvent>(replay = 0)
-    val uiEvent: SharedFlow<HomeUiEvent> = _uiEvent.asSharedFlow()
-
-    init {
-        loadNews()
-    }
-
-    fun loadNews() {
-        viewModelScope.launch {
-            _uiState.update { HomeUiState.Loading }
-            getNewsUseCase()
-                .catch { e -> _uiState.update { HomeUiState.Error(e.message ?: "Unknown error") } }
-                .collect { news -> _uiState.update { HomeUiState.Success(news) } }
-        }
-    }
-
-    fun onItemClicked(id: String) {
-        viewModelScope.launch {
-            _uiEvent.emit(HomeUiEvent.NavigateToDetail(id))
-        }
-    }
-}
-```
-
-### Collecting State in Compose
-
-```kotlin
-@Composable
-fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    // Collect one-off events
-    val lifecycleOwner = LocalLifecycleOwner.current
-    LaunchedEffect(lifecycleOwner) {
-        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            viewModel.uiEvent.collect { event ->
-                when (event) {
-                    is HomeUiEvent.NavigateToDetail -> { /* navigate */ }
-                    is HomeUiEvent.ShowSnackbar -> { /* show snackbar */ }
-                }
-            }
-        }
-    }
-
-    when (val state = uiState) {
-        is HomeUiState.Loading -> LoadingIndicator()
-        is HomeUiState.Success -> NewsList(items = state.items)
-        is HomeUiState.Error -> ErrorMessage(message = state.message, onRetry = viewModel::loadNews)
-    }
-}
-```
-
-### State Update Rules
-
-- Use `.update { }` on MutableStateFlow for thread-safe updates — NEVER assign `.value` directly from coroutines.
-- Use `sealed interface` (not `sealed class`) for UiState — enables exhaustive `when` without `else`.
-- Handle ALL states (Loading, Success, Error) in the UI — never leave a `when` branch empty.
-
----
+**Read:** `references/viewmodel-state-management.md` for detailed step 3: viewmodel & state management reference material.
 
 ## STEP 4: Offline-First Data Layer
 
-### Repository as Single Source of Truth
 
-```kotlin
-class OfflineFirstNewsRepository @Inject constructor(
-    private val newsDao: NewsDao,
-    private val newsApi: NewsApi,
-    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
-) : NewsRepository {
-
-    // Expose local DB as SSOT — UI always reads from here
-    override fun getNewsStream(): Flow<List<News>> = newsDao.getAllNews()
-
-    // Stale-While-Revalidate: show local immediately, refresh in background
-    override suspend fun refreshNews(): Result<Unit> = withContext(ioDispatcher) {
-        runCatching {
-            val remoteNews = newsApi.fetchLatest()
-            newsDao.upsertAll(remoteNews.map { it.toEntity() })
-        }
-    }
-}
-```
-
-### Room Entities & DAOs
-
-```kotlin
-@Entity(tableName = "news")
-data class NewsEntity(
-    @PrimaryKey val id: String,
-    val title: String,
-    val content: String,
-    @ColumnInfo(name = "updated_at") val updatedAt: Long
-)
-
-@Dao
-interface NewsDao {
-    @Query("SELECT * FROM news ORDER BY updated_at DESC")
-    fun getAllNews(): Flow<List<NewsEntity>>  // Returns Flow for reactive updates
-
-    @Upsert
-    suspend fun upsertAll(news: List<NewsEntity>)
-
-    @Query("DELETE FROM news WHERE id = :id")
-    suspend fun deleteById(id: String)
-}
-```
-
-### Retrofit API Definitions
-
-```kotlin
-interface NewsApi {
-    @GET("news")
-    suspend fun fetchLatest(): List<NewsDto>
-
-    @GET("news/{id}")
-    suspend fun getById(@Path("id") id: String): NewsDto
-
-    @GET("news/search")
-    suspend fun search(
-        @Query("q") query: String,
-        @Query("page") page: Int = 1
-    ): PaginatedResponse<NewsDto>
-
-    @POST("news")
-    suspend fun create(@Body request: CreateNewsRequest): NewsDto
-
-    @PUT("news/{id}")
-    suspend fun update(
-        @Path("id") id: String,
-        @Body request: UpdateNewsRequest
-    ): NewsDto
-}
-```
-
-### Error Handling with runCatching
-
-```kotlin
-suspend fun fetchSafely(): Result<List<News>> = runCatching {
-    newsApi.fetchLatest().map { it.toDomain() }
-}
-
-// In ViewModel
-viewModelScope.launch {
-    repository.fetchSafely()
-        .onSuccess { news -> _uiState.update { HomeUiState.Success(news) } }
-        .onFailure { e -> _uiState.update { HomeUiState.Error(e.message ?: "Network error") } }
-}
-```
-
-### Outbox Pattern for Writes
-
-For offline write support, save changes locally and sync later with WorkManager:
-
-```kotlin
-// 1. Save locally with "unsynced" flag
-suspend fun createDraft(news: News) {
-    newsDao.insert(news.toEntity().copy(syncStatus = SyncStatus.PENDING))
-    enqueueSyncWork()
-}
-
-// 2. Schedule sync via WorkManager
-private fun enqueueSyncWork() {
-    val request = OneTimeWorkRequestBuilder<SyncWorker>()
-        .setConstraints(Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build())
-        .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
-        .build()
-    workManager.enqueueUniqueWork("sync", ExistingWorkPolicy.REPLACE, request)
-}
-```
-
----
+**Read:** `references/offline-first-data-layer.md` for detailed step 4: offline-first data layer reference material.
 
 ## STEP 5: Kotlin Coroutines & Structured Concurrency
 
-### Dispatcher Injection
 
-```kotlin
-// Define qualifier annotations
-@Qualifier @Retention(AnnotationRetention.BINARY) annotation class IoDispatcher
-@Qualifier @Retention(AnnotationRetention.BINARY) annotation class DefaultDispatcher
-
-// Provide in Hilt module
-@Module
-@InstallIn(SingletonComponent::class)
-object DispatcherModule {
-    @Provides @IoDispatcher fun provideIoDispatcher(): CoroutineDispatcher = Dispatchers.IO
-    @Provides @DefaultDispatcher fun provideDefaultDispatcher(): CoroutineDispatcher = Dispatchers.Default
-}
-```
-
-### Coroutine Patterns
-
-```kotlin
-// Parallel loading with async
-viewModelScope.launch {
-    val newsDeferred = async { repository.getNews() }
-    val weatherDeferred = async { repository.getWeather() }
-    val news = newsDeferred.await()
-    val weather = weatherDeferred.await()
-    _uiState.update { HomeUiState.Success(news, weather) }
-}
-
-// Lifecycle-safe collection in Fragment/Activity
-lifecycleScope.launch {
-    repeatOnLifecycle(Lifecycle.State.STARTED) {
-        viewModel.uiState.collect { state ->
-            updateUI(state)
-        }
-    }
-}
-```
-
-### CancellationException Rule
-
-ALWAYS rethrow `CancellationException` — swallowing it breaks structured concurrency:
-
-```kotlin
-try {
-    riskyOperation()
-} catch (e: CancellationException) {
-    throw e  // MUST rethrow
-} catch (e: Exception) {
-    handleError(e)
-}
-```
-
-### Testing Coroutines
-
-```kotlin
-@Test
-fun `loadNews emits Success state`() = runTest {
-    val fakeRepo = FakeNewsRepository(testNews)
-    val viewModel = HomeViewModel(GetNewsUseCase(fakeRepo))
-
-    viewModel.uiState.test {
-        assertEquals(HomeUiState.Loading, awaitItem())
-        assertEquals(HomeUiState.Success(testNews), awaitItem())
-        cancelAndIgnoreRemainingEvents()
-    }
-}
-```
-
----
+**Read:** `references/kotlin-coroutines-structured-concurrency.md` for detailed step 5: kotlin coroutines & structured concurrency reference material.
 
 ## STEP 6: Accessibility
 

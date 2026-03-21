@@ -7,6 +7,8 @@ description: >
 triggers: "jetpack compose, compose ui, compose navigation, compose performance, recomposition, compose theming, material3, coil"
 allowed-tools: "Bash Read Write Edit Grep Glob"
 argument-hint: "<composable-name or 'navigation' or 'performance' or 'theme' or 'images'>"
+version: "1.0.0"
+type: workflow
 ---
 
 # Compose UI
@@ -65,64 +67,40 @@ fun ProfileScreen(viewModel: ProfileViewModel = hiltViewModel()) {
 
 **Rule:** Push state as high as needed, but no higher. If only one child needs state, keep it there.
 
+### Event Sink Pattern
+
+For complex screens, use a sealed interface for events instead of multiple callback lambdas:
+
+```kotlin
+sealed interface ProfileEvent {
+    data class UpdateName(val name: String) : ProfileEvent
+    data class UpdateEmail(val email: String) : ProfileEvent
+    data object Save : ProfileEvent
+    data object Delete : ProfileEvent
+}
+
+// In ViewModel
+fun onEvent(event: ProfileEvent) {
+    when (event) {
+        is ProfileEvent.UpdateName -> _state.update { it.copy(name = event.name) }
+        is ProfileEvent.UpdateEmail -> _state.update { it.copy(email = event.email) }
+        is ProfileEvent.Save -> save()
+        is ProfileEvent.Delete -> delete()
+    }
+}
+
+// In Composable — single lambda instead of many
+ProfileContent(state = state, onEvent = viewModel::onEvent)
+```
+
+Use this when a screen has 4+ distinct user actions. For simple screens with 1-2 callbacks, individual lambdas are clearer.
+
 ---
 
 ## STEP 2: Modifiers
 
-### Default Parameter
 
-Always provide `modifier: Modifier = Modifier` as the first optional parameter and apply it to the root layout element:
-
-```kotlin
-@Composable
-fun UserCard(
-    name: String,
-    modifier: Modifier = Modifier   // MUST be present
-) {
-    Card(modifier = modifier) {      // Apply to root element
-        Text(name)
-    }
-}
-```
-
-### Order Matters
-
-Modifiers are applied sequentially. The order changes behavior:
-
-```kotlin
-// Padding is clickable (click area includes padding)
-Modifier
-    .clickable { onClick() }
-    .padding(16.dp)
-
-// Padding is NOT clickable (click area excludes padding)
-Modifier
-    .padding(16.dp)
-    .clickable { onClick() }
-
-// Background behind padding
-Modifier
-    .background(Color.Red)
-    .padding(16.dp)
-
-// Background inside padding
-Modifier
-    .padding(16.dp)
-    .background(Color.Red)
-```
-
-### Chaining
-
-Chain modifiers fluently. Extract repeated chains into extension functions:
-
-```kotlin
-fun Modifier.cardStyle() = this
-    .fillMaxWidth()
-    .padding(horizontal = 16.dp, vertical = 8.dp)
-    .clip(RoundedCornerShape(12.dp))
-```
-
----
+**Read:** `references/modifiers.md` for detailed step 2: modifiers reference material.
 
 ## STEP 3: Theming
 
@@ -211,274 +189,15 @@ private fun UserCardPreview() {
 
 ## STEP 5: Performance
 
-### Three Phases
 
-Every frame goes through three phases. State reads in each phase only trigger work for that phase and later ones:
-
-| Phase | What Happens | State Read Impact |
-|-------|-------------|-------------------|
-| **Composition** | Executes `@Composable` functions, builds UI tree | Triggers recomposition of the enclosing scope |
-| **Layout** | Calculates size and position (`measure` / `layout`) | Triggers relayout only, skips composition |
-| **Drawing** | Emits draw commands (`Canvas`, `DrawScope`) | Triggers redraw only, skips composition and layout |
-
-### remember and derivedStateOf
-
-```kotlin
-// Cache expensive calculations across recompositions
-val sorted = remember(items) { items.sortedBy { it.name } }
-
-// Derive state that changes less often than its inputs
-val showButton by remember {
-    derivedStateOf { listState.firstVisibleItemIndex > 0 }
-}
-```
-
-Use `derivedStateOf` when a frequently-changing state (scroll position, text input) should only trigger recomposition at a coarser granularity (threshold crossed, filtered result changed). Do NOT use it for cheap operations -- it adds overhead.
-
-### Stability
-
-The Compose compiler generates `$changed` bitmasks to skip recomposition when parameters have not changed. A type is **stable** if its public properties are all stable and `equals` is consistent.
-
-| Category | Examples | Stable? |
-|----------|----------|---------|
-| Primitives | `Int`, `Float`, `Boolean`, `String` | Yes |
-| `@Immutable` data classes | `data class User(val id: Int, val name: String)` | Yes |
-| `@Stable` annotated classes | ViewModels, state holders with `MutableState` fields | Yes |
-| `List<T>`, `Set<T>`, `Map<K,V>` (stdlib) | `List<User>` | **No** -- use `ImmutableList` from kotlinx-collections |
-| Classes with `var` properties | Mutable POJOs | **No** |
-| Lambda capturing unstable vars | `{ viewModel.doSomething(unstableObj) }` | **No** (without Strong Skipping) |
-
-### Strong Skipping Mode (AGP 8.0+ / Compose Compiler 1.5.0+)
-
-Strong Skipping makes lambdas stable when all captured variables are stable. Enabled by default in modern projects. Verify in `build.gradle.kts`:
-
-```kotlin
-android {
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.0"
-    }
-}
-```
-
-### ImmutableList
-
-Replace `List<T>` parameters with `ImmutableList<T>` from `kotlinx-collections-immutable` so the compiler can skip recomposition:
-
-```kotlin
-@Composable
-fun UserList(
-    users: ImmutableList<User>,      // Stable
-    modifier: Modifier = Modifier
-) { /* ... */ }
-
-// At call site
-UserList(users = users.toImmutableList())
-```
-
-### Deferred State Reads
-
-Push state reads from Composition into Layout or Drawing phase to avoid recomposition:
-
-```kotlin
-// BAD: reads in Composition, triggers recomposition on every change
-Box(modifier = Modifier.offset(offsetX.value.dp, 0.dp))
-
-// GOOD: reads in Layout phase, skips recomposition
-Box(modifier = Modifier.offset { IntOffset(offsetX.value.toInt(), 0) })
-```
-
-Use lambda variants: `Modifier.offset { }`, `Modifier.graphicsLayer { }`, `Modifier.drawBehind { }`.
-
-### Method References for Lambda Stability
-
-Prefer method references over inline lambdas to help the compiler treat them as stable:
-
-```kotlin
-// Unstable lambda (new instance each recomposition)
-Button(onClick = { viewModel.submit() }) { Text("Submit") }
-
-// Stable method reference (same reference across recompositions)
-Button(onClick = viewModel::submit) { Text("Submit") }
-```
-
-### Recomposition Detection
-
-- **Layout Inspector** in Android Studio: shows recomposition counts per Composable.
-- **Recomposition Highlights**: enable in Compose tooling to see which scopes recompose.
-- **Perfetto / System Trace**: frame timing analysis for jank investigation.
-- **Macrobenchmark**: measure startup and scroll performance in release builds.
-
----
+**Read:** `references/performance.md` for detailed step 5: performance reference material.
 
 ## STEP 6: Compose Navigation
 
 Use Navigation Compose with `@Serializable` route objects for type-safe navigation.
 
-### Route Definitions
 
-```kotlin
-@Serializable object Home
-@Serializable object Settings
-@Serializable data class Profile(val userId: String)
-@Serializable data class ItemDetail(val itemId: Int, val title: String)
-```
-
-### NavHost Setup
-
-```kotlin
-@Composable
-fun AppNavHost(
-    navController: NavHostController = rememberNavController(),
-    modifier: Modifier = Modifier
-) {
-    NavHost(
-        navController = navController,
-        startDestination = Home,
-        modifier = modifier
-    ) {
-        composable<Home> {
-            HomeScreen(onNavigateToProfile = { userId ->
-                navController.navigate(Profile(userId))
-            })
-        }
-        composable<Profile> { backStackEntry ->
-            val profile: Profile = backStackEntry.toRoute()
-            ProfileScreen(userId = profile.userId)
-        }
-        composable<ItemDetail> { backStackEntry ->
-            val detail: ItemDetail = backStackEntry.toRoute()
-            ItemDetailScreen(itemId = detail.itemId, title = detail.title)
-        }
-    }
-}
-```
-
-### Argument Handling in ViewModels
-
-```kotlin
-@HiltViewModel
-class ProfileViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle
-) : ViewModel() {
-    private val route = savedStateHandle.toRoute<Profile>()
-    val userId = route.userId
-}
-```
-
-### Bottom Navigation
-
-```kotlin
-@Composable
-fun MainScreen() {
-    val navController = rememberNavController()
-    Scaffold(
-        bottomBar = {
-            NavigationBar {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentDestination = navBackStackEntry?.destination
-
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-                    label = { Text("Home") },
-                    selected = currentDestination?.hasRoute<Home>() == true,
-                    onClick = {
-                        navController.navigate(Home) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
-                )
-            }
-        }
-    ) { padding ->
-        AppNavHost(navController = navController, modifier = Modifier.padding(padding))
-    }
-}
-```
-
-### Deep Links
-
-```kotlin
-composable<Profile>(
-    deepLinks = listOf(navDeepLink<Profile>(basePath = "https://example.com/profile"))
-) { backStackEntry ->
-    val profile: Profile = backStackEntry.toRoute()
-    ProfileScreen(userId = profile.userId)
-}
-```
-
-Declare in `AndroidManifest.xml`:
-
-```xml
-<activity android:name=".MainActivity">
-    <intent-filter>
-        <action android:name="android.intent.action.VIEW" />
-        <category android:name="android.intent.category.DEFAULT" />
-        <category android:name="android.intent.category.BROWSABLE" />
-        <data android:scheme="https" android:host="example.com" android:pathPrefix="/profile" />
-    </intent-filter>
-</activity>
-```
-
-### Nested Graphs
-
-```kotlin
-NavHost(navController = navController, startDestination = Home) {
-    composable<Home> { HomeScreen() }
-
-    navigation<AuthGraph>(startDestination = Login) {
-        composable<Login> {
-            LoginScreen(onLoginSuccess = {
-                navController.navigate(Home) {
-                    popUpTo<AuthGraph> { inclusive = true }
-                }
-            })
-        }
-        composable<Register> { RegisterScreen() }
-    }
-}
-
-@Serializable object AuthGraph
-@Serializable object Login
-@Serializable object Register
-```
-
-### Adaptive NavigationSuiteScaffold
-
-Use `NavigationSuiteScaffold` for responsive navigation (bottom bar on phones, rail on tablets):
-
-```kotlin
-@Composable
-fun AdaptiveApp() {
-    val navController = rememberNavController()
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentDestination = navBackStackEntry?.destination
-
-    NavigationSuiteScaffold(
-        navigationSuiteItems = {
-            item(
-                icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-                label = { Text("Home") },
-                selected = currentDestination?.hasRoute<Home>() == true,
-                onClick = { navController.navigate(Home) }
-            )
-            item(
-                icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
-                label = { Text("Settings") },
-                selected = currentDestination?.hasRoute<Settings>() == true,
-                onClick = { navController.navigate(Settings) }
-            )
-        }
-    ) {
-        AppNavHost(navController = navController)
-    }
-}
-```
-
----
+**Read:** `references/compose-navigation.md` for detailed step 6: compose navigation reference material.
 
 ## STEP 7: Coil Image Loading
 
@@ -547,6 +266,33 @@ class MyApplication : Application(), ImageLoaderFactory {
 - Always enable `crossfade(true)` for smoother transitions.
 - Always provide a meaningful `contentDescription` (or `null` for decorative images).
 - Avoid `SubcomposeAsyncImage` inside `LazyColumn`/`LazyRow` -- subcomposition is slower.
+
+---
+
+## KMP Platform-Specific Composables
+
+When using Compose Multiplatform, use `expect/actual` for platform-specific UI:
+
+```kotlin
+// commonMain
+@Composable
+expect fun PlatformStatusBar(darkIcons: Boolean)
+
+// androidMain
+@Composable
+actual fun PlatformStatusBar(darkIcons: Boolean) {
+    val systemUiController = rememberSystemUiController()
+    SideEffect { systemUiController.setStatusBarColor(Color.Transparent, darkIcons) }
+}
+
+// iosMain
+@Composable
+actual fun PlatformStatusBar(darkIcons: Boolean) {
+    // iOS handles via UIKit interop or Info.plist
+}
+```
+
+Keep shared composables in `commonMain`, platform-specific implementations in `androidMain`/`iosMain`/`desktopMain`.
 
 ---
 

@@ -28,15 +28,14 @@ if [[ -z "$FILE" ]] || [[ ! -f "$FILE" ]]; then exit 0; fi
 case "$FILE" in
   # Python
   *.py)
-    command -v ruff >/dev/null 2>&1 && ruff check --fix --quiet "$FILE" 2>/dev/null
-    command -v ruff >/dev/null 2>&1 && ruff format --quiet "$FILE" 2>/dev/null
     command -v black >/dev/null 2>&1 && black --quiet "$FILE" 2>/dev/null
+    command -v ruff >/dev/null 2>&1 && ruff format --quiet "$FILE" 2>/dev/null
     ;;
   # JavaScript / TypeScript
   *.js|*.jsx|*.ts|*.tsx)
     command -v npx >/dev/null 2>&1 && npx prettier --write "$FILE" 2>/dev/null
     ;;
-  # JSON / YAML / Markdown / CSS / HTML (prettier handles these too)
+  # JSON / YAML / Markdown (prettier handles these too)
   *.json|*.yml|*.yaml|*.css|*.scss|*.html)
     command -v npx >/dev/null 2>&1 && npx prettier --write "$FILE" 2>/dev/null
     ;;

@@ -5,6 +5,8 @@ description: >
   Supports text input or file path. Max 20 issues per invocation.
 allowed-tools: "Bash Read Grep Glob"
 argument-hint: "<plan-file-path or plan text>"
+version: "1.0.0"
+type: workflow
 ---
 
 # Plan to Issues
@@ -133,17 +135,4 @@ Skipped D duplicates:
 - Preserve the original plan's ordering
 - Create epics only when plan has logical groupings (5+ tasks with sections)
 - Always link tasks back to their parent epic
-- Update epic checklists with actual issue numbers after creation| Keyword Pattern | Label |
-|----------------|-------|
-| `fix`, `bug`, `broken`, `error` | `bug` |
-| `add`, `new`, `feature`, `implement` | `enhancement` |
-| `test`, `e2e`, `unit test`, `verify` | `testing` |
-| `android`, `compose`, `kotlin`, `screen`, `viewmodel` | `android` |
-| `backend`, `api`, `endpoint`, `python`, `fastapi` | `backend` |
-| `household`, `family`, `member` | `household` |
-| `recipe`, `meal`, `generation` | `meal-planning` |
-| `docs`, `document`, `readme` | `documentation` |
-| `refactor`, `cleanup`, `optimize` | `refactoring` |
-| `ci`, `deploy`, `pipeline` | `infrastructure` |
-
-
+- Update epic checklists with actual issue numbers after creation

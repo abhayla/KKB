@@ -1,254 +1,153 @@
 ---
 name: post-fix-pipeline
 description: >
-  Post-fix verification pipeline: regression tests, full test suite with auto-fix,
-  documentation updates (docs-manager agent), git commit (git-manager agent), evidence
-  finalization. Use after fix-loop succeeds to verify no regressions before committing.
-  Typically invoked by fix-issue or implement skills.
-disable-model-invocation: true
-allowed-tools: "Bash Read Grep Write Edit Task"
+  Post-fix completion pipeline: reads upstream auto-verify gate, updates
+  documentation, commits, and captures learnings. Use after auto-verify
+  succeeds to finalize changes. Does NOT re-run tests — trusts upstream.
+allowed-tools: "Bash Read Grep Glob Write Edit Skill"
+argument-hint: "[fixes_applied] [commit_format] [--strict-gates] [--capture-proof | --no-capture-proof]"
+version: "2.0.0"
+type: workflow
 ---
 
 # Post-Fix Pipeline
 
-Post-fix verification and commit process. Runs regression tests, test suite verification with auto-fix, documentation updates via docs-manager Agent, and git commit via git-manager Agent. Uses gate logic to block commits when test suites fail. Fully project-agnostic.
+Finalize verified changes: documentation, commit, and learning capture.
 
-**Arguments:** $ARGUMENTS
-
-Read and follow this process using the parameters passed by the caller (via `$ARGUMENTS` or inline in the calling Skill).
-
-## Caller Context
-
-This Skill is invoked by: `/adb-test`, `/run-e2e`, `/implement`, `/fix-issue`. Each provides different `test_suite_commands` and `commit_format`. Adapt behavior accordingly.
-
-**Important:** If `test_suite_commands` is empty `[]` AND code files were changed (check `git diff --name-only` for `.kt`, `.py`, `.java`, `.xml` files), default to:
-```
-test_suite_commands: [
-  { name: "backend", command: "cd backend && PYTHONPATH=. pytest --tb=short -q", timeout: 300 },
-  { name: "android-unit", command: "cd android && ./gradlew test --console=plain", timeout: 600 }
-]
-```
-If `test_suite_commands` is empty AND no code files changed, log: `Warning: No test suite commands and no code changes. Skipping test suite gate.`
+**Input:** $ARGUMENTS
 
 ---
 
-## Input Parameters
-
-### Core Parameters
-
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `fixes_applied` | Yes | List of fixes: `[{file, line, description}]` from the fix-loop process |
-| `files_changed` | Yes | All file paths that were modified |
-| `session_summary` | Yes | Human-readable summary of what was fixed and why |
-
-### Regression Testing
+## Parameters
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `regression_commands` | `[]` | Commands to run for regression testing: `[{name, command, timeout}]` |
-| `regression_auto_fix` | `true` | If true (default), enter fix-loop for regressions. If false, log only |
-| `regression_max_fix_attempts` | `3` | Maximum fix-loop iterations for regression failures |
-
-### Test Suite Verification
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `test_suite_commands` | `[]` | Test suite commands as commit gate: `[{name, command, timeout}]` |
-| `test_suite_max_fix_attempts` | `2` | Maximum auto-fix attempts when suites fail |
-| `tester_agent_name` | `"tester"` | Agent name for test failure analysis (launched via Task tool) |
-
-### Documentation
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `docs_instructions` | `""` | Instructions for the docs-manager Agent. Empty string = skip documentation step |
-| `docs_files_to_update` | `[]` | Specific documentation files to update |
-| `docs_agent_name` | `"docs-manager"` | Agent name for documentation updates (launched via Task tool) |
-
-### Git Commit
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `commit_format` | `"fix({scope}): {summary}"` | Commit message template |
-| `commit_scope` | `"fix"` | Scope for the commit message |
-| `push` | `false` | Whether to push after committing |
-| `git_agent_name` | `"git-manager"` | Agent name for git operations (launched via Task tool) |
+| `fixes_applied` | — | Summary of fixes that were applied |
+| `commit_format` | `fix(scope): description` | Commit message format |
+| `push` | false | Whether to push after commit |
+| `--strict-gates` | false | Missing upstream JSON = BLOCK |
+| `--capture-proof` | true (from config) | Include evidence summary in commit body |
+| `--no-capture-proof` | — | Disable screenshot capture even if config says true |
 
 ---
 
-## Algorithm
+## STEP 0: Gate Check — Read Upstream Results
 
-```
-STEP 0: INITIALIZE EVIDENCE
-  Create evidence directory: .claude/logs/post-fix-pipeline/
-  Write pipeline-init evidence:
-    .claude/logs/post-fix-pipeline/evidence-init-{timestamp}.json
-    { "event": "pipeline_start", "fixCount": N, "filesChanged": [...], "timestamp": "ISO8601" }
+1. If `test-results/auto-verify.json` exists, read it:
+   - If `result` is `FAILED` → BLOCK. Exit immediately.
+   - If `result` is `PASSED` or `FIXED` → proceed.
 
-STEP 1: GATE CHECK
-  If fixes_applied is empty:
-    Return immediately with status: NO_FIXES
-    Skip all remaining steps
+2. If `test-results/auto-verify.json` does NOT exist:
+   - **With `--strict-gates`:** BLOCK. Report: "BLOCKED: auto-verify output missing."
+   - **Without `--strict-gates`:** WARN + proceed.
 
-STEP 2: REGRESSION TESTING (if regression_commands is non-empty)
-  For each command in regression_commands:
-    Run the command with its timeout
-    Record: { name, status: PASSED|FAILED, output }
+3. If `test-evidence/*/visual-review.json` exists (most recent run_id), read it:
+   - If any `overrides` exist (passed tests overridden to FAILED) → BLOCK.
+   - Report which tests were visually overridden.
 
-  Gate decision:
-    ALL regressions pass -> proceed to Step 3
-    Any regression fails:
-      Enter fix-loop for the regression (max {regression_max_fix_attempts} iterations)
-      After fix-loop -> re-run ALL regression commands
-      If still failing after max attempts -> HARD BLOCK — skip Steps 3-5
-      If all fixed -> proceed to Step 3
+```bash
+if [ -f test-results/auto-verify.json ]; then
+  UPSTREAM_RESULT=$(python3 -c "import json; print(json.load(open('test-results/auto-verify.json'))['result'])")
+  if [ "$UPSTREAM_RESULT" = "FAILED" ]; then
+    echo "BLOCKED: auto-verify reported FAILED"
+    exit 1
+  fi
+  echo "auto-verify result: $UPSTREAM_RESULT — proceeding"
+else
+  if [ "$STRICT_GATES" = "true" ]; then
+    echo "BLOCKED: auto-verify output missing (--strict-gates enforced)"
+    exit 1
+  else
+    echo "WARN: No auto-verify results found — proceeding without gate check"
+  fi
+fi
 
-  Write regression evidence:
-    .claude/logs/post-fix-pipeline/evidence-regression-{timestamp}.json
-    { "event": "regression_complete", "gate": "PASSED|PASSED_AFTER_FIX|FAILED|NOT_RUN",
-      "perCommand": [...], "fixAttempts": N, "timestamp": "ISO8601" }
-
-STEP 3: TEST SUITE VERIFICATION (if test_suite_commands is non-empty)
-  For each command in test_suite_commands:
-    Run the command with its timeout
-    Record: { name, passed_count, failed_count, failed_tests, output }
-
-  Gate decision:
-    ALL suites pass -> gate = PASSED -> proceed to Step 4
-    Any suite fails:
-      Launch tester Agent (read-only, via Task tool) with:
-        - Failed test names and output
-        - Diff of recent changes (files_changed)
-        - Instruction: "Analyze these test failures against the recent fixes.
-          Determine if the fixes caused the failures."
-
-      The tester Agent returns analysis only.
-      YOU (main Claude session) apply fixes based on that analysis (max {test_suite_max_fix_attempts} attempts).
-      Re-run the test suite after each fix attempt.
-
-      If all failures fixed:
-        gate = PASSED_AFTER_FIX -> proceed to Step 4
-      If still failing after max attempts:
-        gate = FAILED -> HARD BLOCK — skip Steps 4 and 5
-
-  Write test-suite evidence:
-    .claude/logs/post-fix-pipeline/evidence-testsuite-{timestamp}.json
-    { "event": "test_suite_complete", "gate": "PASSED|PASSED_AFTER_FIX|FAILED",
-      "perSuite": [...], "autoFixAttempts": N, "timestamp": "ISO8601" }
-
-STEP 4: DOCUMENTATION (only if regression gate != FAILED AND test suite gate != FAILED)
-  If docs_instructions is non-empty:
-    Launch docs_agent_name Agent (via Task tool) with:
-      - fixes_applied list
-      - files_changed list
-      - session_summary
-      - docs_instructions
-      - docs_files_to_update
-      - Instruction: "Update documentation based on the fixes applied.
-        Return the list of documentation files updated."
-    Record files updated by docs Agent
-
-STEP 5: GIT COMMIT (only if regression gate != FAILED AND test suite gate != FAILED)
-  Launch git_agent_name Agent (via Task tool) with:
-    - files_changed (fix files + any doc files from Step 4)
-    - commit_format with scope and summary filled in
-    - push flag
-    - Instruction: "Stage only the relevant files (not .env, build artifacts,
-      or gitignored files). Create a commit using the provided format.
-      Include the fix list in the commit body.
-      Do NOT push unless push=true."
-  Record commit hash and message
-
-STEP 6: FINALIZE EVIDENCE
-  Write pipeline-complete evidence:
-    .claude/logs/post-fix-pipeline/evidence-complete-{timestamp}.json
-    { "event": "pipeline_complete", "status": "COMPLETED|BLOCKED_BY_REGRESSION|BLOCKED_BY_TEST_SUITE|NO_FIXES",
-      "regressionGate": "...", "testSuiteGate": "...", "commitHash": "...", "commitMessage": "...",
-      "filesChanged": [...], "timestamp": "ISO8601" }
+# Check visual review overrides
+VISUAL_REVIEW=$(find test-evidence -name "visual-review.json" 2>/dev/null | sort | tail -1)
+if [ -n "$VISUAL_REVIEW" ]; then
+  OVERRIDES=$(python3 -c "import json; d=json.load(open('$VISUAL_REVIEW')); print(len(d.get('overrides', [])))")
+  if [ "$OVERRIDES" -gt 0 ]; then
+    echo "BLOCKED: visual review found $OVERRIDES override(s) — passed tests visually broken"
+    exit 1
+  fi
+fi
 ```
 
 ---
 
-## Gate Logic
+## STEP 1: Documentation Updates
 
-| Condition | Regression? | Docs? | Commit? |
-|-----------|-------------|-------|---------|
-| No fixes applied | NO | NO | NO |
-| Regressions PASSED | YES (all pass) | YES | YES |
-| Regressions PASSED_AFTER_FIX | YES (fixed) | YES | YES |
-| Regressions FAILED (after max attempts) | YES (blocked) | **NO** | **NO** |
-| Test suite PASSED | N/A | YES | YES |
-| Test suite PASSED_AFTER_FIX | N/A | YES | YES |
-| Test suite FAILED | N/A | **NO** | **NO** |
-| No test_suite_commands | N/A | YES | YES |
-| No regression_commands | N/A | YES | YES |
+Delegate to docs-manager-agent if documentation needs updating:
+- Update continuation/handoff documents
+- Record test results and evidence location
 
----
+## STEP 2: Git Commit
 
-## Output
+If all gates pass:
 
-Return a structured report:
+1. Delegate to git-manager-agent for secure commit
+2. Use conventional commit format
+3. Include summary of fixes in commit body
+4. If `--capture-proof`, include evidence directory path in commit body
 
-```markdown
-## Post-Fix Pipeline Results
+If gates fail:
+- Report blocking issues
+- Do NOT commit
 
-### Overall Status
-- **Status:** COMPLETED | BLOCKED_BY_REGRESSION | BLOCKED_BY_TEST_SUITE | NO_FIXES
+## STEP 3: Learning Capture
 
-### Regression Testing
-- **Commands run:** N
-- **Passed:** N
-- **Regressions found:** N
-- **Details:**
-  - {name}: PASSED | FAILED — {brief output}
-(Omit section if no regression_commands provided)
+Invoke `/learn-n-improve session` to record the fix for future reference.
 
-### Test Suite Verification
-- **Gate status:** PASSED | PASSED_AFTER_FIX | FAILED | NOT_RUN
-- **Per-suite results:**
-  - {name}: {passed_count} passed, {failed_count} failed
-- **Auto-fix attempts:** N (if applicable)
-- **Failed tests:** {list} (if gate = FAILED)
-(Omit section if no test_suite_commands provided)
+## STEP 4: Structured JSON Output
 
-### Documentation Updates
-- **Files updated:**
-  - {file_path_1}
-  - {file_path_2}
-(Omit section if docs_instructions was empty)
+Write machine-readable results to `test-results/post-fix-pipeline.json`:
 
-### Git Commit
-- **Hash:** {commit_hash}
-- **Message:** {commit_message}
-- **Pushed:** true | false
-(Show "BLOCKED — test suite gate failed" if gate = FAILED)
-(Show "SKIPPED — no fixes applied" if status = NO_FIXES)
+```json
+{
+  "skill": "post-fix-pipeline",
+  "result": "PASSED|FAILED",
+  "timestamp": "<ISO-8601>",
+  "details": {
+    "documentation": "UPDATED|SKIPPED",
+    "commit": "<hash>|BLOCKED",
+    "learning_capture": "RECORDED|SKIPPED",
+    "upstream_gate": "PASSED|SKIPPED",
+    "visual_review_gate": "PASSED|BLOCKED|SKIPPED"
+  }
+}
+```
+
+Create `test-results/` directory if it doesn't exist. This JSON is consumed by downstream stage gates.
+
+```bash
+mkdir -p test-results
+python3 -c "
+import json, datetime
+result = {
+    'skill': 'post-fix-pipeline',
+    'result': '<PASSED_or_FAILED>',
+    'timestamp': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    'details': {
+        'documentation': '<status>',
+        'commit': '<hash_or_BLOCKED>',
+        'learning_capture': '<status>',
+        'upstream_gate': '<status>',
+        'visual_review_gate': '<status>'
+    }
+}
+with open('test-results/post-fix-pipeline.json', 'w') as f:
+    json.dump(result, f, indent=2)
+"
 ```
 
 ---
 
-## POST-RUN LEARNING CAPTURE
-
-After producing the output report (regardless of pipeline status), automatically invoke:
+## Report
 
 ```
-Skill("reflect", args="session")
+Post-Fix Pipeline:
+  Upstream gate: PASSED/BLOCKED
+  Visual review gate: PASSED/BLOCKED/SKIPPED
+  Documentation: UPDATED/SKIPPED
+  Commit: [hash] — [message] / BLOCKED
 ```
-
-This captures the pipeline outcomes into structured learning logs and updates memory topic files. Runs for all statuses including NO_FIXES and BLOCKED.
-
----
-
-## Error Handling
-
-| Scenario | Behavior |
-|----------|----------|
-| Regression command times out | Treat as FAILED, enter fix-loop flow |
-| Regression fix-loop exhausted | Gate = FAILED, block docs + commit |
-| Test suite command times out | Treat as FAILED, enter auto-fix flow |
-| Tester Agent fails to respond | Gate = FAILED, block commit |
-| Docs Agent fails | Log warning, proceed to commit (non-blocking) |
-| Git Agent fails | Log error, report COMMIT_FAILED |
-| No test_suite_commands | Skip verification, proceed directly to docs + commit |
-| No docs_instructions | Skip documentation, proceed to commit |

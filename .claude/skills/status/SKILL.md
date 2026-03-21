@@ -1,126 +1,74 @@
 ---
 name: status
 description: >
-  Quick project health snapshot. Use when starting a session, after returning from
-  a break, or when unsure about project state. Shows git status, test counts,
-  workflow progress, and backend health in a single report.
+  Quick project health snapshot. Shows git status, test status, and project state
+  in a single report. Use when starting a session or checking project health.
 allowed-tools: "Bash Read Grep Glob"
-disable-model-invocation: true
+argument-hint: ""
+version: "1.0.1"
+type: reference
 ---
 
-# Project Status Dashboard
+# Status — Project Health Snapshot
 
-Quick health check across git, tests, workflow state, and backend.
-
-**Request:** $ARGUMENTS
+Quick overview of project state.
 
 ---
 
-## STEP 1: Git State
+## Gather Information
 
+Run these checks in parallel where possible:
+
+### 1. Git State
 ```bash
-echo "=== GIT ===" && \
-git branch --show-current && \
-echo "---" && \
-git log --oneline -3 && \
-echo "---" && \
-echo "Changed files:" && \
-git status --short | wc -l | tr -d ' '
+git branch --show-current
+git status --short
+git log --oneline -3
+git stash list
 ```
 
----
-
-## STEP 2: Test Counts
-
+### 2. Uncommitted Changes
 ```bash
-echo "=== TESTS ===" && \
-echo -n "Backend test files: " && find backend/tests -name "test_*.py" 2>/dev/null | wc -l | tr -d ' ' && \
-echo -n "Backend tests (collected): " && (cd backend && PYTHONPATH=. python -m pytest --collect-only -q 2>/dev/null | tail -1) && \
-echo -n "Android unit test files: " && find android/app/src/test -name "*Test.kt" 2>/dev/null | wc -l | tr -d ' ' && \
-echo -n "Android UI test files: " && find android/app/src/androidTest -name "*Test.kt" 2>/dev/null | wc -l | tr -d ' ' && \
-echo -n "Android E2E flow files: " && find android/app/src/androidTest -path "*/e2e/flows/*Test.kt" 2>/dev/null | wc -l | tr -d ' '
+git diff --stat
 ```
 
----
-
-## STEP 3: Workflow State
-
+### 3. Open PRs/Issues (if gh available)
 ```bash
-echo "=== WORKFLOW ===" && \
-if [ -f .claude/workflow-state.json ]; then
-  python -c "
-import json
-with open('.claude/workflow-state.json') as f:
-    d = json.load(f)
-cmd = d.get('activeCommand', 'none')
-issue = d.get('issueNumber', 'none')
-steps = d.get('steps', {})
-completed = [k for k, v in steps.items() if v.get('completed')]
-pending = [k for k, v in steps.items() if not v.get('completed')]
-skills = d.get('skillInvocations', {})
-print(f'  Active command: {cmd}')
-print(f'  Issue: #{issue}' if issue else '  Issue: none')
-print(f'  Completed: {len(completed)}/7 steps')
-if pending:
-    print(f'  Next pending: {pending[0]}')
-if skills.get('fixLoopInvoked'):
-    print(f'  Fix-loop invoked: {skills.get(\"fixLoopCount\", 0)}x')
-if d.get('blocked'):
-    print(f'  BLOCKED: {d.get(\"blockedReason\", \"unknown\")}')
-"
-else
-  echo "  No workflow state (fresh session)"
-fi
+gh pr list --state open --limit 3 2>/dev/null || echo "gh not available"
+gh issue list --assignee @me --state open --limit 3 2>/dev/null || echo ""
 ```
 
----
+### 4. Recent Test Results
+Check for recent test output files or run a quick test count:
+- Look for test result artifacts in common locations
+- Optionally run `--collect-only` to count available tests without executing them
+- Check CI status via `gh run list --limit 1` if GitHub CLI is available
 
-## STEP 4: Backend Health
+## Health Criteria
 
-```bash
-echo "=== BACKEND ===" && \
-if curl -sf http://localhost:8000/health > /dev/null 2>&1; then
-  echo "  Status: RUNNING" && \
-  curl -sf http://localhost:8000/health 2>/dev/null | python -c "
-import sys, json
-try:
-    d = json.load(sys.stdin)
-    print(f'  Response: {json.dumps(d)}')
-except:
-    print('  Response: OK (non-JSON)')
-" 2>/dev/null
-else
-  echo "  Status: NOT RUNNING"
-fi
-```
+Assess overall project health based on these signals:
+- **GOOD**: Clean git state, tests passing, no stale PRs
+- **NEEDS_ATTENTION**: Uncommitted changes, open PRs older than 3 days, or test warnings
+- **BLOCKED**: Failing tests, merge conflicts, or CI failures on the current branch
+- Check CI status via `gh run list --limit 1` if GitHub CLI is available## Health CriteriaAssess overall project health based on these signals:- **GOOD**: Clean git state, tests passing, no stale PRs- **NEEDS_ATTENTION**: Uncommitted changes, open PRs older than 3 days, or test warnings- **BLOCKED**: Failing tests, merge conflicts, or CI failures on the current branch
 
----
+## Report
 
-## STEP 5: Present Report
+```markdown
+## Project Status
 
-Combine all output into a single formatted block:
+### Git
+- Branch: [current branch]
+- Uncommitted: [N files changed]
+- Last 3 commits: [summaries]
 
-```
-============================================
-  RasoiAI Project Status
-============================================
+### Tests
+- [Latest test result summary if available]
 
-GIT
-  Branch: main
-  Recent: [last 3 commits]
-  Changed files: N
+### Open Work
+- PRs: [count and titles]
+- Issues: [assigned issues]
 
-TESTS
-  Backend: ~580 (46 files)
-  Android Unit: ~580 (N files)
-  Android UI/E2E: N files
-
-WORKFLOW
-  Active: none | fix-issue | implement | run-e2e
-  Issue: #N | none
-  Progress: N/7 steps
-
-BACKEND
-  Status: RUNNING | NOT RUNNING
-============================================
+### Health: [GOOD / NEEDS_ATTENTION / BLOCKED]
+[One-line explanation]
 ```

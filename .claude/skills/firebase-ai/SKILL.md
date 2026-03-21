@@ -5,8 +5,10 @@ description: >
   input, chat sessions, streaming, image generation, structured JSON output,
   on-device hybrid AI, and App Check security. Use when adding AI features to
   Firebase web or mobile apps.
-allowed-tools: "Bash Read Grep Glob Write Edit"
+allowed-tools: "Read Grep Glob"
 argument-hint: "<what to implement — e.g. 'add text generation' or 'set up multimodal chat with images'>"
+version: "1.0.1"
+type: reference
 ---
 
 # Firebase AI Logic (Gemini API)

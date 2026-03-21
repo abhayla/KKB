@@ -4,8 +4,10 @@ description: >
   Core Firebase development: project setup, CLI, Authentication (providers, tokens,
   security rules, web SDK), and Firestore (provisioning, security rules, CRUD,
   transactions, realtime listeners, indexes). Use when building Firebase-backed apps.
-allowed-tools: "Bash Read Grep Glob Write Edit"
+allowed-tools: "Read Grep Glob"
 argument-hint: "<what to set up or implement — e.g. 'add Google auth' or 'create Firestore rules for user posts'>"
+version: "1.0.1"
+type: reference
 ---
 
 # Firebase Core Development

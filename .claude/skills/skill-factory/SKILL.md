@@ -1,205 +1,116 @@
 ---
 name: skill-factory
 description: >
-  Use when you suspect repeated workflows could become skills, when session logs
-  show recurring multi-step patterns, or when the user asks to analyze their
-  workflow for automation opportunities. Scans logs, detects patterns, proposes
-  and creates new skills.
-argument-hint: "[scan|propose <name>|create <name>|list]"
+  Detect repeated workflows in session logs and create new skills from them.
+  Modes: scan (detect patterns), propose (suggest skills), create (build skill),
+  list (show existing skills).
+allowed-tools: "Bash Read Grep Glob Write Edit"
+argument-hint: "<mode: scan|propose|create|list> [details]"
+type: workflow
+version: "2.0.0"
 ---
 
 # Skill Factory — Pattern Detector & Skill Creator
 
-Analyze session logs for repeated workflows and propose new skills.
+Detect repeated workflows and create reusable skills from them.
 
 **Arguments:** $ARGUMENTS
 
 ---
 
-## MODE SELECTION
+## Modes
 
-| Pattern | Mode | Action |
-|---------|------|--------|
-| (no args) or `scan` | Scan | Analyze logs, detect patterns, rank by impact |
-| `propose <name>` | Propose | Generate full SKILL.md preview for a detected pattern |
-| `create <name>` | Create | Write skill files after user approval |
-| `list` | List | Show all existing skills with descriptions |
-
----
-
-## MODE: scan
-
-### Step 1: Gather Data
-
-Scan these sources for repeated multi-step patterns:
-
-```
-.claude/logs/workflow-sessions.log     — Workflow step sequences
-.claude/logs/test-evidence/*.json      — Test run patterns
-.claude/logs/fix-loop/*/               — Fix-loop session patterns
-.claude/workflow-state.json            — Current session state
-```
-
-Also check session transcripts if available:
-```
-~/.claude/projects/*/sessions/*.jsonl  — Full session logs (large, scan selectively)
-```
-
-### Step 2: Pattern Detection
-
-Look for sequences that appear 3+ times:
-
-| Signal | What to Look For |
-|--------|-----------------|
-| Repeated tool sequences | Same 3+ tools called in order across sessions |
-| Repeated commands | Same bash commands run in sequence |
-| Repeated file edits | Same files edited together |
-| Repeated error→fix cycles | Same error resolved the same way |
-| Repeated skill chains | Same skills invoked in sequence |
-
-### Step 3: Classification
-
-For each pattern, classify using the CLAUDE.md taxonomy:
-
-| Category | When |
-|----------|------|
-| **Skill** | Repeatable multi-step workflow with clear start/end |
-| **Agent** | Autonomous sub-task that can run in isolation |
-| **Hook** | Automatic trigger on tool events |
-| **CLAUDE.md Rule** | Static instruction, no logic |
-
-Focus on **Skill** candidates (this tool creates skills, not agents/hooks).
-
-### Step 4: Conflict Check
-
-Before proposing, check for existing coverage:
-
-```bash
-ls .claude/skills/        # Existing skills
-ls .claude/agents/        # Existing agents
-ls .claude/hooks/         # Existing hooks
-```
-
-Compare each candidate against existing skills by:
-- Name similarity
-- Functional overlap (does an existing skill already do this?)
-- Partial coverage (could an existing skill be enhanced instead?)
-
-### Step 5: Output
-
-Present findings as a ranked table:
-
-```
-| # | Pattern | Frequency | Category | Priority | Name | Description |
-|---|---------|-----------|----------|----------|------|-------------|
-| 1 | ... | 5x | Skill | HIGH | /name | What it does |
-```
-
-Priority = frequency x steps x novelty (not covered by existing skill).
+| Mode | Description |
+|------|-------------|
+| `scan` | Analyze recent session work for repeated multi-step patterns |
+| `propose` | Suggest new skills based on detected patterns |
+| `create <name>` | Create a new skill from a description or detected pattern |
+| `list` | Show all existing skills with descriptions |
 
 ---
 
-## MODE: propose
+## STEP 1: Mode Detection
 
-Generate a complete SKILL.md preview for the named pattern.
+Parse `$ARGUMENTS` to determine mode.
 
-### Step 1: Validate
+## Scan Mode
 
-1. Confirm the pattern was identified in a previous `scan` or is described by the user
-2. Check no existing skill with the same name exists
-3. If name conflicts, suggest alternative names
+1. Read recent git history for repeated command patterns
+2. Look for multi-step sequences that appear 3+ times
+3. Identify candidates for automation
 
-### Step 2: Generate SKILL.md
+Report:
+```
+Detected Patterns:
+  1. [pattern name] — seen N times
+     Steps: [brief description]
+     Automation potential: High/Medium/Low
+```
 
-Follow the skill structure from `superpowers:writing-skills`:
+## Propose Mode
 
+Based on scan results, propose skill definitions:
+```
+Proposed Skills:
+  1. /skill-name — [description]
+     Trigger: [when to use]
+     Steps: [what it automates]
+     Effort: [estimated complexity]
+```
+
+## Create Mode
+
+Create a new skill following the SKILL.md format:
+
+1. Create directory: `.claude/skills/{name}/`
+2. Write `SKILL.md` with proper frontmatter (all required fields)
+3. Determine skill type: `workflow` (multi-step procedure) or `reference` (knowledge base)
+4. For workflow skills: add numbered `## STEP N:` sections with verb-phrase titles
+5. For reference skills: add organized `##` sections (no step numbering required)
+6. Add `## CRITICAL RULES` or `## MUST DO` / `## MUST NOT DO` section at the end
+7. Apply least-privilege to `allowed-tools` — only list tools the skill actually uses
+8. Validate with `/writing-skills` quality checklist before saving
+
+Template:
 ```markdown
 ---
-name: <name>
+name: {name}
 description: >
-  Use when <specific triggering conditions>
-argument-hint: "<args if any>"
+  {description — start with a verb, 1-3 sentences}
+allowed-tools: "{minimal set of tools actually used}"
+argument-hint: "<{required}> [{optional}]"
+type: {workflow|reference}
+version: "1.0.0"
 ---
 
-# <Name> - <Brief Title>
+# {Title}
 
-<Overview>
+{One-sentence purpose.}
 
-**Arguments:** $ARGUMENTS
+**Request:** $ARGUMENTS
 
-## When to Use
-<Bullet list of triggers>
+---
 
-## Steps
-<Numbered procedure>
+## STEP 1: {Verb Phrase}
 
-## Common Mistakes
-<What goes wrong>
+1. {Specific action}
+2. {Specific action}
+
+## STEP 2: {Verb Phrase}
+
+1. {Specific action}
+2. {Specific action}
+
+## CRITICAL RULES
+
+- {Rule with consequence of violation}
+- {Rule with alternative action}
 ```
 
-### Step 3: Preview
+## List Mode
 
-Display the full SKILL.md content and ask for user approval before writing.
-
----
-
-## MODE: create
-
-Write skill files to disk after user approval.
-
-### Safety Rules
-
-1. **Max 3 skills per invocation** — prevents runaway creation
-2. **Always show preview** — never write without user seeing content
-3. **No overwrite** — if `.claude/skills/<name>/SKILL.md` exists, STOP and warn
-4. **Conflict detection** — check all existing skills for functional overlap
-5. **Update CLAUDE.md** — add new skill to the skills list line after creation
-
-### Steps
-
-1. Confirm user has reviewed the `propose` output
-2. Create directory: `.claude/skills/<name>/`
-3. Write `SKILL.md`
-4. Update CLAUDE.md skills list (add to alphabetical position in the list)
-5. Confirm creation with file path
-
----
-
-## MODE: list
-
-Show all existing skills with their descriptions:
-
-1. Glob `.claude/skills/*/SKILL.md`
-2. For each, extract `name` and `description` from YAML frontmatter
-3. Display as table sorted alphabetically
-
-```
-| # | Skill | Description |
-|---|-------|-------------|
-| 1 | /adb-test | Autonomous Android E2E testing via ADB... |
-| 2 | /auto-verify | Post-change verification loop... |
-| ... |
+```bash
+find .claude/skills -name "SKILL.md" -exec head -5 {} \;
 ```
 
----
-
-## PATTERN EXAMPLES
-
-Common patterns that might be detected:
-
-| Pattern | Proposed Skill | Description |
-|---------|---------------|-------------|
-| pytest fail → read error → fix → rerun | `/fix-backend-test` | Single-file backend test fix cycle |
-| gradle build → install → adb test | `/quick-device-test` | Fast device test without full E2E |
-| seed DB → run test → verify data | `/db-seed-verify` | Database seeding verification |
-| read issue → explore code → plan fix | `/investigate-issue` | Issue analysis without implementation |
-
----
-
-## CONSTRAINTS
-
-- Only propose skills for patterns with 3+ occurrences
-- Never propose skills that duplicate existing ones
-- Always check `.claude/skills/`, `.claude/agents/`, `.claude/hooks/` for conflicts
-- Skill names: lowercase, hyphens only, no special characters
-- Max description length: 500 characters
+Show each skill's name and description.

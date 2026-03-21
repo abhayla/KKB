@@ -16,105 +16,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**RasoiAI** (रसोई AI) is an AI-powered meal planning application for Indian families. It generates personalized weekly meal plans based on family preferences, dietary restrictions, regional cuisines, and cultural considerations including festivals and fasting days.
+**RasoiAI** (रसोई AI) is an AI-powered meal planning application for Indian families. Generates personalized weekly meal plans based on family preferences, dietary restrictions, regional cuisines, and festivals/fasting days.
 
 | Attribute | Details |
 |-----------|---------|
-| **Platform** | Android Native (Kotlin 2.2.10 + Jetpack Compose BOM 2024.02.00) |
-| **Backend** | Python (FastAPI + PostgreSQL + SQLAlchemy async) |
-| **Target SDK** | 34 (Min SDK 24 / Android 7.0) |
-| **Build Tools** | AGP 9.0.1, KSP 2.3.2, Hilt 2.56.1, Room 2.8.1 |
-| **Target Market** | Pan-India (Tier 1, 2, 3 cities) |
+| **Android** | Kotlin 2.2.10, Jetpack Compose BOM 2024.02.00, Hilt 2.56.1, Room 2.8.1, KSP 2.3.2, AGP 9.0.1, Target SDK 34 (Min 24) |
+| **Backend** | Python 3.11+, FastAPI, PostgreSQL 12+, SQLAlchemy async, ~62 endpoints across 13+ routers |
+| **AI** | Gemini `gemini-2.5-flash` via `google-genai` SDK (meal gen + photo analysis), Claude API (chat) |
 
 ## Architecture
 
-### Module Structure
+Four Android modules: `app` (presentation) → `domain` (pure Kotlin interfaces/models) ← `data` (Room + Retrofit impls) → `core` (shared utilities). Domain has zero Android dependencies. Offline-first: Room is source of truth, API syncs in background. Mappers centralized in `EntityMappers.kt` and `DtoMappers.kt`. Backend services are standalone async functions (not classes).
 
-Four-layer architecture under `android/`:
+**5-location model import rule (CRITICAL):** New SQLAlchemy models require updates in: (1) `models/your_model.py`, (2) `models/__init__.py`, (3) `db/postgres.py` (3 blocks: init_db, create_tables, drop_tables), (4) `tests/conftest.py`, (5) Alembic migration. Missing any causes silent test/migration failures.
 
-| Module | Package | Purpose |
-|--------|---------|---------|
-| `app` | `com.rasoiai.app.*` | Screens, ViewModels, Hilt modules, navigation |
-| `domain` | `com.rasoiai.domain.*` | Models, repository interfaces, use cases |
-| `data` | `com.rasoiai.data.*` | Room (local), Retrofit (remote), repository impls |
-| `core` | `com.rasoiai.core.*` | Shared UI components, utilities, NetworkMonitor |
-
-```
-app ─────┬──────> core
-         ├──────> domain  <────┐
-         └──────> data ────────┴──────> core
-```
-
-### Key Architecture Decisions
-
-| Area | Decision |
-|------|----------|
-| Dependency Injection | Hilt |
-| State Management | StateFlow + Single UiState Data Class |
-| Navigation | Navigation Compose |
-| Database | Room (Android cache), PostgreSQL (backend source of truth) |
-| Auth | Firebase Auth (Phone OTP) |
-| LLM | Claude API (chat tool calling), Gemini `gemini-2.5-flash` via `google-genai` SDK (meal generation + food photo analysis) |
-| Offline Support | Room as source of truth with sync to backend |
-
-### Data Flow
-
-```
-UI → ViewModel → UseCase → Repository
-                              ↓
-                 ┌────────────┴────────────┐
-                 ↓                         ↓
-            Room (Local)            Retrofit (Remote)
-            Source of Truth
-                 ↓                         ↓
-            EntityMappers              DtoMappers
-                 └──────────┬──────────────┘
-                            ↓
-                      Domain Models
-```
-
-**Key mapper files:**
-- `data/local/mapper/EntityMappers.kt` - Room Entity ↔ Domain
-- `data/remote/mapper/DtoMappers.kt` - API DTO → Domain & Entity
-
-### Backend Structure
-
-```
-backend/app/
-├── ai/            # Claude chat (tool calling) + Gemini meal generation + photo analysis
-├── api/v1/        # 13+ routers across 12+ files (~62 endpoints). Swagger at /docs (DEBUG=true only)
-├── cache/         # recipe_cache.py — warmed on startup, non-fatal
-├── config.py      # Pydantic Settings (env vars, JWT secret required, usage limits)
-├── core/          # firebase.py (auth + DEBUG bypass), security.py, exceptions.py
-├── db/            # postgres.py (3 model import blocks), database.py
-├── main.py        # FastAPI app, Sentry init, SecurityHeadersMiddleware, rate limiting
-├── models/        # SQLAlchemy ORM (14 files)
-├── repositories/  # Data access (5 files)
-├── schemas/       # Pydantic request/response DTOs
-└── services/      # Business logic (20 files)
-```
-
-**5-location model import rule (CRITICAL):** When adding a new SQLAlchemy model, ALL of these must be updated or tests/migrations silently fail:
-1. `app/models/your_model.py` — define the model
-2. `app/models/__init__.py` — re-export
-3. `app/db/postgres.py` — import in `init_db()`, `create_tables()`, AND `drop_tables()` (3 blocks)
-4. `tests/conftest.py` — import so SQLite creates the table
-5. Generate Alembic migration
-
-## Patterns
-
-### ViewModel Pattern
-
-ViewModels extend `BaseViewModel<T : BaseUiState>` (`presentation/common/BaseViewModel.kt`), providing `updateState`/`setState` helpers. Key elements:
-- `BaseUiState` interface: requires `isLoading: Boolean` and `error: String?`
-- UiState data class implements `BaseUiState`, uses `copy()` for updates
-- One-time events via `Channel` + `receiveAsFlow()`
-- `@HiltViewModel` with `@Inject constructor`
-- `Resource<T>` sealed class (`Success`/`Error`/`Loading`) in `presentation/common/UiState.kt`
-
-### Repository Pattern (Offline-First)
-
-Repositories read from Room (source of truth), fetch from API when online. Mutations update local DB first, then sync to server if online, or mark as unsynced for later.
+**Detailed conventions** auto-load via path-scoped rules in `.claude/rules/` — see `testing.md`, `android.md`, `backend.md`, `database.md`, `compose-ui.md`, and 40+ others.
 
 ## Development Commands
 
@@ -126,169 +42,87 @@ Repositories read from Room (source of truth), fetch from API when online. Mutat
 ./gradlew test                   # All unit tests
 ./gradlew :app:testDebugUnitTest --tests "*.HomeViewModelTest"  # Single test
 ./gradlew :app:connectedDebugAndroidTest  # All instrumented tests (emulator API 34)
-./gradlew lint
-./gradlew installDebug
-./gradlew clean && ./gradlew assembleDebug  # Fix strange build issues
-
-# E2E tests (requires running emulator + backend at localhost:8000 with DEBUG=true)
 ./gradlew :app:connectedDebugAndroidTest \
   -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.flows.FullUserJourneyTest  # Single E2E
 ./gradlew :app:connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.package=com.rasoiai.app.e2e.flows  # All E2E flows
-
-# Customer journey suites (17 suites: J01-J17, group E2E tests by user scenario)
-./gradlew :app:connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.journeys.J01_FirstTimeUserSuite
+  -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.journeys.J01_FirstTimeUserSuite  # Journey suite
 ```
 
 ### Backend (run from `backend/`)
 
 ```bash
-source venv/bin/activate         # Linux/Mac/Git Bash
-pip install -r requirements.txt  # Install/update dependencies
-uvicorn app.main:app --reload    # Dev server → http://localhost:8000/docs
+source venv/bin/activate && pip install -r requirements.txt
+uvicorn app.main:app --reload    # Dev server at http://localhost:8000/docs (DEBUG=true only)
 PYTHONPATH=. pytest              # All tests
 PYTHONPATH=. pytest tests/test_auth.py -v                    # Single file
 PYTHONPATH=. pytest tests/test_preference_service.py::test_add_include_rule -v  # Single test
-PYTHONPATH=. pytest --cov=app    # Tests with coverage report
 alembic upgrade head             # Run migrations
 alembic revision --autogenerate -m "description"  # New migration
-PYTHONPATH=. pytest --collect-only -q             # Count all tests
-
-# After migrations — seed reference data (first-time setup)
-PYTHONPATH=. python scripts/seed_festivals.py               # Festival calendar
-PYTHONPATH=. python scripts/seed_achievements.py            # Achievement definitions
-PYTHONPATH=. python scripts/import_recipes_postgres.py      # 3,580 recipes from KKB dataset
-PYTHONPATH=. python scripts/sync_config_postgres.py         # Meal gen YAML config → PostgreSQL
+# Seed data (first-time): seed_festivals.py, seed_achievements.py, import_recipes_postgres.py, sync_config_postgres.py
 ```
 
-### Prerequisites
-
-| Tool | Version |
-|------|---------|
-| JDK | 17+ (`JAVA_HOME` must be set) |
-| Python | 3.11+ |
-| PostgreSQL | 12+ |
-| Android SDK | API 34 (Min 24) |
-
-**Dependency versions:** See `backend/requirements.txt` and `android/gradle/libs.versions.toml`.
-
-### Code Formatting
-
-Auto-formatting runs via the `auto-format.sh` hook after edits. Manual commands:
+### Formatting (auto-runs via hook)
 
 ```bash
-# Python (from backend/)
-black app/ tests/                    # Format code
-ruff check app/ tests/ --fix        # Lint + auto-fix
-
-# Kotlin — no manual formatter configured; Compose stability rules in android/app/compose-stability.conf
+black app/ tests/ && ruff check app/ tests/ --fix   # Python
+# Kotlin: no manual formatter; Compose stability rules in android/app/compose-stability.conf
 ```
 
-### Environment Setup
+### Environment
 
-**Backend `.env` file:**
-```
-DATABASE_URL=postgresql+asyncpg://rasoiai_user:password@localhost:5432/rasoiai
-FIREBASE_CREDENTIALS_PATH=./rasoiai-firebase-service-account.json
-ANTHROPIC_API_KEY=sk-ant-...
-GOOGLE_AI_API_KEY=your-gemini-api-key
-JWT_SECRET_KEY=your-secret-key         # REQUIRED — no default, crashes on startup if missing
-DEBUG=true                             # Default is false — must opt-in for debug mode
-SENTRY_DSN=https://...@sentry.io/...   # optional, enables error monitoring
-CORS_ORIGINS=["http://localhost:3000"] # Default is [] — Android app doesn't need CORS
-```
+**Backend `.env`:** `DATABASE_URL`, `FIREBASE_CREDENTIALS_PATH`, `ANTHROPIC_API_KEY`, `GOOGLE_AI_API_KEY`, `JWT_SECRET_KEY` (REQUIRED, no default), `DEBUG=true`, `SENTRY_DSN` (optional). Android needs `google-services.json` in `android/app/` and `local.properties` with `sdk.dir`.
 
-**Android `local.properties`** (required — see `local.properties.example`):
-```properties
-sdk.dir=/path/to/Android/sdk
-```
-Also requires `google-services.json` in `android/app/` (from Firebase Console, with Phone Auth enabled). No `WEB_CLIENT_ID` needed — Phone Auth doesn't use it.
+**CI/CD:** 4 GitHub Actions — `android-ci.yml` (lint/test/build), `backend-ci.yml` (pytest), `claude.yml` (@claude mentions), `claude-code-review.yml` (auto PR review).
 
-**PostgreSQL:**
-```sql
-CREATE DATABASE rasoiai;
-CREATE USER rasoiai_user WITH PASSWORD 'your_password';
-GRANT ALL PRIVILEGES ON DATABASE rasoiai TO rasoiai_user;
-```
+## Test Fixtures (Backend)
 
-### CI/CD Pipeline
-
-Four GitHub Actions workflows in `.github/workflows/`:
-- **`android-ci.yml`** — Lint, unit tests, build APK on push; emulator tests (API 29) on PRs
-- **`backend-ci.yml`** — Backend pytest suite on push/PR when `backend/` changes (Python 3.11, Ubuntu)
-- **`claude.yml`** — Claude Code agent triggered by `@claude` mentions in issues/PRs (read-only permissions)
-- **`claude-code-review.yml`** — Automatic code review on all PR opens/updates
-
-## Testing, Domain Models, Backend API, Database
-
-Detailed content is in path-scoped rules (auto-loaded when working on matching files):
-
-| Topic | Rule File |
-|-------|-----------|
-| Test distribution, fixtures, E2E infrastructure | `.claude/rules/testing.md` |
-| Domain models, enums, navigation routes | `.claude/rules/android.md` |
-| API endpoints, service patterns, meal generation | `.claude/rules/backend.md` |
-| Room & PostgreSQL schema, migrations | `.claude/rules/database.md` |
-| Design system, Compose patterns | `.claude/rules/compose-ui.md` |
-
-Key test commands: `PYTHONPATH=. pytest` (backend) | `./gradlew test` (Android) | `./gradlew :app:connectedDebugAndroidTest` (E2E)
-
-### Backend Test Fixtures (Quick Reference)
-
-All standard fixtures live in `backend/tests/conftest.py`. Do NOT duplicate in subdirectories.
+All in `backend/tests/conftest.py` — do NOT duplicate in subdirectories.
 
 | Fixture | Auth | Use when |
 |---------|------|----------|
-| `client` | Pre-authenticated (`get_current_user` → `test_user`) | Most tests — authenticated endpoint calls |
-| `unauthenticated_client` | No auth override | Testing 401 responses |
-| `authenticated_client` | Real JWT in `Authorization: Bearer` header | Testing actual JWT verification flow |
-| `db_session` | N/A | Direct service/repository unit tests |
+| `client` | Pre-authenticated | Most tests |
+| `unauthenticated_client` | No auth | Testing 401s |
+| `authenticated_client` | Real JWT | Testing JWT verification |
+| `db_session` | N/A | Direct service/repository tests |
 
-For custom setups (e.g., two users): use `make_api_client()` from `tests/api/conftest.py`. Services that call `async_session_maker` directly (e.g., `auth_service.py`) must also be patched — see `backend/tests/CLAUDE.md` for details.
+Multi-user: `make_api_client()` from `tests/api/conftest.py`. Services using `async_session_maker` directly need it patched — see `backend/tests/CLAUDE.md`.
 
-### E2E Test Architecture
+## E2E Tests
 
-E2E tests use **real backend + fake phone auth only**. `FakePhoneAuthClient` sends `"fake-firebase-token"` → backend (`DEBUG=true`) accepts it → returns real JWT. All API calls hit real PostgreSQL.
-
-| File | Purpose |
-|------|---------|
-| `e2e/base/BaseE2ETest.kt` | Base class with Hilt setup, auth state helpers |
-| `e2e/di/FakePhoneAuthClient.kt` | Bypasses Firebase Phone Auth |
-| `e2e/robots/` | Robot pattern (HomeRobot, GroceryRobot, etc.) |
-| `e2e/journeys/` | 17 customer journey suites (J01-J17) grouping 28 test files |
-| `presentation/common/TestTags.kt` | All semantic test tags for UI elements |
-
-**E2E backend URL:** `http://10.0.2.2:8000` (Android emulator maps `10.0.2.2` → host `localhost`).
+Real backend + fake phone auth. `FakePhoneAuthClient` → `"fake-firebase-token"` → backend (DEBUG=true) accepts → real JWT → real PostgreSQL. URL: `http://10.0.2.2:8000`. API 34 emulator (not 36). 17 journey suites (J01-J17), robot pattern in `e2e/robots/`, TestTags in `presentation/common/TestTags.kt`.
 
 ## Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| Gradle sync fails | Ensure JDK 17+, `JAVA_HOME` set. Check `gradle/libs.versions.toml` for versions. |
-| API 36 emulator issues | Use API 34 locally - API 36 has Espresso compatibility issues. CI uses API 29. |
-| Gradle daemon hangs (Windows) | Run `./gradlew --stop` |
-| KSP/Hilt errors | Run `./gradlew clean :app:kspDebugKotlin` |
-| Backend import errors | Run from backend dir: `cd backend && PYTHONPATH=. pytest` |
-| MissingGreenlet errors | SQLAlchemy async requires `selectinload()` for eager loading |
-| Meal generation timeout | Migrated to `google-genai` SDK with native async (`client.aio`). Endpoint timeout 180s. AI takes ~30-40s with `response_json_schema` + `thinking_budget=0`. E2E tests use 30-second timeout. Structured logging in `logs/MEAL_PLAN-*.json`. |
-| Room DB not found | Run `./gradlew clean` then rebuild - schema may have changed |
-| Test flakiness | Use `waitUntil {}` in E2E tests; check `RetryUtils.kt` for patterns |
-| Screenshot processing errors | Use PNG, limit to 1280x720, avoid `fullPage` on long pages. Auto-resized by `post-screenshot.sh` hook (max 1800px). Batch fix: `python .claude/hooks/resize_screenshot.py --all` |
-| ADB screenshot corrupted | Do NOT use `-d 0`. Hook auto-strips `[Warning] Multiple displays...` text and retries. Manual fix: `python .claude/hooks/resize_screenshot.py --all` |
-| 1 auth test fails | Pre-existing: `conftest.py` globally overrides auth dependency. Not a regression. |
-| Enum case in Room tests | Room stores MealType as uppercase (`BREAKFAST`, `LUNCH`, `DINNER`, `SNACKS`). Tests must match. |
-| Backend changes not reflected | Stale `.pyc` cache: `find backend -name "*.pyc" -delete && find backend -name "__pycache__" -type d -exec rm -rf {} +` |
-| Recipe ID 500 errors in PostgreSQL | Always compare recipe IDs as strings in queries — `uuid.UUID` vs `String(36)` column type mismatch causes silent 500s |
-| JUnit Platform Launcher (Gradle 9) | All modules need `testRuntimeOnly(libs.junit.platform.launcher)` — Gradle 9.x won't load JUnit 5 without it |
-| Hilt + KSP2 classloader error | Hilt 2.50 doesn't support KSP 2.x. Use Hilt 2.51+ (currently 2.56.1) |
-| Room "unexpected jvm signature V" | Room 2.6.1 doesn't support KSP2. Use Room 2.8.1+ |
-| Test Orchestrator breaks E2E | Intentionally disabled — re-enabling clears DataStore between tests, breaking `BaseE2ETest.backendMealPlanGenerated` state sharing |
-| Auth race condition in E2E | SplashViewModel has 2-second delay before checking `phoneAuthClient.isSignedIn`. Tokens must be in DataStore before this fires. `FakePhoneAuthClient` handles this. |
+| Issue | Fix |
+|-------|-----|
+| Gradle sync fails | JDK 17+, `JAVA_HOME` set, check `libs.versions.toml` |
+| API 36 emulator | Use API 34. CI uses API 29 |
+| Gradle daemon hangs (Win) | `./gradlew --stop` |
+| KSP/Hilt errors | `./gradlew clean :app:kspDebugKotlin` |
+| Backend import errors | `cd backend && PYTHONPATH=. pytest` |
+| MissingGreenlet | Use `selectinload()` for eager loading |
+| Meal gen timeout | 180s endpoint timeout, ~35s typical. Logs: `logs/MEAL_PLAN-*.json` |
+| Stale .pyc | `find backend -name "*.pyc" -delete && find backend -name "__pycache__" -type d -exec rm -rf {} +` |
+| Recipe ID 500s | Compare recipe IDs as strings — `uuid.UUID` vs `String(36)` mismatch |
+| Room DB not found | `./gradlew clean` then rebuild |
+| Hilt + KSP2 | Need Hilt 2.51+ (currently 2.56.1) |
+| Room + KSP2 | Need Room 2.8.1+ |
+| JUnit Platform (Gradle 9) | All modules need `testRuntimeOnly(libs.junit.platform.launcher)` |
+| Test Orchestrator | Intentionally disabled — breaks E2E state sharing |
+
+## Patterns We DON'T Use
+
+- No LiveData — StateFlow via BaseViewModel
+- No SharedFlow for nav — Channel + receiveAsFlow()
+- No per-feature mappers — centralized EntityMappers.kt / DtoMappers.kt
+- No @Provides for simple bindings — @Binds on abstract classes
+- No classes for backend services — standalone async functions
+- No `google-generativeai` SDK — use `google-genai` with native async (`client.aio`)
+- No lazy loading in SQLAlchemy — selectinload() always
 
 ## VPS Deployment
 
-See `docs/VPS-Deployment.md` for full VPS details (544934-ABHAYVPS, Windows Server 2022, PM2 + Nginx + Cloudflare). Do NOT modify files in `C:\Apps\shared\`.
+See `docs/VPS-Deployment.md`. Do NOT modify files in `C:\Apps\shared\`.
 
 ## Generic Rules for Claude
 
@@ -429,50 +263,19 @@ For each HIGH priority recommendation, provide:
 
 8 shell hooks in `.claude/hooks/` enforce the 7-step workflow (blocking edits, commits, and test claims when gates aren't met). State tracked in `.claude/workflow-state.json`. See `.claude/rules/workflow.md` for full hook documentation.
 
-## Claude Code Configuration
+## Key Documentation & Configuration
 
-The `.claude/` directory contains: `agents/` (14 agents), `knowledge.db` (pattern library), `skills/` (25 slash commands), `hooks/` (8 hooks — see table above), `rules/` (40+ path-scoped rule files), `logs/` (session logs).
-
-**Skills:** `/adb-test`, `/auto-verify`, `/claude-guardian`, `/clean-pyc`, `/continue`, `/fix-issue`, `/fix-loop`, `/implement`, `/plan-to-issues`, `/post-fix-pipeline`, `/reflect`, `/run-android-tests`, `/run-backend-tests`, `/run-e2e`, `/db-migrate`, `/deploy`, `/skill-factory`, `/status`, `/sync-check`, `/strategic-architect`, `/test-knowledge`, `/verify-screenshots`, `/generate-meal`, `/gemini-api`, `/ui-ux-pro-max`
-
-**MCP Servers** (`.mcp.json`): Playwright (`@anthropic-ai/mcp-server-playwright`) for web screenshots, ADB (`adb-mcp`) for Android emulator automation.
-
-### Sub-directory CLAUDE.md Files
-
-Path-specific context files loaded automatically when working in these directories:
-
-| File | Scope |
-|------|-------|
-| `android/CLAUDE.md` | Build commands, module structure, key build config gotchas |
-| `backend/CLAUDE.md` | Backend structure, 5-location model rule, AI module, service patterns |
-| `backend/tests/CLAUDE.md` | Test fixture selection guide, SQLite vs PostgreSQL differences, known issues |
-| `android/app/src/androidTest/CLAUDE.md` | E2E test architecture, fake auth flow, robot pattern, state sharing |
-
-## Key Documentation
-
-| Document | Location |
+| Resource | Location |
 |----------|----------|
-| Requirements Index | `docs/requirements/README.md` |
-| Technical Design | `docs/design/RasoiAI Technical Design.md` |
-| Workflow Rules | `.claude/rules/workflow.md` |
-| E2E Testing Guide | `docs/testing/E2E-Testing-Prompt.md` |
-| Customer Journey Suites | `docs/testing/Customer-Journey-Test-Suites.md` |
-| Functional Requirements | `docs/testing/Functional-Requirement-Rule.md` |
-| Meal Generation Config | `docs/design/Meal-Generation-Config-Architecture.md` |
-| Session Context | `docs/CONTINUE_PROMPT.md` |
-
-## Patterns We DON'T Use
-
-- We don't use Redux/MVI libraries — use StateFlow + Single UiState Data Class via BaseViewModel
-- We don't use raw SQL in Android — use Room DAO with @Query annotations
-- We don't use REST for real-time data — Firestore handles real-time sync
-- We don't use lazy column loading in SQLAlchemy — use selectinload() to avoid MissingGreenlet
-- We don't use LiveData — use StateFlow exclusively via BaseViewModel
-- We don't use SharedFlow for navigation events — use Channel + receiveAsFlow() for one-shot events
-- We don't use per-feature mapper files — use centralized EntityMappers.kt and DtoMappers.kt
-- We don't use @Provides for simple repository bindings — use @Binds on abstract classes
-- We don't use classes for backend services — use standalone async functions at module level
-- We don't use `google-generativeai` SDK — use `google-genai` with native async (`client.aio`)
+| Session context | `docs/CONTINUE_PROMPT.md` |
+| Workflow rules | `.claude/rules/workflow.md` |
+| E2E testing guide | `docs/testing/E2E-Testing-Prompt.md` |
+| Functional requirements | `docs/testing/Functional-Requirement-Rule.md` |
+| Technical design | `docs/design/RasoiAI Technical Design.md` |
+| Sub-directory CLAUDE.md | `android/CLAUDE.md`, `backend/CLAUDE.md`, `backend/tests/CLAUDE.md`, `android/app/src/androidTest/CLAUDE.md` |
+| Path-scoped rules (44) | `.claude/rules/` — auto-loaded when working on matching files |
+| Skills (25+) | `.claude/skills/` — `/fix-issue`, `/fix-loop`, `/implement`, `/run-backend-tests`, etc. |
+| MCP Servers | `.mcp.json` — Playwright (web screenshots), ADB (emulator automation) |
 
 <!-- hub:best-practices:start -->
 
@@ -493,7 +296,7 @@ Path-specific context files loaded automatically when working in these directori
 | `rules/android.md` | Android development rules for Kotlin + Jetpack Compose projects. |
 | `rules/android-dao-query-conventions.md` | Android Dao Query Conventions |
 | `rules/android-kotlin.md` | Kotlin language idioms, null safety, scope functions, and KMP-specific patterns for Android projects. |
-| `rules/android-naming-conventions.md` | Naming conventions for screens, ViewModels, UiState, repositories, DAOs, entities, DTOs, Hilt modules. |
+| `rules/android-naming-conventions.md` | Android Naming Conventions |
 | `rules/android-navigation-callbacks.md` | Android Navigation Callbacks |
 | `rules/backend.md` | Backend |
 | `rules/backend-auth-dependency.md` | Backend Auth Dependency |
@@ -512,7 +315,7 @@ Path-specific context files loaded automatically when working in these directori
 | `rules/database.md` | Database |
 | `rules/e2e-fake-auth.md` | E2E Fake Auth |
 | `rules/e2e-robot-pattern.md` | E2E Robot Pattern |
-| `rules/fastapi-lifespan-pattern.md` | Lifespan startup/shutdown sequence — init order, non-fatal cache warming, Sentry config. |
+| `rules/fastapi-lifespan-pattern.md` | Fastapi Lifespan Pattern |
 | `rules/firebase.md` | Firebase Auth, Firestore, and backend token verification patterns. |
 | `rules/firebase-auth.md` | Firebase Auth |
 | `rules/firestore-vs-postgres-usage.md` | Firestore Vs Postgres Usage |
@@ -528,7 +331,7 @@ Path-specific context files loaded automatically when working in these directori
  |
 | `rules/pydantic-android-schema-sync.md` | Pydantic Android Schema Sync |
 | `rules/rule-writing-meta.md` | Meta-guidance for writing effective CLAUDE.md rules, choosing config file placement, and structuring project instructions. |
-| `rules/security-headers-middleware.md` | SecurityHeadersMiddleware — required response headers and production-only HSTS. |
+| `rules/security-headers-middleware.md` | Security Headers Middleware |
 | `rules/settings-configuration-validation.md` | Settings Configuration Validation |
 | `rules/superpowers.md` | Superpowers |
 | `rules/tdd-rule.md` | Test-driven development workflow rules for red-green-refactor cycle. |
@@ -539,6 +342,6 @@ Path-specific context files loaded automatically when working in these directori
 
 ## Claude Code Configuration
 
-The `.claude/` directory contains 122 skills, 33 agents, and 44 rules for Claude Code.
+The `.claude/` directory contains 122 skills, 33 agents, and 47 rules for Claude Code.
 
 <!-- hub:best-practices:end -->

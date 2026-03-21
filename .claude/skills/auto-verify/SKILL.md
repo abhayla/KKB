@@ -1,345 +1,364 @@
 ---
 name: auto-verify
 description: >
-  Post-change verification loop: identifies changed files, maps to targeted tests,
-  queries knowledge.db for known patterns, runs tests with smart priority selection,
-  analyzes failures with automated diagnosis, applies fixes with approval checkpoints,
-  runs regression checks, and records all outcomes to knowledge.db.
-allowed-tools: "Bash Read Grep Glob Skill Task"
-argument-hint: "[--scope backend|android|all] [--base HEAD~1] [--max-iterations 5]"
+  Unified verification pipeline: identifies changed files, maps to targeted tests,
+  runs tests with smart priority, analyzes failures, applies fixes with approval,
+  then runs quality gate, contract verification, and performance baseline checks.
+  Use after making code changes to verify correctness.
+allowed-tools: "Bash Read Grep Glob Write Edit Skill Agent"
+argument-hint: "[--files <paths>] [--full-suite] [--strict-gates] [--capture-proof | --no-capture-proof]"
+version: "2.0.0"
+type: workflow
 ---
 
-# Auto-Verify
+# Auto-Verify — Post-Change Verification
 
-Post-change verification that identifies changed files, maps to targeted tests, queries the knowledge database for known error patterns, runs tests with smart priority, analyzes failures, applies fixes with approval checkpoints, runs regression checks, and records outcomes.
+Verify code changes by running targeted tests, reviewing visual proof, and
+enforcing quality gates. Does NOT apply fixes — fixing belongs in `/fix-loop`.
 
 **Arguments:** $ARGUMENTS
 
 ---
 
-## Input Parameters
+## Parameters
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `scope` | string | `"all"` | `backend`, `android`, or `all` |
-| `base` | string | `"HEAD~1"` | Git base ref for change detection |
-| `max_iterations` | int | `5` | Maximum fix iterations before stopping |
-| `skip_regression` | bool | `false` | Skip regression checks after fix |
-| `dry_run` | bool | `false` | Show what would run without executing |
-
----
-
-## The 8-Step Algorithm
-
-### Step 0: Cleanup + Prerequisites
-
-1. **Clean old screenshots** (>24h) from `docs/testing/screenshots/`:
-   ```bash
-   find docs/testing/screenshots/ -name "*.png" -mtime +1 -delete 2>/dev/null || true
-   ```
-
-2. **Check scope prerequisites:**
-   - `backend`: Verify backend running: `curl -sf http://localhost:8000/docs > /dev/null`
-     - If not running: `cd backend && PYTHONPATH=. uvicorn app.main:app --port 8000 &` (wait 3s)
-   - `android`: Verify emulator: check adb devices output for "emulator"
-   - `all`: Check both
-
-3. **Ensure test-map freshness:**
-   ```bash
-   python .claude/scripts/generate_test_map.py
-   ```
-   Regenerate if missing or >7 days old.
-
-### Step 1: Identify Changes
-
-```bash
-git diff --name-only {base}
-```
-
-**Filter rules:**
-- Include: `.py`, `.kt`, `.xml`, `.kts` files
-- Exclude: `docs/`, `*.md`, `*.json`, `*.yml`, `*.yaml`, test files themselves
-- Skip: files that are ONLY whitespace/comment changes
-
-**Classify each file:**
-
-| Path Pattern | Category |
-|---|---|
-| `backend/app/**` | `backend` |
-| `backend/tests/**` | skip (test file) |
-| `android/app/src/main/**` | `android-app` |
-| `android/app/src/test/**` | skip (test file) |
-| `android/app/src/androidTest/**` | skip (test file) |
-| `android/data/**`, `android/domain/**`, `android/core/**` | `android-data`, `android-domain`, `android-core` |
-
-If no changed files match scope: report "No changes in scope" and exit SUCCESS.
-
-### Step 2: Map to Tests (Smart Selection)
-
-For each changed file, find tests using prioritized lookup:
-
-**Priority 0 — Smart Affected (test-map.json):**
-```bash
-python .claude/scripts/generate_test_map.py lookup {source_file}
-```
-Collect P1 + P2 tests, deduplicate.
-
-**Priority 1 — Direct Convention:**
-
-| Source Pattern | Test Pattern |
-|---|---|
-| `backend/app/api/v1/endpoints/{name}.py` | `backend/tests/test_{name}_api.py` |
-| `backend/app/services/{name}_service.py` | `backend/tests/test_{name}_service.py` or `test_{name}.py` |
-| `android/.../presentation/{feat}/{Feat}ViewModel.kt` | `android/.../test/.../presentation/{feat}/{Feat}ViewModelTest.kt` |
-| `android/.../presentation/{feat}/{Feat}Screen.kt` | `android/.../androidTest/.../presentation/{feat}/{Feat}ScreenTest.kt` |
-
-**Priority 2 — Import-based:**
-Use Grep to find test files importing changed modules. Cap at 10 files.
-
-**Priority 3 — Module Fallback:**
-- Backend: `PYTHONPATH=. pytest backend/tests/ -v`
-- Android unit: `./gradlew :app:testDebugUnitTest`
-
-**Cap:** Maximum 20 test files per run. If more, fall back to Priority 3 (full module).
-
-### Step 2c: Knowledge Base Pre-Check
-
-For each changed file/area, query the KB for known issues:
-
-```bash
-bash .claude/scripts/query_knowledge.sh "TestFailure" "$RECENT_ERROR" "$FILE_PATH"
-```
-
-**Score-based behavior:**
-
-| KB Score | Action |
-|---|---|
-| >= 0.7 | Try KB strategy FIRST, skip standard diagnosis |
-| 0.3 — 0.7 | Use as hint alongside standard diagnosis |
-| < 0.3 or none | Proceed with standard diagnosis only |
-
-### Step 3: Run Targeted Tests
-
-Execute tests by platform:
-
-**Backend:**
-```bash
-cd backend && PYTHONPATH=. pytest {test_files} -v --tb=short 2>&1 | tee ../.claude/logs/auto-verify-output.log
-```
-
-**Android unit:**
-```bash
-cd android && ./gradlew :app:testDebugUnitTest --tests "{patterns}" 2>&1 | tee ../.claude/logs/auto-verify-output.log
-```
-
-**Android UI/E2E:**
-```bash
-cd android && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class={class} 2>&1 | tee ../.claude/logs/auto-verify-output.log
-```
-
-Record: test count, pass count, fail count, duration.
-
-### Step 4: Analyze Results
-
-If all tests pass: skip to Step 7 (regression check).
-
-If failures exist, use the automated diagnosis table (see `references/automated-diagnosis.md`):
-
-| Error Pattern | Automated Action | Rationale |
-|---|---|---|
-| `AssertionError: assert X == Y` | Check if test expectation outdated | Common after refactoring |
-| `ImportError: cannot import name` | Check circular imports, renamed modules | Module restructuring |
-| `IntegrityError: duplicate key` | Check upsert vs insert, unique constraints | DB constraint violation |
-| `sqlalchemy.exc.MissingGreenlet` | Add `selectinload()` for eager loading | Async SQLAlchemy gotcha |
-| `Timeout` / `asyncio.TimeoutError` | Check Gemini/API call blocking event loop | Known KKB issue |
-| `FileNotFoundError` / `ModuleNotFoundError` | Check PYTHONPATH, working directory | Path issues |
-| `Room migration` / `Schema mismatch` | Check Room version, run clean build | DB schema drift |
-| `Hilt` / `@Inject` errors | Run `./gradlew clean :app:kspDebugKotlin` | KSP codegen issue |
-| `CompilationError` | Check missing constructor params, type mismatches | Kotlin compilation |
-
-### Step 5: Decision Point
-
-| Outcome | Iteration | Action |
-|---|---|---|
-| All pass | Any | **SUCCESS** -> Step 7 |
-| Known pattern (KB score >= 0.6) | 1-2 | Apply KB strategy -> Step 3 |
-| Unknown failure | 1 | Analyze -> apply fix -> Step 3 |
-| Same error 2x | 2 | Escalate: invoke `/fix-loop` with `max_iterations: 3` |
-| Same error 3x | 3+ | **STOP** -> ask user |
-| Max iterations reached | 5 | **STOP** -> show summary, ask user |
-
-### Step 6: Fix and Iterate (with Approval Checkpoints)
-
-See `references/approval-scenarios.md` for the complete list.
-
-**Auto-approved (no confirmation needed):**
-- Simple value updates in assertions (expected changed)
-- Missing import fixes
-- PYTHONPATH / path fixes
-- Known KB strategies with score >= 0.3 AND iteration <= 2
-
-**Require user approval (AskUserQuestion):**
-1. Protected files: `.env`, `conftest.py`, `build.gradle.kts`, `alembic/versions/`
-2. Shared utilities: test fixtures, base classes, DI modules
-3. Database schema: Alembic migrations, Room migrations
-4. Multi-feature impact: changes affecting >1 module
-5. Assertion changes: modifying test expectations to match new behavior
-6. Mock/dummy data: using fakes instead of real behavior
-7. Disabling tests: skip, ignore, commenting out
-8. Workarounds: patches instead of proper fixes
-9. Assumptions: guessing intended behavior
-10. Iteration threshold: after 3 iterations (prevent thrashing)
-11. Max attempts: after 5 total attempts (safety valve)
-
-**Approval format:**
-```
-Approval Required: {reason}
-
-Proposed change:
-  {file_path}:{line_number}
-  - Old: {old_code}
-  + New: {new_code}
-
-Impact: {what_this_affects}
-Alternatives: {other_options}
-```
-
-After applying a fix, go back to Step 3 (re-run tests).
-
-### Step 7: Regression Check
-
-After targeted tests pass, run adjacent tests to catch regressions.
-
-**Backend adjacency map:**
-
-| Fixed Area | Also Test |
-|---|---|
-| auth_service, auth | email_uniqueness, auth_merge |
-| recipe_rules | recipe_rules_dedup, recipe_rules_sync, recipe_rules_lifecycle |
-| meal_plans, ai_meal_service | family_aware_meal_gen |
-| recipes, recipe_service | recipe_search, recipe_rating |
-| chat | chat_integration, chat_api |
-| users, user_service | user_preferences |
-| family_members | family_members_api |
-| notifications | notification_triggers |
-
-**Android adjacency:**
-- ViewModel fix -> also run corresponding ScreenTest
-- ScreenTest fix -> also run corresponding ViewModelTest
-- Repository fix -> run all ViewModelTests that use it
-
-```bash
-# Backend regression
-cd backend && PYTHONPATH=. pytest {adjacent_tests} -v --tb=short
-
-# Android regression
-cd android && ./gradlew :app:testDebugUnitTest --tests "{adjacent_patterns}"
-```
-
-If regression found:
-1. Revert the fix that caused regression
-2. Escalate to `/fix-loop` with broader context
-3. Record failure in KB
-
-If `skip_regression` is true: skip this step.
-
-### Step 8: Record to Knowledge DB
-
-**On success (tests pass):**
-```bash
-# Record successful strategy
-python .claude/scripts/knowledge_db.py record-attempt \
-  --error-id $ERROR_ID --strategy-id $STRATEGY_ID \
-  --outcome success --description "$FIX_DESCRIPTION"
-```
-- If this was a new error pattern: auto-create via `record-error` + `create-strategy`
-- Strategy score boosted (+0.1)
-
-**On failure (fix didn't work):**
-```bash
-python .claude/scripts/knowledge_db.py record-attempt \
-  --error-id $ERROR_ID --strategy-id $STRATEGY_ID \
-  --outcome failure --description "$WHAT_WAS_TRIED"
-```
-- Strategy score decreased (-0.05)
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--files` | git diff | Specific files to verify |
+| `--full-suite` | false | Run full test suite regardless of risk |
+| `--strict-gates` | false | Missing upstream JSON = BLOCK (set by orchestrator) |
+| `--capture-proof` | true (from config) | Capture screenshots on every test, pass or fail |
+| `--no-capture-proof` | — | Disable screenshot capture even if config says true |
 
 ---
 
-## Iteration Display Format
+## STEP 0: Gate Check — Read Upstream Results
 
-Show progress in every response:
+Check if the upstream `fix-loop` stage passed:
 
-```
-[Iteration 1/5 | Priority 0 | backend] Running targeted tests...
-Tests: 3 files (test_auth.py, test_auth_merge.py, test_email_uniqueness.py)
-Result: PASS (23/23) | Duration: 4.2s | Status: SUCCESS
+1. If `test-results/fix-loop.json` exists, read it:
+   - If `result` is `FAILED` or `FLAKY` → BLOCK. Exit immediately.
+   - If `result` is `PASSED` or `FIXED` → proceed to STEP 1.
 
-[Iteration 2/5 | Priority 1 | android-unit] Running ViewModel tests...
-Tests: HomeViewModelTest
-Result: FAIL (IntegrityError: duplicate key) | Strategy: KB #3 (score: 0.72)
+2. If `test-results/fix-loop.json` does NOT exist:
+   - **With `--strict-gates`:** BLOCK. Report: "BLOCKED: fix-loop output missing — run fix-loop first or use orchestrator."
+   - **Without `--strict-gates`:** WARN: "No fix-loop results found — proceeding without gate check. Run via test-pipeline-agent for enforced gates."
+   - Proceed to STEP 1.
 
-[Iteration 3/5 | fix-loop] Escalated — applying known strategy...
-Strategy: add_upsert (score: 0.72)
-Fix: Changed insert to upsert in HomeRepository
-Result: PASS | Regression Check: Running...
+```bash
+if [ -f test-results/fix-loop.json ]; then
+  UPSTREAM_RESULT=$(python3 -c "import json; print(json.load(open('test-results/fix-loop.json'))['result'])")
+  if [ "$UPSTREAM_RESULT" = "FAILED" ] || [ "$UPSTREAM_RESULT" = "FLAKY" ]; then
+    echo "BLOCKED: fix-loop reported $UPSTREAM_RESULT"
+    exit 1
+  fi
+  echo "fix-loop result: $UPSTREAM_RESULT — proceeding"
+else
+  if [ "$STRICT_GATES" = "true" ]; then
+    echo "BLOCKED: fix-loop output missing (--strict-gates enforced)"
+    exit 1
+  else
+    echo "WARN: No fix-loop results found — proceeding without gate check"
+  fi
+fi
 ```
 
 ---
 
-## Stop Conditions
+## STEP 1: Map Changes to Tests (via /regression-test)
 
-| Condition | Action |
-|---|---|
-| All tests + regressions pass | Report SUCCESS with full summary |
-| Max iterations (5) | Show summary, AskUserQuestion: Continue / Skip / Manual |
-| Same error 3x | Auto-escalate to `/fix-loop` with full iteration memory |
-| All KB strategies exhausted | AskUserQuestion: New heuristic / Record pattern / Skip |
-| Cross-feature regression | AskUserQuestion before wider fix |
+Delegate change identification and test mapping to `/regression-test`, which
+provides 2-level import graph tracing, coverage-based mapping, and risk
+classification. This is the single canonical mapper for the pipeline.
 
----
+**IMPORTANT:** `/regression-test` is invoked for MAPPING ONLY — it identifies
+which tests to run and classifies risk, but does NOT execute the tests itself.
+Test execution happens in STEP 2 via `tester-agent`. This avoids double
+execution where tests run once for mapping and again for verification.
 
-## Output Format
-
-```markdown
-## Auto-Verify Results
-
-### Status: {SUCCESS | PARTIAL | FAILED | MAX_ITERATIONS}
-
-### Summary
-- Scope: {backend | android | all}
-- Changed files: N
-- Tests mapped: N (P0: N, P1: N, P2: N)
-- Tests run: N
-- Tests passed: N
-- Tests failed: N
-- Iterations used: N / max_iterations
-- Regressions checked: N (passed: N, failed: N)
-
-### Test Results
-| Test File | Result | Duration | Notes |
-|---|---|---|---|
-| test_auth.py | PASS (5/5) | 1.2s | |
-| test_recipe_rules.py | PASS (8/8) | 2.1s | Fixed: assertion update |
-
-### Fixes Applied
-1. [{file}:{line}] {description} — KB strategy: {name} (score: {score})
-
-### Knowledge DB Updates
-- Recorded: N new error patterns
-- Updated: N strategy scores
-- New strategies: N
-
-### Regression Results
-| Adjacent Area | Tests | Result |
-|---|---|---|
-| auth_merge | 5 | PASS |
-| email_uniqueness | 7 | PASS |
+```
+Skill("/regression-test", args="$FILES_ARG --framework auto")
 ```
 
+After `/regression-test` completes, read `test-results/regression-test.json`:
+
+1. Extract the affected test list and overall risk level
+2. If `regression-test` result is `FAILED` with `confidence: BLOCKED`
+   (test infra broken — cannot map tests) → exit with BLOCKED
+3. If `regression-test` result is `FAILED` with `confidence: LOW`
+   (some tests failed during mapping) → note failures but proceed to STEP 2
+   (tester-agent will re-run them with full verdict rules)
+4. Use the mapped test files and risk classification for STEP 2
+
+Coverage gaps flagged by `/regression-test` (source files with no mapped tests)
+are reported in the final auto-verify output as warnings.
+
+## STEP 2: Execute Tests (via tester-agent)
+
+Delegate test execution to `tester-agent`, which provides:
+- Smart test ordering (CRITICAL risk first, then HIGH, MEDIUM, LOW)
+- Verdict rules: FAILED if ANY test fails, FAILED if skip rate >10%,
+  FAILED on ResourceWarning or unclosed connections
+- Isolated re-run of failures to detect test pollution
+- Structured output with pass/fail/skip/flaky breakdown
+
+```
+Agent("tester-agent", prompt="Run these tests and provide a verdict.
+
+Test files (from /regression-test mapping):
+$AFFECTED_TESTS
+
+Risk classification:
+$OVERALL_RISK
+
+Options:
+- Full suite: $FULL_SUITE
+- Capture proof: $CAPTURE_PROOF
+
+If --capture-proof is enabled, configure the test runner to capture a
+screenshot after every test (pass and fail). Store screenshots in
+test-evidence/{run_id}/screenshots/ with naming:
+  {test_name}.{pass|fail}.png
+
+Use the project's test runner (detect from CLAUDE.md, pyproject.toml,
+package.json, or build.gradle). Run targeted tests first unless
+risk >= HIGH or --full-suite specified.
+
+Return: verdict (PASSED/FAILED), test counts, failure details,
+screenshot manifest (if capture-proof enabled).")
+```
+
+After `tester-agent` returns:
+
+1. If verdict is **FAILED** → proceed to STEP 3 (evaluate results, report)
+2. If verdict is **PASSED** → proceed to STEP 2.5 (visual review) or STEP 4 (quality gates)
+3. Record the agent's screenshot manifest in `test-evidence/{run_id}/manifest.json`
+
 ---
 
-## Reference Files
+## STEP 2.5: Visual Proof Review (if --capture-proof enabled)
 
-- `references/workflow-checklist.md` — Quick 8-step checklist
-- `references/approval-scenarios.md` — 11 approval scenarios with examples
-- `references/automated-diagnosis.md` — KKB-specific error pattern -> action table
+Skip this step entirely if `--capture-proof` is not enabled or `--no-capture-proof`
+was passed.
+
+### 2.5.1 Read Manifest
+
+```bash
+MANIFEST="test-evidence/${RUN_ID}/manifest.json"
+if [ ! -f "$MANIFEST" ]; then
+  echo "No screenshot manifest found — skipping visual review"
+  # Set visual_review.enabled = false in structured output, proceed to STEP 3
+fi
+```
+
+If the manifest exists but has zero screenshots (`screenshot_count: 0` or
+empty `screenshots` array), this is normal for non-UI projects (API servers,
+CLI tools, libraries). Handle gracefully:
+
+```bash
+SCREENSHOT_COUNT=$(python3 -c "import json; print(json.load(open('$MANIFEST')).get('screenshot_count', 0))")
+if [ "$SCREENSHOT_COUNT" = "0" ]; then
+  echo "Manifest found but 0 screenshots (non-UI project) — skipping visual review"
+  # Write visual-review.json with result: PASSED, screenshots_reviewed: 0
+  # Proceed to STEP 3
+fi
+```
+
+Parse the manifest to get the list of all screenshots with their test names,
+results, and file paths.
+
+### 2.5.2 Review All Screenshots
+
+For EVERY screenshot in the manifest (100% review rate):
+
+1. **Read the screenshot** using multimodal Read (the image file)
+2. **Evaluate** against these criteria (from `/verify-screenshots` Step 2):
+   - No error dialogs, crash screens, or unhandled exception modals
+   - Text is readable and not truncated
+   - Layout appears correct (no overlapping elements)
+   - Loading states are resolved (no spinners in final screenshots)
+   - Data containers are populated (tables have rows, lists have items)
+   - No empty-state placeholders when data is expected
+   - No placeholder text ("Lorem ipsum", "undefined", "null", "NaN")
+   - Timestamps/dates are within expected recency
+
+3. **Classify** each screenshot:
+
+| Test Result | Visual Assessment | Verdict | Action |
+|-------------|-------------------|---------|--------|
+| PASSED | Looks correct | CONFIRMED | No action |
+| PASSED | Shows problems | OVERRIDE → FAILED | Add to overrides list |
+| FAILED | Shows the failure | CONFIRMED | Enrich failure diagnosis |
+| FAILED | Looks correct | FLAG for review | Possible flaky/timing issue |
+
+### 2.5.3 Write Visual Review Results
+
+Write `test-evidence/{run_id}/visual-review.json`:
+
+```json
+{
+  "skill": "visual-proof-review",
+  "run_id": "{run_id}",
+  "timestamp": "{ISO-8601}",
+  "screenshots_reviewed": 50,
+  "screenshots_total": 50,
+  "confirmed_passes": 43,
+  "confirmed_failures": 5,
+  "overrides": [
+    {
+      "test": "test_dashboard_loads",
+      "original_result": "PASSED",
+      "visual_verdict": "FAILED",
+      "reason": "Dashboard shows empty table — no data rows visible despite test asserting element presence",
+      "screenshot": "screenshots/test_dashboard_loads.pass.png"
+    }
+  ],
+  "flags": [
+    {
+      "test": "test_login_timeout",
+      "original_result": "FAILED",
+      "visual_observation": "Screenshot shows successful login page — possible timing/flaky issue",
+      "screenshot": "screenshots/test_login_timeout.fail.png"
+    }
+  ],
+  "result": "PASSED|FAILED"
+}
+```
+
+`result` is FAILED if ANY overrides exist (a passed test was visually broken).
+`result` is PASSED if zero overrides (all passes confirmed, all failures confirmed).
+
+### 2.5.4 Gate Impact
+
+If visual review `result` is FAILED:
+- Report each override with the reason and screenshot path
+- The override failures are added to the main failure list in STEP 3
+- These count as real failures for the auto-verify verdict
+
+If visual review `result` is PASSED:
+- Log: "Visual proof review: {N} screenshots confirmed, 0 overrides"
+- Proceed normally
+
+---
+
+## STEP 3: Evaluate Results
+
+After test execution (and visual review if enabled):
+
+1. **All tests pass** (and no visual overrides) → proceed to STEP 4 (quality gates)
+2. **Any test fails:**
+   - Classify each failure using the test output (category, file, message)
+   - Check for pre-existing failures using git-stash verification (see below)
+   - Report FAILED with detailed failure list
+   - Do NOT attempt fixes — fixing belongs in `/fix-loop` upstream
+
+### Pre-Existing Failure Detection
+
+For each failing test, verify whether it's caused by our changes:
+
+```bash
+git stash && <test_runner> <failing_test> && git stash pop
+```
+
+| Clean state | Our changes | Verdict | Action |
+|-------------|-------------|---------|--------|
+| FAILS | FAILS | Pre-existing | Note it, do not block |
+| PASSES | FAILS | Our change caused it | BLOCK — report in failures |
+| PASSES | PASSES | Flaky | Log, re-run to confirm |
+| FAILS | PASSES | Incidental fix | Note as bonus |
+
+---
+
+## STEP 4: Quality Gate (if tests pass)
+
+After all tests pass, run quality checks on changed code:
+
+1. **Coverage diff** — verify new/changed code has ≥80% test coverage
+2. **Complexity check** — no new function exceeds cyclomatic complexity 10
+3. **Duplication scan** — no new code blocks duplicate existing code
+4. If any quality check fails → report as QUALITY_GATE warning (non-blocking unless `--strict-quality`)
+
+Reference: delegates to `/code-quality-gate` skill for detailed analysis.
+
+## STEP 4A: Contract Verification (if API changed)
+
+If changed files include API routes, endpoints, schemas, or Pydantic models:
+
+1. Run contract tests to verify consumer-provider compatibility
+2. Check if API response shapes match existing contracts
+3. If contract test fails → report as CONTRACT_BREAK (blocking)
+
+Reference: delegates to `/contract-test` skill if Pact is configured.
+
+## STEP 4B: Performance Baseline (if perf-sensitive code changed)
+
+If changed files match perf-sensitive paths (request handlers, database queries, serialization):
+
+1. Run targeted performance benchmarks if baseline exists
+2. Compare against baseline — flag >10% regression
+3. If regression detected → report as PERF_REGRESSION warning
+
+Reference: delegates to `/perf-test` skill if k6/Lighthouse is configured.
+
+---
+
+## STEP 5: Report
+
+```
+Auto-Verify: [PASSED / FAILED]
+  Changed files: N
+  Tests run: M
+  Passed: P | Failed: F
+  Visual review: N screenshots, K overrides
+  Quality gate: PASSED/WARNED/SKIPPED
+  Contract check: PASSED/FAILED/SKIPPED
+  Perf baseline: PASSED/REGRESSED/SKIPPED
+```
+
+## STEP 6: Structured Output
+
+Write machine-readable results to `test-results/auto-verify.json`:
+
+```json
+{
+  "skill": "auto-verify",
+  "timestamp": "<ISO-8601>",
+  "result": "PASSED|FAILED",
+  "summary": {
+    "total": "<tests_run>",
+    "passed": "<passed_count>",
+    "failed": "<failed_count>",
+    "skipped": "<skipped_count>",
+    "flaky": "<flaky_count>"
+  },
+  "change_scope": {
+    "source_files": "<count from regression-test>",
+    "test_files": "<count>",
+    "overall_risk": "<CRITICAL|HIGH|MEDIUM|LOW>",
+    "coverage_gaps": ["<files with no mapped tests>"]
+  },
+  "quality_gate": "PASSED|WARNED|FAILED|SKIPPED",
+  "contract_check": "PASSED|FAILED|SKIPPED",
+  "perf_baseline": "PASSED|REGRESSED|SKIPPED",
+  "visual_review": {
+    "enabled": true,
+    "screenshots_reviewed": 50,
+    "overrides": 1,
+    "flags": 1,
+    "result": "PASSED|FAILED",
+    "evidence_dir": "test-evidence/{run_id}/"
+  },
+  "failures": [],
+  "warnings": [],
+  "duration_ms": "<elapsed>"
+}
+```
+
+If `--capture-proof` was not enabled, the `visual_review` field is:
+```json
+"visual_review": {
+  "enabled": false
+}
+```
+
+Create `test-results/` directory if it doesn't exist. This JSON is consumed by stage gates — see `testing.md` for the full schema.
