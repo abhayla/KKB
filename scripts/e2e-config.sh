@@ -3,7 +3,7 @@
 # Shared by run-e2e.sh — edit values here, not in the main script.
 
 # ─── Emulator ───────────────────────────────────────────────
-AVD_NAME="Pixel_6_API_34"
+AVD_NAME="Pixel_8a_API_34"
 EMULATOR_API=34
 BOOT_TIMEOUT=120  # seconds to wait for emulator boot
 
