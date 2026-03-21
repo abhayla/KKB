@@ -286,7 +286,7 @@ else
     fi
 
     # Clear app data on emulator
-    "$ADB" shell pm clear com.rasoiai.app.debug 2>/dev/null && ok "App data cleared on emulator" || warn "App not installed yet"
+    "$ADB" shell pm clear com.rasoiai.app 2>/dev/null && ok "App data cleared on emulator" || warn "App not installed yet"
 fi
 
 if [[ "$CLEANUP_ONLY" == "true" ]]; then

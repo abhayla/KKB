@@ -5,7 +5,7 @@
 # ─── Emulator ───────────────────────────────────────────────
 AVD_NAME="Pixel_8a_API_34"
 EMULATOR_API=34
-BOOT_TIMEOUT=120  # seconds to wait for emulator boot
+BOOT_TIMEOUT=240  # seconds to wait for emulator boot (first boot can be slow)
 
 # ─── Backend ────────────────────────────────────────────────
 BACKEND_PORT=8000
