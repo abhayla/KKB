@@ -133,6 +133,17 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/prompt-enhance-reminder.sh"
+          }
+        ]
+      }
     ]
   },
   "enabledPlugins": {

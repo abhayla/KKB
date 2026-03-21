@@ -476,23 +476,69 @@ Path-specific context files loaded automatically when working in these directori
 
 <!-- hub:best-practices:start -->
 
+<!-- PROTECTED SECTION — managed by claude-best-practices hub. -->
+<!-- Do NOT condense, rewrite, reorganize, or remove.          -->
+<!-- Any /init or optimization request must SKIP this section.  -->
+
 ## Rules for Claude
 
 1. **Bug Fixing**: Use `/fix-loop` or `/fix-issue`. Start by writing a test that reproduces the bug, then fix and prove with a passing test.
 
 ### Rules Reference
 
-40+ path-scoped rules in `.claude/rules/` auto-load when working on matching files. Key categories:
+| Rule File | What It Covers |
+|-----------|---------------|
+| `rules/agent-orchestration.md` | Constraints for multi-agent orchestration patterns in agents and skills. |
+| `rules/ai-gemini.md` | Ai Gemini |
+| `rules/android.md` | Android development rules for Kotlin + Jetpack Compose projects. |
+| `rules/android-dao-query-conventions.md` | Android Dao Query Conventions |
+| `rules/android-kotlin.md` | Kotlin language idioms, null safety, scope functions, and KMP-specific patterns for Android projects. |
+| `rules/android-naming-conventions.md` | Naming conventions for screens, ViewModels, UiState, repositories, DAOs, entities, DTOs, Hilt modules. |
+| `rules/android-navigation-callbacks.md` | Android Navigation Callbacks |
+| `rules/backend.md` | Backend |
+| `rules/backend-auth-dependency.md` | Backend Auth Dependency |
+| `rules/backend-endpoint-structure.md` | Backend Endpoint Structure |
+| `rules/backend-logging-standards.md` | Backend Logging Standards |
+| `rules/backend-service-layer.md` | Backend Service Layer |
+| `rules/backend-service-pattern.md` | Backend Service Pattern |
+| `rules/baseviewmodel-pattern.md` | Baseviewmodel Pattern |
+| `rules/centralized-mapper-convention.md` | Centralized Mapper Convention |
+| `rules/claude-behavior.md` | Universal behavioral rules for how Claude should approach all tasks. |
+| `rules/compose-testtags-convention.md` | Compose Testtags Convention |
+| `rules/compose-ui.md` | Compose Ui |
+| `rules/configuration-ssot.md` | Scope: global |
+| `rules/context-management.md` | Rules for managing context window, token usage, and documentation references. |
+| `rules/custom-exception-hierarchy.md` | Custom Exception Hierarchy |
+| `rules/database.md` | Database |
+| `rules/e2e-fake-auth.md` | E2E Fake Auth |
+| `rules/e2e-robot-pattern.md` | E2E Robot Pattern |
+| `rules/fastapi-lifespan-pattern.md` | Lifespan startup/shutdown sequence — init order, non-fatal cache warming, Sentry config. |
+| `rules/firebase.md` | Firebase Auth, Firestore, and backend token verification patterns. |
+| `rules/firebase-auth.md` | Firebase Auth |
+| `rules/firestore-vs-postgres-usage.md` | Firestore Vs Postgres Usage |
+| `rules/gemini-structured-output.md` | Gemini Structured Output |
+| `rules/hilt-di-module-convention.md` | Hilt Di Module Convention |
+| `rules/hilt-module-organization.md` | Hilt Module Organization |
+| `rules/model-import-5-locations.md` | Model Import 5 Locations |
+| `rules/module-dependency-direction.md` | Module Dependency Direction |
+| `rules/navigation-screen-pattern.md` | Navigation Screen Pattern |
+| `rules/offline-first-repository.md` | Offline First Repository |
+| `rules/offline-sync-queue.md` | Offline Sync Queue |
+| `rules/prompt-auto-enhance-rule.md` | Auto-enhance every user prompt with project-specific context before acting. Prefix every response with a brief *Enhanced: ...* indicator.
+ |
+| `rules/pydantic-android-schema-sync.md` | Pydantic Android Schema Sync |
+| `rules/rule-writing-meta.md` | Meta-guidance for writing effective CLAUDE.md rules, choosing config file placement, and structuring project instructions. |
+| `rules/security-headers-middleware.md` | SecurityHeadersMiddleware — required response headers and production-only HSTS. |
+| `rules/settings-configuration-validation.md` | Settings Configuration Validation |
+| `rules/superpowers.md` | Superpowers |
+| `rules/tdd-rule.md` | Test-driven development workflow rules for red-green-refactor cycle. |
+| `rules/test-fixture-conventions.md` | Test Fixture Conventions |
+| `rules/testing.md` | Testing conventions and best practices. |
+| `rules/viewmodel-navigation-events.md` | Viewmodel Navigation Events |
+| `rules/workflow.md` | Development workflow guidelines for structured feature implementation and bug fixes. |
 
-| Category | Rules (in `.claude/rules/`) |
-|----------|-----------------------------|
-| **Android** | `android.md`, `android-kotlin.md`, `android-dao-query-conventions.md`, `android-navigation-callbacks.md` |
-| **Compose** | `compose-ui.md`, `compose-testtags-convention.md`, `baseviewmodel-pattern.md`, `viewmodel-navigation-events.md` |
-| **Architecture** | `module-dependency-direction.md`, `centralized-mapper-convention.md`, `hilt-di-module-convention.md`, `hilt-module-organization.md`, `navigation-screen-pattern.md`, `offline-first-repository.md`, `offline-sync-queue.md` |
-| **Backend** | `backend.md`, `backend-auth-dependency.md`, `backend-endpoint-structure.md`, `backend-logging-standards.md`, `backend-service-layer.md`, `backend-service-pattern.md` |
-| **Database** | `database.md`, `model-import-5-locations.md`, `firestore-vs-postgres-usage.md`, `pydantic-android-schema-sync.md` |
-| **AI/Gemini** | `ai-gemini.md`, `gemini-structured-output.md` |
-| **Testing** | `testing.md`, `tdd.md`, `test-fixture-conventions.md`, `e2e-fake-auth.md`, `e2e-robot-pattern.md` |
-| **Config/Meta** | `settings-configuration-validation.md`, `custom-exception-hierarchy.md`, `firebase.md`, `firebase-auth.md`, `claude-behavior.md`, `context-management.md`, `workflow.md`, `rule-writing-meta.md` |
+## Claude Code Configuration
+
+The `.claude/` directory contains 122 skills, 33 agents, and 44 rules for Claude Code.
 
 <!-- hub:best-practices:end -->
