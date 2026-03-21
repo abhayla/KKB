@@ -377,3 +377,70 @@ async def check_and_grant_achievements(
         logger.warning(f"Failed to notify streak milestone: {e}")
 
     return newly_unlocked
+
+
+async def record_cooked_meal(
+    db: AsyncSession,
+    user: User,
+) -> dict:
+    """Record that the user completed cooking a meal.
+
+    Updates the cooking streak and cooking day records.
+    """
+    today = date.today()
+
+    # Get or create cooking streak for user
+    result = await db.execute(
+        select(CookingStreak).where(CookingStreak.user_id == user.id)
+    )
+    streak = result.scalar_one_or_none()
+
+    if not streak:
+        streak = CookingStreak(
+            id=str(uuid.uuid4()),
+            user_id=user.id,
+            current_streak=0,
+            longest_streak=0,
+            total_meals_cooked=0,
+        )
+        db.add(streak)
+        await db.flush()
+
+    # Update streak
+    streak.total_meals_cooked += 1
+    if streak.last_cooking_date == today:
+        pass  # Already counted today's streak
+    elif streak.last_cooking_date == today - timedelta(days=1):
+        streak.current_streak += 1
+    else:
+        streak.current_streak = 1
+
+    streak.last_cooking_date = today
+    if streak.current_streak > streak.longest_streak:
+        streak.longest_streak = streak.current_streak
+
+    # Record cooking day
+    result = await db.execute(
+        select(CookingDay).where(
+            CookingDay.cooking_streak_id == streak.id,
+            CookingDay.date == today,
+        )
+    )
+    existing_day = result.scalar_one_or_none()
+
+    if existing_day:
+        existing_day.meals_cooked += 1
+    else:
+        cooking_day = CookingDay(
+            id=str(uuid.uuid4()),
+            cooking_streak_id=streak.id,
+            date=today,
+            meals_cooked=1,
+        )
+        db.add(cooking_day)
+
+    await db.commit()
+
+    logger.info(f"Recorded cooking activity for user {user.id}, streak: {streak.current_streak}")
+
+    return {"current_streak": streak.current_streak, "total_meals": streak.total_meals_cooked}

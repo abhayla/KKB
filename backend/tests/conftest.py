@@ -28,6 +28,7 @@ from app.models import (  # noqa: F401
     ai_recipe_catalog,
     chat,
     config,
+    favorite,
     festival,
     grocery,
     household,

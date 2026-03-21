@@ -2,6 +2,7 @@
 
 from app.models.chat import ChatMessage
 from app.models.config import ReferenceData, SystemConfig
+from app.models.favorite import Favorite
 from app.models.festival import Festival
 from app.models.grocery import GroceryItem, GroceryList
 from app.models.household import Household, HouseholdMember
@@ -34,6 +35,7 @@ __all__ = [
     "GroceryItem",
     "Household",
     "HouseholdMember",
+    "Favorite",
     "Festival",
     "ChatMessage",
     "CookingStreak",

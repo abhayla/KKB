@@ -1,6 +1,8 @@
 """AI-powered chat assistant using Claude with tool calling support."""
 
 import logging
+from collections import defaultdict
+from datetime import date
 from typing import Any, Optional
 
 from app.ai.claude_client import (
@@ -28,6 +30,40 @@ logger = logging.getLogger(__name__)
 MAX_TOOL_ITERATIONS = 5
 
 
+def _build_meal_context(items: list[dict]) -> str:
+    """Build meal plan context string for the system prompt.
+
+    Args:
+        items: List of dicts with recipe_name, meal_type, and date fields.
+
+    Returns:
+        Formatted string describing today's meals, or empty string if no items.
+    """
+    if not items:
+        return ""
+
+    meals_by_type: dict[str, list[str]] = defaultdict(list)
+    for item in items:
+        meal_type = item.get("meal_type", "other")
+        recipe_name = item.get("recipe_name", "Unknown")
+        meals_by_type[meal_type].append(recipe_name)
+
+    lines = ["\n**User's meals for today:**"]
+    slot_order = ["breakfast", "lunch", "dinner", "snacks"]
+    for slot in slot_order:
+        if slot in meals_by_type:
+            names = ", ".join(meals_by_type[slot])
+            lines.append(f"- {slot.title()}: {names}")
+
+    # Include any meal types not in the standard order
+    for slot, names_list in meals_by_type.items():
+        if slot not in slot_order:
+            names = ", ".join(names_list)
+            lines.append(f"- {slot.title()}: {names}")
+
+    return "\n".join(lines)
+
+
 async def process_chat_message(
     user_id: str,
     message: str,
@@ -53,6 +89,28 @@ async def process_chat_message(
     if preferences:
         config_display = format_config_for_display(preferences)
         system_prompt += f"\n\n**Current User Configuration:**\n{config_display}"
+
+    # Add today's meal plan context
+    try:
+        today_meals = await meal_plan_chat_service.query_meals(
+            user_id=user_id,
+            date_str="today",
+            meal_type="ALL",
+        )
+        if today_meals.get("success") and "meals" in today_meals:
+            meal_items = []
+            for meal_type, items in today_meals["meals"].items():
+                for item in items:
+                    meal_items.append({
+                        "recipe_name": item.get("name", "Unknown"),
+                        "meal_type": meal_type,
+                        "date": date.today(),
+                    })
+            meal_context = _build_meal_context(meal_items)
+            if meal_context:
+                system_prompt += meal_context
+    except Exception as e:
+        logger.debug(f"Could not load meal plan context: {e}")
 
     # Get recent conversation context
     recent_messages = await chat_repo.get_context_for_claude(user_id, limit=6)

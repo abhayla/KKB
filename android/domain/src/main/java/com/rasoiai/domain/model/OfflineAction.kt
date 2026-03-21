@@ -58,7 +58,16 @@ enum class OfflineActionType(val value: String) {
     TOGGLE_RECIPE_RULE("toggle_recipe_rule"),
 
     /** Toggle nutrition goal active/inactive state */
-    TOGGLE_NUTRITION_GOAL("toggle_nutrition_goal");
+    TOGGLE_NUTRITION_GOAL("toggle_nutrition_goal"),
+
+    /** Sync user preferences to backend */
+    SYNC_PREFERENCES("sync_preferences"),
+
+    /** Create a new recipe rule on backend */
+    CREATE_RECIPE_RULE("create_recipe_rule"),
+
+    /** Delete a recipe rule from backend */
+    DELETE_RECIPE_RULE("delete_recipe_rule");
 
     companion object {
         fun fromValue(value: String): OfflineActionType {

@@ -6,6 +6,7 @@ from app.api.v1.endpoints import (
     auth,
     chat,
     family_members,
+    favorites,
     festivals,
     grocery,
     households,
@@ -33,5 +34,6 @@ api_router.include_router(notifications.router)
 api_router.include_router(recipe_rules.router)
 api_router.include_router(recipe_rules.nutrition_goals_router)
 api_router.include_router(family_members.router)
+api_router.include_router(favorites.router)
 api_router.include_router(photos.router)
 api_router.include_router(households.router)

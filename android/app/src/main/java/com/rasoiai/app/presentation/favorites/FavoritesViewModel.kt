@@ -383,6 +383,7 @@ class FavoritesViewModel @Inject constructor(
 
     fun setScope(scope: DataScope) {
         _uiState.update { it.copy(selectedScope = scope) }
+        loadData()
     }
 
     // endregion

@@ -17,10 +17,14 @@ import com.rasoiai.domain.model.MemberType
 import com.rasoiai.domain.model.PrimaryDiet
 import com.rasoiai.domain.model.SpiceLevel
 import com.rasoiai.domain.model.UserPreferences
+import com.rasoiai.data.local.dao.OfflineQueueDao
+import com.rasoiai.data.local.entity.OfflineQueueEntity
+import com.rasoiai.domain.model.OfflineActionType
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -46,6 +50,7 @@ class SettingsRepositoryImplTest {
     private lateinit var mockUserPreferencesDataStore: UserPreferencesDataStore
     private lateinit var mockApiService: RasoiApiService
     private lateinit var mockNetworkMonitor: NetworkMonitor
+    private lateinit var mockOfflineQueueDao: OfflineQueueDao
     private lateinit var repository: SettingsRepositoryImpl
 
     private val testPreferences = UserPreferences(
@@ -76,12 +81,14 @@ class SettingsRepositoryImplTest {
         mockUserPreferencesDataStore = mockk(relaxed = true)
         mockApiService = mockk(relaxed = true)
         mockNetworkMonitor = mockk(relaxed = true)
+        mockOfflineQueueDao = mockk(relaxed = true)
 
         repository = SettingsRepositoryImpl(
             context = mockContext,
             userPreferencesDataStore = mockUserPreferencesDataStore,
             apiService = mockApiService,
-            networkMonitor = mockNetworkMonitor
+            networkMonitor = mockNetworkMonitor,
+            offlineQueueDao = mockOfflineQueueDao
         )
     }
 
@@ -205,34 +212,58 @@ class SettingsRepositoryImplTest {
     inner class UpdateUserPreferences {
 
         @Test
-        @DisplayName("Should save preferences and sync when online")
-        fun `should save preferences and sync when online`() = runTest {
-            // Given
-            every { mockNetworkMonitor.isOnline } returns flowOf(true)
-            coEvery { mockApiService.updateUserPreferences(any()) } returns mockk(relaxed = true)
-
+        @DisplayName("Should save preferences to DataStore and queue sync")
+        fun `should save preferences to DataStore and queue sync`() = runTest {
             // When
             val result = repository.updateUserPreferences(testPreferences)
 
             // Then
             assertTrue(result.isSuccess)
             coVerify { mockUserPreferencesDataStore.saveOnboardingComplete(testPreferences) }
-            coVerify { mockApiService.updateUserPreferences(any()) }
+
+            // Verify offline queue action was inserted (not GlobalScope fire-and-forget)
+            val actionSlot = slot<OfflineQueueEntity>()
+            coVerify { mockOfflineQueueDao.insertAction(capture(actionSlot)) }
+            assertEquals(OfflineActionType.SYNC_PREFERENCES.value, actionSlot.captured.actionType)
         }
 
         @Test
-        @DisplayName("Should save preferences locally when offline")
-        fun `should save preferences locally when offline`() = runTest {
+        @DisplayName("Should not use GlobalScope for backend sync")
+        fun `should not use GlobalScope for backend sync`() = runTest {
+            // When
+            val result = repository.updateUserPreferences(testPreferences)
+
+            // Then — backend API should NOT be called directly (SyncWorker handles it)
+            assertTrue(result.isSuccess)
+            coVerify(exactly = 0) { mockApiService.updateUserPreferences(any()) }
+        }
+
+        @Test
+        @DisplayName("Should preserve preferences in DataStore even if queue insert fails")
+        fun `should preserve preferences in DataStore even if queue insert fails`() = runTest {
             // Given
-            every { mockNetworkMonitor.isOnline } returns flowOf(false)
+            coEvery { mockOfflineQueueDao.insertAction(any()) } throws RuntimeException("DB error")
 
             // When
             val result = repository.updateUserPreferences(testPreferences)
 
-            // Then
+            // Then — DataStore save should still succeed
             assertTrue(result.isSuccess)
             coVerify { mockUserPreferencesDataStore.saveOnboardingComplete(testPreferences) }
-            coVerify(exactly = 0) { mockApiService.updateUserPreferences(any()) }
+        }
+
+        @Test
+        @DisplayName("Should include preference data in queue payload")
+        fun `should include preference data in queue payload`() = runTest {
+            // When
+            repository.updateUserPreferences(testPreferences)
+
+            // Then
+            val actionSlot = slot<OfflineQueueEntity>()
+            coVerify { mockOfflineQueueDao.insertAction(capture(actionSlot)) }
+            val payload = actionSlot.captured.payload
+            assertTrue(payload.contains("household_size"))
+            assertTrue(payload.contains("primary_diet"))
         }
     }
 
@@ -241,8 +272,8 @@ class SettingsRepositoryImplTest {
     inner class FamilyMembers {
 
         @Test
-        @DisplayName("Should add family member")
-        fun `should add family member`() = runTest {
+        @DisplayName("Should add family member and queue sync")
+        fun `should add family member and queue sync`() = runTest {
             // Given
             every { mockUserPreferencesDataStore.userPreferences } returns flowOf(testPreferences)
 
@@ -260,6 +291,10 @@ class SettingsRepositoryImplTest {
             // Then
             assertTrue(result.isSuccess)
             coVerify { mockUserPreferencesDataStore.saveOnboardingComplete(any()) }
+            // Should queue offline action instead of GlobalScope fire-and-forget
+            coVerify { mockOfflineQueueDao.insertAction(match {
+                it.actionType == OfflineActionType.SYNC_PREFERENCES.value
+            }) }
         }
 
         @Test

@@ -42,6 +42,8 @@ data class MealPlanItemEntity(
     val calories: Int,
     val dietaryTags: List<String>, // vegetarian, vegan, etc.
     val isLocked: Boolean = false,
+    val isDayLocked: Boolean = false,
+    val isMealTypeLocked: Boolean = false,
     val order: Int = 0
 )
 

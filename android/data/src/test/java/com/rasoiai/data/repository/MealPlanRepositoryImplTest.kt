@@ -445,4 +445,53 @@ class MealPlanRepositoryImplTest {
             coVerify { mockApiService.getMealPlanById("plan-2") }
         }
     }
+
+    @Nested
+    @DisplayName("Grocery Refresh After Swap")
+    inner class GroceryRefreshAfterSwap {
+
+        @Test
+        @DisplayName("Should regenerate grocery list after successful swap")
+        fun `should regenerate grocery after successful swap`() = runTest {
+            // Given — testMealItems use "BREAKFAST" but MealType.BREAKFAST.value is "breakfast"
+            val items = listOf(testMealItems.first().copy(mealType = "breakfast"))
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockMealPlanDao.getMealPlanItemsSync("plan-1") } returns items
+            coEvery { mockApiService.swapMealItem(any(), any(), any()) } returns testMealPlanResponse
+
+            // When
+            val result = repository.swapMeal(
+                mealPlanId = "plan-1",
+                date = testDate,
+                mealType = MealType.BREAKFAST,
+                currentRecipeId = "recipe-1"
+            )
+
+            // Then
+            assertTrue(result.isSuccess)
+            coVerify { mockGroceryRepository.generateFromMealPlan("plan-1") }
+        }
+
+        @Test
+        @DisplayName("Should not fail swap if grocery regeneration fails")
+        fun `should not fail swap if grocery regeneration fails`() = runTest {
+            // Given
+            val items = listOf(testMealItems.first().copy(mealType = "breakfast"))
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockMealPlanDao.getMealPlanItemsSync("plan-1") } returns items
+            coEvery { mockApiService.swapMealItem(any(), any(), any()) } returns testMealPlanResponse
+            coEvery { mockGroceryRepository.generateFromMealPlan(any()) } throws RuntimeException("Grocery error")
+
+            // When
+            val result = repository.swapMeal(
+                mealPlanId = "plan-1",
+                date = testDate,
+                mealType = MealType.BREAKFAST,
+                currentRecipeId = "recipe-1"
+            )
+
+            // Then — swap still succeeds even if grocery fails
+            assertTrue(result.isSuccess)
+        }
+    }
 }

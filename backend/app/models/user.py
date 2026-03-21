@@ -72,6 +72,9 @@ class User(Base, TimestampMixin):
     deleted_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True, default=None
     )
+    preferences_updated_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
+    )
 
     # Household membership
     active_household_id: Mapped[Optional[str]] = mapped_column(

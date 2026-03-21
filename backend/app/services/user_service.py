@@ -1,13 +1,18 @@
 """User service for user operations."""
 
+import logging
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.exceptions import ConflictError
 from app.models.user import User, UserPreferences
 from app.schemas.user import UserPreferencesDto, UserPreferencesUpdate, UserResponse
+
+logger = logging.getLogger(__name__)
 
 
 def build_user_response(user: User) -> UserResponse:
@@ -96,6 +101,21 @@ async def update_user_preferences(
         preferences = UserPreferences(user_id=user.id)
         db.add(preferences)
 
+    # Conflict detection: reject stale updates from concurrent devices
+    if preferences_update.updated_at is not None and user.preferences_updated_at is not None:
+        client_ts = datetime.fromisoformat(preferences_update.updated_at)
+        server_ts = user.preferences_updated_at
+        # Normalize both to offset-aware UTC for comparison
+        if client_ts.tzinfo is None:
+            client_ts = client_ts.replace(tzinfo=timezone.utc)
+        if server_ts.tzinfo is None:
+            server_ts = server_ts.replace(tzinfo=timezone.utc)
+        if client_ts < server_ts:
+            raise ConflictError(
+                "Preferences were updated by another device. "
+                "Please refresh and try again."
+            )
+
     # Update fields
     if preferences_update.household_size is not None:
         preferences.family_size = preferences_update.household_size
@@ -129,6 +149,9 @@ async def update_user_preferences(
     # Mark user as onboarded if not already
     if not user.is_onboarded:
         user.is_onboarded = True
+
+    # Record the update timestamp for conflict detection
+    user.preferences_updated_at = datetime.now(timezone.utc)
 
     await db.commit()
     await db.refresh(preferences)

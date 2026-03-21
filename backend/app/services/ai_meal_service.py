@@ -1184,6 +1184,48 @@ Generate the complete 7-day meal plan now:"""
                     f"found {count}/{times_needed} occurrences"
                 )
 
+        # Fasting day enforcement
+        _default_fasting_exclusions = {
+            "grain", "rice", "wheat", "atta", "maida", "roti", "naan",
+            "onion", "garlic", "meat", "chicken", "fish", "egg",
+        }
+        for day in plan.days:
+            if not day.festival or not day.festival.get("is_fasting_day", False):
+                continue
+
+            festival_avoided = {
+                f.lower() for f in day.festival.get("avoided_foods", [])
+            }
+            fasting_excluded = _default_fasting_exclusions | festival_avoided
+
+            for slot in ["breakfast", "lunch", "dinner", "snacks"]:
+                items = getattr(day, slot, [])
+                fasting_safe = []
+
+                for item in items:
+                    name_lower = item.recipe_name.lower()
+                    is_forbidden = any(
+                        _keyword_match(kw, name_lower) for kw in fasting_excluded
+                    )
+                    if is_forbidden:
+                        logger.warning(
+                            f"Removed {item.recipe_name} from {day.date} {slot}: "
+                            f"not allowed on fasting day ({day.festival.get('name', 'unknown')})"
+                        )
+                        if context is not None:
+                            context.items_removed.append(
+                                {
+                                    "recipe": item.recipe_name,
+                                    "date": day.date,
+                                    "slot": slot,
+                                    "reason": "fasting_day",
+                                }
+                            )
+                    else:
+                        fasting_safe.append(item)
+
+                setattr(day, slot, fasting_safe)
+
         # Family constraint enforcement (post-processing safety net)
         forbidden_map = get_family_forbidden_keywords(prefs.family_members)
         if forbidden_map:

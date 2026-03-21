@@ -4,9 +4,14 @@ import com.rasoiai.data.local.dao.PantryDao
 import com.rasoiai.data.local.dao.RecipeDao
 import com.rasoiai.data.local.mapper.toDomain
 import com.rasoiai.data.local.mapper.toEntity
+import com.rasoiai.data.remote.api.RasoiApiService
+import com.rasoiai.domain.repository.AnalyzedItem
 import com.rasoiai.domain.model.PantryCategory
 import com.rasoiai.domain.model.PantryItem
 import com.rasoiai.domain.repository.PantryRepository
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -28,7 +33,8 @@ import javax.inject.Singleton
 @Singleton
 class PantryRepositoryImpl @Inject constructor(
     private val pantryDao: PantryDao,
-    private val recipeDao: RecipeDao
+    private val recipeDao: RecipeDao,
+    private val apiService: RasoiApiService
 ) : PantryRepository {
 
     override fun getPantryItems(): Flow<List<PantryItem>> {
@@ -208,6 +214,32 @@ class PantryRepositoryImpl @Inject constructor(
             } catch (e2: Exception) {
                 Result.failure(e)
             }
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    override suspend fun analyzeImage(imageBytes: ByteArray, fileName: String): Result<List<AnalyzedItem>> {
+        return try {
+            val mediaType = if (fileName.endsWith(".png")) "image/png" else "image/jpeg"
+            val requestBody = imageBytes.toRequestBody(mediaType.toMediaTypeOrNull())
+            val filePart = MultipartBody.Part.createFormData("file", fileName, requestBody)
+
+            val response: Map<String, Any> = apiService.analyzePhoto(filePart)
+            val identifiedFoods = (response["identified_foods"] as? List<*>)
+                ?.filterIsInstance<Map<*, *>>() ?: emptyList()
+
+            val items: List<AnalyzedItem> = identifiedFoods.map { food: Map<*, *> ->
+                val name = food["name"] as? String ?: "Unknown"
+                val categoryStr = food["meal_type"] as? String ?: "other"
+                val category = PantryCategory.fromDisplayName(categoryStr)
+                AnalyzedItem(name = name, category = category)
+            }
+
+            Timber.i("Photo analysis returned ${items.size} items")
+            Result.success(items)
+        } catch (e: Exception) {
+            Timber.e(e, "Photo analysis failed")
+            Result.failure(e)
         }
     }
 }

@@ -17,11 +17,14 @@ async def get_grocery_list(
     db: DbSession,
     current_user: CurrentUser,
     mealPlanId: str | None = Query(default=None, alias="mealPlanId"),
+    scope: str = Query("personal", description="Data scope: personal or family"),
 ) -> GroceryListResponse:
     """Get aggregated grocery list for a meal plan.
 
     If no meal plan ID is provided, uses the current week's plan.
     Items are grouped by category and aggregated across all meals.
+    When scope=family, uses household meal plan if available.
+    Falls back to personal data if user has no household.
     """
     return await get_grocery_list_for_meal_plan(db, current_user, mealPlanId)
 

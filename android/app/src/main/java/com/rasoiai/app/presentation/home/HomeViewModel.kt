@@ -73,7 +73,10 @@ data class HomeUiState(
     // Week navigation
     val selectedWeekStart: LocalDate = LocalDate.now().with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY)),
     val isCurrentWeek: Boolean = true,
-    val hasNoMealPlanForWeek: Boolean = false
+    val hasNoMealPlanForWeek: Boolean = false,
+    // Fallback state when generation fails but cached plan exists
+    val isStale: Boolean = false,
+    val showRetryButton: Boolean = false
 ) {
     /** Check if the selected day is locked */
     val isSelectedDayLocked: Boolean
@@ -277,11 +280,32 @@ class HomeViewModel @Inject constructor(
             }
             .onFailure { e ->
                 Timber.e(e, "Failed to generate meal plan")
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = "Failed to generate meal plan. Please check your connection and try again."
-                    )
+                // Try to fall back to cached plan
+                val cachedPlan = try {
+                    mealPlanRepository.getMealPlanForDate(LocalDate.now()).first()
+                } catch (cacheError: Exception) {
+                    Timber.w(cacheError, "No cached plan available for fallback")
+                    null
+                }
+                if (cachedPlan != null) {
+                    Timber.i("Falling back to cached meal plan: ${cachedPlan.id}")
+                    updateStateWithMealPlan(cachedPlan)
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isStale = true,
+                            showRetryButton = true,
+                            errorMessage = "Using cached meal plan. Tap retry to regenerate."
+                        )
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            showRetryButton = true,
+                            errorMessage = "Failed to generate meal plan. Please check your connection and try again."
+                        )
+                    }
                 }
             }
     }
@@ -354,6 +378,31 @@ class HomeViewModel @Inject constructor(
         val today = LocalDate.now()
         val currentWeekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         loadMealPlanForWeek(currentWeekStart)
+    }
+
+    fun generateForCurrentWeek() {
+        val weekStart = _uiState.value.selectedWeekStart
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, hasNoMealPlanForWeek = false) }
+            mealPlanRepository.generateMealPlan(weekStart)
+                .onSuccess { mealPlan ->
+                    Timber.i("Generated meal plan for week: $weekStart")
+                    updateStateWithMealPlan(mealPlan)
+                    _uiState.update { it.copy(isLoading = false) }
+                    observeMealPlan()
+                }
+                .onFailure { e ->
+                    Timber.e(e, "Failed to generate meal plan for week: $weekStart")
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            hasNoMealPlanForWeek = true,
+                            showRetryButton = true,
+                            errorMessage = "Failed to generate meal plan. Please try again."
+                        )
+                    }
+                }
+        }
     }
 
     private fun loadMealPlanForWeek(weekStart: LocalDate) {
@@ -536,7 +585,8 @@ class HomeViewModel @Inject constructor(
                 mealPlanId = mealPlan.id,
                 date = state.selectedDate,
                 mealType = mealType,
-                currentRecipeId = mealItem.recipeId
+                currentRecipeId = mealItem.recipeId,
+                newRecipeId = newRecipeId
             ).onSuccess {
                 Timber.i("Recipe swapped successfully")
             }.onFailure { e ->
@@ -590,15 +640,22 @@ class HomeViewModel @Inject constructor(
      */
     fun toggleDayLock() {
         val state = _uiState.value
+        val mealPlan = state.mealPlan ?: return
         val selectedDate = state.selectedDate
         val currentLockState = state.dayLockStates[selectedDate] == true
+        val newLockState = !currentLockState
 
         _uiState.update {
             it.copy(
-                dayLockStates = it.dayLockStates + (selectedDate to !currentLockState)
+                dayLockStates = it.dayLockStates + (selectedDate to newLockState)
             )
         }
-        Timber.i("Day lock toggled for $selectedDate: ${!currentLockState}")
+
+        // Persist to Room
+        viewModelScope.launch {
+            mealPlanRepository.setDayLockState(mealPlan.id, selectedDate, newLockState)
+        }
+        Timber.i("Day lock toggled for $selectedDate: $newLockState")
     }
 
     /**
@@ -607,16 +664,23 @@ class HomeViewModel @Inject constructor(
      */
     fun toggleMealLock(mealType: MealType) {
         val state = _uiState.value
+        val mealPlan = state.mealPlan ?: return
         val selectedDate = state.selectedDate
         val key = Pair(selectedDate, mealType)
         val currentLockState = state.mealLockStates[key] == true
+        val newLockState = !currentLockState
 
         _uiState.update {
             it.copy(
-                mealLockStates = it.mealLockStates + (key to !currentLockState)
+                mealLockStates = it.mealLockStates + (key to newLockState)
             )
         }
-        Timber.i("Meal lock toggled for $selectedDate $mealType: ${!currentLockState}")
+
+        // Persist to Room
+        viewModelScope.launch {
+            mealPlanRepository.setMealTypeLockState(mealPlan.id, selectedDate, mealType, newLockState)
+        }
+        Timber.i("Meal lock toggled for $selectedDate $mealType: $newLockState")
     }
 
     /**

@@ -45,6 +45,8 @@ class UserPreferencesUpdate(BaseModel):
     strict_allergen_mode: Optional[bool] = None
     strict_dietary_mode: Optional[bool] = None
     allow_recipe_repeat: Optional[bool] = None
+    # Conflict detection: ISO-8601 timestamp of the client's last known update
+    updated_at: Optional[str] = None
 
 
 class UserResponse(BaseModel):

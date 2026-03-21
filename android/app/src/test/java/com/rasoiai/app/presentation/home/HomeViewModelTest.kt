@@ -1480,4 +1480,212 @@ class HomeViewModelTest {
             }
         }
     }
+
+    @Nested
+    @DisplayName("Generation Failure Fallback")
+    inner class GenerationFailureFallback {
+
+        @Test
+        @DisplayName("Should show cached plan when generation fails")
+        fun `should show cached plan when generation fails`() = runTest {
+            // First call returns null (triggers generation), subsequent calls return cached plan (fallback)
+            var callCount = 0
+            coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } answers {
+                callCount++
+                if (callCount <= 1) flowOf(null) else flowOf(testMealPlan)
+            }
+            coEvery { mockMealPlanRepository.fetchCurrentMealPlan() } returns null
+            coEvery { mockMealPlanRepository.generateMealPlan(any()) } returns Result.failure(Exception("Gemini unavailable"))
+
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
+
+            viewModel.uiState.test {
+                testDispatcher.scheduler.advanceUntilIdle()
+                val state = expectMostRecentItem()
+
+                // Should show the cached plan, not a blank screen
+                assertNotNull(state.mealPlan)
+                assertTrue(state.isStale)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("Should set showRetryButton on generation failure with fallback")
+        fun `should set showRetryButton on generation failure with fallback`() = runTest {
+            var callCount = 0
+            coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } answers {
+                callCount++
+                if (callCount <= 1) flowOf(null) else flowOf(testMealPlan)
+            }
+            coEvery { mockMealPlanRepository.fetchCurrentMealPlan() } returns null
+            coEvery { mockMealPlanRepository.generateMealPlan(any()) } returns Result.failure(Exception("Timeout"))
+
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
+
+            viewModel.uiState.test {
+                testDispatcher.scheduler.advanceUntilIdle()
+                val state = expectMostRecentItem()
+
+                assertTrue(state.showRetryButton)
+                assertNotNull(state.mealPlan)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("Should show error when no cached plan exists")
+        fun `should show error when no cached plan exists`() = runTest {
+            coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(null)
+            coEvery { mockMealPlanRepository.fetchCurrentMealPlan() } returns null
+            coEvery { mockMealPlanRepository.generateMealPlan(any()) } returns Result.failure(Exception("Fail"))
+
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
+
+            viewModel.uiState.test {
+                testDispatcher.scheduler.advanceUntilIdle()
+                val state = expectMostRecentItem()
+
+                assertNull(state.mealPlan)
+                assertNotNull(state.errorMessage)
+                assertTrue(state.showRetryButton)
+                assertFalse(state.isStale)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Swap Recipe Selection")
+    inner class SwapRecipeSelection {
+
+        @Test
+        @DisplayName("Should pass selected recipe ID to repository on swap")
+        fun `should pass selected recipe ID to repository on swap`() = runTest {
+            coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
+            coEvery { mockMealPlanRepository.swapMeal(any(), any(), any(), any(), any(), any()) } returns Result.success(testMealPlan)
+
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
+
+            viewModel.uiState.test {
+                testDispatcher.scheduler.advanceUntilIdle()
+                awaitItem()
+
+                // Select a meal item first
+                viewModel.onRecipeClick(
+                    createTestMealItem(id = "mi-1", recipeId = "recipe-1"),
+                    MealType.BREAKFAST
+                )
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                // Swap with a specific recipe
+                viewModel.swapRecipe("new-recipe-42")
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                // Verify the newRecipeId was passed through
+                io.mockk.coVerify {
+                    mockMealPlanRepository.swapMeal(
+                        mealPlanId = any(),
+                        date = any(),
+                        mealType = MealType.BREAKFAST,
+                        currentRecipeId = "recipe-1",
+                        newRecipeId = "new-recipe-42"
+                    )
+                }
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("Should pass null for random swap")
+        fun `should pass null for random swap`() = runTest {
+            coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
+            coEvery { mockMealPlanRepository.swapMeal(any(), any(), any(), any(), any(), any()) } returns Result.success(testMealPlan)
+
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
+
+            viewModel.uiState.test {
+                testDispatcher.scheduler.advanceUntilIdle()
+                awaitItem()
+
+                viewModel.onRecipeClick(
+                    createTestMealItem(id = "mi-1", recipeId = "recipe-1"),
+                    MealType.BREAKFAST
+                )
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                viewModel.swapRecipe() // No recipe ID = random
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                io.mockk.coVerify {
+                    mockMealPlanRepository.swapMeal(
+                        mealPlanId = any(),
+                        date = any(),
+                        mealType = MealType.BREAKFAST,
+                        currentRecipeId = "recipe-1",
+                        newRecipeId = null
+                    )
+                }
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Lock Persistence")
+    inner class LockPersistence {
+
+        @Test
+        @DisplayName("Should persist day lock state to repository")
+        fun `should persist day lock state to repository`() = runTest {
+            coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
+            coEvery { mockMealPlanRepository.setDayLockState(any(), any(), any()) } returns Result.success(Unit)
+
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
+
+            viewModel.uiState.test {
+                testDispatcher.scheduler.advanceUntilIdle()
+                awaitItem()
+
+                viewModel.toggleDayLock()
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                io.mockk.coVerify {
+                    mockMealPlanRepository.setDayLockState(
+                        mealPlanId = "test-plan-1",
+                        date = any(),
+                        isLocked = true
+                    )
+                }
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("Should persist meal type lock state to repository")
+        fun `should persist meal type lock state to repository`() = runTest {
+            coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
+            coEvery { mockMealPlanRepository.setMealTypeLockState(any(), any(), any(), any()) } returns Result.success(Unit)
+
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
+
+            viewModel.uiState.test {
+                testDispatcher.scheduler.advanceUntilIdle()
+                awaitItem()
+
+                viewModel.toggleMealLock(MealType.BREAKFAST)
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                io.mockk.coVerify {
+                    mockMealPlanRepository.setMealTypeLockState(
+                        mealPlanId = "test-plan-1",
+                        date = any(),
+                        mealType = MealType.BREAKFAST,
+                        isLocked = true
+                    )
+                }
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+    }
 }

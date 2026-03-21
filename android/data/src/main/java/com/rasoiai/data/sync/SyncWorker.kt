@@ -16,6 +16,7 @@ import com.rasoiai.data.local.mapper.toDomain
 import com.rasoiai.data.remote.api.RasoiApiService
 import com.rasoiai.data.remote.dto.FcmTokenRequest
 import com.rasoiai.data.remote.dto.NutritionGoalUpdateRequest
+import com.rasoiai.data.remote.dto.RecipeRuleCreateRequest
 import com.rasoiai.data.remote.dto.RecipeRuleUpdateRequest
 import com.rasoiai.data.remote.dto.SwapMealRequest
 import com.rasoiai.domain.model.OfflineAction
@@ -170,9 +171,14 @@ class SyncWorker @AssistedInject constructor(
             }
 
             OfflineActionType.TOGGLE_FAVORITE -> {
-                // Favorites are local-only (no backend API)
-                // Action already synced to local DB, mark as completed
-                Timber.d("TOGGLE_FAVORITE: Local-only operation, marking complete")
+                val recipeId = extractRecipeId(action.payload)
+                val isFavorite = extractBooleanField(action.payload, "is_favorite")
+                if (isFavorite) {
+                    apiService.addFavorite(mapOf("recipe_id" to recipeId))
+                } else {
+                    apiService.removeFavorite(recipeId)
+                }
+                Timber.d("TOGGLE_FAVORITE: Synced favorite=$recipeId, isFavorite=$isFavorite")
                 true
             }
 
@@ -197,6 +203,45 @@ class SyncWorker @AssistedInject constructor(
                 apiService.updateNutritionGoal(goalId, NutritionGoalUpdateRequest(isActive = isActive))
                 Timber.d("TOGGLE_NUTRITION_GOAL: Synced goal=$goalId, isActive=$isActive")
                 true
+            }
+
+            OfflineActionType.SYNC_PREFERENCES -> {
+                val prefsMap = parsePreferencesPayload(action.payload)
+                apiService.updateUserPreferences(prefsMap)
+                Timber.d("SYNC_PREFERENCES: Synced user preferences to backend")
+                true
+            }
+
+            OfflineActionType.CREATE_RECIPE_RULE -> {
+                val rulePayload = parseRecipeRulePayload(action.payload)
+                try {
+                    apiService.createRecipeRule(rulePayload)
+                    Timber.d("CREATE_RECIPE_RULE: Synced new rule to backend")
+                    true
+                } catch (e: retrofit2.HttpException) {
+                    if (e.code() == 409) {
+                        Timber.w("CREATE_RECIPE_RULE: Duplicate rule, marking as completed")
+                        true
+                    } else {
+                        throw e
+                    }
+                }
+            }
+
+            OfflineActionType.DELETE_RECIPE_RULE -> {
+                val ruleId = extractStringField(action.payload, "rule_id")
+                try {
+                    apiService.deleteRecipeRule(ruleId)
+                    Timber.d("DELETE_RECIPE_RULE: Deleted rule=$ruleId from backend")
+                    true
+                } catch (e: retrofit2.HttpException) {
+                    if (e.code() == 404) {
+                        Timber.w("DELETE_RECIPE_RULE: Rule already deleted, marking as completed")
+                        true
+                    } else {
+                        throw e
+                    }
+                }
             }
         }
     }
@@ -244,6 +289,55 @@ class SyncWorker @AssistedInject constructor(
             .substringBefore("}")
             .trim()
         return value == "true"
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun parsePreferencesPayload(payload: String): Map<String, Any> {
+        val map = mutableMapOf<String, Any>()
+        map["household_size"] = extractIntField(payload, "household_size")
+        map["primary_diet"] = extractStringField(payload, "primary_diet")
+        map["spice_level"] = extractStringField(payload, "spice_level")
+        map["weekday_cooking_time"] = extractIntField(payload, "weekday_cooking_time")
+        map["weekend_cooking_time"] = extractIntField(payload, "weekend_cooking_time")
+        map["items_per_meal"] = extractIntField(payload, "items_per_meal")
+        map["strict_allergen_mode"] = extractBooleanField(payload, "strict_allergen_mode")
+        map["strict_dietary_mode"] = extractBooleanField(payload, "strict_dietary_mode")
+        map["allow_recipe_repeat"] = extractBooleanField(payload, "allow_recipe_repeat")
+        map["dietary_restrictions"] = extractStringArrayField(payload, "dietary_restrictions")
+        map["cuisine_preferences"] = extractStringArrayField(payload, "cuisine_preferences")
+        map["disliked_ingredients"] = extractStringArrayField(payload, "disliked_ingredients")
+        map["busy_days"] = extractStringArrayField(payload, "busy_days")
+        return map
+    }
+
+    private fun extractIntField(payload: String, field: String): Int {
+        val value = payload.substringAfter("\"$field\":")
+            .trim()
+            .substringBefore(",")
+            .substringBefore("}")
+            .trim()
+        return value.toIntOrNull() ?: 0
+    }
+
+    private fun parseRecipeRulePayload(payload: String): RecipeRuleCreateRequest {
+        return RecipeRuleCreateRequest(
+            targetType = extractStringField(payload, "target_type"),
+            action = extractStringField(payload, "action"),
+            targetName = extractStringField(payload, "target_name"),
+            frequencyType = extractStringField(payload, "frequency_type"),
+            frequencyCount = extractIntField(payload, "frequency_count"),
+            enforcement = extractStringField(payload, "enforcement"),
+            isActive = extractBooleanField(payload, "is_active"),
+            forceOverride = extractBooleanField(payload, "force_override")
+        )
+    }
+
+    private fun extractStringArrayField(payload: String, field: String): List<String> {
+        val arrayStr = payload.substringAfter("\"$field\":[")
+            .substringBefore("]")
+            .trim()
+        if (arrayStr.isEmpty()) return emptyList()
+        return arrayStr.split(",").map { it.trim().removeSurrounding("\"") }
     }
 
     // endregion

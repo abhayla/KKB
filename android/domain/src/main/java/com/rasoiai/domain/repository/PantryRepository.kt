@@ -62,4 +62,17 @@ interface PantryRepository {
      * Get count of recipes that can be made with current pantry items.
      */
     suspend fun getMatchingRecipeCount(): Result<Int>
+
+    /**
+     * Analyze a food image and return identified items.
+     * Returns list of (name, category, quantity, unit) tuples.
+     */
+    suspend fun analyzeImage(imageBytes: ByteArray, fileName: String): Result<List<AnalyzedItem>>
 }
+
+data class AnalyzedItem(
+    val name: String,
+    val category: PantryCategory,
+    val quantity: Int = 1,
+    val unit: String = "piece"
+)

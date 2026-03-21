@@ -2,23 +2,23 @@ package com.rasoiai.data.repository
 
 import android.content.Context
 import com.rasoiai.core.network.NetworkMonitor
+import com.rasoiai.data.local.dao.OfflineQueueDao
 import com.rasoiai.data.local.datastore.UserPreferencesDataStoreInterface
+import com.rasoiai.data.local.entity.OfflineQueueEntity
 import com.rasoiai.data.remote.api.RasoiApiService
 import com.rasoiai.data.remote.dto.toCreateRequest
 import com.rasoiai.data.remote.dto.toUpdateRequest
 import com.rasoiai.domain.model.AppSettings
 import com.rasoiai.domain.model.DarkModePreference
 import com.rasoiai.domain.model.FamilyMember
+import com.rasoiai.domain.model.OfflineActionType
 import com.rasoiai.domain.model.User
 import com.rasoiai.domain.model.UserPreferences
 import com.rasoiai.domain.repository.SettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.io.IOException
 import java.util.UUID
@@ -38,7 +38,8 @@ class SettingsRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val userPreferencesDataStore: UserPreferencesDataStoreInterface,
     private val apiService: RasoiApiService,
-    private val networkMonitor: NetworkMonitor
+    private val networkMonitor: NetworkMonitor,
+    private val offlineQueueDao: OfflineQueueDao
 ) : SettingsRepository {
 
     // Cached user data
@@ -105,37 +106,8 @@ class SettingsRepositoryImpl @Inject constructor(
             // Save to DataStore (synchronous - must complete before returning)
             userPreferencesDataStore.saveOnboardingComplete(preferences)
 
-            // Sync to backend asynchronously (non-blocking)
-            // Use GlobalScope to ensure sync continues even if caller scope is cancelled
-            @Suppress("OPT_IN_USAGE")
-            GlobalScope.launch(Dispatchers.IO) {
-                try {
-                    if (networkMonitor.isOnline.first()) {
-                        val prefsMap = mapOf(
-                            "household_size" to preferences.householdSize,
-                            "primary_diet" to preferences.primaryDiet.value,
-                            "spice_level" to preferences.spiceLevel.value,
-                            "dietary_restrictions" to preferences.dietaryRestrictions.map { it.value },
-                            "cuisine_preferences" to preferences.cuisinePreferences.map { it.value },
-                            "disliked_ingredients" to preferences.dislikedIngredients,
-                            "weekday_cooking_time" to preferences.weekdayCookingTimeMinutes,
-                            "weekend_cooking_time" to preferences.weekendCookingTimeMinutes,
-                            "busy_days" to preferences.busyDays.map { it.value },
-                            // Meal generation settings
-                            "items_per_meal" to preferences.itemsPerMeal,
-                            "strict_allergen_mode" to preferences.strictAllergenMode,
-                            "strict_dietary_mode" to preferences.strictDietaryMode,
-                            "allow_recipe_repeat" to preferences.allowRecipeRepeat
-                        )
-                        apiService.updateUserPreferences(prefsMap)
-                        Timber.i("Synced preferences to server")
-                    }
-                } catch (e: IOException) {
-                    Timber.w(e, "Network error syncing preferences to server, saved locally")
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to sync preferences to server, saved locally")
-                }
-            }
+            // Queue sync via offline queue (SyncWorker handles retry)
+            queuePreferencesSync(preferences)
 
             Timber.i("Updated user preferences")
             Result.success(Unit)
@@ -146,6 +118,26 @@ class SettingsRepositoryImpl @Inject constructor(
             Timber.e(e, "Failed to update user preferences")
             Result.failure(e)
         }
+    }
+
+    private suspend fun queuePreferencesSync(preferences: UserPreferences) {
+        try {
+            val payload = buildPreferencesSyncPayload(preferences)
+            val action = OfflineQueueEntity(
+                id = UUID.randomUUID().toString(),
+                actionType = OfflineActionType.SYNC_PREFERENCES.value,
+                payload = payload,
+                createdAt = System.currentTimeMillis()
+            )
+            offlineQueueDao.insertAction(action)
+            Timber.d("Queued preferences sync")
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to queue preferences sync, saved locally only")
+        }
+    }
+
+    private fun buildPreferencesSyncPayload(preferences: UserPreferences): String {
+        return """{"household_size":${preferences.householdSize},"primary_diet":"${preferences.primaryDiet.value}","spice_level":"${preferences.spiceLevel.value}","dietary_restrictions":[${preferences.dietaryRestrictions.joinToString(",") { "\"${it.value}\"" }}],"cuisine_preferences":[${preferences.cuisinePreferences.joinToString(",") { "\"${it.value}\"" }}],"disliked_ingredients":[${preferences.dislikedIngredients.joinToString(",") { "\"$it\"" }}],"weekday_cooking_time":${preferences.weekdayCookingTimeMinutes},"weekend_cooking_time":${preferences.weekendCookingTimeMinutes},"busy_days":[${preferences.busyDays.joinToString(",") { "\"${it.value}\"" }}],"items_per_meal":${preferences.itemsPerMeal},"strict_allergen_mode":${preferences.strictAllergenMode},"strict_dietary_mode":${preferences.strictDietaryMode},"allow_recipe_repeat":${preferences.allowRecipeRepeat}}"""
     }
 
     override suspend fun addFamilyMember(member: FamilyMember): Result<Unit> {
@@ -165,10 +157,8 @@ class SettingsRepositoryImpl @Inject constructor(
             )
             userPreferencesDataStore.saveOnboardingComplete(updatedPrefs)
 
-            // Sync to backend
-            viewModelScopeSafeSync {
-                apiService.createFamilyMember(memberWithId.toCreateRequest())
-            }
+            // Queue sync via offline queue
+            queuePreferencesSync(updatedPrefs)
 
             Timber.i("Added family member: ${member.name}")
             Result.success(Unit)
@@ -193,10 +183,8 @@ class SettingsRepositoryImpl @Inject constructor(
             val updatedPrefs = currentPrefs.copy(familyMembers = updatedMembers)
             userPreferencesDataStore.saveOnboardingComplete(updatedPrefs)
 
-            // Sync to backend
-            viewModelScopeSafeSync {
-                apiService.updateFamilyMemberApi(member.id, member.toUpdateRequest())
-            }
+            // Queue sync via offline queue
+            queuePreferencesSync(updatedPrefs)
 
             Timber.i("Updated family member: ${member.name}")
             Result.success(Unit)
@@ -223,10 +211,8 @@ class SettingsRepositoryImpl @Inject constructor(
 
             userPreferencesDataStore.saveOnboardingComplete(updatedPrefs)
 
-            // Sync to backend
-            viewModelScopeSafeSync {
-                apiService.deleteFamilyMember(memberId)
-            }
+            // Queue sync via offline queue
+            queuePreferencesSync(updatedPrefs)
 
             Timber.i("Removed family member: $memberId")
             Result.success(Unit)
@@ -236,24 +222,6 @@ class SettingsRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Timber.e(e, "Failed to remove family member")
             Result.failure(e)
-        }
-    }
-
-    /**
-     * Fire-and-forget sync to backend. Catches all errors silently.
-     * Uses Dispatchers.IO to avoid blocking the caller.
-     */
-    @Suppress("OPT_IN_USAGE")
-    private fun viewModelScopeSafeSync(action: suspend () -> Unit) {
-        GlobalScope.launch(Dispatchers.IO) {
-            try {
-                if (networkMonitor.isOnline.first()) {
-                    action()
-                    Timber.d("Backend sync completed")
-                }
-            } catch (e: Exception) {
-                Timber.w(e, "Backend sync failed, saved locally only")
-            }
         }
     }
 

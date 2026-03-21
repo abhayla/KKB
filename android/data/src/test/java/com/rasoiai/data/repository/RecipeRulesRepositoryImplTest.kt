@@ -17,11 +17,15 @@ import com.rasoiai.domain.model.RecipeRule
 import com.rasoiai.domain.model.RuleAction
 import com.rasoiai.domain.model.RuleEnforcement
 import com.rasoiai.domain.model.RuleFrequency
+import com.rasoiai.domain.model.FrequencyType
 import com.rasoiai.domain.model.RuleType
+import com.rasoiai.data.local.entity.OfflineQueueEntity
+import com.rasoiai.domain.model.OfflineActionType
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -419,6 +423,86 @@ class RecipeRulesRepositoryImplTest {
                 assertTrue(categories.none { it == FoodCategory.GREEN_LEAFY })
                 cancelAndIgnoreRemainingEvents()
             }
+        }
+    }
+
+    @Nested
+    @DisplayName("Offline Rule Sync")
+    inner class OfflineRuleSync {
+
+        @Test
+        @DisplayName("Should queue CREATE_RECIPE_RULE when creating rule offline")
+        fun `should queue CREATE_RECIPE_RULE when offline`() = runTest {
+            // Given: offline
+            every { mockNetworkMonitor.isOnline } returns flowOf(false)
+            coEvery { mockRecipeRulesDao.findDuplicate(any(), any(), any()) } returns null
+
+            val rule = RecipeRule(
+                id = "",
+                type = RuleType.INGREDIENT,
+                action = RuleAction.EXCLUDE,
+                targetId = "mushroom",
+                targetName = "Mushroom",
+                frequency = RuleFrequency(type = FrequencyType.NEVER),
+                enforcement = RuleEnforcement.REQUIRED,
+                isActive = true
+            )
+
+            // When
+            val result = repository.createRule(rule)
+
+            // Then
+            assertTrue(result.isSuccess)
+            val actionSlot = slot<OfflineQueueEntity>()
+            coVerify { mockOfflineQueueDao.insertAction(capture(actionSlot)) }
+            assertEquals(OfflineActionType.CREATE_RECIPE_RULE.value, actionSlot.captured.actionType)
+            assertTrue(actionSlot.captured.payload.contains("Mushroom"))
+        }
+
+        @Test
+        @DisplayName("Should queue DELETE_RECIPE_RULE when deleting rule offline")
+        fun `should queue DELETE_RECIPE_RULE when offline`() = runTest {
+            // Given: offline
+            every { mockNetworkMonitor.isOnline } returns flowOf(false)
+
+            // When
+            val result = repository.deleteRule("rule-1")
+
+            // Then
+            assertTrue(result.isSuccess)
+            val actionSlot = slot<OfflineQueueEntity>()
+            coVerify { mockOfflineQueueDao.insertAction(capture(actionSlot)) }
+            assertEquals(OfflineActionType.DELETE_RECIPE_RULE.value, actionSlot.captured.actionType)
+            assertTrue(actionSlot.captured.payload.contains("rule-1"))
+        }
+
+        @Test
+        @DisplayName("Should queue CREATE on network error during sync")
+        fun `should queue CREATE on network error`() = runTest {
+            // Given: online but API fails
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockRecipeRulesDao.findDuplicate(any(), any(), any()) } returns null
+            coEvery { mockApiService.createRecipeRule(any()) } throws java.io.IOException("Network error")
+
+            val rule = RecipeRule(
+                id = "",
+                type = RuleType.INGREDIENT,
+                action = RuleAction.INCLUDE,
+                targetId = "chai",
+                targetName = "Chai",
+                frequency = RuleFrequency(type = FrequencyType.NEVER),
+                enforcement = RuleEnforcement.REQUIRED,
+                isActive = true
+            )
+
+            // When
+            val result = repository.createRule(rule)
+
+            // Then — still succeeds (saved locally + queued)
+            assertTrue(result.isSuccess)
+            coVerify { mockOfflineQueueDao.insertAction(match {
+                it.actionType == OfflineActionType.CREATE_RECIPE_RULE.value
+            }) }
         }
     }
 }

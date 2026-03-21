@@ -5,6 +5,7 @@ import com.rasoiai.domain.model.PantryCategory
 import com.rasoiai.domain.model.PantryItem
 import com.rasoiai.domain.repository.PantryRepository
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -16,6 +17,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -84,7 +86,7 @@ class PantryViewModelTest {
         @Test
         @DisplayName("Initial state should be loading")
         fun `initial state should be loading`() = runTest {
-            val viewModel = PantryViewModel(mockPantryRepository)
+            val viewModel = PantryViewModel(mockPantryRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 val state = awaitItem()
@@ -96,7 +98,7 @@ class PantryViewModelTest {
         @Test
         @DisplayName("After loading, pantry items should be populated")
         fun `after loading pantry items should be populated`() = runTest {
-            val viewModel = PantryViewModel(mockPantryRepository)
+            val viewModel = PantryViewModel(mockPantryRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -113,7 +115,7 @@ class PantryViewModelTest {
         @Test
         @DisplayName("Expired items should be loaded")
         fun `expired items should be loaded`() = runTest {
-            val viewModel = PantryViewModel(mockPantryRepository)
+            val viewModel = PantryViewModel(mockPantryRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -130,7 +132,7 @@ class PantryViewModelTest {
         @Test
         @DisplayName("Matching recipe count should be loaded")
         fun `matching recipe count should be loaded`() = runTest {
-            val viewModel = PantryViewModel(mockPantryRepository)
+            val viewModel = PantryViewModel(mockPantryRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -151,7 +153,7 @@ class PantryViewModelTest {
         @Test
         @DisplayName("showAddItemDialog should show dialog")
         fun `showAddItemDialog should show dialog`() = runTest {
-            val viewModel = PantryViewModel(mockPantryRepository)
+            val viewModel = PantryViewModel(mockPantryRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -167,7 +169,7 @@ class PantryViewModelTest {
         @Test
         @DisplayName("dismissAddItemDialog should hide dialog")
         fun `dismissAddItemDialog should hide dialog`() = runTest {
-            val viewModel = PantryViewModel(mockPantryRepository)
+            val viewModel = PantryViewModel(mockPantryRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -186,7 +188,7 @@ class PantryViewModelTest {
         @Test
         @DisplayName("showRemoveExpiredDialog should show dialog")
         fun `showRemoveExpiredDialog should show dialog`() = runTest {
-            val viewModel = PantryViewModel(mockPantryRepository)
+            val viewModel = PantryViewModel(mockPantryRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -202,7 +204,7 @@ class PantryViewModelTest {
         @Test
         @DisplayName("showAllItemsSheet should show sheet")
         fun `showAllItemsSheet should show sheet`() = runTest {
-            val viewModel = PantryViewModel(mockPantryRepository)
+            val viewModel = PantryViewModel(mockPantryRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -221,21 +223,51 @@ class PantryViewModelTest {
     inner class ScanActions {
 
         @Test
-        @DisplayName("simulateScan should show results after completion")
-        fun `simulateScan should show results after completion`() = runTest {
-            val viewModel = PantryViewModel(mockPantryRepository)
+        @DisplayName("analyzeImage should show error when image cannot be read")
+        fun `analyzeImage should show error when image cannot be read`() = runTest {
+            // Context with contentResolver that returns null (can't read image)
+            val mockContext: android.content.Context = mockk(relaxed = true)
+            every { mockContext.contentResolver.openInputStream(any()) } returns null
+            val viewModel = PantryViewModel(mockPantryRepository, mockContext)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
 
-                viewModel.simulateScan()
-                testDispatcher.scheduler.advanceTimeBy(2000)
+                viewModel.onImageCaptured(mockk(relaxed = true))
                 testDispatcher.scheduler.advanceUntilIdle()
 
-                val resultsState = expectMostRecentItem()
-                assertFalse(resultsState.isScanning)
-                assertTrue(resultsState.showScanResultsSheet)
-                assertTrue(resultsState.scannedItems.isNotEmpty())
+                val state = expectMostRecentItem()
+                assertFalse(state.isScanning)
+                assertNotNull(state.errorMessage)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("analyzeImage should show results on success")
+        fun `analyzeImage should show results on success`() = runTest {
+            val mockContext: android.content.Context = mockk(relaxed = true)
+            val fakeBytes = byteArrayOf(1, 2, 3)
+            every { mockContext.contentResolver.openInputStream(any()) } returns java.io.ByteArrayInputStream(fakeBytes)
+
+            coEvery { mockPantryRepository.analyzeImage(any(), any()) } returns Result.success(
+                listOf(
+                    com.rasoiai.domain.repository.AnalyzedItem("Tomato", com.rasoiai.domain.model.PantryCategory.VEGETABLES, 3, "piece"),
+                    com.rasoiai.domain.repository.AnalyzedItem("Onion", com.rasoiai.domain.model.PantryCategory.VEGETABLES, 2, "piece"),
+                )
+            )
+            val viewModel = PantryViewModel(mockPantryRepository, mockContext)
+
+            viewModel.uiState.test {
+                awaitItem() // Initial
+
+                viewModel.onImageCaptured(mockk(relaxed = true))
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                val state = expectMostRecentItem()
+                assertFalse(state.isScanning)
+                assertTrue(state.showScanResultsSheet)
+                assertEquals(2, state.scannedItems.size)
                 cancelAndIgnoreRemainingEvents()
             }
         }
@@ -243,19 +275,28 @@ class PantryViewModelTest {
         @Test
         @DisplayName("dismissScanResultsSheet should hide sheet")
         fun `dismissScanResultsSheet should hide sheet`() = runTest {
-            val viewModel = PantryViewModel(mockPantryRepository)
+            val mockContext: android.content.Context = mockk(relaxed = true)
+            val fakeBytes = byteArrayOf(1, 2, 3)
+            every { mockContext.contentResolver.openInputStream(any()) } returns java.io.ByteArrayInputStream(fakeBytes)
+            coEvery { mockPantryRepository.analyzeImage(any(), any()) } returns Result.success(
+                listOf(com.rasoiai.domain.repository.AnalyzedItem("Tomato", com.rasoiai.domain.model.PantryCategory.VEGETABLES))
+            )
+            val viewModel = PantryViewModel(mockPantryRepository, mockContext)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
 
-                viewModel.simulateScan()
-                testDispatcher.scheduler.advanceTimeBy(2000)
-                awaitItem() // Scanning
-                awaitItem() // Results
+                viewModel.onImageCaptured(mockk(relaxed = true))
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                // Wait for results
+                val resultsState = expectMostRecentItem()
+                assertTrue(resultsState.showScanResultsSheet)
 
                 viewModel.dismissScanResultsSheet()
+                testDispatcher.scheduler.advanceUntilIdle()
 
-                val state = awaitItem()
+                val state = expectMostRecentItem()
                 assertFalse(state.showScanResultsSheet)
                 assertTrue(state.scannedItems.isEmpty())
                 cancelAndIgnoreRemainingEvents()
@@ -270,7 +311,7 @@ class PantryViewModelTest {
         @Test
         @DisplayName("navigateBack should emit back event")
         fun `navigateBack should emit back event`() = runTest {
-            val viewModel = PantryViewModel(mockPantryRepository)
+            val viewModel = PantryViewModel(mockPantryRepository, mockk(relaxed = true))
 
             viewModel.navigationEvent.test {
                 viewModel.navigateBack()
@@ -283,7 +324,7 @@ class PantryViewModelTest {
         @Test
         @DisplayName("navigateToHome should emit home event")
         fun `navigateToHome should emit home event`() = runTest {
-            val viewModel = PantryViewModel(mockPantryRepository)
+            val viewModel = PantryViewModel(mockPantryRepository, mockk(relaxed = true))
 
             viewModel.navigationEvent.test {
                 viewModel.navigateToHome()
@@ -296,7 +337,7 @@ class PantryViewModelTest {
         @Test
         @DisplayName("onFindRecipesClick should emit recipe search event")
         fun `onFindRecipesClick should emit recipe search event`() = runTest {
-            val viewModel = PantryViewModel(mockPantryRepository)
+            val viewModel = PantryViewModel(mockPantryRepository, mockk(relaxed = true))
 
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -316,7 +357,7 @@ class PantryViewModelTest {
         @Test
         @DisplayName("clearError should clear error message")
         fun `clearError should clear error message`() = runTest {
-            val viewModel = PantryViewModel(mockPantryRepository)
+            val viewModel = PantryViewModel(mockPantryRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -337,7 +378,7 @@ class PantryViewModelTest {
         @Test
         @DisplayName("itemCount should return correct count")
         fun `itemCount should return correct count`() = runTest {
-            val viewModel = PantryViewModel(mockPantryRepository)
+            val viewModel = PantryViewModel(mockPantryRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial

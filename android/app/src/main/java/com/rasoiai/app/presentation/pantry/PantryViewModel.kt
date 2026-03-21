@@ -67,7 +67,8 @@ sealed class PantryNavigationEvent {
 
 @HiltViewModel
 class PantryViewModel @Inject constructor(
-    private val pantryRepository: PantryRepository
+    private val pantryRepository: PantryRepository,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PantryUiState())
@@ -200,7 +201,7 @@ class PantryViewModel @Inject constructor(
      */
     fun onImageCaptured(uri: Uri) {
         Timber.i("Image captured: $uri")
-        simulateScan()
+        analyzeImage(uri)
     }
 
     /**
@@ -209,33 +210,46 @@ class PantryViewModel @Inject constructor(
      */
     fun onImageSelected(uri: Uri) {
         Timber.i("Image selected from gallery: $uri")
-        simulateScan()
+        analyzeImage(uri)
     }
 
-    fun simulateScan() {
-        // Simulate a scan for demo purposes
+    fun analyzeImage(uri: Uri) {
         viewModelScope.launch {
             _uiState.update { it.copy(isScanning = true) }
 
-            // Simulate delay
-            kotlinx.coroutines.delay(1500)
+            try {
+                val imageBytes = context.contentResolver.openInputStream(uri)?.readBytes()
+                    ?: throw Exception("Could not read image")
+                val fileName = uri.lastPathSegment ?: "photo.jpg"
 
-            // Create mock scanned items for review
-            val scannedItems = listOf(
-                ScannedItemData("Carrot", PantryCategory.VEGETABLES, 3, "piece"),
-                ScannedItemData("Apple", PantryCategory.FRUITS, 5, "piece"),
-                ScannedItemData("Cucumber", PantryCategory.VEGETABLES, 2, "piece"),
-                ScannedItemData("Milk", PantryCategory.DAIRY_MILK, 1, "liter"),
-                ScannedItemData("Onion", PantryCategory.VEGETABLES, 4, "piece")
-            )
-
-            // Show scan results sheet for review
-            _uiState.update {
-                it.copy(
-                    isScanning = false,
-                    scannedItems = scannedItems,
-                    showScanResultsSheet = true
-                )
+                pantryRepository.analyzeImage(imageBytes, fileName)
+                    .onSuccess { items ->
+                        val scannedItems = items.map { ScannedItemData(it.name, it.category, it.quantity, it.unit) }
+                        _uiState.update {
+                            it.copy(
+                                isScanning = false,
+                                scannedItems = scannedItems,
+                                showScanResultsSheet = true
+                            )
+                        }
+                    }
+                    .onFailure { e ->
+                        Timber.e(e, "Photo analysis failed")
+                        _uiState.update {
+                            it.copy(
+                                isScanning = false,
+                                errorMessage = "Could not analyze image. Please add items manually."
+                            )
+                        }
+                    }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to read image")
+                _uiState.update {
+                    it.copy(
+                        isScanning = false,
+                        errorMessage = "Could not read image. Please try again."
+                    )
+                }
             }
         }
     }

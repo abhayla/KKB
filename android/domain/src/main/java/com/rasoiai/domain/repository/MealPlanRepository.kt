@@ -24,7 +24,8 @@ interface MealPlanRepository {
         date: LocalDate,
         mealType: MealType,
         currentRecipeId: String,
-        excludeRecipeIds: List<String> = emptyList()
+        excludeRecipeIds: List<String> = emptyList(),
+        newRecipeId: String? = null
     ): Result<MealPlan>
 
     /**
@@ -78,4 +79,14 @@ interface MealPlanRepository {
      * Returns null if no plan exists on the backend.
      */
     suspend fun fetchCurrentMealPlan(): MealPlan?
+
+    /**
+     * Persist day lock state to Room.
+     */
+    suspend fun setDayLockState(mealPlanId: String, date: LocalDate, isLocked: Boolean): Result<Unit>
+
+    /**
+     * Persist meal type lock state to Room.
+     */
+    suspend fun setMealTypeLockState(mealPlanId: String, date: LocalDate, mealType: MealType, isLocked: Boolean): Result<Unit>
 }

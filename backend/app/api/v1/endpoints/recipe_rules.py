@@ -4,12 +4,14 @@ import logging
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 from sqlalchemy import delete, func, select
+from sqlalchemy.orm import selectinload
 
 from app.api.deps import CurrentUser, DbSession
 from app.core.exceptions import NotFoundError
+from app.models.household import Household, HouseholdMember
 from app.models.recipe_rule import NutritionGoal, RecipeRule
 from app.models.user import FamilyMember
 from app.services.family_constraints import get_family_forbidden_keywords
@@ -61,6 +63,50 @@ def _find_constraint_source(
     return "dietary"
 
 
+async def _get_household_member_ids(db, user_id: str) -> list[str] | None:
+    """Get all user IDs in the same household as the given user.
+
+    Returns None if the user has no household.
+    """
+    # Check if user owns a household
+    result = await db.execute(
+        select(Household)
+        .options(selectinload(Household.members))
+        .where(Household.owner_id == user_id, Household.is_active == True)
+    )
+    household = result.scalar_one_or_none()
+
+    if not household:
+        # Check if user is a member of a household
+        result = await db.execute(
+            select(HouseholdMember).where(
+                HouseholdMember.user_id == user_id,
+                HouseholdMember.status == "ACTIVE",
+            )
+        )
+        membership = result.scalar_one_or_none()
+        if not membership:
+            return None
+
+        result = await db.execute(
+            select(Household)
+            .options(selectinload(Household.members))
+            .where(Household.id == membership.household_id, Household.is_active == True)
+        )
+        household = result.scalar_one_or_none()
+        if not household:
+            return None
+
+    member_user_ids = [
+        m.user_id for m in household.members
+        if m.user_id and m.status == "ACTIVE"
+    ]
+    if household.owner_id not in member_user_ids:
+        member_user_ids.append(household.owner_id)
+
+    return member_user_ids
+
+
 router = APIRouter(prefix="/recipe-rules", tags=["recipe-rules"])
 
 
@@ -71,16 +117,25 @@ router = APIRouter(prefix="/recipe-rules", tags=["recipe-rules"])
 async def get_recipe_rules(
     db: DbSession,
     current_user: CurrentUser,
+    scope: str = Query("personal", description="Data scope: personal or family"),
 ) -> RecipeRulesListResponse:
     """Get all recipe rules for the current user.
 
     Returns rules sorted by creation date (newest first).
+    When scope=family, returns rules for all household members.
+    Falls back to personal data if user has no household.
     """
     user_id = current_user.id
 
+    user_ids = [user_id]
+    if scope == "family":
+        household_members = await _get_household_member_ids(db, user_id)
+        if household_members:
+            user_ids = household_members
+
     result = await db.execute(
         select(RecipeRule)
-        .where(RecipeRule.user_id == user_id)
+        .where(RecipeRule.user_id.in_(user_ids))
         .order_by(RecipeRule.created_at.desc())
     )
     rules = result.scalars().all()

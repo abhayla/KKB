@@ -194,13 +194,17 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                 } catch (e: IOException) {
                     val nowStr = now.format(dateTimeFormatter)
                     recipeRulesDao.updateRuleSyncStatus(newRule.id, SyncStatus.PENDING, nowStr)
-                    Timber.w(e, "Network error syncing rule to backend, marked as PENDING")
+                    queueRuleAction(newRule, OfflineActionType.CREATE_RECIPE_RULE)
+                    Timber.w(e, "Network error syncing rule to backend, queued for retry")
                 } catch (e: Exception) {
-                    // Mark as pending for later sync
                     val nowStr = now.format(dateTimeFormatter)
                     recipeRulesDao.updateRuleSyncStatus(newRule.id, SyncStatus.PENDING, nowStr)
-                    Timber.w(e, "Failed to sync rule to backend, marked as PENDING")
+                    queueRuleAction(newRule, OfflineActionType.CREATE_RECIPE_RULE)
+                    Timber.w(e, "Failed to sync rule to backend, queued for retry")
                 }
+            } else {
+                // Offline: queue for later sync
+                queueRuleAction(newRule, OfflineActionType.CREATE_RECIPE_RULE)
             }
 
             Result.success(newRule)
@@ -268,17 +272,37 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                     apiService.deleteRecipeRule(ruleId)
                     Timber.i("Synced rule deletion to backend: $ruleId")
                 } catch (e: IOException) {
-                    Timber.w(e, "Network error syncing rule deletion to backend")
+                    queueDeleteRuleAction(ruleId)
+                    Timber.w(e, "Network error syncing rule deletion, queued for retry")
                 } catch (e: Exception) {
-                    // Rule is already deleted locally, log warning
-                    Timber.w(e, "Failed to sync rule deletion to backend")
+                    queueDeleteRuleAction(ruleId)
+                    Timber.w(e, "Failed to sync rule deletion, queued for retry")
                 }
+            } else {
+                // Offline: queue for later sync
+                queueDeleteRuleAction(ruleId)
             }
 
             Result.success(Unit)
         } catch (e: Exception) {
             Timber.e(e, "Failed to delete rule")
             Result.failure(e)
+        }
+    }
+
+    private suspend fun queueDeleteRuleAction(ruleId: String) {
+        try {
+            offlineQueueDao.insertAction(
+                OfflineQueueEntity(
+                    id = java.util.UUID.randomUUID().toString(),
+                    actionType = OfflineActionType.DELETE_RECIPE_RULE.value,
+                    payload = """{"rule_id":"$ruleId"}""",
+                    createdAt = System.currentTimeMillis()
+                )
+            )
+            Timber.d("Queued DELETE_RECIPE_RULE for rule=$ruleId")
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to queue rule delete action")
         }
     }
 
@@ -816,6 +840,31 @@ class RecipeRulesRepositoryImpl @Inject constructor(
             Timber.d("Persisted ${ingredientNames.size} ingredient names from ${recipes.size} recipes")
         } catch (e: Exception) {
             Timber.w(e, "Failed to persist ingredients from recipes")
+        }
+    }
+
+    // endregion
+
+    // region Offline Queue Helpers
+
+    private suspend fun queueRuleAction(rule: RecipeRule, actionType: OfflineActionType) {
+        try {
+            val payload = when (actionType) {
+                OfflineActionType.CREATE_RECIPE_RULE -> """{"rule_id":"${rule.id}","target_type":"${rule.type.value}","action":"${rule.action.value}","target_name":"${rule.targetName}","frequency_type":"${rule.frequency.type.value}","frequency_count":${rule.frequency.count},"enforcement":"${rule.enforcement.value}","is_active":${rule.isActive},"force_override":${rule.forceOverride}}"""
+                OfflineActionType.DELETE_RECIPE_RULE -> """{"rule_id":"${rule.id}"}"""
+                else -> return
+            }
+            offlineQueueDao.insertAction(
+                OfflineQueueEntity(
+                    id = java.util.UUID.randomUUID().toString(),
+                    actionType = actionType.value,
+                    payload = payload,
+                    createdAt = System.currentTimeMillis()
+                )
+            )
+            Timber.d("Queued ${actionType.value} for rule=${rule.id}")
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to queue rule action")
         }
     }
 

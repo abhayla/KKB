@@ -75,7 +75,8 @@ class PantryRepositoryImplTest {
 
         repository = PantryRepositoryImpl(
             pantryDao = mockPantryDao,
-            recipeDao = mockRecipeDao
+            recipeDao = mockRecipeDao,
+            apiService = mockk(relaxed = true)
         )
     }
 

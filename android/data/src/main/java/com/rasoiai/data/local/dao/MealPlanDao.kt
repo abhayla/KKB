@@ -117,4 +117,20 @@ interface MealPlanDao {
         deleteFestivalsForMealPlan(mealPlan.id)
         insertMealPlanWithItems(mealPlan, items, festivals)
     }
+
+    // ==================== Lock State Persistence ====================
+
+    @Query("""
+        UPDATE meal_plan_items
+        SET isDayLocked = :isLocked
+        WHERE mealPlanId = :mealPlanId AND date = :date
+    """)
+    suspend fun updateDayLockState(mealPlanId: String, date: String, isLocked: Boolean)
+
+    @Query("""
+        UPDATE meal_plan_items
+        SET isMealTypeLocked = :isLocked
+        WHERE mealPlanId = :mealPlanId AND date = :date AND mealType = :mealType
+    """)
+    suspend fun updateMealTypeLockState(mealPlanId: String, date: String, mealType: String, isLocked: Boolean)
 }

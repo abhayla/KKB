@@ -45,8 +45,10 @@ import com.rasoiai.data.remote.dto.UserResponse
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -94,6 +96,23 @@ interface RasoiApiService {
         @Path("planId") planId: String,
         @Path("itemId") itemId: String
     ): MealPlanResponse
+
+    // Favorites
+    @POST("api/v1/favorites")
+    suspend fun addFavorite(@Body body: Map<String, @JvmSuppressWildcards Any>): retrofit2.Response<Unit>
+
+    @DELETE("api/v1/favorites/{recipeId}")
+    suspend fun removeFavorite(@Path("recipeId") recipeId: String): retrofit2.Response<Unit>
+
+    @GET("api/v1/favorites")
+    suspend fun getFavorites(): Map<String, @JvmSuppressWildcards Any>
+
+    // Photos
+    @Multipart
+    @POST("api/v1/photos/analyze")
+    suspend fun analyzePhoto(
+        @Part file: okhttp3.MultipartBody.Part
+    ): Map<String, @JvmSuppressWildcards Any>
 
     // Recipes
     @GET("api/v1/recipes/ai-catalog/search")

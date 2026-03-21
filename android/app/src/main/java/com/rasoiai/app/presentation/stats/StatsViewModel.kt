@@ -315,6 +315,8 @@ class StatsViewModel @Inject constructor(
 
     fun setScope(scope: DataScope) {
         _uiState.update { it.copy(selectedScope = scope) }
+        // Reload data with new scope
+        loadInitialData()
     }
 
     // endregion

@@ -142,7 +142,8 @@ class MealPlanRepositoryImpl @Inject constructor(
         date: LocalDate,
         mealType: MealType,
         currentRecipeId: String,
-        excludeRecipeIds: List<String>
+        excludeRecipeIds: List<String>,
+        newRecipeId: String?
     ): Result<MealPlan> {
         return try {
             val dateStr = date.format(dateFormatter)
@@ -165,7 +166,8 @@ class MealPlanRepositoryImpl @Inject constructor(
                 planId = mealPlanId,
                 itemId = "${mealPlanId}-${dateStr}-${mealType.value}-${currentRecipeId}",
                 request = SwapMealRequest(
-                    excludeRecipeIds = excludeRecipeIds + currentRecipeId
+                    excludeRecipeIds = excludeRecipeIds + currentRecipeId,
+                    specificRecipeId = newRecipeId
                 )
             )
 
@@ -177,6 +179,14 @@ class MealPlanRepositoryImpl @Inject constructor(
             mealPlanDao.replaceMealPlan(entity, newItems, festivals)
 
             Timber.i("Meal swapped successfully")
+
+            // Refresh grocery list after swap
+            try {
+                groceryRepository.generateFromMealPlan(mealPlanId)
+                Timber.d("Grocery list refreshed after swap")
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to refresh grocery list after swap (non-fatal)")
+            }
 
             val mealPlan = entity.toDomain(newItems, festivals)
             Result.success(mealPlan)
@@ -442,6 +452,30 @@ class MealPlanRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Timber.e(e, "Failed to fetch meal plan from API")
             null
+        }
+    }
+
+    override suspend fun setDayLockState(mealPlanId: String, date: LocalDate, isLocked: Boolean): Result<Unit> {
+        return try {
+            val dateStr = date.format(dateFormatter)
+            mealPlanDao.updateDayLockState(mealPlanId, dateStr, isLocked)
+            Timber.d("Day lock persisted: $dateStr = $isLocked")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to persist day lock state")
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun setMealTypeLockState(mealPlanId: String, date: LocalDate, mealType: MealType, isLocked: Boolean): Result<Unit> {
+        return try {
+            val dateStr = date.format(dateFormatter)
+            mealPlanDao.updateMealTypeLockState(mealPlanId, dateStr, mealType.value, isLocked)
+            Timber.d("Meal type lock persisted: $dateStr ${mealType.value} = $isLocked")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to persist meal type lock state")
+            Result.failure(e)
         }
     }
 }
