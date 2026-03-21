@@ -5,7 +5,7 @@ description: >
   API level compatibility, backend connectivity, test timing, and known issues with
   solutions. Self-improving: add new learnings after resolving emulator issues.
   Use when running E2E tests, debugging emulator issues, or setting up test infrastructure.
-allowed-tools: "Bash Read Grep Glob Write Edit WebSearch"
+allowed-tools: "Bash Read Grep Glob Write Edit"
 argument-hint: "[run|setup|troubleshoot|add <learning>|search <query>|status]"
 version: "1.0.0"
 type: workflow
@@ -80,9 +80,10 @@ If tests fail:
 # List AVDs
 $ANDROID_HOME/emulator/emulator -list-avds
 
-# Check API levels
+# Check API levels (path varies: ~/.android on Linux/Mac, $USERPROFILE/.android on Windows)
+AVD_DIR="${HOME:-$USERPROFILE}/.android/avd"
 for avd in $(emulator -list-avds); do
-    grep "image.sysdir" ~/.android/avd/${avd}.avd/config.ini | grep -oP 'android-\K\d+'
+    grep "image.sysdir" "$AVD_DIR/${avd}.avd/config.ini" | grep -oP 'android-\K\d+'
 done
 ```
 
@@ -111,8 +112,8 @@ adb shell settings put global animator_duration_scale 0
 
 ```bash
 curl -s http://localhost:8000/health
-# If not running:
-cd backend && source venv/Scripts/activate && uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+# If not running (activate venv then start server):
+cd backend && source venv/bin/activate 2>/dev/null || source venv/Scripts/activate && uvicorn app.main:app --host 0.0.0.0 --port 8000 &
 ```
 
 ---
@@ -174,6 +175,37 @@ adb shell dumpsys package com.rasoiai.app | grep versionName
 ls android/app/build/outputs/apk/debug/app-debug.apk 2>/dev/null && echo "Debug APK exists"
 ls android/app/build/outputs/apk/androidTest/debug/ 2>/dev/null && echo "Test APK exists"
 ```
+
+---
+
+## Output Format
+
+All modes produce a structured status block at the end:
+
+```
+EMULATOR TEST REPORT
+====================
+Mode: [run|setup|troubleshoot|add|search|status]
+Emulator: [device name] API [level] | NOT RUNNING
+Backend: [healthy|unreachable|not started]
+App: [installed (vN.N)|not installed]
+Result: [PASSED|FAILED|FIXED|INFO]
+Details:
+  - [action taken or finding]
+  - [action taken or finding]
+Knowledge Base: [N entries in known-issues.md]
+```
+
+---
+
+## Relationship to Other Skills
+
+| Skill | Focus | When to use instead |
+|-------|-------|-------------------|
+| `/adb-test` | ADB-based manual UI testing (tap, swipe, screencap) | Testing app screens via uiautomator without Compose framework |
+| `/test-knowledge` | General testing knowledge base (all platforms) | Recording non-emulator testing patterns (fixtures, mocking, etc.) |
+| `/run-android-tests` | Running Gradle-based Android tests | Executing `./gradlew connectedDebugAndroidTest` with class resolution |
+| `/android-emulator-testing` (this) | Emulator infrastructure and known issues | Setting up AVDs, debugging connectivity, resolving emulator-specific failures |
 
 ---
 
