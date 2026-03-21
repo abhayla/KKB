@@ -81,4 +81,4 @@ declare -A SUITE_NAMES=(
 )
 
 # ─── Timeouts ───────────────────────────────────────────────
-SUITE_TIMEOUT=300  # 5 min per suite
+SUITE_TIMEOUT=600  # 10 min per suite (includes Gradle overhead + Gemini AI calls)
