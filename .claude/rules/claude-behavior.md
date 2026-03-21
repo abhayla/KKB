@@ -32,7 +32,7 @@ globs: ["**/*"]
 
 ## Environment
 
-10. **Bash Syntax**: Use forward slashes `/`, quote paths with spaces. Shell is Unix-style bash even on Windows.
+10. **Bash Syntax**: Use forward slashes `/`, use `./gradlew` (not `.\gradlew`), quote paths with spaces. Shell is Unix-style bash even on Windows.
 11. **Conventions**: Follow existing code patterns and naming conventions in this project.
 
 ## Code Quality

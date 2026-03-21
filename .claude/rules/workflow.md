@@ -44,6 +44,13 @@ When implementing features or fixing bugs, follow this structured approach:
 - Update documentation if behavior changed
 - Record learnings for future reference
 
+## Strict Constraints
+
+- **No step skipping** — Complete all 7 steps in order
+- **No partial passes** — All tests must pass, not just "most"
+- **No @Ignore bypasses** — NEVER use `@Ignore`/`@Disabled`/`@skip` to make tests pass
+- **No commits without passing tests** — Test suite must be green before commit
+
 ## Key Principles
 
 1. **Test before commit** — Never commit code that fails existing tests
@@ -51,6 +58,12 @@ When implementing features or fixing bugs, follow this structured approach:
 3. **Evidence-based** — Verify with tests, not assumptions
 4. **Reversible** — Prefer changes that can be easily undone
 5. **Documented** — Leave breadcrumbs for the next developer (or session)
+
+## Scope
+
+**Applies to:** Feature implementation, bug fixes, refactoring, any code changes (`.kt`, `.py`, `.xml`).
+
+**Does NOT apply to:** Questions, documentation-only changes, research/exploration.
 
 ## When to Skip Steps
 

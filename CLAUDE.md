@@ -124,93 +124,19 @@ Real backend + fake phone auth. `FakePhoneAuthClient` → `"fake-firebase-token"
 
 See `docs/VPS-Deployment.md`. Do NOT modify files in `C:\Apps\shared\`.
 
-## Generic Rules for Claude
-
-<!-- ========================================================== -->
-<!-- PROTECTED SECTION - DO NOT MODIFY                          -->
-<!-- These rules are carefully crafted and tested.              -->
-<!-- Do NOT condense, rewrite, reorganize, or "improve" them.   -->
-<!-- Do NOT remove content even if it appears redundant.        -->
-<!-- Any /init or optimization request must SKIP this section.  -->
-<!-- Authority: Project owner directive (2026-03-08)            -->
-<!-- ========================================================== -->
-
-### Session History Analysis & Automation Extraction
-
-When the user asks to analyze their workflow patterns, session history, or identify automation opportunities, follow this structured approach:
-
-**Step 1: Scrape Session Data**
-- Scan all Claude Code session transcripts (`.jsonl` files) under `~/.claude/projects/` and `~/.claude/sessions/`
-- Parse each session for: tool calls made, skills invoked, commands run, files edited, errors encountered, and user corrections
-- Group sessions by project directory and time period
-
-**Step 2: Pattern Classification**
-Categorize every recurring pattern into exactly one of these buckets:
-
-| Category | When to Use | Examples |
-|----------|-------------|---------|
-| **Skill** (`.claude/skills/`) | Repeatable multi-step workflows triggered by user command. Has a clear start/end, requires judgment, runs in the main conversation context. | `/fix-issue`, `/deploy`, `/run-e2e`, test-debug-fix cycles, release workflows |
-| **Agent** (`.claude/agents/`) | Autonomous sub-tasks that can run in isolation with their own tool access. Delegatable work that doesn't need continuous user interaction. | Code review, test runner, build validator, lint fixer, dependency auditor |
-| **Hook** (`.claude/hooks/`) | Automatic triggers on tool events (PreToolUse/PostToolUse). Enforcement gates, auto-formatting, validation checks. No user invocation needed. | Auto-format on save, block commits without tests, screenshot resize, workflow state tracking |
-| **MCP Server/Plugin** | External tool integrations that expose new capabilities via the Model Context Protocol. Bridges to third-party services or local tools. | Database queries, browser automation, Slack notifications, CI/CD status checks |
-| **CLAUDE.md Rule** | Static instructions, conventions, or constraints that should always be in context. No logic — just knowledge and directives. | File naming conventions, architecture decisions, env setup, troubleshooting tables, test fixture guides |
-
-**Step 3: Output Format**
-Present findings as a prioritized table:
-
-```
-| # | Pattern Observed | Frequency | Category | Priority | Suggested Name | Description |
-|---|-----------------|-----------|----------|----------|----------------|-------------|
-| 1 | User runs tests then fixes failures in a loop | Every session | Skill | HIGH | /fix-loop | Iterative test-fix cycle with escalation |
-| 2 | Auto-format Python after edits | Every edit | Hook | HIGH | auto-format.sh | Black + ruff on PostToolUse |
-| ... | | | | | | |
-```
-
-**Step 4: Conflict Check**
-- Before recommending a new skill/agent/hook, check if one already exists (search `.claude/skills/`, `.claude/agents/`, `.claude/hooks/`)
-- If an existing automation partially covers the pattern, recommend enhancing it rather than creating a new one
-- Flag any patterns that span multiple categories (e.g., "could be a skill OR an agent") and explain the trade-off
-
-**Step 5: Implementation Readiness**
-For each HIGH priority recommendation, provide:
-- The exact file path where it should be created
-- A 2-3 sentence spec of what it should do
-- Dependencies on existing infrastructure
-
 ## Project Rules for Claude
 
-<!-- ========================================================== -->
-<!-- PROTECTED SECTION - DO NOT MODIFY                          -->
-<!-- These rules are carefully crafted and tested.              -->
-<!-- Do NOT condense, rewrite, reorganize, or "improve" them.   -->
-<!-- Do NOT remove content even if it appears redundant.        -->
-<!-- Any /init or optimization request must SKIP this section.  -->
-<!-- Authority: Project owner directive (2026-02-04)            -->
-<!-- ========================================================== -->
+1. **Document Output**: Generated documents → `docs/claude-docs/`. Test screenshots → `docs/testing/screenshots/` (gitignored).
 
-1. **Bash Syntax (CRITICAL)**: Use forward slashes `/`, use `./gradlew` (not `.\gradlew`), quote paths with spaces. Shell is Unix-style bash even on Windows.
-
-2. **Document Output**:
-   - Generated documents → `docs/claude-docs/`
-   - Test screenshots → `docs/testing/screenshots/` (gitignored)
-
-3. **Screenshots (CRITICAL)**:
-   - **ALL screenshots MUST be saved to `docs/testing/screenshots/`** - no exceptions
+2. **Screenshots (CRITICAL)**:
+   - **ALL screenshots MUST be saved to `docs/testing/screenshots/`** — no exceptions
    - This includes: Playwright screenshots, emulator screenshots, UI test captures, debugging screenshots
    - NEVER save screenshots to the project root, `.playwright-mcp/`, or any other location
-   - The folder is gitignored - screenshots are temporary debugging artifacts
-   - Use descriptive filenames: `{feature}_{context}.png` (e.g., `home_after_login.png`, `onboarding_step2.png`)
+   - The folder is gitignored — screenshots are temporary debugging artifacts
+   - Use descriptive filenames: `{feature}_{context}.png` (e.g., `home_after_login.png`)
+   - PNG format, limit to 1280x720, avoid `fullPage: true` on long pages. Hook auto-resizes >1800px.
 
-   **Best practices:** Use PNG format, limit to 1280x720, avoid `fullPage: true` on long pages. Wait for page stability before capture. Hook auto-resizes >1800px and auto-strips ADB warnings.
-
-   ```bash
-   # ADB screenshot
-   adb exec-out screencap -p > docs/testing/screenshots/screen_name.png
-   ```
-
-4. **Offline-First**: All features must use Room as source of truth with offline support.
-
-5. **Bug & Feature Tracking**:
+3. **Bug & Feature Tracking**:
    - **Before starting work**: Check GitHub Issues for related bugs/features with `gh issue list`
    - **Finding TODOs**: When you find `/* TODO: ... */` comments, consider creating a GitHub Issue
    - **After fixing**: Reference issue number in commit: `Fix #123: description`
@@ -218,46 +144,11 @@ For each HIGH priority recommendation, provide:
    - **Labels**: `bug`, `enhancement`, `not-implemented`, `home-screen`, etc.
    - **Issue Templates**: `.github/ISSUE_TEMPLATE/` has templates for bug reports and feature requests
 
-6. **Functional Requirements Testing**:
+4. **Functional Requirements**: See `docs/testing/Functional-Requirement-Rule.md` for the traceability matrix and workflow (FR-001 through FR-023).
 
-   > ⚠️ **STOP**: Complete the Pre-Implementation Checklist in Rule #7 BEFORE writing any code.
+5. **Development Workflow**: 7-step workflow enforced by hooks. See `.claude/rules/workflow.md`.
 
-   When implementing a new feature or fixing a bug that affects user-facing functionality:
-
-   **Before Implementation:**
-   - Check for existing GitHub Issue with acceptance criteria
-   - If none exists, create one using the "Functional Requirement" template
-   - Reference the Issue ID (e.g., FR-001 = Issue #45)
-
-   **After Implementation:**
-   - Create Android E2E test in `app/src/androidTest/java/com/rasoiai/app/e2e/flows/`
-   - Create Backend test in `backend/tests/` if API is involved
-   - Update `docs/testing/Functional-Requirement-Rule.md` with test links
-
-   **Test Documentation:**
-   - Each test file MUST have KDoc/docstring header referencing the GitHub Issue
-   - Use format: `/** Requirement: #45 - FR-001: Add Chai to breakfast */`
-
-   **Verification:**
-   ```bash
-   # Android E2E test
-   ./gradlew :app:connectedDebugAndroidTest \
-     -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.flows.TestClassName
-
-   # Backend test
-   PYTHONPATH=. pytest tests/test_file.py -v
-   ```
-
-   **Reference:** See `docs/testing/Functional-Requirement-Rule.md` for the full traceability matrix.
-
-7. **Mandatory Development Workflow (ALL Code Tasks)**:
-
-   7-step workflow: Requirements → Tests → Implement → Run tests → Fix loop → Screenshots → Verify & commit. Enforced by hooks (see below). No step skipping, no partial passes, no @Ignore bypasses, no commits without passing tests.
-
-   > **Full reference:** `.claude/rules/workflow.md`
-   >
-   > **Applies to:** Feature implementation, bug fixes, refactoring, any code changes (`.kt`, `.py`, `.xml`).
-   > **Does NOT apply to:** Questions, documentation-only, research/exploration.
+6. **Session History Analysis**: Run `/skill-factory scan` then `/skill-factory propose` to detect and classify workflow patterns.
 
 ## Workflow Enforcement Hooks
 
@@ -277,71 +168,8 @@ For each HIGH priority recommendation, provide:
 | Skills (25+) | `.claude/skills/` — `/fix-issue`, `/fix-loop`, `/implement`, `/run-backend-tests`, etc. |
 | MCP Servers | `.mcp.json` — Playwright (web screenshots), ADB (emulator automation) |
 
-<!-- hub:best-practices:start -->
-
-<!-- PROTECTED SECTION — managed by claude-best-practices hub. -->
-<!-- Do NOT condense, rewrite, reorganize, or remove.          -->
-<!-- Any /init or optimization request must SKIP this section.  -->
-
 ## Rules for Claude
 
-1. **Bug Fixing**: Use `/fix-loop` or `/fix-issue`. Start by writing a test that reproduces the bug, then fix and prove with a passing test.
-
-### Rules Reference
-
-| Rule File | What It Covers |
-|-----------|---------------|
-| `rules/agent-orchestration.md` | Constraints for multi-agent orchestration patterns in agents and skills. |
-| `rules/ai-gemini.md` | Ai Gemini |
-| `rules/android.md` | Android development rules for Kotlin + Jetpack Compose projects. |
-| `rules/android-dao-query-conventions.md` | Android Dao Query Conventions |
-| `rules/android-kotlin.md` | Kotlin language idioms, null safety, scope functions, and KMP-specific patterns for Android projects. |
-| `rules/android-naming-conventions.md` | Android Naming Conventions |
-| `rules/android-navigation-callbacks.md` | Android Navigation Callbacks |
-| `rules/backend.md` | Backend |
-| `rules/backend-auth-dependency.md` | Backend Auth Dependency |
-| `rules/backend-endpoint-structure.md` | Backend Endpoint Structure |
-| `rules/backend-logging-standards.md` | Backend Logging Standards |
-| `rules/backend-service-layer.md` | Backend Service Layer |
-| `rules/backend-service-pattern.md` | Backend Service Pattern |
-| `rules/baseviewmodel-pattern.md` | Baseviewmodel Pattern |
-| `rules/centralized-mapper-convention.md` | Centralized Mapper Convention |
-| `rules/claude-behavior.md` | Universal behavioral rules for how Claude should approach all tasks. |
-| `rules/compose-testtags-convention.md` | Compose Testtags Convention |
-| `rules/compose-ui.md` | Compose Ui |
-| `rules/configuration-ssot.md` | Scope: global |
-| `rules/context-management.md` | Rules for managing context window, token usage, and documentation references. |
-| `rules/custom-exception-hierarchy.md` | Custom Exception Hierarchy |
-| `rules/database.md` | Database |
-| `rules/e2e-fake-auth.md` | E2E Fake Auth |
-| `rules/e2e-robot-pattern.md` | E2E Robot Pattern |
-| `rules/fastapi-lifespan-pattern.md` | Fastapi Lifespan Pattern |
-| `rules/firebase.md` | Firebase Auth, Firestore, and backend token verification patterns. |
-| `rules/firebase-auth.md` | Firebase Auth |
-| `rules/firestore-vs-postgres-usage.md` | Firestore Vs Postgres Usage |
-| `rules/gemini-structured-output.md` | Gemini Structured Output |
-| `rules/hilt-di-module-convention.md` | Hilt Di Module Convention |
-| `rules/hilt-module-organization.md` | Hilt Module Organization |
-| `rules/model-import-5-locations.md` | Model Import 5 Locations |
-| `rules/module-dependency-direction.md` | Module Dependency Direction |
-| `rules/navigation-screen-pattern.md` | Navigation Screen Pattern |
-| `rules/offline-first-repository.md` | Offline First Repository |
-| `rules/offline-sync-queue.md` | Offline Sync Queue |
-| `rules/prompt-auto-enhance-rule.md` | Auto-enhance every user prompt with project-specific context before acting. Prefix every response with a brief *Enhanced: ...* indicator.
- |
-| `rules/pydantic-android-schema-sync.md` | Pydantic Android Schema Sync |
-| `rules/rule-writing-meta.md` | Meta-guidance for writing effective CLAUDE.md rules, choosing config file placement, and structuring project instructions. |
-| `rules/security-headers-middleware.md` | Security Headers Middleware |
-| `rules/settings-configuration-validation.md` | Settings Configuration Validation |
-| `rules/superpowers.md` | Superpowers |
-| `rules/tdd-rule.md` | Test-driven development workflow rules for red-green-refactor cycle. |
-| `rules/test-fixture-conventions.md` | Test Fixture Conventions |
-| `rules/testing.md` | Testing conventions and best practices. |
-| `rules/viewmodel-navigation-events.md` | Viewmodel Navigation Events |
-| `rules/workflow.md` | Development workflow guidelines for structured feature implementation and bug fixes. |
-
-## Claude Code Configuration
-
-The `.claude/` directory contains 122 skills, 33 agents, and 47 rules for Claude Code.
-
-<!-- hub:best-practices:end -->
+1. **Bug Fixing**: Use `/fix-loop` or `/fix-issue`. Write a test that reproduces the bug first, then fix and prove with a passing test.
+2. **Path-scoped rules** in `.claude/rules/` auto-load when working on matching files (47 rules covering Android, backend, testing, database, Compose, etc.).
+3. **Skills** in `.claude/skills/` provide multi-step workflows: `/fix-issue`, `/fix-loop`, `/implement`, `/run-backend-tests`, `/skill-factory`, etc.
