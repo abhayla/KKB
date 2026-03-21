@@ -9,6 +9,7 @@ Usage:
 """
 
 import asyncio
+import os
 import sys
 from pathlib import Path
 
@@ -26,8 +27,11 @@ from app.models.chat import ChatMessage
 from app.models.stats import CookingStreak, CookingDay, UserAchievement
 from app.models.notification import Notification, FcmToken
 
-# PostgreSQL connection settings (same as other seed scripts)
-DATABASE_URL = "postgresql+asyncpg://rasoiai_user:RasoiAI2024Secure@103.118.16.189:5432/rasoiai"
+# PostgreSQL connection — reads from env var with fallback to VPS
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "postgresql+asyncpg://rasoiai_user:RasoiAI2024Secure@103.118.16.189:5432/rasoiai"
+)
 
 # Tables to count before deletion (in dependency order)
 CHILD_TABLES = [
