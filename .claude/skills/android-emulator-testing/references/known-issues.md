@@ -92,3 +92,12 @@ adb shell settings put global animator_duration_scale 0
 **Solution:** Find and kill: `netstat -ano | findstr :8000` then `taskkill /PID <PID> /F`.
 **Date Added:** 2026-03-21
 **Verified On:** Windows 11
+
+---
+
+## [NETWORK] BuildConfig.BASE_URL was localhost — must be 10.0.2.2 for emulator
+**Symptom:** `FullJourneyFlowTest.step1_auth()` fails with "Should navigate to onboarding or home within 20000ms". Logcat shows `okhttp.OkHttpClient: --> POST http://localhost:8000/api/v1/auth/firebase` — the app calls `localhost` which is the emulator's own loopback, not the host machine.
+**Root Cause:** `data/build.gradle.kts` debug `buildConfigField` was set to `http://localhost:8000/`. This is the URL used by the app's Retrofit service (`RasoiApiService`). Meanwhile, `BaseE2ETest.BACKEND_BASE_URL` was correctly set to `http://10.0.2.2:8000` — but that's only used for direct test helper HTTP calls, not the app's own API calls. Two separate URL configs caused a mismatch.
+**Solution:** Change `data/build.gradle.kts` line 27 from `"http://localhost:8000/"` to `"http://10.0.2.2:8000/"`. This makes the app's Retrofit base URL match the emulator-to-host mapping.
+**Date Added:** 2026-03-22
+**Verified On:** API 34, Pixel_8a_API_34 — J03 FullJourneyFlowTest PASSED after fix
