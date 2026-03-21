@@ -4,15 +4,15 @@ Use this prompt to start a new conversation/context and continue the project fro
 
 ---
 
-## Current State: Household UI + Visual Refresh Complete
+## Current State: Data Flow Gaps Closed + Ship-Ready
 
-Backend running on PostgreSQL with SQLAlchemy async ORM (~62 endpoints, 13+ routers). Android app with Compose UI, Hilt DI, Room DB v13. Full E2E tests passing with real API calls. All 18 Settings sub-screens + 7 Household screens implemented. **Warm-modern design system applied. Family/Personal scope toggle on 5 screens.**
+Backend running on PostgreSQL with SQLAlchemy async ORM (~69 endpoints, 15 routers). Android app with Compose UI, Hilt DI, Room DB v14. Full E2E tests passing with real API calls. All 18 Settings sub-screens + 7 Household screens implemented. **Warm-modern design system applied. Family/Personal scope toggle functional on 5 screens. All 19 data flow gaps closed.**
 
 **Test Results:**
 | Platform | Tests | Status |
 |----------|-------|--------|
-| Backend | ~580 (46 files) | PASS |
-| Android Unit | ~580 | PASS |
+| Backend | 740 (64 files) | PASS |
+| Android Unit | ~486 | PASS |
 | Android UI | 750+ | PASS |
 | Android E2E | 67+ (+ 45 @Ignore household E2E with real test bodies) | PASS |
 
@@ -80,6 +80,22 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~62 endpoints, 13+ rout
 | Family/Personal Toggle | DONE | ScopeToggle on Stats, Grocery, Favorites, RecipeRules, Chat screens |
 | Room DB v13 | DONE | Migration 12→13: household + household_members tables |
 | Gap Analysis E2E Coverage | DONE | ScopeToggleFlowTest (11 tests), AchievementsFlowTest (6 tests), NotificationsFlowTest (7 tests), J10 expanded (4→6), J16 expanded (2→3) |
+| Data Flow Gap Analysis | DONE | 19 gaps identified, 17 fixed, 2 dismissed as non-issues. +160 backend tests |
+| Favorites Backend API | DONE | Favorite model, POST/DELETE/GET /favorites, Alembic migration, SyncWorker sync |
+| Preference Sync Fix | DONE | Replaced GlobalScope fire-and-forget with OfflineQueueDao + SYNC_PREFERENCES |
+| Generation Failure Fallback | DONE | Falls back to cached plan with isStale flag + retry button |
+| Swap Selection Passthrough | DONE | User-selected recipe ID passed to backend via SwapMealRequest.specificRecipeId |
+| Offline Rule CREATE/DELETE | DONE | CREATE_RECIPE_RULE + DELETE_RECIPE_RULE offline actions with 409/404 tolerance |
+| Lock State Persistence | DONE | Room v14: isDayLocked + isMealTypeLocked columns, loaded on startup |
+| Scope Toggle Functional | DONE | Backend scope query param on stats/grocery/rules + 5 VMs trigger reload |
+| Grocery Auto-Refresh | DONE | Grocery list regenerated after meal swap |
+| Pantry Real Scan | DONE | Replaced mock simulateScan() with real /photos/analyze API via Gemini Vision |
+| Chat Meal Context | DONE | Current meal plan included in Claude chat system prompt |
+| Settings Conflict Detection | DONE | preferences_updated_at timestamp, stale updates rejected with 409 |
+| Recipe Instruction Enrichment | DONE | Background Gemini enrichment replaces placeholder instructions |
+| Cooking Activity Tracking | DONE | POST /stats/cooking-activity + CookingModeViewModel calls on completion |
+| Future Week Generation | DONE | generateForCurrentWeek() method on HomeViewModel |
+| Room DB v14 | DONE | Migration 13→14: isDayLocked + isMealTypeLocked columns on meal_plan_items |
 
 ---
 
@@ -87,6 +103,7 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~62 endpoints, 13+ rout
 
 | Session | Milestone |
 |---------|-----------|
+| 49+ | Data flow gap analysis: 19 gaps identified, all closed. Favorites API, preference offline queue, generation fallback, swap passthrough, lock persistence (Room v14), scope toggle functional, pantry real scan, recipe enrichment, cooking activity tracking. +160 backend tests (580→740). |
 | 48+ | Gap analysis: 3 new E2E flow tests (ScopeToggle 11, Achievements 6, Notifications 7), TestTags SCOPE_TOGGLE constants, J10 expanded (4→6 files), J16 expanded (2→3 files) |
 | 47+ | Household Android UI (7 screens), warm-modern design system (Color/Type/Theme), Family/Personal scope toggle (5 screens), Room DB v13, RasoiComponents |
 | 46+ | Gemini structured output (response_json_schema + short keys), generation tracker, meal gen performance (180s timeout, ~35s gen), multi-user load testing |
@@ -100,6 +117,6 @@ Backend running on PostgreSQL with SQLAlchemy async ORM (~62 endpoints, 13+ rout
 
 ---
 
-*Last Updated: March 9, 2026*
-*E2E suite: 31 files, ~194 tests (125 active + 69 @Ignore with real bodies), 17 customer journey suites (J01-J17). ~580 backend tests (46 files). ~630+ Android unit tests. 750+ UI tests.*
-*~62 API endpoints across 13+ routers. 3,580 recipes. ~525 requirements across 12 screen files. Room DB v13. 25+ screens.*
+*Last Updated: March 21, 2026*
+*E2E suite: 31 files, ~194 tests (125 active + 69 @Ignore with real bodies), 17 customer journey suites (J01-J17). 740 backend tests (64 files). ~486 Android unit tests. 750+ UI tests.*
+*~69 API endpoints across 15 routers. 3,580 recipes. ~525 requirements across 12 screen files. Room DB v14. 25+ screens.*
