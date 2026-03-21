@@ -10,6 +10,7 @@ import com.rasoiai.app.presentation.navigation.Screen
 import com.rasoiai.domain.model.Instruction
 import com.rasoiai.domain.model.Recipe
 import com.rasoiai.domain.repository.RecipeRepository
+import com.rasoiai.domain.repository.StatsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -98,7 +99,8 @@ sealed class CookingModeNavigationEvent {
 @HiltViewModel
 class CookingModeViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    private val recipeRepository: RecipeRepository
+    private val recipeRepository: RecipeRepository,
+    private val statsRepository: StatsRepository
 ) : ViewModel() {
 
     private val recipeId: String = checkNotNull(savedStateHandle[Screen.CookingMode.ARG_RECIPE_ID])
@@ -329,6 +331,11 @@ class CookingModeViewModel @Inject constructor(
             recipeRepository.rateRecipe(recipeId, currentState.rating, currentState.feedback)
                 .onSuccess { Timber.i("Rating submitted: ${currentState.rating} stars for recipe $recipeId") }
                 .onFailure { Timber.e(it, "Failed to submit rating for $recipeId") }
+
+            // Record cooking activity for streak tracking
+            statsRepository.recordCookedMeal()
+                .onSuccess { Timber.i("Cooking activity recorded") }
+                .onFailure { Timber.w(it, "Failed to record cooking activity (non-fatal)") }
 
             _uiState.update { it.copy(showCompletionDialog = false) }
             _navigationEvent.send(CookingModeNavigationEvent.NavigateToHome)

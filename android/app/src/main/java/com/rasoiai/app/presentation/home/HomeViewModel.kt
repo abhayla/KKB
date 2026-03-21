@@ -258,12 +258,35 @@ class HomeViewModel @Inject constructor(
         val weekDates = generateWeekDates(mealPlan.weekStartDate, selectedDate)
         val upcomingFestival = findUpcomingFestival(mealPlan.days)
 
+        // Build lock state maps from persisted entity data
+        val dayLocks = mutableMapOf<LocalDate, Boolean>()
+        val mealLocks = mutableMapOf<Pair<LocalDate, MealType>, Boolean>()
+        for (day in mealPlan.days) {
+            val allItems = day.breakfast + day.lunch + day.dinner + day.snacks
+            if (allItems.any { it.isDayLocked }) {
+                dayLocks[day.date] = true
+            }
+            for (mealType in MealType.entries) {
+                val mealItems = when (mealType) {
+                    MealType.BREAKFAST -> day.breakfast
+                    MealType.LUNCH -> day.lunch
+                    MealType.DINNER -> day.dinner
+                    MealType.SNACKS -> day.snacks
+                }
+                if (mealItems.any { it.isMealTypeLocked }) {
+                    mealLocks[Pair(day.date, mealType)] = true
+                }
+            }
+        }
+
         _uiState.update {
             it.copy(
                 mealPlan = mealPlan,
                 selectedDayMeals = selectedDayMeals,
                 weekDates = weekDates,
-                upcomingFestival = upcomingFestival
+                upcomingFestival = upcomingFestival,
+                dayLockStates = dayLocks,
+                mealLockStates = mealLocks
             )
         }
     }

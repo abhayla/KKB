@@ -225,6 +225,24 @@ async def generate(
                     exc_info=True,
                 )
 
+        # Background enrichment: replace placeholder instructions with AI-generated ones
+        if recipe_creation_success:
+            from app.services.recipe_enrichment_service import enrich_recipe_instructions
+
+            async def _enrich_recipes():
+                for day in generated_plan.days:
+                    for slot in ["breakfast", "lunch", "dinner", "snacks"]:
+                        for item in getattr(day, slot, []):
+                            if item.recipe_id and item.recipe_id not in ("AI_GENERATED", "GENERIC"):
+                                try:
+                                    async with async_session_maker() as enrich_db:
+                                        await enrich_recipe_instructions(enrich_db, item.recipe_id)
+                                except Exception as e:
+                                    logger.warning(f"Enrichment failed for {item.recipe_id}: {e}")
+
+            asyncio.create_task(_enrich_recipes())
+            logger.info("Background recipe enrichment task started")
+
         # Audit: count items with real UUIDs vs still "AI_GENERATED"
         total_items = 0
         real_ids = 0

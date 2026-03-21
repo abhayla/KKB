@@ -38,6 +38,8 @@ data class MealItem(
     val prepTimeMinutes: Int,
     val calories: Int,
     val isLocked: Boolean,
+    val isDayLocked: Boolean = false,
+    val isMealTypeLocked: Boolean = false,
     val order: Int,
     val dietaryTags: List<DietaryTag>
 )

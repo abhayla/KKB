@@ -217,6 +217,8 @@ fun MealPlanItemEntity.toDomain(): MealItem = MealItem(
     prepTimeMinutes = prepTimeMinutes,
     calories = calories,
     isLocked = isLocked,
+    isDayLocked = isDayLocked,
+    isMealTypeLocked = isMealTypeLocked,
     order = order,
     dietaryTags = dietaryTags.mapNotNull { DietaryTag.fromValue(it) }
 )

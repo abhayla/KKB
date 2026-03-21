@@ -82,7 +82,7 @@ class CookingModeViewModelTest {
         fun `initial state should be loading`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(null)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 val initialState = awaitItem()
@@ -96,7 +96,7 @@ class CookingModeViewModelTest {
         fun `after loading recipe should be populated`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -116,7 +116,7 @@ class CookingModeViewModelTest {
         fun `totalSteps should return correct count`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -138,7 +138,7 @@ class CookingModeViewModelTest {
         fun `nextStep should increment step index`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -158,7 +158,7 @@ class CookingModeViewModelTest {
         fun `previousStep should decrement step index`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -181,7 +181,7 @@ class CookingModeViewModelTest {
         fun `goToStep should navigate to specific step`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -201,7 +201,7 @@ class CookingModeViewModelTest {
         fun `isFirstStep should be true on first step`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -218,7 +218,7 @@ class CookingModeViewModelTest {
         fun `isLastStep should be true on last step`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -238,7 +238,7 @@ class CookingModeViewModelTest {
         fun `nextStep on last step should show completion dialog`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -266,7 +266,7 @@ class CookingModeViewModelTest {
         fun `hasTimer should be true for step with duration`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -286,7 +286,7 @@ class CookingModeViewModelTest {
         fun `hasTimer should be false for step without duration`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -303,7 +303,7 @@ class CookingModeViewModelTest {
         fun `startTimer should set timer to running state`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -327,7 +327,7 @@ class CookingModeViewModelTest {
         fun `pauseTimer should set timer to paused state`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -353,7 +353,7 @@ class CookingModeViewModelTest {
         fun `stopTimer should reset timer to idle`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -385,7 +385,7 @@ class CookingModeViewModelTest {
         fun `toggleVoiceGuidance should toggle voice guidance`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial (voice guidance off)
@@ -408,7 +408,7 @@ class CookingModeViewModelTest {
         fun `requestExit should show exit confirmation`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -426,7 +426,7 @@ class CookingModeViewModelTest {
         fun `dismissExitConfirmation should hide exit confirmation`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -447,7 +447,7 @@ class CookingModeViewModelTest {
         fun `confirmExit should emit back navigation event`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.navigationEvent.test {
                 viewModel.confirmExit()
@@ -462,7 +462,7 @@ class CookingModeViewModelTest {
         fun `updateRating should update rating`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -480,7 +480,7 @@ class CookingModeViewModelTest {
         fun `updateFeedback should update feedback`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -498,7 +498,7 @@ class CookingModeViewModelTest {
         fun `skipRating should emit home navigation event`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.navigationEvent.test {
                 viewModel.skipRating()
@@ -518,7 +518,7 @@ class CookingModeViewModelTest {
         fun `recipe not found should show error`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(null)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -536,7 +536,7 @@ class CookingModeViewModelTest {
         fun `clearError should clear error message`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -559,7 +559,7 @@ class CookingModeViewModelTest {
         fun `stepNumber should be 1-indexed`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -576,7 +576,7 @@ class CookingModeViewModelTest {
         fun `progress should be calculated correctly`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -593,7 +593,7 @@ class CookingModeViewModelTest {
         fun `timerDisplayText should format correctly`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository)
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
 
             viewModel.uiState.test {
                 awaitItem() // Initial
