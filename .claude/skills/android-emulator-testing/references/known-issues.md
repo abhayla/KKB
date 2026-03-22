@@ -101,3 +101,30 @@ adb shell settings put global animator_duration_scale 0
 **Solution:** Change `data/build.gradle.kts` line 27 from `"http://localhost:8000/"` to `"http://10.0.2.2:8000/"`. This makes the app's Retrofit base URL match the emulator-to-host mapping.
 **Date Added:** 2026-03-22
 **Verified On:** API 34, Pixel_8a_API_34 — J03 FullJourneyFlowTest PASSED after fix
+
+---
+
+## [EMULATOR] Emulator crashes after ~2 hours of continuous testing
+**Symptom:** `adb devices` shows empty list mid-test-run. Gradle hangs with "waiting for device". No crash dialog on emulator — it just disappears.
+**Root Cause:** WHPX (Windows Hypervisor Platform) emulator is unstable under sustained load (continuous instrumented test execution for 2+ hours). Memory pressure and GPU driver fatigue contribute.
+**Solution:** (1) Plan emulator restart between test tiers in the E2E pipeline. (2) Add emulator health check (`adb devices | grep device`) between each suite run in `run-e2e.sh`. (3) If emulator dead, auto-restart: kill process, `emulator -avd NAME -no-snapshot-load`, wait for boot, disable animations, reinstall APKs. (4) Always clean stale `androidTest-results/` lock files after emulator crash: `rm -rf app/build/outputs/androidTest-results/`.
+**Date Added:** 2026-03-22
+**Verified On:** API 34, Pixel_8a_API_34 — crashed 3 times during extended session
+
+---
+
+## [TIMING] Bottom sheet animation needs 1500ms wait in RecipeRulesRobot
+**Symptom:** `selectIncludeAction()` / `selectExcludeAction()` fails with "Could not find node: TestTag = 'rule_action_include/exclude'" or "Condition still not satisfied after 5000ms".
+**Root Cause:** `tapAddRuleButton()` had only 300ms `Thread.sleep` after clicking. The bottom sheet animation takes longer, especially when the rules list already has many items (more content to push down).
+**Solution:** (1) Increase `tapAddRuleButton` sleep from 300ms to 1500ms. (2) Add `composeTestRule.waitUntil(10000)` in `selectIncludeAction` and `selectExcludeAction` to wait for the TestTag to appear before clicking. (3) Use `onAllNodesWithText()[0]` instead of `onNodeWithText()` in `tapRuleCard` to tolerate duplicate rule names.
+**Date Added:** 2026-03-22
+**Verified On:** API 34 — fixed J07 (29/29), J11 (55/55)
+
+---
+
+## [BUILD] Stale .lck files block Gradle after emulator crash
+**Symptom:** `connectedDebugAndroidTest` fails instantly with "Cannot access output property 'resultsDir' — Failed to create MD5 hash for file utp.0.log.lck".
+**Root Cause:** When the emulator crashes mid-test, Gradle leaves lock files in `app/build/outputs/androidTest-results/connected/debug/`. Next run can't write to the locked directory.
+**Solution:** Always clean before re-running: `rm -rf android/app/build/outputs/androidTest-results/ android/app/build/reports/androidTests/`
+**Date Added:** 2026-03-22
+**Verified On:** Windows 11, Gradle 9.2.1
