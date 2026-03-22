@@ -398,6 +398,41 @@ This helps future developers understand WHY unusual-looking code exists.
 
 ---
 
+## STEP 9: Auto-Record Learning (MANDATORY)
+
+After the fix is verified (Step 7 passes), ALWAYS record the learning. This is NOT optional — skip it and the same bug wastes time again next session.
+
+### 9.1 Classify and Route
+
+| Fix Category | Record To | Skill |
+|-------------|-----------|-------|
+| Emulator/ADB/connectivity issue | `android-emulator-testing/references/known-issues.md` | `/android-emulator-testing add` |
+| Test fixture/timing/flaky issue | Test knowledge base | `/test-knowledge add` |
+| General code pattern | Learnings database | Write to `.claude/learnings.json` |
+
+### 9.2 Record Format
+
+```
+LEARNING RECORDED
+=================
+Category: [TIMING|NETWORK|BUILD|AUTH|EMULATOR|API-COMPAT|STATE|CONFIG]
+Symptom: [exact error message or behavior]
+Root Cause: [one sentence]
+Fix: [what was changed]
+Files: [files modified]
+Reusable: [YES if this pattern could recur | NO if one-off]
+```
+
+### 9.3 Auto-Detect Which Knowledge Base
+
+- Error mentions `adb`, `emulator`, `device`, `boot`, `10.0.2.2` → `/android-emulator-testing add`
+- Error mentions `test`, `assert`, `timeout`, `waitUntil`, `flaky` → `/test-knowledge add`
+- Error mentions `import`, `compile`, `migration`, `schema` → write to learnings directly
+
+This step runs AUTOMATICALLY after every successful fix verification. No user prompt needed.
+
+---
+
 ## Common Debugging Patterns
 
 
