@@ -150,7 +150,7 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
                     Log.d(TAG, "Found button with text: $pattern")
                     composeTestRule.onNodeWithText(pattern, substring = true, ignoreCase = true).performClick()
                     composeTestRule.waitForIdle()
-                    Thread.sleep(300)
+                    Thread.sleep(1500) // Wait for bottom sheet animation to complete
                     return@apply
                 }
             }
@@ -161,7 +161,7 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
                 Log.d(TAG, "Found button via UiAutomator with '+' prefix")
                 addButton.click()
                 composeTestRule.waitForIdle()
-                Thread.sleep(300)
+                Thread.sleep(1500) // Wait for bottom sheet animation
                 return@apply
             }
 
@@ -188,6 +188,12 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
      */
     fun selectIncludeAction() = apply {
         Log.d(TAG, "Selecting Include action")
+        // Wait for add rule sheet to fully render (animation can be slow with many existing rules)
+        Thread.sleep(1000)
+        composeTestRule.waitUntil(10000) {
+            composeTestRule.onAllNodesWithTag(TestTags.RULE_ACTION_INCLUDE)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
         composeTestRule.onNodeWithTag(TestTags.RULE_ACTION_INCLUDE).performClick()
         composeTestRule.waitForIdle()
     }
@@ -198,6 +204,12 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
      */
     fun selectExcludeAction() = apply {
         Log.d(TAG, "Selecting Exclude action")
+        // Wait for add rule sheet to fully render (animation can be slow with many existing rules)
+        Thread.sleep(1000)
+        composeTestRule.waitUntil(10000) {
+            composeTestRule.onAllNodesWithTag(TestTags.RULE_ACTION_EXCLUDE)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
         composeTestRule.onNodeWithTag(TestTags.RULE_ACTION_EXCLUDE).performClick()
         composeTestRule.waitForIdle()
     }
