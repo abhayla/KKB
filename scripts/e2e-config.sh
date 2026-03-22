@@ -81,4 +81,4 @@ declare -A SUITE_NAMES=(
 )
 
 # ─── Timeouts ───────────────────────────────────────────────
-SUITE_TIMEOUT=600  # 10 min per suite (includes Gradle overhead + Gemini AI calls)
+SUITE_TIMEOUT=1800  # 30 min per suite (multi-test suites can have 18+ tests at ~15-30s each + Gradle overhead)
