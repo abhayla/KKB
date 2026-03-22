@@ -857,7 +857,8 @@ class RecipeRulesRobot(private val composeTestRule: ComposeContentTestRule) {
      * Tap on rule card to edit.
      */
     fun tapRuleCard(targetName: String) = apply {
-        composeTestRule.onNodeWithText(targetName, substring = true)
+        // Use onAllNodes + [0] to handle duplicate rule names across test runs
+        composeTestRule.onAllNodesWithText(targetName, substring = true)[0]
             .performScrollTo()
             .performClick()
         composeTestRule.waitForIdle()
