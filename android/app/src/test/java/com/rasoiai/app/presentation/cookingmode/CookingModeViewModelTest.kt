@@ -507,6 +507,51 @@ class CookingModeViewModelTest {
                 cancelAndIgnoreRemainingEvents()
             }
         }
+
+        @Test
+        @DisplayName("submitRating should emit home navigation event after rating")
+        fun `submitRating should emit home navigation event after rating`() = runTest {
+            coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
+            coEvery { mockRecipeRepository.rateRecipe(any(), any(), any()) } returns Result.success(Unit)
+
+            val mockStatsRepository: com.rasoiai.domain.repository.StatsRepository = mockk(relaxed = true)
+            coEvery { mockStatsRepository.recordCookedMeal() } returns Result.success(Unit)
+
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockStatsRepository)
+
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.updateRating(4)
+            viewModel.updateFeedback("Delicious!")
+
+            viewModel.navigationEvent.test {
+                viewModel.submitRating()
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                val event = awaitItem()
+                assertEquals(CookingModeNavigationEvent.NavigateToHome, event)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("confirmExit should dismiss exit confirmation before navigating")
+        fun `confirmExit should dismiss exit confirmation before navigating`() = runTest {
+            coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
+
+            val viewModel = CookingModeViewModel(savedStateHandle, mockRecipeRepository, mockk(relaxed = true))
+
+            viewModel.requestExit()
+            assertTrue(viewModel.uiState.value.showExitConfirmation)
+
+            viewModel.navigationEvent.test {
+                viewModel.confirmExit()
+                val event = awaitItem()
+                assertEquals(CookingModeNavigationEvent.NavigateBack, event)
+                assertFalse(viewModel.uiState.value.showExitConfirmation)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
     }
 
     @Nested

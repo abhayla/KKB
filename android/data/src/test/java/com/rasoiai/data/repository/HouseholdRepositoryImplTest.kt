@@ -109,7 +109,7 @@ class HouseholdRepositoryImplTest {
         isTemporary = false,
         joinDate = "2026-01-27T10:00:00",
         leaveDate = null,
-        portionSize = 1.0f,
+        portionSize = "REGULAR",
         status = "active"
     )
 
@@ -124,7 +124,7 @@ class HouseholdRepositoryImplTest {
         isTemporary = false,
         joinDate = "2026-01-28T10:00:00",
         leaveDate = null,
-        portionSize = 1.0f,
+        portionSize = "REGULAR",
         status = "active"
     )
 
@@ -329,7 +329,7 @@ class HouseholdRepositoryImplTest {
         @Test
         @DisplayName("updateMember calls API and updates locally")
         fun updateMemberSuccess() = runTest {
-            val updatedResponse = testMemberResponse2.copy(canEditSharedPlan = true, portionSize = 1.5f)
+            val updatedResponse = testMemberResponse2.copy(canEditSharedPlan = true, portionSize = "LARGE")
             coEvery { mockApiService.updateHouseholdMember("hh-1", "mem-2", any()) } returns updatedResponse
 
             val result = repository.updateMember(

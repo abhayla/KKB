@@ -494,4 +494,62 @@ class MealPlanRepositoryImplTest {
             assertTrue(result.isSuccess)
         }
     }
+
+    @Nested
+    @DisplayName("Network Timeout and Exception Handling")
+    inner class NetworkTimeoutAndExceptionHandling {
+
+        @Test
+        @DisplayName("Should return failure when API throws SocketTimeoutException during generation")
+        fun `should return failure when generateMealPlan gets SocketTimeoutException`() = runTest {
+            // Given
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.generateMealPlan(any()) } throws java.net.SocketTimeoutException("timeout")
+
+            // When
+            val result = repository.generateMealPlan(testDate)
+
+            // Then
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is java.net.SocketTimeoutException)
+        }
+
+        @Test
+        @DisplayName("Should return failure when API throws IOException during generation")
+        fun `should return failure when generateMealPlan gets IOException`() = runTest {
+            // Given
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.generateMealPlan(any()) } throws java.io.IOException("Network unreachable")
+
+            // When
+            val result = repository.generateMealPlan(testDate)
+
+            // Then
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is java.io.IOException)
+        }
+
+        @Test
+        @DisplayName("Should serve Room data when API is unreachable for current meal plan")
+        fun `should serve Room data when API is unreachable`() = runTest {
+            // Given — Room has cached data, API would fail if called
+            every { mockMealPlanDao.getMealPlanForDate(testDateString) } returns flowOf(testMealPlanEntity)
+            coEvery { mockMealPlanDao.getMealPlanItemsSync("plan-1") } returns testMealItems
+            coEvery { mockMealPlanDao.getFestivalsForMealPlan("plan-1") } returns testFestivals
+            // API is not called by getMealPlanForDate (offline-first), but verify Room serves data
+
+            // When & Then
+            repository.getMealPlanForDate(testDate).test {
+                val mealPlan = awaitItem()
+
+                assertNotNull(mealPlan)
+                assertEquals("plan-1", mealPlan?.id)
+                assertTrue(mealPlan?.days?.isNotEmpty() == true)
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            // API should never be called — getMealPlanForDate is Room-only
+            coVerify(exactly = 0) { mockApiService.getCurrentMealPlan() }
+        }
+    }
 }

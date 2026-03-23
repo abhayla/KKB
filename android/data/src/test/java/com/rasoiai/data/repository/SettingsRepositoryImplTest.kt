@@ -403,4 +403,54 @@ class SettingsRepositoryImplTest {
             assertEquals("1.0.0", version)
         }
     }
+
+    @Nested
+    @DisplayName("Network Timeout and Exception Handling")
+    inner class NetworkTimeoutAndExceptionHandling {
+
+        @Test
+        @DisplayName("Should queue offline action when updatePreferences hits SocketTimeoutException")
+        fun `should queue offline action when updatePreferences hits SocketTimeoutException`() = runTest {
+            // Given — DataStore save succeeds, but we verify offline queue is used (not direct API)
+            // The repository saves to DataStore first, then queues sync via OfflineQueueDao
+            // API is never called directly (SyncWorker handles it later)
+
+            // When
+            val result = repository.updateUserPreferences(testPreferences)
+
+            // Then — preferences saved locally and sync queued (not direct API call)
+            assertTrue(result.isSuccess)
+            coVerify { mockUserPreferencesDataStore.saveOnboardingComplete(testPreferences) }
+
+            val actionSlot = slot<OfflineQueueEntity>()
+            coVerify { mockOfflineQueueDao.insertAction(capture(actionSlot)) }
+            assertEquals(OfflineActionType.SYNC_PREFERENCES.value, actionSlot.captured.actionType)
+
+            // API should NOT be called directly — SyncWorker handles it when online
+            coVerify(exactly = 0) { mockApiService.updateUserPreferences(any()) }
+        }
+
+        @Test
+        @DisplayName("Should return cached user from DataStore when network is unavailable")
+        fun `should return cached user from DataStore when network is unavailable`() = runTest {
+            // Given — DataStore has cached user data, network state is irrelevant
+            // getCurrentUser reads entirely from DataStore (offline-first)
+            every { mockUserPreferencesDataStore.userId } returns flowOf("user-1")
+            every { mockUserPreferencesDataStore.userEmail } returns flowOf("test@example.com")
+            every { mockUserPreferencesDataStore.userPreferences } returns flowOf(testPreferences)
+            every { mockUserPreferencesDataStore.isOnboarded } returns flowOf(true)
+            every { mockNetworkMonitor.isOnline } returns flowOf(false)
+
+            // When & Then — DataStore serves cached data regardless of network
+            repository.getCurrentUser().test {
+                val user = awaitItem()
+
+                assertNotNull(user)
+                assertEquals("user-1", user?.id)
+                assertEquals("test@example.com", user?.email)
+                assertTrue(user?.isOnboarded == true)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+    }
 }

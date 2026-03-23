@@ -45,6 +45,9 @@ import com.rasoiai.domain.model.RuleEnforcement
 import com.rasoiai.domain.model.RuleFrequency
 import com.rasoiai.domain.model.RuleType
 import com.rasoiai.domain.model.WeeklyChallenge
+import com.rasoiai.data.local.entity.NotificationEntity
+import com.rasoiai.data.local.mapper.portionSizeFloatToString
+import com.rasoiai.data.remote.dto.HouseholdMemberResponse
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -811,5 +814,521 @@ class EntityMappersTest {
             assertEquals(0.5f, domain.portionSize)
             assertEquals(MemberStatus.INACTIVE, domain.status)
         }
+    }
+
+    @Nested
+    @DisplayName("Recipe Entity JSON Round-Trip")
+    inner class RecipeEntityJsonRoundTrip {
+
+        @Test
+        @DisplayName("Should round-trip ingredients JSON through entity-domain mapping")
+        fun `should roundTrip ingredients JSON through entity-domain mapping`() {
+            // Given
+            val ingredientsJson = """[{"id":"ing-1","name":"Paneer","quantity":"250","unit":"g","category":"dairy","is_optional":false},{"id":"ing-2","name":"Tomato","quantity":"200","unit":"g","category":"vegetables","is_optional":false}]"""
+            val entity = createRecipeEntity(ingredients = ingredientsJson)
+
+            // When
+            val domain = entity.toDomain()
+
+            // Then
+            assertEquals(2, domain.ingredients.size)
+            assertEquals("Paneer", domain.ingredients[0].name)
+            assertEquals("250", domain.ingredients[0].quantity)
+            assertEquals("g", domain.ingredients[0].unit)
+            assertEquals("Tomato", domain.ingredients[1].name)
+        }
+
+        @Test
+        @DisplayName("Should round-trip instructions JSON through entity-domain mapping")
+        fun `should roundTrip instructions JSON through entity-domain mapping`() {
+            // Given
+            val instructionsJson = """[{"step_number":1,"instruction":"Cut paneer into cubes","duration_minutes":5,"timer_required":false,"tips":"Use fresh paneer"},{"step_number":2,"instruction":"Cook in gravy","duration_minutes":15,"timer_required":true,"tips":null}]"""
+            val entity = createRecipeEntity(instructions = instructionsJson)
+
+            // When
+            val domain = entity.toDomain()
+
+            // Then
+            assertEquals(2, domain.instructions.size)
+            assertEquals(1, domain.instructions[0].stepNumber)
+            assertEquals("Cut paneer into cubes", domain.instructions[0].instruction)
+            assertEquals(5, domain.instructions[0].durationMinutes)
+            assertEquals(2, domain.instructions[1].stepNumber)
+            assertTrue(domain.instructions[1].timerRequired)
+        }
+
+        @Test
+        @DisplayName("Should handle empty JSON arrays gracefully")
+        fun `should handle empty JSON arrays gracefully`() {
+            // Given
+            val entity = createRecipeEntity(ingredients = "[]", instructions = "[]")
+
+            // When
+            val domain = entity.toDomain()
+
+            // Then
+            assertTrue(domain.ingredients.isEmpty())
+            assertTrue(domain.instructions.isEmpty())
+        }
+
+        @Test
+        @DisplayName("Should handle malformed JSON by returning empty list")
+        fun `should handle malformed JSON by returning empty list`() {
+            // Given
+            val entity = createRecipeEntity(
+                ingredients = "this is not valid json{{{",
+                instructions = "also broken["
+            )
+
+            // When
+            val domain = entity.toDomain()
+
+            // Then
+            assertTrue(domain.ingredients.isEmpty())
+            assertTrue(domain.instructions.isEmpty())
+        }
+
+        private fun createRecipeEntity(
+            ingredients: String = "[]",
+            instructions: String = "[]",
+            nutritionInfo: String? = null
+        ) = RecipeEntity(
+            id = "recipe-rt",
+            name = "Round Trip Recipe",
+            description = "Test",
+            imageUrl = null,
+            prepTimeMinutes = 10,
+            cookTimeMinutes = 20,
+            servings = 2,
+            difficulty = "easy",
+            cuisineType = "north",
+            mealTypes = emptyList(),
+            dietaryTags = emptyList(),
+            ingredients = ingredients,
+            instructions = instructions,
+            nutritionInfo = nutritionInfo,
+            calories = null,
+            isFavorite = false,
+            cachedAt = System.currentTimeMillis()
+        )
+    }
+
+    @Nested
+    @DisplayName("ChatMessage Entity JSON Round-Trip")
+    inner class ChatMessageEntityJsonRoundTrip {
+
+        @Test
+        @DisplayName("Should round-trip quickActions through entity-domain-entity mapping")
+        fun `should roundTrip quickActions through entity-domain-entity mapping`() {
+            // Given
+            val domain = ChatMessage(
+                id = "msg-rt-1",
+                content = "Here are some options",
+                isFromUser = false,
+                timestamp = 1706345600000L,
+                quickActions = listOf("Show more", "Different cuisine", "Vegetarian only"),
+                recipeSuggestions = null
+            )
+
+            // When: domain -> entity -> domain
+            val entity = domain.toEntity()
+            val roundTripped = entity.toDomain()
+
+            // Then
+            assertNotNull(roundTripped.quickActions)
+            assertEquals(3, roundTripped.quickActions!!.size)
+            assertEquals("Show more", roundTripped.quickActions!![0])
+            assertEquals("Different cuisine", roundTripped.quickActions!![1])
+            assertEquals("Vegetarian only", roundTripped.quickActions!![2])
+        }
+
+        @Test
+        @DisplayName("Should round-trip recipeSuggestions through entity-domain-entity mapping")
+        fun `should roundTrip recipeSuggestions through entity-domain-entity mapping`() {
+            // Given
+            val domain = ChatMessage(
+                id = "msg-rt-2",
+                content = "Try these recipes",
+                isFromUser = false,
+                timestamp = 1706345600000L,
+                quickActions = null,
+                recipeSuggestions = listOf(
+                    RecipeSuggestion("r-1", "Paneer Tikka", 25, "https://img.com/1.jpg"),
+                    RecipeSuggestion("r-2", "Dal Makhani", 45, null)
+                )
+            )
+
+            // When: domain -> entity -> domain
+            val entity = domain.toEntity()
+            val roundTripped = entity.toDomain()
+
+            // Then
+            assertNotNull(roundTripped.recipeSuggestions)
+            assertEquals(2, roundTripped.recipeSuggestions!!.size)
+            assertEquals("r-1", roundTripped.recipeSuggestions!![0].recipeId)
+            assertEquals("Paneer Tikka", roundTripped.recipeSuggestions!![0].recipeName)
+            assertEquals(25, roundTripped.recipeSuggestions!![0].cookTimeMinutes)
+            assertEquals("https://img.com/1.jpg", roundTripped.recipeSuggestions!![0].imageUrl)
+            assertEquals("r-2", roundTripped.recipeSuggestions!![1].recipeId)
+            assertNull(roundTripped.recipeSuggestions!![1].imageUrl)
+        }
+
+        @Test
+        @DisplayName("Should handle null JSON fields gracefully")
+        fun `should handle null JSON fields gracefully`() {
+            // Given
+            val entity = ChatMessageEntity(
+                id = "msg-rt-3",
+                content = "Plain message",
+                isFromUser = true,
+                timestamp = 1706345600000L,
+                quickActionsJson = null,
+                recipeSuggestionsJson = null
+            )
+
+            // When
+            val domain = entity.toDomain()
+
+            // Then
+            assertNull(domain.quickActions)
+            assertNull(domain.recipeSuggestions)
+        }
+    }
+
+    @Nested
+    @DisplayName("Notification Entity JSON Round-Trip")
+    inner class NotificationEntityJsonRoundTrip {
+
+        @Test
+        @DisplayName("Should round-trip actionData JSON through entity-domain-entity mapping")
+        fun `should roundTrip actionData JSON through entity-domain-entity mapping`() {
+            // Given
+            val entity = NotificationEntity(
+                id = "notif-rt-1",
+                type = "meal_plan_update",
+                title = "Meal Plan Ready",
+                body = "Your weekly meal plan has been generated",
+                actionType = "open_meal_plan",
+                actionData = """{"mealPlanId":"plan-123","recipeId":null,"festivalId":null,"streakCount":null}""",
+                isRead = false,
+                createdAt = 1706345600000L
+            )
+
+            // When: entity -> domain -> entity
+            val domain = entity.toDomain()
+            val roundTripped = domain.toEntity()
+
+            // Then
+            assertNotNull(domain.actionData)
+            assertEquals("plan-123", domain.actionData!!.mealPlanId)
+            assertNull(domain.actionData!!.recipeId)
+            assertNotNull(roundTripped.actionData)
+        }
+
+        @Test
+        @DisplayName("Should handle null actionData gracefully")
+        fun `should handle null actionData gracefully`() {
+            // Given
+            val entity = NotificationEntity(
+                id = "notif-rt-2",
+                type = "shopping_reminder",
+                title = "Time to Shop",
+                body = "Don't forget your groceries",
+                actionType = "open_grocery",
+                actionData = null,
+                isRead = false,
+                createdAt = 1706345600000L
+            )
+
+            // When
+            val domain = entity.toDomain()
+            val roundTripped = domain.toEntity()
+
+            // Then
+            assertNull(domain.actionData)
+            assertNull(roundTripped.actionData)
+        }
+    }
+
+    @Nested
+    @DisplayName("Portion Size Mapping")
+    inner class PortionSizeMapping {
+
+        @Test
+        @DisplayName("Should map SMALL portion size string to 0.5f via DTO")
+        fun `should map SMALL portion size string to 05f via DTO`() {
+            // Given
+            val dto = createHouseholdMemberDto(portionSize = "SMALL")
+
+            // When: DTO -> Entity (uses portionSizeStringToFloat internally)
+            val entity = dto.toEntity()
+
+            // Then
+            assertEquals(0.5f, entity.portionSize)
+        }
+
+        @Test
+        @DisplayName("Should map REGULAR portion size string to 1.0f via DTO")
+        fun `should map REGULAR portion size string to 10f via DTO`() {
+            // Given
+            val dto = createHouseholdMemberDto(portionSize = "REGULAR")
+
+            // When
+            val entity = dto.toEntity()
+
+            // Then
+            assertEquals(1.0f, entity.portionSize)
+        }
+
+        @Test
+        @DisplayName("Should map LARGE portion size string to 1.5f via DTO")
+        fun `should map LARGE portion size string to 15f via DTO`() {
+            // Given
+            val dto = createHouseholdMemberDto(portionSize = "LARGE")
+
+            // When
+            val entity = dto.toEntity()
+
+            // Then
+            assertEquals(1.5f, entity.portionSize)
+        }
+
+        @Test
+        @DisplayName("Should default unknown portion size string to 1.0f via DTO")
+        fun `should default unknown portion size string to 10f via DTO`() {
+            // Given
+            val dto = createHouseholdMemberDto(portionSize = "UNKNOWN")
+
+            // When
+            val entity = dto.toEntity()
+
+            // Then
+            assertEquals(1.0f, entity.portionSize)
+        }
+
+        @Test
+        @DisplayName("Should map small float to SMALL string")
+        fun `should map small float to SMALL string`() {
+            assertEquals("SMALL", portionSizeFloatToString(0.3f))
+            assertEquals("SMALL", portionSizeFloatToString(0.5f))
+            assertEquals("SMALL", portionSizeFloatToString(0.75f))
+        }
+
+        @Test
+        @DisplayName("Should map regular float to REGULAR string")
+        fun `should map regular float to REGULAR string`() {
+            assertEquals("REGULAR", portionSizeFloatToString(0.76f))
+            assertEquals("REGULAR", portionSizeFloatToString(1.0f))
+            assertEquals("REGULAR", portionSizeFloatToString(1.25f))
+        }
+
+        @Test
+        @DisplayName("Should map large float to LARGE string")
+        fun `should map large float to LARGE string`() {
+            assertEquals("LARGE", portionSizeFloatToString(1.26f))
+            assertEquals("LARGE", portionSizeFloatToString(1.5f))
+            assertEquals("LARGE", portionSizeFloatToString(2.0f))
+        }
+
+        private fun createHouseholdMemberDto(portionSize: String = "REGULAR") =
+            HouseholdMemberResponse(
+                id = "mem-ps",
+                householdId = "hh-1",
+                userId = "user-1",
+                name = "Test User",
+                role = "member",
+                canEditSharedPlan = false,
+                isTemporary = false,
+                joinDate = "2026-03-01T10:00:00",
+                portionSize = portionSize,
+                status = "active"
+            )
+    }
+
+    @Nested
+    @DisplayName("Malformed JSON Safety")
+    inner class MalformedJsonSafety {
+
+        // ==================== Recipe Entity malformed JSON ====================
+
+        @Test
+        @DisplayName("Recipe with completely invalid ingredients JSON returns empty list")
+        fun test_recipe_ingredients_invalidJson_returnsEmptyList() {
+            val entity = createRecipeEntity(ingredients = "not json at all")
+            val domain = entity.toDomain()
+            assertTrue(domain.ingredients.isEmpty())
+        }
+
+        @Test
+        @DisplayName("Recipe with partial/unclosed ingredients JSON returns empty list")
+        fun test_recipe_ingredients_partialJson_returnsEmptyList() {
+            val entity = createRecipeEntity(ingredients = """[{"name":"Paneer"""")
+            val domain = entity.toDomain()
+            assertTrue(domain.ingredients.isEmpty())
+        }
+
+        @Test
+        @DisplayName("Recipe with wrong type instructions JSON returns empty list")
+        fun test_recipe_instructions_wrongType_returnsEmptyList() {
+            val entity = createRecipeEntity(instructions = "42")
+            val domain = entity.toDomain()
+            assertTrue(domain.instructions.isEmpty())
+        }
+
+        @Test
+        @DisplayName("Recipe with null-value instructions JSON returns empty list")
+        fun test_recipe_instructions_nullValue_returnsEmptyList() {
+            val entity = createRecipeEntity(instructions = "null")
+            val domain = entity.toDomain()
+            assertTrue(domain.instructions.isEmpty())
+        }
+
+        @Test
+        @DisplayName("Recipe with malformed nutritionInfo JSON returns null")
+        fun test_recipe_nutritionInfo_malformed_returnsNull() {
+            val entity = createRecipeEntity(nutritionInfo = "{broken")
+            val domain = entity.toDomain()
+            assertNull(domain.nutrition)
+        }
+
+        // ==================== Chat Message malformed JSON ====================
+
+        @Test
+        @DisplayName("ChatMessage with malformed quickActionsJson handled gracefully")
+        fun test_chatMessage_quickActionsJson_malformed_handledGracefully() {
+            val entity = ChatMessageEntity(
+                id = "msg-malformed-1",
+                content = "Test message",
+                isFromUser = false,
+                timestamp = 1706345600000L,
+                quickActionsJson = "{{bad}}",
+                recipeSuggestionsJson = null
+            )
+            val domain = entity.toDomain()
+            assertNull(domain.quickActions)
+        }
+
+        @Test
+        @DisplayName("ChatMessage with wrong type recipeSuggestionsJson handled gracefully")
+        fun test_chatMessage_recipeSuggestionsJson_wrongType() {
+            val entity = ChatMessageEntity(
+                id = "msg-malformed-2",
+                content = "Test message",
+                isFromUser = false,
+                timestamp = 1706345600000L,
+                quickActionsJson = null,
+                recipeSuggestionsJson = "true"
+            )
+            val domain = entity.toDomain()
+            assertNull(domain.recipeSuggestions)
+        }
+
+        // ==================== Notification Entity malformed JSON ====================
+
+        @Test
+        @DisplayName("Notification with malformed actionData returns null")
+        fun test_notification_actionData_malformed_returnsNull() {
+            val entity = NotificationEntity(
+                id = "notif-malformed-1",
+                type = "meal_plan_update",
+                title = "Test",
+                body = "Test body",
+                actionType = "open_meal_plan",
+                actionData = "not{json",
+                isRead = false,
+                createdAt = 1706345600000L
+            )
+            val domain = entity.toDomain()
+            assertNull(domain.actionData)
+        }
+
+        @Test
+        @DisplayName("Notification with empty string actionData returns null")
+        fun test_notification_actionData_emptyString_returnsNull() {
+            val entity = NotificationEntity(
+                id = "notif-malformed-2",
+                type = "meal_plan_update",
+                title = "Test",
+                body = "Test body",
+                actionType = "open_meal_plan",
+                actionData = "",
+                isRead = false,
+                createdAt = 1706345600000L
+            )
+            val domain = entity.toDomain()
+            assertNull(domain.actionData)
+        }
+
+        // ==================== Household portion size edge cases ====================
+
+        @Test
+        @DisplayName("Empty string portion size defaults to REGULAR (1.0f) via DTO")
+        fun test_portionSize_emptyString_defaultsToRegular() {
+            val dto = createHouseholdMemberDto(portionSize = "")
+            val entity = dto.toEntity()
+            assertEquals(1.0f, entity.portionSize)
+        }
+
+        @Test
+        @DisplayName("Numeric string portion size defaults to REGULAR (1.0f) via DTO")
+        fun test_portionSize_numericString_defaultsToRegular() {
+            val dto = createHouseholdMemberDto(portionSize = "1.5")
+            val entity = dto.toEntity()
+            assertEquals(1.0f, entity.portionSize)
+        }
+
+        @Test
+        @DisplayName("Default portion size maps to REGULAR (1.0f) via DTO")
+        fun test_portionSize_null_defaultsToRegular() {
+            // HouseholdMemberResponse.portionSize defaults to "REGULAR" when not provided
+            val dto = HouseholdMemberResponse(
+                id = "mem-default",
+                householdId = "hh-1",
+                userId = "user-1",
+                name = "Test User",
+                role = "member",
+                joinDate = "2026-03-01T10:00:00"
+            )
+            val entity = dto.toEntity()
+            assertEquals(1.0f, entity.portionSize)
+        }
+
+        private fun createRecipeEntity(
+            ingredients: String = "[]",
+            instructions: String = "[]",
+            nutritionInfo: String? = null
+        ) = RecipeEntity(
+            id = "recipe-malformed",
+            name = "Malformed JSON Recipe",
+            description = "Test",
+            imageUrl = null,
+            prepTimeMinutes = 10,
+            cookTimeMinutes = 20,
+            servings = 2,
+            difficulty = "easy",
+            cuisineType = "north",
+            mealTypes = emptyList(),
+            dietaryTags = emptyList(),
+            ingredients = ingredients,
+            instructions = instructions,
+            nutritionInfo = nutritionInfo,
+            calories = null,
+            isFavorite = false,
+            cachedAt = System.currentTimeMillis()
+        )
+
+        private fun createHouseholdMemberDto(portionSize: String = "REGULAR") =
+            HouseholdMemberResponse(
+                id = "mem-malformed",
+                householdId = "hh-1",
+                userId = "user-1",
+                name = "Test User",
+                role = "member",
+                canEditSharedPlan = false,
+                isTemporary = false,
+                joinDate = "2026-03-01T10:00:00",
+                portionSize = portionSize,
+                status = "active"
+            )
     }
 }

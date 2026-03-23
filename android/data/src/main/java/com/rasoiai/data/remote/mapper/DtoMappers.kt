@@ -13,6 +13,7 @@ import com.rasoiai.data.remote.dto.UserPreferencesDto
 import com.rasoiai.data.remote.dto.UserResponse
 import com.rasoiai.domain.model.CookingTimePreference
 import com.rasoiai.domain.model.CuisineType
+import com.rasoiai.domain.model.DayOfWeek
 import com.rasoiai.domain.model.DietaryTag
 import com.rasoiai.domain.model.Difficulty
 import com.rasoiai.domain.model.Festival
@@ -157,9 +158,11 @@ fun UserPreferencesDto.toDomain(): UserPreferences = UserPreferences(
     cuisinePreferences = cuisinePreferences.map { CuisineType.fromValue(it) },
     spiceLevel = SpiceLevel.fromValue(spiceLevel),
     dislikedIngredients = dislikedIngredients,
-    weekdayCookingTimeMinutes = CookingTimePreference.fromValue(cookingTimePreference).maxMinutes.coerceAtMost(60),
-    weekendCookingTimeMinutes = CookingTimePreference.fromValue(cookingTimePreference).maxMinutes.coerceAtMost(90),
-    busyDays = emptyList()
+    weekdayCookingTimeMinutes = weekdayCookingTimeMinutes
+        ?: CookingTimePreference.fromValue(cookingTimePreference).maxMinutes.coerceAtMost(60),
+    weekendCookingTimeMinutes = weekendCookingTimeMinutes
+        ?: CookingTimePreference.fromValue(cookingTimePreference).maxMinutes.coerceAtMost(90),
+    busyDays = busyDays.mapNotNull { DayOfWeek.fromValue(it.lowercase()) }
 )
 
 fun AuthResponse.toUser(): User = user.toDomain()

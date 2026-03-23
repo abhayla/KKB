@@ -878,6 +878,21 @@ fun com.rasoiai.domain.model.HouseholdMember.toEntity(householdId: String): com.
         status = status.value
     )
 
+// ==================== Household Portion Size Mapping ====================
+
+private fun portionSizeStringToFloat(size: String): Float = when (size.uppercase()) {
+    "SMALL" -> 0.5f
+    "REGULAR" -> 1.0f
+    "LARGE" -> 1.5f
+    else -> 1.0f
+}
+
+fun portionSizeFloatToString(size: Float): String = when {
+    size <= 0.75f -> "SMALL"
+    size <= 1.25f -> "REGULAR"
+    else -> "LARGE"
+}
+
 // ==================== Household DTO to Entity Mappers ====================
 
 fun com.rasoiai.data.remote.dto.HouseholdResponse.toEntity(): com.rasoiai.data.local.entity.HouseholdEntity =
@@ -900,13 +915,13 @@ fun com.rasoiai.data.remote.dto.HouseholdMemberResponse.toEntity(): com.rasoiai.
         householdId = householdId,
         userId = userId,
         familyMemberId = familyMemberId,
-        name = name,
+        name = name ?: "Unknown Member",
         role = role,
         canEditSharedPlan = canEditSharedPlan,
         isTemporary = isTemporary,
         joinDate = joinDate,
         leaveDate = leaveDate,
-        portionSize = portionSize,
+        portionSize = portionSizeStringToFloat(portionSize),
         status = status
     )
 

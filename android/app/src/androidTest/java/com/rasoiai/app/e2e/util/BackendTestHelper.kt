@@ -1065,6 +1065,122 @@ object BackendTestHelper {
     }
 
     /**
+     * Lists members of a household.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param authToken JWT Bearer token
+     * @param householdId The household ID
+     * @return JSONArray of household members, or null if failed
+     */
+    fun getHouseholdMembers(
+        baseUrl: String,
+        authToken: String,
+        householdId: String
+    ): JSONArray? {
+        Log.d(TAG, "Fetching household members for: $householdId")
+        val response = getWithRetry(baseUrl, "/api/v1/households/$householdId/members", authToken)
+        return response?.let {
+            try {
+                JSONArray(it)
+            } catch (e: Exception) {
+                Log.w(TAG, "getHouseholdMembers parse error: ${e.message}")
+                null
+            }
+        }
+    }
+
+    /**
+     * Adds a member to a household by phone number.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param authToken JWT Bearer token
+     * @param householdId The household ID
+     * @param phoneNumber Phone number of the member to add
+     * @return JSONObject containing the created member, or null if failed
+     */
+    fun addHouseholdMember(
+        baseUrl: String,
+        authToken: String,
+        householdId: String,
+        phoneNumber: String
+    ): JSONObject? {
+        Log.d(TAG, "Adding household member with phone: $phoneNumber")
+        val body = JSONObject().put("phone_number", phoneNumber)
+        val response = postWithRetry(
+            baseUrl, "/api/v1/households/$householdId/members", body, authToken
+        )
+        return response?.let {
+            try {
+                JSONObject(it).also { json ->
+                    Log.d(TAG, "addHouseholdMember success: id=${json.optString("id")}")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "addHouseholdMember parse error: ${e.message}")
+                null
+            }
+        }
+    }
+
+    /**
+     * Updates a household member (e.g., portion_size, role).
+     *
+     * @param baseUrl The base URL of the backend
+     * @param authToken JWT Bearer token
+     * @param householdId The household ID
+     * @param memberId The member ID to update
+     * @param updates JSONObject with update fields
+     * @return JSONObject containing the updated member, or null if failed
+     */
+    fun updateHouseholdMember(
+        baseUrl: String,
+        authToken: String,
+        householdId: String,
+        memberId: String,
+        updates: JSONObject
+    ): JSONObject? {
+        Log.d(TAG, "Updating household member $memberId with: $updates")
+        return retryBackendCall(maxRetries = DEFAULT_MAX_RETRIES) {
+            val client = createClient()
+            val requestBody = updates.toString()
+                .toRequestBody("application/json".toMediaType())
+            val request = Request.Builder()
+                .url("$baseUrl/api/v1/households/$householdId/members/$memberId")
+                .put(requestBody)
+                .addHeader("Authorization", "Bearer $authToken")
+                .build()
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    response.body?.string()?.let { JSONObject(it) }
+                } else {
+                    Log.w(TAG, "PUT member $memberId failed: ${response.code}")
+                    null
+                }
+            }
+        }
+    }
+
+    /**
+     * Removes a member from a household.
+     *
+     * @param baseUrl The base URL of the backend
+     * @param authToken JWT Bearer token
+     * @param householdId The household ID
+     * @param memberId The member ID to remove
+     * @return true if successful
+     */
+    fun removeHouseholdMember(
+        baseUrl: String,
+        authToken: String,
+        householdId: String,
+        memberId: String
+    ): Boolean {
+        Log.d(TAG, "Removing household member: $memberId")
+        return deleteWithRetry(
+            baseUrl, "/api/v1/households/$householdId/members/$memberId", authToken
+        )
+    }
+
+    /**
      * Checks backend connectivity and logs diagnostic information.
      * Useful for debugging test setup issues.
      *

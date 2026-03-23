@@ -355,6 +355,63 @@ class NotificationsViewModelTest {
         }
 
         @Test
+        @DisplayName("Click on grocery notification should navigate to grocery")
+        fun `click on grocery notification should navigate to grocery`() = runTest {
+            coEvery { mockRepository.markAsRead(any()) } returns Result.success(Unit)
+
+            val viewModel = NotificationsViewModel(mockRepository)
+
+            val groceryNotif = Notification(
+                id = "notif-grocery",
+                type = NotificationType.SHOPPING_REMINDER,
+                title = "Shopping list ready",
+                body = "Your grocery list has been updated",
+                imageUrl = null,
+                actionType = NotificationActionType.OPEN_GROCERY,
+                actionData = null,
+                isRead = false,
+                createdAt = System.currentTimeMillis()
+            )
+
+            viewModel.navigationEvent.test {
+                viewModel.onNotificationClick(groceryNotif)
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                val event = awaitItem()
+                assertEquals(NotificationsNavigationEvent.NavigateToGrocery, event)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("Click on NONE action notification should not emit navigation")
+        fun `click on NONE action notification should not emit navigation`() = runTest {
+            coEvery { mockRepository.markAsRead(any()) } returns Result.success(Unit)
+
+            val viewModel = NotificationsViewModel(mockRepository)
+
+            val noActionNotif = Notification(
+                id = "notif-none",
+                type = NotificationType.MEAL_PLAN_UPDATE,
+                title = "Info only",
+                body = "Just FYI",
+                imageUrl = null,
+                actionType = NotificationActionType.NONE,
+                actionData = null,
+                isRead = false,
+                createdAt = System.currentTimeMillis()
+            )
+
+            viewModel.navigationEvent.test {
+                viewModel.onNotificationClick(noActionNotif)
+                testDispatcher.scheduler.advanceUntilIdle()
+
+                expectNoEvents()
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
         @DisplayName("Click on unread notification should mark as read")
         fun `click on unread notification should mark as read`() = runTest {
             coEvery { mockRepository.markAsRead(any()) } returns Result.success(Unit)

@@ -9,7 +9,9 @@ import com.rasoiai.app.e2e.di.FakePhoneAuthClient
 import com.rasoiai.app.e2e.rules.RetryRule
 import com.rasoiai.app.e2e.util.BackendTestHelper
 import com.rasoiai.app.e2e.util.RetryUtils
+import com.rasoiai.data.local.dao.ChatDao
 import com.rasoiai.data.local.dao.MealPlanDao
+import com.rasoiai.data.local.dao.RecipeDao
 import com.rasoiai.data.local.dao.RecipeRulesDao
 import com.rasoiai.data.local.datastore.UserPreferencesDataStoreInterface
 import com.rasoiai.data.local.entity.MealPlanEntity
@@ -87,7 +89,13 @@ abstract class BaseE2ETest {
     lateinit var userPreferencesDataStore: UserPreferencesDataStoreInterface
 
     @Inject
+    lateinit var chatDao: ChatDao
+
+    @Inject
     lateinit var recipeRulesDao: RecipeRulesDao
+
+    @Inject
+    lateinit var recipeDao: RecipeDao
 
     @Inject
     lateinit var mealPlanDao: MealPlanDao

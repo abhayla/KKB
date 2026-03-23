@@ -192,3 +192,53 @@ async def test_unregister_fcm_token(authenticated_client: AsyncClient):
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
+
+
+@pytest.mark.asyncio
+async def test_unregister_fcm_token_unauthenticated(client: AsyncClient):
+    """Test unregistering FCM token without auth returns 401."""
+    from app.main import app
+    from app.api.deps import get_current_user
+    from app.core.exceptions import AuthenticationError
+
+    async def no_auth():
+        raise AuthenticationError("Missing authorization header")
+
+    app.dependency_overrides[get_current_user] = no_auth
+
+    response = await client.delete(
+        "/api/v1/notifications/fcm-token?fcm_token=some-token",
+    )
+    assert response.status_code == 401
+
+    app.dependency_overrides.pop(get_current_user, None)
+
+
+@pytest.mark.asyncio
+async def test_register_fcm_token_idempotent(authenticated_client: AsyncClient):
+    """Test registering the same FCM token twice succeeds (idempotent)."""
+    token_payload = {"fcm_token": "test-idempotent-token"}
+
+    # Register once
+    response1 = await authenticated_client.post(
+        "/api/v1/notifications/fcm-token", json=token_payload
+    )
+    assert response1.status_code == 200
+
+    # Register again with same token — should still succeed
+    response2 = await authenticated_client.post(
+        "/api/v1/notifications/fcm-token", json=token_payload
+    )
+    assert response2.status_code == 200
+    assert response2.json()["success"] is True
+
+
+@pytest.mark.asyncio
+async def test_unregister_nonexistent_fcm_token(authenticated_client: AsyncClient):
+    """Test unregistering a token that was never registered still succeeds."""
+    response = await authenticated_client.delete(
+        "/api/v1/notifications/fcm-token?fcm_token=never-registered-token",
+    )
+    # Unregistering a non-existent token should be a no-op success
+    assert response.status_code == 200
+    assert response.json()["success"] is True

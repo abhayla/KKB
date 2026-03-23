@@ -532,7 +532,7 @@ class DtoMappersTest {
                 isTemporary = false,
                 joinDate = "2026-03-01T10:00:00",
                 leaveDate = null,
-                portionSize = 1.0f,
+                portionSize = "REGULAR",
                 status = "active"
             )
 
@@ -549,6 +549,7 @@ class DtoMappersTest {
             assertTrue(entity.canEditSharedPlan)
             assertFalse(entity.isTemporary)
             assertNull(entity.leaveDate)
+            assertEquals(1.0f, entity.portionSize) // REGULAR maps to 1.0f
         }
 
         @Test
@@ -578,7 +579,7 @@ class DtoMappersTest {
                 isTemporary = false,
                 joinDate = "2026-03-01T10:00:00",
                 leaveDate = null,
-                portionSize = 1.0f,
+                portionSize = "REGULAR",
                 status = "active"
             )
             val dto = HouseholdDetailResponse(

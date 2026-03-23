@@ -25,7 +25,7 @@ data class AddMemberByPhoneRequest(
 
 data class UpdateMemberRequest(
     @SerializedName("can_edit_shared_plan") val canEditSharedPlan: Boolean? = null,
-    @SerializedName("portion_size") val portionSize: Float? = null,
+    @SerializedName("portion_size") val portionSize: String? = null,
     @SerializedName("is_temporary") val isTemporary: Boolean? = null
 )
 
@@ -53,13 +53,13 @@ data class HouseholdMemberResponse(
     @SerializedName("household_id") val householdId: String,
     @SerializedName("user_id") val userId: String? = null,
     @SerializedName("family_member_id") val familyMemberId: String? = null,
-    val name: String,
+    val name: String? = null,
     val role: String,
     @SerializedName("can_edit_shared_plan") val canEditSharedPlan: Boolean = false,
     @SerializedName("is_temporary") val isTemporary: Boolean = false,
     @SerializedName("join_date") val joinDate: String,
     @SerializedName("leave_date") val leaveDate: String? = null,
-    @SerializedName("portion_size") val portionSize: Float = 1.0f,
+    @SerializedName("portion_size") val portionSize: String = "REGULAR",
     val status: String = "active"
 )
 

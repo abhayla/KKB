@@ -210,4 +210,37 @@ class ChatRepositoryImplTest {
             assertTrue(actions.size >= 4)
         }
     }
+
+    @Nested
+    @DisplayName("Network Timeout and Exception Handling")
+    inner class NetworkTimeoutAndExceptionHandling {
+
+        @Test
+        @DisplayName("Should return error when sendMessage encounters SocketTimeoutException from DAO")
+        fun `should return error when sendMessage encounters SocketTimeoutException`() = runTest {
+            // Given — DAO throws (simulating underlying storage/network failure)
+            coEvery { mockChatDao.insertMessage(any()) } throws java.net.SocketTimeoutException("timeout")
+
+            // When
+            val result = repository.sendMessage("Hello")
+
+            // Then
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is java.net.SocketTimeoutException)
+        }
+
+        @Test
+        @DisplayName("Should return error when sendImageMessage encounters IOException")
+        fun `should return error when sendImageMessage encounters IOException`() = runTest {
+            // Given — API throws on image upload
+            coEvery { mockApiService.sendImageChatMessage(any()) } throws java.io.IOException("Network unreachable")
+
+            // When
+            val result = repository.sendImageMessage("content://media/image/1")
+
+            // Then
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is java.io.IOException || result.exceptionOrNull() is Exception)
+        }
+    }
 }

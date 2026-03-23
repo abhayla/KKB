@@ -153,7 +153,11 @@ class HouseholdRepositoryImpl @Inject constructor(
             val response = apiService.updateHouseholdMember(
                 householdId,
                 memberId,
-                UpdateMemberRequest(canEditSharedPlan, portionSize, isTemporary)
+                UpdateMemberRequest(
+                    canEditSharedPlan,
+                    portionSize?.let { com.rasoiai.data.local.mapper.portionSizeFloatToString(it) },
+                    isTemporary
+                )
             )
             val entity = response.toEntity()
             householdDao.updateMember(entity)

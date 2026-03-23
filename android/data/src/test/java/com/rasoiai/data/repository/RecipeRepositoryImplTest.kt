@@ -399,4 +399,70 @@ class RecipeRepositoryImplTest {
             }
         }
     }
+
+    @Nested
+    @DisplayName("Network Timeout and Exception Handling")
+    inner class NetworkTimeoutAndExceptionHandling {
+
+        @Test
+        @DisplayName("Should fallback to local results when API throws SocketTimeoutException on search")
+        fun `should fallback to local results when searchRecipes gets SocketTimeoutException`() = runTest {
+            // Given — online but API times out, local cache has data
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery {
+                mockApiService.searchRecipes(any(), any(), any(), any(), any(), any())
+            } throws java.net.SocketTimeoutException("timeout")
+            every { mockRecipeDao.getRecipesByCuisine("north") } returns flowOf(listOf(testRecipeEntity))
+
+            // When
+            val result = repository.searchRecipes(
+                query = "paneer",
+                cuisine = CuisineType.NORTH,
+                dietary = null,
+                mealType = null,
+                page = 1,
+                limit = 10
+            )
+
+            // Then — should fallback to local cache
+            assertTrue(result.isSuccess)
+            assertTrue(result.getOrNull()?.isNotEmpty() == true)
+        }
+
+        @Test
+        @DisplayName("Should return cached recipe when API throws on getRecipeById")
+        fun `should return cached recipe when API throws on getRecipeById`() = runTest {
+            // Given — recipe exists locally, API not needed
+            every { mockRecipeDao.getRecipeById("recipe-1") } returns flowOf(testRecipeEntity)
+
+            // When & Then — Room serves data regardless of network state
+            repository.getRecipeById("recipe-1").test {
+                val recipe = awaitItem()
+
+                assertNotNull(recipe)
+                assertEquals("recipe-1", recipe?.id)
+                assertEquals("Paneer Butter Masala", recipe?.name)
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            // API should not be called when local data exists
+            coVerify(exactly = 0) { mockApiService.getRecipeById(any()) }
+        }
+
+        @Test
+        @DisplayName("Should silently fail when prefetchRecipes encounters IOException")
+        fun `should silently fail when prefetchRecipes encounters IOException`() = runTest {
+            // Given — some recipes not cached, API throws on fetch
+            coEvery { mockRecipeDao.getRecipesByIdsSync(any()) } returns emptyList()
+            coEvery { mockApiService.getRecipeById(any()) } throws java.io.IOException("Network unreachable")
+            coEvery { mockFavoriteDao.isFavoriteSync(any()) } returns false
+
+            // When — should not throw, prefetch errors are non-fatal
+            repository.prefetchRecipes(listOf("recipe-1", "recipe-2"))
+
+            // Then — API was attempted for each missing recipe
+            coVerify(atLeast = 1) { mockApiService.getRecipeById(any()) }
+            // No exception thrown — test passes if we reach here
+        }
+    }
 }

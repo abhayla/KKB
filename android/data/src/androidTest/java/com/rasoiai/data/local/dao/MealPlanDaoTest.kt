@@ -419,4 +419,175 @@ class MealPlanDaoTest : BaseDaoTest() {
         val items = mealPlanDao.getMealPlanItemsSync(testMealPlan.id)
         assertTrue(items.isEmpty())
     }
+
+    // ==================== replaceMealPlan Detailed Tests ====================
+
+    @Test
+    fun replaceMealPlan_deletesOldItems() = runTest {
+        // Given - insert plan with original item
+        mealPlanDao.insertMealPlanWithItems(
+            testMealPlan,
+            listOf(testMealPlanItem),
+            emptyList()
+        )
+        val oldItems = mealPlanDao.getMealPlanItemsSync(testMealPlan.id)
+        assertEquals(1, oldItems.size)
+        assertEquals("Poha", oldItems.first().recipeName)
+
+        // When - replace with completely different items
+        val newItems = listOf(
+            testMealPlanItem.copy(
+                id = "item-new-1",
+                recipeId = "recipe-new",
+                recipeName = "Upma",
+                mealType = "breakfast"
+            )
+        )
+        mealPlanDao.replaceMealPlan(testMealPlan, newItems)
+
+        // Then - old "Poha" item should be gone
+        val resultItems = mealPlanDao.getMealPlanItemsSync(testMealPlan.id)
+        assertTrue(resultItems.none { it.recipeName == "Poha" })
+        assertTrue(resultItems.none { it.id == "item-1" })
+    }
+
+    @Test
+    fun replaceMealPlan_insertsNewItems() = runTest {
+        // Given - insert plan with original item
+        mealPlanDao.insertMealPlanWithItems(
+            testMealPlan,
+            listOf(testMealPlanItem),
+            emptyList()
+        )
+
+        // When - replace with two new items
+        val newItems = listOf(
+            testMealPlanItem.copy(id = "item-a", recipeId = "r-a", recipeName = "Idli"),
+            testMealPlanItem.copy(id = "item-b", recipeId = "r-b", recipeName = "Dosa", mealType = "lunch")
+        )
+        mealPlanDao.replaceMealPlan(testMealPlan, newItems)
+
+        // Then - new items should be present
+        val resultItems = mealPlanDao.getMealPlanItemsSync(testMealPlan.id)
+        assertEquals(2, resultItems.size)
+        assertTrue(resultItems.any { it.recipeName == "Idli" })
+        assertTrue(resultItems.any { it.recipeName == "Dosa" })
+    }
+
+    @Test
+    fun replaceMealPlan_preservesPlanId() = runTest {
+        // Given
+        mealPlanDao.insertMealPlanWithItems(
+            testMealPlan,
+            listOf(testMealPlanItem),
+            emptyList()
+        )
+
+        // When - replace with updated timestamps but same ID
+        val updatedPlan = testMealPlan.copy(updatedAt = System.currentTimeMillis() + 10000)
+        mealPlanDao.replaceMealPlan(
+            updatedPlan,
+            listOf(testMealPlanItem.copy(id = "item-new", recipeId = "r-new", recipeName = "New Item"))
+        )
+
+        // Then - plan ID is preserved, plan still retrievable
+        val plan = mealPlanDao.getMealPlanById("plan-1")
+        assertNotNull(plan)
+        assertEquals("plan-1", plan!!.id)
+        assertEquals(testMealPlan.weekStartDate, plan.weekStartDate)
+    }
+
+    // ==================== hasMealPlanForDate Tests ====================
+
+    @Test
+    fun hasMealPlanForDate_trueWhenExists() = runTest {
+        // Given
+        mealPlanDao.insertMealPlan(testMealPlan)
+
+        // When - date within range
+        val exists = mealPlanDao.hasMealPlanForDate("2026-01-29")
+
+        // Then
+        assertTrue(exists)
+    }
+
+    @Test
+    fun hasMealPlanForDate_falseWhenOutOfRange() = runTest {
+        // Given
+        mealPlanDao.insertMealPlan(testMealPlan)
+
+        // When - date outside range
+        val exists = mealPlanDao.hasMealPlanForDate("2026-03-15")
+
+        // Then
+        assertFalse(exists)
+    }
+
+    @Test
+    fun hasMealPlanForDate_falseWhenEmpty() = runTest {
+        // When - no plans at all
+        val exists = mealPlanDao.hasMealPlanForDate("2026-01-29")
+
+        // Then
+        assertFalse(exists)
+    }
+
+    // ==================== Lock State Tests ====================
+
+    @Test
+    fun updateDayLockState_locksAllItemsForDate() = runTest {
+        // Given - two items on the same date, one on a different date
+        mealPlanDao.insertMealPlan(testMealPlan)
+        val items = listOf(
+            testMealPlanItem.copy(id = "item-1", date = "2026-01-27", mealType = "breakfast"),
+            testMealPlanItem.copy(id = "item-2", date = "2026-01-27", mealType = "lunch", recipeId = "r2"),
+            testMealPlanItem.copy(id = "item-3", date = "2026-01-28", mealType = "breakfast", recipeId = "r3")
+        )
+        mealPlanDao.insertMealPlanItems(items)
+
+        // When - lock day 2026-01-27
+        mealPlanDao.updateDayLockState(
+            mealPlanId = "plan-1",
+            date = "2026-01-27",
+            isLocked = true
+        )
+
+        // Then - items on 01-27 are locked, item on 01-28 is not
+        val allItems = mealPlanDao.getMealPlanItemsSync("plan-1")
+        val lockedItems = allItems.filter { it.date == "2026-01-27" }
+        val unlockedItems = allItems.filter { it.date == "2026-01-28" }
+
+        assertEquals(2, lockedItems.size)
+        assertTrue(lockedItems.all { it.isDayLocked })
+        assertEquals(1, unlockedItems.size)
+        assertFalse(unlockedItems.first().isDayLocked)
+    }
+
+    @Test
+    fun updateMealTypeLockState_locksSpecificMealType() = runTest {
+        // Given - two items on same date with different meal types
+        mealPlanDao.insertMealPlan(testMealPlan)
+        val items = listOf(
+            testMealPlanItem.copy(id = "item-1", date = "2026-01-27", mealType = "breakfast"),
+            testMealPlanItem.copy(id = "item-2", date = "2026-01-27", mealType = "lunch", recipeId = "r2"),
+            testMealPlanItem.copy(id = "item-3", date = "2026-01-27", mealType = "dinner", recipeId = "r3")
+        )
+        mealPlanDao.insertMealPlanItems(items)
+
+        // When - lock only lunch on 2026-01-27
+        mealPlanDao.updateMealTypeLockState(
+            mealPlanId = "plan-1",
+            date = "2026-01-27",
+            mealType = "lunch",
+            isLocked = true
+        )
+
+        // Then - only lunch is locked
+        val allItems = mealPlanDao.getMealPlanItemsSync("plan-1")
+        val lunchItem = allItems.first { it.mealType == "lunch" }
+        val otherItems = allItems.filter { it.mealType != "lunch" }
+
+        assertTrue(lunchItem.isMealTypeLocked)
+        assertTrue(otherItems.all { !it.isMealTypeLocked })
+    }
 }

@@ -1,10 +1,17 @@
 package com.rasoiai.app.e2e.journeys
 
+import android.util.Log
 import com.rasoiai.app.e2e.base.BaseE2ETest
 import com.rasoiai.app.e2e.robots.AuthRobot
+import com.rasoiai.app.e2e.robots.HomeRobot
 import com.rasoiai.app.e2e.robots.OnboardingRobot
+import com.rasoiai.app.e2e.util.BackendTestHelper
 import com.rasoiai.app.e2e.util.JourneyStepLogger
 import dagger.hilt.android.testing.HiltAndroidTest
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -22,8 +29,13 @@ import org.junit.Test
 @HiltAndroidTest
 class J01_FirstTimeUserJourney : BaseE2ETest() {
 
+    companion object {
+        private const val TAG = "J01_FirstTimeUser"
+    }
+
     private lateinit var authRobot: AuthRobot
     private lateinit var onboardingRobot: OnboardingRobot
+    private lateinit var homeRobot: HomeRobot
     private val logger = JourneyStepLogger("J01")
 
     @Before
@@ -32,14 +44,17 @@ class J01_FirstTimeUserJourney : BaseE2ETest() {
         setUpNewUserState()
         authRobot = AuthRobot(composeTestRule)
         onboardingRobot = OnboardingRobot(composeTestRule)
+        homeRobot = HomeRobot(composeTestRule)
     }
 
     @Test
     fun firstTimeUserJourney() {
         val profile = activeProfile
-        val totalSteps = 5
+        val totalSteps = 8
 
         try {
+            val journeyStartTime = System.currentTimeMillis()
+
             logger.step(1, totalSteps, "Auth screen displayed") {
                 authRobot.waitForAuthScreen()
                 authRobot.assertAuthScreenDisplayed()
@@ -94,6 +109,45 @@ class J01_FirstTimeUserJourney : BaseE2ETest() {
                 onboardingRobot.tapCreateMealPlan()
                 onboardingRobot.waitForGeneratingScreen()
             }
+
+            logger.step(6, totalSteps, "Home screen appears after generation") {
+                val homeLoadStart = System.currentTimeMillis()
+                homeRobot.waitForHomeScreen(HOME_SCREEN_TIMEOUT_MS)
+                homeRobot.assertHomeScreenDisplayed()
+                val homeLoadTime = System.currentTimeMillis() - homeLoadStart
+                Log.i(TAG, "Home screen load time: ${homeLoadTime}ms")
+                assertTrue(
+                    "Home screen should load within 5s (took ${homeLoadTime}ms)",
+                    homeLoadTime < 5_000
+                )
+            }
+
+            logger.step(7, totalSteps, "Backend has meal plan") {
+                val apiStart = System.currentTimeMillis()
+                val authToken = runBlocking { userPreferencesDataStore.accessToken.first() }
+                assertNotNull("Auth token should be available after sign-up", authToken)
+                val mealPlanJson = BackendTestHelper.getCurrentMealPlan(BACKEND_BASE_URL, authToken!!)
+                assertNotNull("Backend should have a meal plan after generation", mealPlanJson)
+                val apiTime = System.currentTimeMillis() - apiStart
+                Log.i(TAG, "Backend meal plan verification: ${apiTime}ms")
+                assertTrue(
+                    "Backend API call should complete within 5s (took ${apiTime}ms)",
+                    apiTime < 5_000
+                )
+            }
+
+            logger.step(8, totalSteps, "Room DB has meal plan") {
+                val today = java.time.LocalDate.now().toString()
+                val hasMealPlan = runBlocking { mealPlanDao.hasMealPlanForDate(today) }
+                assertTrue("Room DB should have a meal plan for today ($today)", hasMealPlan)
+            }
+            // Performance guardrail
+            val totalDuration = System.currentTimeMillis() - journeyStartTime
+            Log.i(TAG, "Total journey time: ${totalDuration}ms")
+            assertTrue(
+                "J01 journey should complete within 120s (took ${totalDuration}ms)",
+                totalDuration < 120_000
+            )
         } finally {
             logger.printSummary()
         }

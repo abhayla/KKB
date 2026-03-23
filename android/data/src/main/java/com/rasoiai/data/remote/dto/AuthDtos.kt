@@ -57,6 +57,12 @@ data class UserPreferencesDto(
     val cookingTimePreference: String, // quick, moderate, elaborate
     @SerializedName("spice_level")
     val spiceLevel: String, // mild, medium, spicy
+    @SerializedName("busy_days")
+    val busyDays: List<String> = emptyList(),
+    @SerializedName("weekday_cooking_time_minutes")
+    val weekdayCookingTimeMinutes: Int? = null,
+    @SerializedName("weekend_cooking_time_minutes")
+    val weekendCookingTimeMinutes: Int? = null,
     // Meal generation settings
     @SerializedName("items_per_meal")
     val itemsPerMeal: Int = 2,

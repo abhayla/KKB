@@ -348,6 +348,76 @@ class PantryViewModelTest {
                 cancelAndIgnoreRemainingEvents()
             }
         }
+
+        @Test
+        @DisplayName("navigateToGrocery should emit grocery event")
+        fun `navigateToGrocery should emit grocery event`() = runTest {
+            val viewModel = PantryViewModel(mockPantryRepository, mockk(relaxed = true))
+
+            viewModel.navigationEvent.test {
+                viewModel.navigateToGrocery()
+                val event = awaitItem()
+                assertEquals(PantryNavigationEvent.NavigateToGrocery, event)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("navigateToChat should emit chat event")
+        fun `navigateToChat should emit chat event`() = runTest {
+            val viewModel = PantryViewModel(mockPantryRepository, mockk(relaxed = true))
+
+            viewModel.navigationEvent.test {
+                viewModel.navigateToChat()
+                val event = awaitItem()
+                assertEquals(PantryNavigationEvent.NavigateToChat, event)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("navigateToFavorites should emit favorites event")
+        fun `navigateToFavorites should emit favorites event`() = runTest {
+            val viewModel = PantryViewModel(mockPantryRepository, mockk(relaxed = true))
+
+            viewModel.navigationEvent.test {
+                viewModel.navigateToFavorites()
+                val event = awaitItem()
+                assertEquals(PantryNavigationEvent.NavigateToFavorites, event)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("navigateToStats should emit stats event")
+        fun `navigateToStats should emit stats event`() = runTest {
+            val viewModel = PantryViewModel(mockPantryRepository, mockk(relaxed = true))
+
+            viewModel.navigationEvent.test {
+                viewModel.navigateToStats()
+                val event = awaitItem()
+                assertEquals(PantryNavigationEvent.NavigateToStats, event)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("onFindRecipesClick should include pantry item names in event")
+        fun `onFindRecipesClick should include pantry item names in event`() = runTest {
+            val viewModel = PantryViewModel(mockPantryRepository, mockk(relaxed = true))
+
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.navigationEvent.test {
+                viewModel.onFindRecipesClick()
+                val event = awaitItem()
+                assertTrue(event is PantryNavigationEvent.NavigateToRecipeSearch)
+                val searchEvent = event as PantryNavigationEvent.NavigateToRecipeSearch
+                assertTrue(searchEvent.ingredients.contains("Tomatoes"))
+                assertTrue(searchEvent.ingredients.contains("Milk"))
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
     }
 
     @Nested

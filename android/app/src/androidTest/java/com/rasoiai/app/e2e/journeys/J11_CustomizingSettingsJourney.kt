@@ -1,11 +1,13 @@
 package com.rasoiai.app.e2e.journeys
 
+import android.util.Log
 import com.rasoiai.app.e2e.base.BaseE2ETest
 import com.rasoiai.app.e2e.robots.HomeRobot
 import com.rasoiai.app.e2e.robots.RecipeRulesRobot
 import com.rasoiai.app.e2e.robots.SettingsRobot
 import com.rasoiai.app.e2e.util.JourneyStepLogger
 import dagger.hilt.android.testing.HiltAndroidTest
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -21,6 +23,10 @@ import org.junit.Test
  */
 @HiltAndroidTest
 class J11_CustomizingSettingsJourney : BaseE2ETest() {
+
+    companion object {
+        private const val TAG = "J11_CustomSettings"
+    }
 
     private lateinit var homeRobot: HomeRobot
     private lateinit var settingsRobot: SettingsRobot
@@ -41,11 +47,20 @@ class J11_CustomizingSettingsJourney : BaseE2ETest() {
         val totalSteps = 6
 
         try {
+            val journeyStartTime = System.currentTimeMillis()
+
             logger.step(1, totalSteps, "Navigate to Settings") {
+                val settingsNavStart = System.currentTimeMillis()
                 homeRobot.waitForHomeScreen(HOME_SCREEN_TIMEOUT_MS)
                 homeRobot.navigateToSettings()
                 settingsRobot.waitForSettingsScreen()
                 settingsRobot.assertSettingsScreenDisplayed()
+                val settingsLoadTime = System.currentTimeMillis() - settingsNavStart
+                Log.i(TAG, "Settings screen load time: ${settingsLoadTime}ms")
+                assertTrue(
+                    "Settings screen should load within 3s (took ${settingsLoadTime}ms)",
+                    settingsLoadTime < 3_000
+                )
             }
 
             logger.step(2, totalSteps, "Theme settings") {
@@ -80,6 +95,14 @@ class J11_CustomizingSettingsJourney : BaseE2ETest() {
                 recipeRulesRobot.selectRulesTab()
                 recipeRulesRobot.selectNutritionTab()
             }
+
+            // Performance guardrail
+            val totalDuration = System.currentTimeMillis() - journeyStartTime
+            Log.i(TAG, "Total journey time: ${totalDuration}ms")
+            assertTrue(
+                "J11 journey should complete within 30s (took ${totalDuration}ms)",
+                totalDuration < 30_000
+            )
         } finally {
             logger.printSummary()
         }

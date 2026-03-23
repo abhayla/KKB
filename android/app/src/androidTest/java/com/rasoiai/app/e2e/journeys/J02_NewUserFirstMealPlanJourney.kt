@@ -1,11 +1,13 @@
 package com.rasoiai.app.e2e.journeys
 
+import android.util.Log
 import com.rasoiai.app.e2e.base.BaseE2ETest
 import com.rasoiai.app.e2e.robots.AuthRobot
 import com.rasoiai.app.e2e.robots.HomeRobot
 import com.rasoiai.app.e2e.robots.OnboardingRobot
 import com.rasoiai.app.e2e.util.JourneyStepLogger
 import dagger.hilt.android.testing.HiltAndroidTest
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -21,6 +23,10 @@ import org.junit.Test
  */
 @HiltAndroidTest
 class J02_NewUserFirstMealPlanJourney : BaseE2ETest() {
+
+    companion object {
+        private const val TAG = "J02_NewUserMealPlan"
+    }
 
     private lateinit var authRobot: AuthRobot
     private lateinit var onboardingRobot: OnboardingRobot
@@ -42,6 +48,8 @@ class J02_NewUserFirstMealPlanJourney : BaseE2ETest() {
         val totalSteps = 6
 
         try {
+            val journeyStartTime = System.currentTimeMillis()
+
             logger.step(1, totalSteps, "Sign up via phone auth") {
                 authRobot.waitForAuthScreen()
                 authRobot.enterPhoneNumber()
@@ -89,8 +97,15 @@ class J02_NewUserFirstMealPlanJourney : BaseE2ETest() {
             }
 
             logger.step(4, totalSteps, "Home screen loads") {
+                val homeLoadStart = System.currentTimeMillis()
                 homeRobot.waitForHomeScreen(HOME_SCREEN_TIMEOUT_MS)
                 homeRobot.assertHomeScreenDisplayed()
+                val homeLoadTime = System.currentTimeMillis() - homeLoadStart
+                Log.i(TAG, "Home screen load time: ${homeLoadTime}ms")
+                assertTrue(
+                    "Home screen should load within 5s (took ${homeLoadTime}ms)",
+                    homeLoadTime < 5_000
+                )
             }
 
             logger.step(5, totalSteps, "Week selector visible") {
@@ -101,6 +116,13 @@ class J02_NewUserFirstMealPlanJourney : BaseE2ETest() {
                 homeRobot.waitForMealListToLoad(MEAL_DATA_TIMEOUT_MS)
                 homeRobot.assertAllMealCardsDisplayed()
             }
+            // Performance guardrail
+            val totalDuration = System.currentTimeMillis() - journeyStartTime
+            Log.i(TAG, "Total journey time: ${totalDuration}ms")
+            assertTrue(
+                "J02 journey should complete within 120s (took ${totalDuration}ms)",
+                totalDuration < 120_000
+            )
         } finally {
             logger.printSummary()
         }
