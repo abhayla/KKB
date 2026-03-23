@@ -178,7 +178,7 @@ class J10_ExploringAppFeaturesJourney : BaseE2ETest() {
                 pantryRobot.waitForPantryScreen()
                 pantryRobot.assertPantryScreenDisplayed()
                 Log.d(TAG, "Pantry screen displayed via Settings navigation")
-                composeTestRule.activity.onBackPressedDispatcher.onBackPressed()
+                composeTestRule.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
                 composeTestRule.waitForIdle()
             }
 

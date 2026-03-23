@@ -84,7 +84,7 @@ class J13_ReturningUserQuickCheckJourney : BaseE2ETest() {
                 Log.i(TAG, "Navigated to Notifications screen")
 
                 // Go back to Home
-                composeTestRule.activity.onBackPressedDispatcher.onBackPressed()
+                composeTestRule.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
                 composeTestRule.waitForIdle()
                 homeRobot.waitForHomeScreen(HOME_SCREEN_TIMEOUT_MS)
                 homeRobot.assertHomeScreenDisplayed()
