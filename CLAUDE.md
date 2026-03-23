@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Session context:** Check @docs/CONTINUE_PROMPT.md for active work between sessions.
+**Session continuity:** Use `/save-session` before ending work, `/start-session` to resume. Session files in `.claude/sessions/`.
 
 **Context compaction:** When compacting, always preserve: the 5-location model import rule, test fixture choices (client vs unauthenticated_client vs authenticated_client), all file paths that were modified, any test commands that were run, the current workflow step number, and any GitHub Issue numbers being worked on.
 
@@ -96,7 +96,7 @@ See `docs/VPS-Deployment.md`. Do NOT modify files in `C:\Apps\shared\`.
 
 | Resource | Location |
 |----------|----------|
-| Session context | `docs/CONTINUE_PROMPT.md` |
+| Session checkpoints | `.claude/sessions/` (via `/save-session` + `/start-session`) |
 | Sub-directory CLAUDE.md | `android/CLAUDE.md`, `backend/CLAUDE.md`, `backend/tests/CLAUDE.md` |
 | E2E testing guide | `docs/testing/E2E-Testing-Prompt.md` |
 | Technical design | `docs/design/RasoiAI Technical Design.md` |
