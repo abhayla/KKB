@@ -101,3 +101,72 @@ See `docs/VPS-Deployment.md`. Do NOT modify files in `C:\Apps\shared\`.
 | E2E testing guide | `docs/testing/E2E-Testing-Prompt.md` |
 | Technical design | `docs/design/RasoiAI Technical Design.md` |
 | MCP Servers | `.mcp.json` — Playwright (web screenshots), ADB (emulator automation) |
+
+<!-- hub:best-practices:start -->
+
+<!-- PROTECTED SECTION — managed by claude-best-practices hub. -->
+<!-- Do NOT condense, rewrite, reorganize, or remove.          -->
+<!-- Any /init or optimization request must SKIP this section.  -->
+
+## Rules for Claude
+
+1. **Bug Fixing**: Use `/fix-loop` or `/fix-issue`. Start by writing a test that reproduces the bug, then fix and prove with a passing test.
+
+### Rules Reference
+
+| Rule File | What It Covers |
+|-----------|---------------|
+| `rules/agent-orchestration.md` | Constraints for multi-agent orchestration patterns in agents and skills. |
+| `rules/ai-gemini.md` | Ai Gemini |
+| `rules/android.md` | Android development rules for Kotlin + Jetpack Compose projects. |
+| `rules/android-dao-query-conventions.md` | Android Dao Query Conventions |
+| `rules/android-kotlin.md` | Kotlin language idioms, null safety, scope functions, and KMP-specific patterns for Android projects. |
+| `rules/android-naming-conventions.md` | Android Naming Conventions |
+| `rules/android-navigation-callbacks.md` | Android Navigation Callbacks |
+| `rules/backend.md` | Backend |
+| `rules/backend-auth-dependency.md` | Backend Auth Dependency |
+| `rules/backend-endpoint-structure.md` | Backend Endpoint Structure |
+| `rules/backend-logging-standards.md` | Backend Logging Standards |
+| `rules/backend-service-layer.md` | Backend Service Layer |
+| `rules/backend-service-pattern.md` | Backend Service Pattern |
+| `rules/baseviewmodel-pattern.md` | Baseviewmodel Pattern |
+| `rules/centralized-mapper-convention.md` | Centralized Mapper Convention |
+| `rules/claude-behavior.md` | Universal behavioral rules for how Claude should approach all tasks. |
+| `rules/compose-testtags-convention.md` | Compose Testtags Convention |
+| `rules/compose-ui.md` | Compose Ui |
+| `rules/configuration-ssot.md` | Scope: global |
+| `rules/context-management.md` | Rules for managing context window, token usage, and documentation references. |
+| `rules/custom-exception-hierarchy.md` | Custom Exception Hierarchy |
+| `rules/database.md` | Database |
+| `rules/e2e-fake-auth.md` | E2E Fake Auth |
+| `rules/e2e-robot-pattern.md` | E2E Robot Pattern |
+| `rules/fastapi-lifespan-pattern.md` | Fastapi Lifespan Pattern |
+| `rules/firebase.md` | Firebase Auth, Firestore, and backend token verification patterns. |
+| `rules/firebase-auth.md` | Firebase Auth |
+| `rules/firestore-vs-postgres-usage.md` | Firestore Vs Postgres Usage |
+| `rules/gemini-structured-output.md` | Gemini Structured Output |
+| `rules/hilt-di-module-convention.md` | Hilt Di Module Convention |
+| `rules/hilt-module-organization.md` | Hilt Module Organization |
+| `rules/model-import-5-locations.md` | Model Import 5 Locations |
+| `rules/module-dependency-direction.md` | Module Dependency Direction |
+| `rules/navigation-screen-pattern.md` | Navigation Screen Pattern |
+| `rules/offline-first-repository.md` | Offline First Repository |
+| `rules/offline-sync-queue.md` | Offline Sync Queue |
+| `rules/prompt-auto-enhance-rule.md` | Auto-enhance every user prompt with project-specific context before acting. Prefix every response with a brief *Enhanced: ...* indicator.
+ |
+| `rules/pydantic-android-schema-sync.md` | Pydantic Android Schema Sync |
+| `rules/rule-writing-meta.md` | Meta-guidance for writing effective CLAUDE.md rules, choosing config file placement, and structuring project instructions. |
+| `rules/security-headers-middleware.md` | Security Headers Middleware |
+| `rules/settings-configuration-validation.md` | Settings Configuration Validation |
+| `rules/superpowers.md` | Superpowers |
+| `rules/tdd-rule.md` | Test-driven development workflow rules for red-green-refactor cycle. |
+| `rules/test-fixture-conventions.md` | Test Fixture Conventions |
+| `rules/testing.md` | Testing conventions and best practices. |
+| `rules/viewmodel-navigation-events.md` | Viewmodel Navigation Events |
+| `rules/workflow.md` | Development workflow guidelines for structured feature implementation and bug fixes. |
+
+## Claude Code Configuration
+
+The `.claude/` directory contains 123 skills, 33 agents, and 47 rules for Claude Code.
+
+<!-- hub:best-practices:end -->
