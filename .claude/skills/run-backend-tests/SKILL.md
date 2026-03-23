@@ -1,9 +1,9 @@
 ---
 name: run-backend-tests
 description: >
-  Run backend pytest with smart defaults and short-name resolution.
+  Run backend pytest with smart defaults, short-name resolution, and auto-fix on failure.
   Use when running backend tests, checking test counts, or verifying backend changes.
-  Resolves short names like "auth" to test_auth.py. Suggests /fix-loop on failure.
+  Resolves short names like "auth" to test_auth.py. Invokes /fix-loop on failure and /learn-n-improve on success.
 allowed-tools: "Bash Read Grep Glob Skill"
 argument-hint: "[test_path] [--coverage] [--collect-only] [-x] [--file <shortname>] [--func <name>]"
 ---
@@ -117,6 +117,41 @@ Backend Tests: FAILED
 ```
 
 If tests fail and the failure looks fixable, suggest invoking `/fix-loop` with the appropriate retest command pre-built.
+
+---
+
+## STEP 6: Auto-Fix and Learn (On Failure Only)
+
+If tests failed in STEP 4, automatically invoke the fix-and-learn pipeline. Do NOT just suggest — invoke directly.
+
+### 6a. Invoke Fix-Loop
+
+```
+Skill("fix-loop", args="<failure_output>\n\nretest_command: cd backend && PYTHONPATH=. pytest {resolved_path} -v --tb=short -x")
+```
+
+This iterates: analyze → fix → retest until green (max 5 iterations).
+
+### 6b. Capture Learnings (On Fix Success)
+
+If `/fix-loop` reports `result: PASSED` or `result: FIXED`:
+
+```
+Skill("learn-n-improve", args="session")
+```
+
+### 6c. Escalation (On Fix Failure)
+
+If `/fix-loop` exhausts 5 iterations without success:
+- Report the failure to the user
+- Suggest `/systematic-debugging` for deeper investigation
+- Do NOT silently continue
+
+### Skip Conditions
+
+Do NOT auto-invoke fix-loop if:
+- `--collect-only` was used (no actual test execution)
+- The failure is an environment error (venv not active, import error from missing PYTHONPATH)
 
 ---
 

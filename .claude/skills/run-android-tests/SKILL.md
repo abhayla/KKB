@@ -1,9 +1,9 @@
 ---
 name: run-android-tests
 description: >
-  Run Android unit, UI, E2E, or journey tests with class name resolution.
+  Run Android unit, UI, E2E, or journey tests with class name resolution and auto-fix on failure.
   Use when running Android tests, verifying UI changes, or checking specific test classes.
-  Auto-detects test type from class name pattern. Suggests /fix-loop on failure.
+  Auto-detects test type from class name pattern. Invokes /fix-loop on failure and /learn-n-improve on success.
 allowed-tools: "Bash Read Grep Glob Skill"
 argument-hint: "<TestClassName> [--unit|--ui|--e2e|--journey] [-x]"
 ---
@@ -142,6 +142,38 @@ Android Tests: FAILED
   Suggested: /fix-loop with retest_command:
     cd android && ./gradlew :app:{command} {args}
 ```
+
+---
+
+## STEP 6: Auto-Fix and Learn (On Failure Only)
+
+If tests failed in STEP 4, automatically invoke the fix-and-learn pipeline. Do NOT just suggest — invoke directly.
+
+### 6a. Invoke Fix-Loop
+
+```
+Skill("fix-loop", args="<failure_output>\n\nretest_command: cd android && ./gradlew :app:{gradle_command} {args}")
+```
+
+### 6b. Capture Learnings (On Fix Success)
+
+If `/fix-loop` reports `result: PASSED` or `result: FIXED`:
+
+```
+Skill("learn-n-improve", args="session")
+```
+
+### 6c. Escalation (On Fix Failure)
+
+If `/fix-loop` exhausts iterations:
+- For **unit tests**: Report failure, suggest `/systematic-debugging`
+- For **E2E/journey tests**: Suggest `/systematic-debugging` first (environment issues masquerade as code bugs per Rule 15)
+
+### Skip Conditions
+
+Do NOT auto-invoke fix-loop if:
+- Build failed before tests ran (Gradle compilation error — fix the build first)
+- No emulator connected (instrumented tests — start emulator first)
 
 ---
 
