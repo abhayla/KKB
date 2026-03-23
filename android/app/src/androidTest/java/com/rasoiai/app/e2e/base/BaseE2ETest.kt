@@ -540,6 +540,23 @@ abstract class BaseE2ETest {
      * Returns the JWT access token and user ID if successful.
      */
     private fun authenticateWithBackend(): AuthResult? {
+        // Check pre-warmed token from HiltTestRunner (available before first test)
+        val preWarmed = com.rasoiai.app.PreWarmedAuth.token
+        val preWarmedId = com.rasoiai.app.PreWarmedAuth.userId
+        if (cachedAuthToken == null && preWarmed != null && preWarmedId != null) {
+            cachedAuthToken = preWarmed
+            cachedUserId = preWarmedId
+            Log.d(TAG, "Using pre-warmed auth token from HiltTestRunner")
+        }
+
+        // Return cached token if available (avoids 2.6s remote DB round-trip)
+        val cached = cachedAuthToken
+        val cachedId = cachedUserId
+        if (cached != null && cachedId != null) {
+            Log.d(TAG, "Using cached auth token (skipping backend call)")
+            return AuthResult(cached, cachedId)
+        }
+
         Log.d(TAG, "Calling backend auth: $BACKEND_BASE_URL/api/v1/auth/firebase")
 
         val result = BackendTestHelper.authenticateWithRetry(
@@ -550,10 +567,11 @@ abstract class BaseE2ETest {
 
         return if (result != null) {
             Log.d(TAG, "Backend auth successful: userId=${result.userId}")
+            cachedAuthToken = result.accessToken
+            cachedUserId = result.userId
             AuthResult(result.accessToken, result.userId)
         } else {
             Log.e(TAG, "Backend auth failed after retries")
-            // Log diagnostic info for debugging
             BackendTestHelper.diagnoseConnection(BACKEND_BASE_URL)
             null
         }
@@ -663,6 +681,10 @@ abstract class BaseE2ETest {
 
         // One-time flag: generate meal plan via Gemini only once across all tests
         private var backendMealPlanGenerated = false
+
+        // Cached auth result — avoids re-authenticating with remote DB every test (2.6s → 0ms)
+        private var cachedAuthToken: String? = null
+        private var cachedUserId: String? = null
 
         // Common timeout values
         const val SHORT_TIMEOUT = 2000L
