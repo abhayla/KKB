@@ -92,6 +92,7 @@ class J07_ManagingDietaryPrefsJourney : BaseE2ETest() {
                 assertNotNull("Auth token should be available", authToken)
 
                 val rulePayload = JSONObject().apply {
+                    put("target_type", "INGREDIENT")
                     put("target_name", TEST_RULE_TARGET)
                     put("action", "INCLUDE")
                     put("frequency_type", "TIMES_PER_WEEK")

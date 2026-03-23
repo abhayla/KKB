@@ -11,7 +11,7 @@ import com.rasoiai.app.e2e.util.JourneyStepLogger
 import dagger.hilt.android.testing.HiltAndroidTest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import org.json.JSONArray
+import org.json.JSONObject
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -190,8 +190,10 @@ class J14_AIChatRecipeDiscoveryJourney : BaseE2ETest() {
                         response != null
                     )
 
-                    val historyArray = JSONArray(response!!)
-                    Log.i(tag, "Backend chat history count: ${historyArray.length()}")
+                    val historyObj = JSONObject(response!!)
+                    val historyArray = historyObj.getJSONArray("messages")
+                    val totalCount = historyObj.optInt("total_count", historyArray.length())
+                    Log.i(tag, "Backend chat history: ${historyArray.length()} messages, total_count=$totalCount")
                     assertTrue(
                         "Expected at least 6 messages in backend chat history (3 user + 3 AI), found ${historyArray.length()}",
                         historyArray.length() >= 6

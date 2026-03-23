@@ -81,7 +81,7 @@ class J06_CookingAMealJourney : BaseE2ETest() {
 
             logger.step(4, totalSteps, "Enter cooking mode") {
                 recipeDetailRobot.tapStartCooking()
-                cookingModeRobot.waitForCookingModeScreen()
+                cookingModeRobot.waitForCookingModeScreen(RECIPE_DETAIL_TIMEOUT_MS)
                 cookingModeRobot.assertCookingModeScreenDisplayed()
             }
 

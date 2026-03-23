@@ -91,6 +91,50 @@ async def create_household(
     return _household_response(household, member_count=1)
 
 
+@router.get("/me", response_model=HouseholdResponse)
+async def get_my_household(user: CurrentUser, db: DbSession):
+    """Get the current user's household. Returns the household they own or belong to."""
+    from app.models.household import Household, HouseholdMember
+    # Check ownership first
+    result = await db.execute(
+        select(Household).where(Household.owner_id == user.id, Household.is_active == True)
+    )
+    household = result.scalar_one_or_none()
+    if household:
+        member_result = await db.execute(
+            select(func.count()).select_from(HouseholdMember).where(
+                HouseholdMember.household_id == household.id,
+                HouseholdMember.status == "ACTIVE",
+            )
+        )
+        count = member_result.scalar() or 0
+        return _household_response(household, member_count=count)
+    # Check membership
+    from sqlalchemy.orm import selectinload
+    result = await db.execute(
+        select(HouseholdMember).where(
+            HouseholdMember.user_id == user.id,
+            HouseholdMember.status == "ACTIVE",
+        )
+    )
+    member = result.scalar_one_or_none()
+    if member:
+        result = await db.execute(
+            select(Household).where(Household.id == member.household_id, Household.is_active == True)
+        )
+        household = result.scalar_one_or_none()
+        if household:
+            member_result = await db.execute(
+                select(func.count()).select_from(HouseholdMember).where(
+                    HouseholdMember.household_id == household.id,
+                    HouseholdMember.status == "ACTIVE",
+                )
+            )
+            count = member_result.scalar() or 0
+            return _household_response(household, member_count=count)
+    raise NotFoundError("User is not a member of any household")
+
+
 @router.get("/{household_id}", response_model=HouseholdDetailResponse)
 async def get_household(household_id: str, user: CurrentUser, db: DbSession):
     """Get household details + members. Must be a member."""

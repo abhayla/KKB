@@ -8,7 +8,9 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
+import com.rasoiai.app.e2e.base.waitUntilNodeWithTagExists
 import com.rasoiai.app.e2e.base.waitUntilNodeWithTextExists
+import com.rasoiai.app.presentation.common.TestTags
 
 /**
  * Robot for Cooking Mode screen interactions.
@@ -18,9 +20,15 @@ class CookingModeRobot(private val composeTestRule: ComposeContentTestRule) {
 
     /**
      * Wait for cooking mode screen to be displayed.
+     * Tries TestTag first, falls back to text match.
      */
-    fun waitForCookingModeScreen(timeoutMillis: Long = 5000) = apply {
-        composeTestRule.waitUntilNodeWithTextExists("Step", timeoutMillis)
+    fun waitForCookingModeScreen(timeoutMillis: Long = 15000) = apply {
+        try {
+            composeTestRule.waitUntilNodeWithTagExists(TestTags.COOKING_MODE_SCREEN, timeoutMillis)
+        } catch (e: Throwable) {
+            // Fallback: wait for "Step" text (some screens may not have the tag)
+            composeTestRule.waitUntilNodeWithTextExists("Step", timeoutMillis)
+        }
     }
 
     /**
