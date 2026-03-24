@@ -2,7 +2,7 @@
   "_meta": {
     "created": "2026-03-21T05:30:33.209484+00:00",
     "hub_repo": "abhayla/claude-best-practices",
-    "last_sync": "2026-03-23T12:51:22.243052+00:00",
+    "last_sync": "2026-03-24T16:49:56.559183+00:00",
     "version": "1.0.0"
   },
   "files": {
@@ -103,24 +103,24 @@
       "synced_at": "2026-03-21T05:30:33.818731+00:00"
     },
     "rules/claude-behavior.md": {
-      "hub_hash": "sha256:a19f7d0995eb1c3484ab91294c825e1a15368939e88d2d3b54c49ce522d97923",
-      "synced_at": "2026-03-21T05:30:36.846184+00:00"
+      "hub_hash": "sha256:0667e3ca3792d2e6cec5ea149217a551a0858508dca2e71b3ec97f4db77ebbd6",
+      "synced_at": "2026-03-24T16:49:56.556716+00:00"
     },
     "rules/configuration-ssot.md": {
       "hub_hash": "sha256:51a52709bb5da53f1323012316f7294d3166e984a5141faf4ac25bc9418c82bc",
       "synced_at": "2026-03-21T05:30:36.846186+00:00"
     },
     "rules/context-management.md": {
-      "hub_hash": "sha256:d44732e7604eec56e9a0862a79df597bf7ed0e8b2ebb7fd2895a166622e2a178",
-      "synced_at": "2026-03-21T05:30:33.818731+00:00"
+      "hub_hash": "sha256:a20da148dd838a5362ab46a270a0ea13a5d047ffcec5986d82195861da94215e",
+      "synced_at": "2026-03-24T16:49:56.556716+00:00"
     },
     "rules/firebase.md": {
       "hub_hash": "sha256:7d173bc7ec83fbadf36727425a02753bb5ed984179927970722d749d1e8c39ae",
       "synced_at": "2026-03-21T05:30:36.846188+00:00"
     },
     "rules/prompt-auto-enhance-rule.md": {
-      "hub_hash": "sha256:52664b0c546f1963caf356b4e234c972e9f6057907fbff47f662961954dee1e8",
-      "synced_at": "2026-03-21T05:30:33.818731+00:00"
+      "hub_hash": "sha256:3f60b71a99f4482039a98f44b1fa50a55199b41c26476fccd658f0e9deb7633e",
+      "synced_at": "2026-03-24T16:49:56.556716+00:00"
     },
     "rules/rule-writing-meta.md": {
       "hub_hash": "sha256:6770188fa4e951c9d5f21feb7c73ed6a8fc7b847356d7b226d9977fa0c4de372",
@@ -135,8 +135,8 @@
       "synced_at": "2026-03-21T05:30:33.818731+00:00"
     },
     "rules/workflow.md": {
-      "hub_hash": "sha256:2aa5eb3c07e99f7960c106757214e66adf98648bd11eda6a31f3de6f70ba2fc4",
-      "synced_at": "2026-03-21T05:30:33.818731+00:00"
+      "hub_hash": "sha256:454500707e91792a9db97b4eda9d13e76019d3975f97022405ff755b50b6e955",
+      "synced_at": "2026-03-24T16:49:56.556716+00:00"
     },
     "skills/a11y-audit/SKILL.md": {
       "hub_hash": "sha256:56f0e5311460176e69c2119250cac724519444883f21dcc8f0950673db524d46",
@@ -419,8 +419,8 @@
       "synced_at": "2026-03-23T12:51:22.195725+00:00"
     },
     "skills/auto-verify/SKILL.md": {
-      "hub_hash": "sha256:ddda06c2d7d39b37ae31484cfa6cc0234b6d1b3760249c887dd3535691d83d41",
-      "synced_at": "2026-03-21T05:30:33.818731+00:00"
+      "hub_hash": "sha256:ebe5bea471187fdd5ae317cc39bee744d2ac387fdd70db672c679297ef30697b",
+      "synced_at": "2026-03-24T16:49:56.556716+00:00"
     },
     "skills/batch/SKILL.md": {
       "hub_hash": "sha256:d3a4c6748534b041b1a5eb0fca7af77730a105f93705c1f5ccd47f86e3b16465",
@@ -991,16 +991,20 @@
       "synced_at": "2026-03-23T12:51:22.195725+00:00"
     },
     "skills/firebase-test/SKILL.md": {
-      "hub_hash": "sha256:cb5aaaee0a323797e4d1ef0c75c7701d2e1f6a4b5702b4e18147eebd6f5333f8",
-      "synced_at": "2026-03-23T12:51:22.195725+00:00"
+      "hub_hash": "sha256:90ae3231f6db98c3775295cdea593267957b4a489123ee14fdf1df8737a593a6",
+      "synced_at": "2026-03-24T16:49:56.556716+00:00"
+    },
+    "skills/firebase-test/references/test-examples.md": {
+      "hub_hash": "sha256:f1cbaa3feb52e1b75e72b25341d0951f5a22d5174e84b2ce7def4abdfbfce8b6",
+      "synced_at": "2026-03-24T16:49:56.556716+00:00"
     },
     "skills/fix-issue/SKILL.md": {
       "hub_hash": "sha256:8ea7573f8e3084fb1650a97a6887a54d441a9eb4ced9bcfc6113a0dbd28f228b",
       "synced_at": "2026-03-21T05:30:33.818731+00:00"
     },
     "skills/fix-loop/SKILL.md": {
-      "hub_hash": "sha256:620e8d8ad9587a73177df51387cb2cb5e856fd03d463ba7a6ee480295188432d",
-      "synced_at": "2026-03-21T05:30:33.818731+00:00"
+      "hub_hash": "sha256:13246115c21b85ea2662c953d1d121c1e296580016cfee60578c6602c7dcbfce",
+      "synced_at": "2026-03-24T16:49:56.556716+00:00"
     },
     "skills/git-worktrees/SKILL.md": {
       "hub_hash": "sha256:2d90ceca8e93d714f4cf820435666dcac68f16d559140a8a28df1c18ecd9c84e",
@@ -1331,8 +1335,12 @@
       "synced_at": "2026-03-21T05:30:33.818731+00:00"
     },
     "skills/learn-n-improve/SKILL.md": {
-      "hub_hash": "sha256:055839c592322e38f888b282ff84cd19d7bd6bbbadd3c08633233510365765aa",
-      "synced_at": "2026-03-23T12:51:22.195725+00:00"
+      "hub_hash": "sha256:0e7108093a4cd416d1a2eb7ea8b0373891b042a8d0a2b8b00f42cd464975cbb5",
+      "synced_at": "2026-03-24T16:49:56.556716+00:00"
+    },
+    "skills/learn-n-improve/references/self-improving-skill-design.md": {
+      "hub_hash": "sha256:fa35509359a3a17de0dbd9a6f750c7cff30e4a54638c7433d610a2d62a6a30ea",
+      "synced_at": "2026-03-24T16:49:56.556716+00:00"
     },
     "skills/merge-strategy/SKILL.md": {
       "hub_hash": "sha256:96e93603c22aa4ca467b11693680ded08a1349b7439a7ed00411fc4df7908a90",
@@ -1559,8 +1567,24 @@
       "synced_at": "2026-03-21T05:30:33.818731+00:00"
     },
     "skills/prompt-auto-enhance/SKILL.md": {
-      "hub_hash": "sha256:0505ca1cbee662a298f33c33d2b262ea4bd07b59a2337e4c58450dc568dfe8bc",
-      "synced_at": "2026-03-23T12:51:22.195725+00:00"
+      "hub_hash": "sha256:5339c215ca18e7aaa0c724c089fb84d7b76932147bd19b68d94a164ce3e40d93",
+      "synced_at": "2026-03-24T16:49:56.556716+00:00"
+    },
+    "skills/prompt-auto-enhance/references/constraint-engineering.md": {
+      "hub_hash": "sha256:c01f76b5af36eb4dd424f488e5e4677f7b35fc9ac3efabff7d8d938300aae88d",
+      "synced_at": "2026-03-24T16:49:56.556716+00:00"
+    },
+    "skills/prompt-auto-enhance/references/format-locking.md": {
+      "hub_hash": "sha256:debaa171eb2b92f11475c2c54434df9bcf80365caa73f1f02c1b58a9012b76a5",
+      "synced_at": "2026-03-24T16:49:56.556716+00:00"
+    },
+    "skills/prompt-auto-enhance/references/prompt-pruning.md": {
+      "hub_hash": "sha256:57ba6f57544859a73c88b817e81c24ac72981c5930790fb3fcc9ed45b183869b",
+      "synced_at": "2026-03-24T16:49:56.556716+00:00"
+    },
+    "skills/prompt-auto-enhance/references/prompt-reliability-scoring.md": {
+      "hub_hash": "sha256:bec9c77d3c97005fad9a6dab49908ffc5a521bbc37bb5cecf3e99ac26fa07d66",
+      "synced_at": "2026-03-24T16:49:56.556716+00:00"
     },
     "skills/pytest-dev/SKILL.md": {
       "hub_hash": "sha256:b02d1c4a2739c7d23c04cd87e5c430a9fa75fda8590b83609335b9e6f33e44a8",
@@ -1999,8 +2023,8 @@
       "synced_at": "2026-03-21T05:30:33.818731+00:00"
     },
     "skills/test-knowledge/SKILL.md": {
-      "hub_hash": "sha256:b16760a035944f20ab2d1ae26aeae334d2485c32549d03910cce4e1f687a82ce",
-      "synced_at": "2026-03-21T05:30:33.818731+00:00"
+      "hub_hash": "sha256:9c6bc01582423480c87a2c6e07a6fd6f61f63c7ea0ea29e679e447c5bc56cfe2",
+      "synced_at": "2026-03-24T16:49:56.556716+00:00"
     },
     "skills/test-maintenance/SKILL.md": {
       "hub_hash": "sha256:9f6be46aa42639babb4f7626302d87a3ed960b3dfb03027109bf105ad946ac9d",

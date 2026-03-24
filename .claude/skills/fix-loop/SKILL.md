@@ -1,9 +1,9 @@
 ---
 name: fix-loop
 description: >
-  Iterative fix cycle: analyze failures, apply minimal fixes, optionally retest.
-  Full Loop mode (with retest command) iterates until resolved. Single Fix mode
-  (no retest) does one pass. Use when tests fail, build breaks, or runtime errors.
+  Analyze failures and iteratively apply minimal fixes, optionally retesting until resolved.
+  Full Loop mode (with retest command) iterates until green. Single Fix mode
+  (no retest) does one pass. Use when tests fail, builds break, or runtime errors occur.
 allowed-tools: "Bash Read Grep Glob Write Edit Skill"
 argument-hint: "[failure_output] [retest_command: <cmd>] [max_iterations: N] [--strict-gates] [--capture-proof | --no-capture-proof]"
 version: "1.2.0"
@@ -175,8 +175,8 @@ After a fix iteration succeeds (test goes from FAIL → PASS), ALWAYS record the
 
 1. **Classify** the fix: `TIMING`, `NETWORK`, `BUILD`, `STATE`, `CONFIG`, `API-COMPAT`, `AUTH`, `EMULATOR`
 2. **Route** to the right knowledge base:
-   - Emulator/ADB issues → `/android-emulator-testing add`
    - Test timing/flaky issues → `/test-knowledge add`
+   - Stack-specific issues (emulator, platform, env) → stack knowledge base if available
    - Other → write symptom + fix to `.claude/learnings.json`
 3. **Log** the learning:
    ```
