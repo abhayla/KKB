@@ -63,12 +63,20 @@ def _build_response_from_firestore(plan: dict[str, Any]) -> MealPlanResponse:
         festival = None
         if day_data.get("festival"):
             f = day_data["festival"]
-            festival = FestivalDto(
-                id=f.get("id", ""),
-                name=f.get("name", ""),
-                is_fasting_day=f.get("is_fasting_day", False),
-                suggested_dishes=f.get("suggested_dishes"),
-            )
+            if isinstance(f, dict):
+                festival = FestivalDto(
+                    id=f.get("id", ""),
+                    name=f.get("name", ""),
+                    is_fasting_day=f.get("is_fasting_day", False),
+                    suggested_dishes=f.get("suggested_dishes"),
+                )
+            elif isinstance(f, str):
+                festival = FestivalDto(
+                    id="",
+                    name=f,
+                    is_fasting_day=False,
+                    suggested_dishes=None,
+                )
 
         days.append(
             MealPlanDayDto(

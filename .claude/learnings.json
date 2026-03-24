@@ -95,6 +95,54 @@
       "lesson": "When writing E2E test helpers that call backend APIs, verify the endpoint actually exists. BackendTestHelper methods should be written AFTER the backend endpoint, not before. Use Swagger /docs to confirm.",
       "tags": ["missing-endpoint", "api-contract", "e2e", "backend"],
       "reuse_count": 0
+    },
+    {
+      "id": "L007",
+      "date": "2026-03-23",
+      "error": {
+        "message": "AttributeError: 'str' object has no attribute 'get' — festival data in _build_response_from_firestore",
+        "file": "backend/app/api/v1/endpoints/meal_plans.py",
+        "context": "DayMeals.festival is a dict from AI service, but MealPlanItem.festival_name is VARCHAR. Repository stored as string, response builder expected dict."
+      },
+      "fix": {
+        "description": "Extract festival name string in repository (festival dict→str), handle both types in response builder (isinstance check for dict vs str)",
+        "diff": "festival_name=day.get('festival', {}).get('name') if isinstance(day.get('festival'), dict) else day.get('festival')"
+      },
+      "lesson": "When data flows through AI service → endpoint → repository → response builder, each layer may expect different types for the same field. Trace the full data path and add isinstance guards at type boundaries.",
+      "tags": ["type-mismatch", "festival", "meal-generation", "data-flow", "backend"],
+      "reuse_count": 0
+    },
+    {
+      "id": "L008",
+      "date": "2026-03-23",
+      "error": {
+        "message": "Fasting day slots depleted to 0-1 items after post-processing enforcement removes grain/rice/wheat/onion/garlic",
+        "file": "backend/app/services/ai_meal_service.py",
+        "context": "_enforce_rules removes fasting-forbidden items but never backfills depleted slots. Navratri fasting day had 0 lunch items, 1 dinner item."
+      },
+      "fix": {
+        "description": "Added fasting-safe fallback items per meal slot and backfill loop after enforcement to ensure minimum 2 items per slot on fasting days",
+        "diff": "_fasting_fallbacks dict with 4 items per slot; loop after enforcement checks len < 2 and appends safe items"
+      },
+      "lesson": "Any post-processing that REMOVES items from a collection must also have a BACKFILL step to maintain minimum counts. Removal-only logic creates empty slots. Test with worst-case input (all items forbidden).",
+      "tags": ["post-processing", "backfill", "fasting", "meal-generation", "minimum-items"],
+      "reuse_count": 0
+    },
+    {
+      "id": "L009",
+      "date": "2026-03-23",
+      "error": {
+        "message": "keyDispatchingTimedOut — ANR after 60s during pressBack() navigation from Recipe Rules to Home",
+        "file": "android/app/src/androidTest/java/com/rasoiai/app/e2e/flows/FullJourneyFlowTest.kt",
+        "context": "UiDevice.pressBack() from Recipe Rules causes TestActivity to lose window focus. System logs: 'no window has focus but TestActivity may eventually add a window. Will wait for 60000ms' → ANR."
+      },
+      "fix": {
+        "description": "Replace pressBack() chain with Activity re-launch using FLAG_ACTIVITY_CLEAR_TOP | NEW_TASK | SINGLE_TOP. This keeps window focus throughout.",
+        "diff": "context.startActivity(intent with CLEAR_TOP flags) instead of uiDevice.pressBack()"
+      },
+      "lesson": "UiDevice.pressBack() can cause Activity window focus loss during Compose navigation transitions, triggering ANR after 60s. For multi-back navigations (2+ levels), use Activity re-launch with CLEAR_TOP instead. Also add composeTestRule.waitForIdle() after any pressBack() to pump the UI queue.",
+      "tags": ["anr", "pressBack", "window-focus", "compose-navigation", "e2e", "activity-relaunch"],
+      "reuse_count": 0
     }
   ]
 }

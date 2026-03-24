@@ -696,29 +696,21 @@ class FullJourneyFlowTest : BaseE2ETest() {
             }
         }
 
-        // Navigate back to Home before next steps
+        // Navigate back to Home before next steps.
+        // pressBack() from Recipe Rules can cause the Activity to lose window focus
+        // and trigger ANR (60s timeout). Use activity re-launch as the primary strategy.
         Log.i(TAG, "Navigating back to Home from Recipe Rules")
-        uiDevice.pressBack() // Recipe Rules -> Settings
-        Thread.sleep(1000)
-        uiDevice.pressBack() // Settings -> Home
-        Thread.sleep(1000)
-        // Verify we're on Home, retry if not
-        var onHome = composeTestRule.onAllNodesWithTag(TestTags.HOME_SCREEN)
-            .fetchSemanticsNodes().isNotEmpty()
-        if (!onHome) {
-            uiDevice.pressBack()
-            Thread.sleep(1000)
-            onHome = composeTestRule.onAllNodesWithTag(TestTags.HOME_SCREEN)
-                .fetchSemanticsNodes().isNotEmpty()
-        }
-        if (!onHome) {
-            // Force restart the activity to get back to home
-            Log.w(TAG, "Back navigation failed, restarting activity")
-            val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-            intent?.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP or android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
-            Thread.sleep(3000)
-        }
+
+        // Re-launch activity with CLEAR_TOP to get a clean Home screen
+        val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+        intent?.addFlags(
+            android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP or
+            android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
+            android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
+        )
+        context.startActivity(intent)
+        Thread.sleep(2000)
+        composeTestRule.waitForIdle()
         homeRobot.waitForHomeScreen(30000)
         Log.i(TAG, "Back on Home screen")
 
@@ -744,7 +736,11 @@ class FullJourneyFlowTest : BaseE2ETest() {
                 break
             }
             Log.w(TAG, "Step 6 generation attempt $genAttempt returned null, retrying in 10s...")
-            Thread.sleep(10000)
+            // Sleep in short bursts with UI interaction to prevent ANR
+            for (i in 1..5) {
+                Thread.sleep(2000)
+                try { composeTestRule.waitForIdle() } catch (_: Exception) { }
+            }
         }
 
         if (mealPlan == null) {
@@ -1022,11 +1018,20 @@ class FullJourneyFlowTest : BaseE2ETest() {
      */
     private fun waitForBackendAvailable(authToken: String, maxWaitSeconds: Int) {
         Log.d(TAG, "Waiting for backend availability (max ${maxWaitSeconds}s)")
-        val ready = BackendTestHelper.waitForBackendReady(
-            BACKEND_BASE_URL,
-            timeoutSeconds = maxWaitSeconds.toLong(),
-            pollIntervalMs = 2000
-        )
+        // Poll in short intervals with UI interaction to prevent ANR.
+        // Android triggers ANR after ~60s of no window focus / input dispatch.
+        val startTime = System.currentTimeMillis()
+        val deadline = startTime + maxWaitSeconds * 1000L
+        var ready = false
+        while (System.currentTimeMillis() < deadline) {
+            ready = BackendTestHelper.isBackendHealthy(BACKEND_BASE_URL)
+            if (ready) break
+            // Keep UI alive — touch Compose tree to prevent ANR
+            try {
+                composeTestRule.waitForIdle()
+            } catch (_: Exception) { /* ignore */ }
+            Thread.sleep(2000)
+        }
         if (!ready) {
             Log.w(TAG, "Backend not responsive after ${maxWaitSeconds}s — proceeding anyway")
         }

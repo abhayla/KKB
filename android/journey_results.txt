@@ -1,0 +1,565 @@
+[1/17] FAIL: J01_FirstTimeUserSuite — 
+--- FAILURE OUTPUT ---
+	at com.android.ddmlib.internal.DeviceImpl.logRun1(DeviceImpl.java:1801)
+	at com.android.ddmlib.internal.DeviceImpl.executeRemoteCommand(DeviceImpl.java:615)
+	at com.android.ddmlib.internal.DeviceImpl.lambda$executeShellCommand$13(DeviceImpl.java:557)
+	at com.android.ddmlib.internal.DeviceImpl.logRun1(DeviceImpl.java:1801)
+	at com.android.ddmlib.internal.DeviceImpl.executeShellCommand(DeviceImpl.java:554)
+	at com.android.ddmlib.PropertyFetcher$1.run(PropertyFetcher.java:209)
+
+
+> Task :app:connectedDebugAndroidTest FAILED
+Skipping device 'emulator-5554' for ':app:': Unknown API Level
+
+ > : No compatible devices connected.[TestRunner] [31mFAILED [0m
+Found 1 connected device(s), 0 of which were compatible.
+Finished 1 tests on TestRunner
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:connectedDebugAndroidTest'.
+> There were failing tests. See the report at: file:///D:/Abhay/VibeCoding/KKB/android/app/build/reports/androidTests/connected/debug/index.html
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 10m 42s
+123 actionable tasks: 1 executed, 122 up-to-date
+Configuration cache entry reused.
+--- END ---
+[2/17] FAIL: J02_NewUserFirstMealPlanSuite — 
+--- FAILURE OUTPUT ---
+> Task :app:compileDebugAndroidTestJavaWithJavac UP-TO-DATE
+> Task :app:hiltAggregateDepsDebugAndroidTest UP-TO-DATE
+> Task :app:hiltJavaCompileDebugAndroidTest UP-TO-DATE
+> Task :app:processDebugAndroidTestJavaRes UP-TO-DATE
+> Task :app:mergeDebugAndroidTestJavaResource UP-TO-DATE
+> Task :app:transformDebugAndroidTestClassesWithAsm UP-TO-DATE
+> Task :app:dexBuilderDebugAndroidTest UP-TO-DATE
+> Task :app:mergeProjectDexDebugAndroidTest UP-TO-DATE
+> Task :app:mergeDebugAndroidTestGlobalSynthetics UP-TO-DATE
+> Task :app:packageDebugAndroidTest UP-TO-DATE
+> Task :app:createDebugAndroidTestApkListingFileRedirect UP-TO-DATE
+
+> Task :app:connectedDebugAndroidTest FAILED
+Skipping device 'emulator-5554' (emulator-5554): Device is OFFLINE.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:connectedDebugAndroidTest'.
+> com.android.builder.testing.api.DeviceException: No online devices found.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 26s
+123 actionable tasks: 1 executed, 122 up-to-date
+Configuration cache entry stored.
+--- END ---
+[3/17] FAIL: J03_CompleteE2EJourneySuite — 
+--- FAILURE OUTPUT ---
+> Task :app:compileDebugAndroidTestJavaWithJavac UP-TO-DATE
+> Task :app:hiltAggregateDepsDebugAndroidTest UP-TO-DATE
+> Task :app:hiltJavaCompileDebugAndroidTest UP-TO-DATE
+> Task :app:processDebugAndroidTestJavaRes UP-TO-DATE
+> Task :app:mergeDebugAndroidTestJavaResource UP-TO-DATE
+> Task :app:transformDebugAndroidTestClassesWithAsm UP-TO-DATE
+> Task :app:dexBuilderDebugAndroidTest UP-TO-DATE
+> Task :app:mergeProjectDexDebugAndroidTest UP-TO-DATE
+> Task :app:mergeDebugAndroidTestGlobalSynthetics UP-TO-DATE
+> Task :app:packageDebugAndroidTest UP-TO-DATE
+> Task :app:createDebugAndroidTestApkListingFileRedirect UP-TO-DATE
+
+> Task :app:connectedDebugAndroidTest FAILED
+Skipping device 'emulator-5554' (emulator-5554): Device is OFFLINE.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:connectedDebugAndroidTest'.
+> com.android.builder.testing.api.DeviceException: No online devices found.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 6s
+123 actionable tasks: 1 executed, 122 up-to-date
+Configuration cache entry stored.
+--- END ---
+[4/17] FAIL: J04_DailyMealPlanningSuite — 
+--- FAILURE OUTPUT ---
+> Task :app:compileDebugAndroidTestJavaWithJavac UP-TO-DATE
+> Task :app:hiltAggregateDepsDebugAndroidTest UP-TO-DATE
+> Task :app:hiltJavaCompileDebugAndroidTest UP-TO-DATE
+> Task :app:processDebugAndroidTestJavaRes UP-TO-DATE
+> Task :app:mergeDebugAndroidTestJavaResource UP-TO-DATE
+> Task :app:transformDebugAndroidTestClassesWithAsm UP-TO-DATE
+> Task :app:dexBuilderDebugAndroidTest UP-TO-DATE
+> Task :app:mergeProjectDexDebugAndroidTest UP-TO-DATE
+> Task :app:mergeDebugAndroidTestGlobalSynthetics UP-TO-DATE
+> Task :app:packageDebugAndroidTest UP-TO-DATE
+> Task :app:createDebugAndroidTestApkListingFileRedirect UP-TO-DATE
+
+> Task :app:connectedDebugAndroidTest FAILED
+Skipping device 'emulator-5554' (emulator-5554): Device is OFFLINE.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:connectedDebugAndroidTest'.
+> com.android.builder.testing.api.DeviceException: No online devices found.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 8s
+123 actionable tasks: 1 executed, 122 up-to-date
+Configuration cache entry stored.
+--- END ---
+[5/17] FAIL: J05_WeeklyGroceryShoppingSuite — 
+--- FAILURE OUTPUT ---
+> Task :app:compileDebugAndroidTestJavaWithJavac UP-TO-DATE
+> Task :app:hiltAggregateDepsDebugAndroidTest UP-TO-DATE
+> Task :app:hiltJavaCompileDebugAndroidTest UP-TO-DATE
+> Task :app:processDebugAndroidTestJavaRes UP-TO-DATE
+> Task :app:mergeDebugAndroidTestJavaResource UP-TO-DATE
+> Task :app:transformDebugAndroidTestClassesWithAsm UP-TO-DATE
+> Task :app:dexBuilderDebugAndroidTest UP-TO-DATE
+> Task :app:mergeProjectDexDebugAndroidTest UP-TO-DATE
+> Task :app:mergeDebugAndroidTestGlobalSynthetics UP-TO-DATE
+> Task :app:packageDebugAndroidTest UP-TO-DATE
+> Task :app:createDebugAndroidTestApkListingFileRedirect UP-TO-DATE
+
+> Task :app:connectedDebugAndroidTest FAILED
+Skipping device 'emulator-5554' (emulator-5554): Device is OFFLINE.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:connectedDebugAndroidTest'.
+> com.android.builder.testing.api.DeviceException: No online devices found.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 6s
+123 actionable tasks: 1 executed, 122 up-to-date
+Configuration cache entry stored.
+--- END ---
+[6/17] FAIL: J06_CookingAMealSuite — 
+--- FAILURE OUTPUT ---
+> Task :app:compileDebugAndroidTestJavaWithJavac UP-TO-DATE
+> Task :app:hiltAggregateDepsDebugAndroidTest UP-TO-DATE
+> Task :app:hiltJavaCompileDebugAndroidTest UP-TO-DATE
+> Task :app:processDebugAndroidTestJavaRes UP-TO-DATE
+> Task :app:transformDebugAndroidTestClassesWithAsm UP-TO-DATE
+> Task :app:dexBuilderDebugAndroidTest UP-TO-DATE
+> Task :app:mergeProjectDexDebugAndroidTest UP-TO-DATE
+> Task :app:mergeDebugAndroidTestJavaResource UP-TO-DATE
+> Task :app:mergeDebugAndroidTestGlobalSynthetics UP-TO-DATE
+> Task :app:packageDebugAndroidTest UP-TO-DATE
+> Task :app:createDebugAndroidTestApkListingFileRedirect UP-TO-DATE
+
+> Task :app:connectedDebugAndroidTest FAILED
+Skipping device 'emulator-5554' (emulator-5554): Device is OFFLINE.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:connectedDebugAndroidTest'.
+> com.android.builder.testing.api.DeviceException: No online devices found.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 5s
+123 actionable tasks: 1 executed, 122 up-to-date
+Configuration cache entry stored.
+--- END ---
+[7/17] FAIL: J07_ManagingDietaryPrefsSuite — 
+--- FAILURE OUTPUT ---
+> Task :app:compileDebugAndroidTestJavaWithJavac UP-TO-DATE
+> Task :app:hiltAggregateDepsDebugAndroidTest UP-TO-DATE
+> Task :app:hiltJavaCompileDebugAndroidTest UP-TO-DATE
+> Task :app:processDebugAndroidTestJavaRes UP-TO-DATE
+> Task :app:transformDebugAndroidTestClassesWithAsm UP-TO-DATE
+> Task :app:mergeDebugAndroidTestJavaResource UP-TO-DATE
+> Task :app:dexBuilderDebugAndroidTest UP-TO-DATE
+> Task :app:mergeProjectDexDebugAndroidTest UP-TO-DATE
+> Task :app:mergeDebugAndroidTestGlobalSynthetics UP-TO-DATE
+> Task :app:packageDebugAndroidTest UP-TO-DATE
+> Task :app:createDebugAndroidTestApkListingFileRedirect UP-TO-DATE
+
+> Task :app:connectedDebugAndroidTest FAILED
+Skipping device 'emulator-5554' (emulator-5554): Device is OFFLINE.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:connectedDebugAndroidTest'.
+> com.android.builder.testing.api.DeviceException: No online devices found.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 7s
+123 actionable tasks: 1 executed, 122 up-to-date
+Configuration cache entry stored.
+--- END ---
+[8/17] FAIL: J08_AIMealPlanQualitySuite — 
+--- FAILURE OUTPUT ---
+> Task :app:compileDebugAndroidTestJavaWithJavac UP-TO-DATE
+> Task :app:hiltAggregateDepsDebugAndroidTest UP-TO-DATE
+> Task :app:hiltJavaCompileDebugAndroidTest UP-TO-DATE
+> Task :app:processDebugAndroidTestJavaRes UP-TO-DATE
+> Task :app:transformDebugAndroidTestClassesWithAsm UP-TO-DATE
+> Task :app:dexBuilderDebugAndroidTest UP-TO-DATE
+> Task :app:mergeDebugAndroidTestJavaResource UP-TO-DATE
+> Task :app:mergeProjectDexDebugAndroidTest UP-TO-DATE
+> Task :app:mergeDebugAndroidTestGlobalSynthetics UP-TO-DATE
+> Task :app:packageDebugAndroidTest UP-TO-DATE
+> Task :app:createDebugAndroidTestApkListingFileRedirect UP-TO-DATE
+
+> Task :app:connectedDebugAndroidTest FAILED
+Skipping device 'emulator-5554' (emulator-5554): Device is OFFLINE.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:connectedDebugAndroidTest'.
+> com.android.builder.testing.api.DeviceException: No online devices found.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 6s
+123 actionable tasks: 1 executed, 122 up-to-date
+Configuration cache entry stored.
+--- END ---
+[9/17] FAIL: J09_FamilyProfileMgmtSuite — 
+--- FAILURE OUTPUT ---
+> Task :app:compileDebugAndroidTestJavaWithJavac UP-TO-DATE
+> Task :app:hiltAggregateDepsDebugAndroidTest UP-TO-DATE
+> Task :app:hiltJavaCompileDebugAndroidTest UP-TO-DATE
+> Task :app:processDebugAndroidTestJavaRes UP-TO-DATE
+> Task :app:mergeDebugAndroidTestJavaResource UP-TO-DATE
+> Task :app:transformDebugAndroidTestClassesWithAsm UP-TO-DATE
+> Task :app:dexBuilderDebugAndroidTest UP-TO-DATE
+> Task :app:mergeProjectDexDebugAndroidTest UP-TO-DATE
+> Task :app:mergeDebugAndroidTestGlobalSynthetics UP-TO-DATE
+> Task :app:packageDebugAndroidTest UP-TO-DATE
+> Task :app:createDebugAndroidTestApkListingFileRedirect UP-TO-DATE
+
+> Task :app:connectedDebugAndroidTest FAILED
+Skipping device 'emulator-5554' (emulator-5554): Device is OFFLINE.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:connectedDebugAndroidTest'.
+> com.android.builder.testing.api.DeviceException: No online devices found.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 6s
+123 actionable tasks: 1 executed, 122 up-to-date
+Configuration cache entry stored.
+--- END ---
+[10/17] FAIL: J10_ExploringAppFeaturesSuite — 
+--- FAILURE OUTPUT ---
+> Task :app:compileDebugAndroidTestJavaWithJavac UP-TO-DATE
+> Task :app:hiltAggregateDepsDebugAndroidTest UP-TO-DATE
+> Task :app:hiltJavaCompileDebugAndroidTest UP-TO-DATE
+> Task :app:processDebugAndroidTestJavaRes UP-TO-DATE
+> Task :app:mergeDebugAndroidTestJavaResource UP-TO-DATE
+> Task :app:transformDebugAndroidTestClassesWithAsm UP-TO-DATE
+> Task :app:dexBuilderDebugAndroidTest UP-TO-DATE
+> Task :app:mergeProjectDexDebugAndroidTest UP-TO-DATE
+> Task :app:mergeDebugAndroidTestGlobalSynthetics UP-TO-DATE
+> Task :app:packageDebugAndroidTest UP-TO-DATE
+> Task :app:createDebugAndroidTestApkListingFileRedirect UP-TO-DATE
+
+> Task :app:connectedDebugAndroidTest FAILED
+Skipping device 'emulator-5554' (emulator-5554): Device is OFFLINE.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:connectedDebugAndroidTest'.
+> com.android.builder.testing.api.DeviceException: No online devices found.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 6s
+123 actionable tasks: 1 executed, 122 up-to-date
+Configuration cache entry stored.
+--- END ---
+[11/17] FAIL: J11_CustomizingSettingsSuite — 
+--- FAILURE OUTPUT ---
+> Task :app:compileDebugAndroidTestJavaWithJavac UP-TO-DATE
+> Task :app:hiltAggregateDepsDebugAndroidTest UP-TO-DATE
+> Task :app:hiltJavaCompileDebugAndroidTest UP-TO-DATE
+> Task :app:processDebugAndroidTestJavaRes UP-TO-DATE
+> Task :app:mergeDebugAndroidTestJavaResource UP-TO-DATE
+> Task :app:transformDebugAndroidTestClassesWithAsm UP-TO-DATE
+> Task :app:dexBuilderDebugAndroidTest UP-TO-DATE
+> Task :app:mergeProjectDexDebugAndroidTest UP-TO-DATE
+> Task :app:mergeDebugAndroidTestGlobalSynthetics UP-TO-DATE
+> Task :app:packageDebugAndroidTest UP-TO-DATE
+> Task :app:createDebugAndroidTestApkListingFileRedirect UP-TO-DATE
+
+> Task :app:connectedDebugAndroidTest FAILED
+Skipping device 'emulator-5554' (emulator-5554): Device is OFFLINE.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:connectedDebugAndroidTest'.
+> com.android.builder.testing.api.DeviceException: No online devices found.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 5s
+123 actionable tasks: 1 executed, 122 up-to-date
+Configuration cache entry stored.
+--- END ---
+[12/17] FAIL: J12_OfflineErrorResilienceSuite — 
+--- FAILURE OUTPUT ---
+> Task :app:compileDebugAndroidTestJavaWithJavac UP-TO-DATE
+> Task :app:hiltAggregateDepsDebugAndroidTest UP-TO-DATE
+> Task :app:hiltJavaCompileDebugAndroidTest UP-TO-DATE
+> Task :app:processDebugAndroidTestJavaRes UP-TO-DATE
+> Task :app:transformDebugAndroidTestClassesWithAsm UP-TO-DATE
+> Task :app:mergeDebugAndroidTestJavaResource UP-TO-DATE
+> Task :app:dexBuilderDebugAndroidTest UP-TO-DATE
+> Task :app:mergeProjectDexDebugAndroidTest UP-TO-DATE
+> Task :app:mergeDebugAndroidTestGlobalSynthetics UP-TO-DATE
+> Task :app:packageDebugAndroidTest UP-TO-DATE
+> Task :app:createDebugAndroidTestApkListingFileRedirect UP-TO-DATE
+
+> Task :app:connectedDebugAndroidTest FAILED
+Skipping device 'emulator-5554' (emulator-5554): Device is OFFLINE.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:connectedDebugAndroidTest'.
+> com.android.builder.testing.api.DeviceException: No online devices found.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 6s
+123 actionable tasks: 1 executed, 122 up-to-date
+Configuration cache entry stored.
+--- END ---
+[13/17] FAIL: J13_ReturningUserQuickCheckSuite — 
+--- FAILURE OUTPUT ---
+> Task :app:compileDebugAndroidTestJavaWithJavac UP-TO-DATE
+> Task :app:hiltAggregateDepsDebugAndroidTest UP-TO-DATE
+> Task :app:hiltJavaCompileDebugAndroidTest UP-TO-DATE
+> Task :app:processDebugAndroidTestJavaRes UP-TO-DATE
+> Task :app:mergeDebugAndroidTestJavaResource UP-TO-DATE
+> Task :app:transformDebugAndroidTestClassesWithAsm UP-TO-DATE
+> Task :app:dexBuilderDebugAndroidTest UP-TO-DATE
+> Task :app:mergeProjectDexDebugAndroidTest UP-TO-DATE
+> Task :app:mergeDebugAndroidTestGlobalSynthetics UP-TO-DATE
+> Task :app:packageDebugAndroidTest UP-TO-DATE
+> Task :app:createDebugAndroidTestApkListingFileRedirect UP-TO-DATE
+
+> Task :app:connectedDebugAndroidTest FAILED
+Skipping device 'emulator-5554' (emulator-5554): Device is OFFLINE.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:connectedDebugAndroidTest'.
+> com.android.builder.testing.api.DeviceException: No online devices found.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 5s
+123 actionable tasks: 1 executed, 122 up-to-date
+Configuration cache entry stored.
+--- END ---
+[14/17] FAIL: J14_AIChatRecipeDiscoverySuite — 
+--- FAILURE OUTPUT ---
+> Task :app:compileDebugAndroidTestJavaWithJavac UP-TO-DATE
+> Task :app:hiltAggregateDepsDebugAndroidTest UP-TO-DATE
+> Task :app:hiltJavaCompileDebugAndroidTest UP-TO-DATE
+> Task :app:processDebugAndroidTestJavaRes UP-TO-DATE
+> Task :app:transformDebugAndroidTestClassesWithAsm UP-TO-DATE
+> Task :app:mergeDebugAndroidTestJavaResource UP-TO-DATE
+> Task :app:dexBuilderDebugAndroidTest UP-TO-DATE
+> Task :app:mergeProjectDexDebugAndroidTest UP-TO-DATE
+> Task :app:mergeDebugAndroidTestGlobalSynthetics UP-TO-DATE
+> Task :app:packageDebugAndroidTest UP-TO-DATE
+> Task :app:createDebugAndroidTestApkListingFileRedirect UP-TO-DATE
+
+> Task :app:connectedDebugAndroidTest FAILED
+Skipping device 'emulator-5554' (emulator-5554): Device is OFFLINE.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:connectedDebugAndroidTest'.
+> com.android.builder.testing.api.DeviceException: No online devices found.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 5s
+123 actionable tasks: 1 executed, 122 up-to-date
+Configuration cache entry stored.
+--- END ---
+[15/17] FAIL: J15_HouseholdSetupSuite — 
+--- FAILURE OUTPUT ---
+> Task :app:compileDebugAndroidTestJavaWithJavac UP-TO-DATE
+> Task :app:hiltAggregateDepsDebugAndroidTest UP-TO-DATE
+> Task :app:hiltJavaCompileDebugAndroidTest UP-TO-DATE
+> Task :app:processDebugAndroidTestJavaRes UP-TO-DATE
+> Task :app:mergeDebugAndroidTestJavaResource UP-TO-DATE
+> Task :app:transformDebugAndroidTestClassesWithAsm UP-TO-DATE
+> Task :app:dexBuilderDebugAndroidTest UP-TO-DATE
+> Task :app:mergeProjectDexDebugAndroidTest UP-TO-DATE
+> Task :app:mergeDebugAndroidTestGlobalSynthetics UP-TO-DATE
+> Task :app:packageDebugAndroidTest UP-TO-DATE
+> Task :app:createDebugAndroidTestApkListingFileRedirect UP-TO-DATE
+
+> Task :app:connectedDebugAndroidTest FAILED
+Skipping device 'emulator-5554' (emulator-5554): Device is OFFLINE.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:connectedDebugAndroidTest'.
+> com.android.builder.testing.api.DeviceException: No online devices found.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 4s
+123 actionable tasks: 1 executed, 122 up-to-date
+Configuration cache entry stored.
+--- END ---
+[16/17] FAIL: J16_HouseholdMealCollaborationSuite — 
+--- FAILURE OUTPUT ---
+> Task :app:compileDebugAndroidTestJavaWithJavac UP-TO-DATE
+> Task :app:hiltAggregateDepsDebugAndroidTest UP-TO-DATE
+> Task :app:hiltJavaCompileDebugAndroidTest UP-TO-DATE
+> Task :app:processDebugAndroidTestJavaRes UP-TO-DATE
+> Task :app:mergeDebugAndroidTestJavaResource UP-TO-DATE
+> Task :app:transformDebugAndroidTestClassesWithAsm UP-TO-DATE
+> Task :app:dexBuilderDebugAndroidTest UP-TO-DATE
+> Task :app:mergeProjectDexDebugAndroidTest UP-TO-DATE
+> Task :app:mergeDebugAndroidTestGlobalSynthetics UP-TO-DATE
+> Task :app:packageDebugAndroidTest UP-TO-DATE
+> Task :app:createDebugAndroidTestApkListingFileRedirect UP-TO-DATE
+
+> Task :app:connectedDebugAndroidTest FAILED
+Skipping device 'emulator-5554' (emulator-5554): Device is OFFLINE.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:connectedDebugAndroidTest'.
+> com.android.builder.testing.api.DeviceException: No online devices found.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 5s
+123 actionable tasks: 1 executed, 122 up-to-date
+Configuration cache entry stored.
+--- END ---
+[17/17] FAIL: J17_HouseholdNotificationsSuite — 
+--- FAILURE OUTPUT ---
+> Task :app:compileDebugAndroidTestJavaWithJavac UP-TO-DATE
+> Task :app:hiltAggregateDepsDebugAndroidTest UP-TO-DATE
+> Task :app:hiltJavaCompileDebugAndroidTest UP-TO-DATE
+> Task :app:processDebugAndroidTestJavaRes UP-TO-DATE
+> Task :app:mergeDebugAndroidTestJavaResource UP-TO-DATE
+> Task :app:transformDebugAndroidTestClassesWithAsm UP-TO-DATE
+> Task :app:dexBuilderDebugAndroidTest UP-TO-DATE
+> Task :app:mergeProjectDexDebugAndroidTest UP-TO-DATE
+> Task :app:mergeDebugAndroidTestGlobalSynthetics UP-TO-DATE
+> Task :app:packageDebugAndroidTest UP-TO-DATE
+> Task :app:createDebugAndroidTestApkListingFileRedirect UP-TO-DATE
+
+> Task :app:connectedDebugAndroidTest FAILED
+Skipping device 'emulator-5554' (emulator-5554): Device is OFFLINE.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:connectedDebugAndroidTest'.
+> com.android.builder.testing.api.DeviceException: No online devices found.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 4s
+123 actionable tasks: 1 executed, 122 up-to-date
+Configuration cache entry stored.
+--- END ---
+
+========== SUMMARY ==========
+Total: 17 | Pass: 0 | Fail: 17
+Failed:  J01_FirstTimeUserSuite J02_NewUserFirstMealPlanSuite J03_CompleteE2EJourneySuite J04_DailyMealPlanningSuite J05_WeeklyGroceryShoppingSuite J06_CookingAMealSuite J07_ManagingDietaryPrefsSuite J08_AIMealPlanQualitySuite J09_FamilyProfileMgmtSuite J10_ExploringAppFeaturesSuite J11_CustomizingSettingsSuite J12_OfflineErrorResilienceSuite J13_ReturningUserQuickCheckSuite J14_AIChatRecipeDiscoverySuite J15_HouseholdSetupSuite J16_HouseholdMealCollaborationSuite J17_HouseholdNotificationsSuite

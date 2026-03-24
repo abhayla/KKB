@@ -110,7 +110,7 @@ class MealPlanRepository:
                             is_locked=meal_item.get("is_locked", False),
                             is_swapped=meal_item.get("is_swapped", False),
                             recipe_name=meal_item.get("recipe_name"),
-                            festival_name=day.get("festival"),
+                            festival_name=day.get("festival", {}).get("name") if isinstance(day.get("festival"), dict) else day.get("festival"),
                         )
                         items.append(item)
                         if session:
@@ -301,7 +301,7 @@ class MealPlanRepository:
                                     is_locked=meal_item.get("is_locked", False),
                                     is_swapped=meal_item.get("is_swapped", False),
                                     recipe_name=meal_item.get("recipe_name"),
-                                    festival_name=day.get("festival"),
+                                    festival_name=day.get("festival", {}).get("name") if isinstance(day.get("festival"), dict) else day.get("festival"),
                                 )
                                 session.add(item)
 

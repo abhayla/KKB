@@ -1226,6 +1226,59 @@ Generate the complete 7-day meal plan now:"""
 
                 setattr(day, slot, fasting_safe)
 
+        # Backfill depleted fasting-day slots with safe fallback items
+        _fasting_fallbacks = {
+            "breakfast": [
+                ("Sabudana Khichdi", "breakfast"),
+                ("Fruit Chaat", "breakfast"),
+                ("Curd with Honey", "breakfast"),
+                ("Makhana Poha", "breakfast"),
+            ],
+            "lunch": [
+                ("Sweet Potato Curry", "curry"),
+                ("Pumpkin Soup", "soup"),
+                ("Paneer Tikka", "starter"),
+                ("Curd Kadhi (fasting)", "curry"),
+            ],
+            "dinner": [
+                ("Paneer Makhana Curry", "curry"),
+                ("Samak Pulao", "fasting"),
+                ("Lauki Kofta", "curry"),
+                ("Aloo Jeera (fasting)", "sabzi"),
+            ],
+            "snacks": [
+                ("Fruit Salad", "salad"),
+                ("Roasted Makhana", "snack"),
+                ("Coconut Ladoo", "sweet"),
+                ("Black Tea", "beverage"),
+            ],
+        }
+        _min_items_per_slot = 2
+        for day in plan.days:
+            if not day.festival or not day.festival.get("is_fasting_day", False):
+                continue
+            for slot in ["breakfast", "lunch", "dinner", "snacks"]:
+                items = getattr(day, slot, [])
+                if len(items) >= _min_items_per_slot:
+                    continue
+                existing_names = {item.recipe_name for item in items}
+                fallbacks = _fasting_fallbacks.get(slot, [])
+                for fb_name, fb_category in fallbacks:
+                    if len(items) >= _min_items_per_slot:
+                        break
+                    if fb_name not in existing_names:
+                        items.append(MealItem(
+                            id=f"fasting-fill-{slot}-{len(items)}",
+                            recipe_name=fb_name,
+                            prep_time_minutes=20,
+                            dietary_tags=["vegetarian", "fasting"],
+                            category=fb_category,
+                        ))
+                        logger.info(
+                            f"Backfilled {slot} on {day.date} with fasting-safe '{fb_name}'"
+                        )
+                setattr(day, slot, items)
+
         # Family constraint enforcement (post-processing safety net)
         forbidden_map = get_family_forbidden_keywords(prefs.family_members)
         if forbidden_map:

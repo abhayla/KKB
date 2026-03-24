@@ -76,12 +76,16 @@ class TestFastingDayValidation:
         )
         result = service._enforce_rules(plan, base_prefs)
         day = result.days[0]
-        assert len(day.breakfast) == 1
+        # Wheat Paratha removed; Sabudana Khichdi kept + backfill to 2
         assert day.breakfast[0].recipe_name == "Sabudana Khichdi"
-        assert len(day.lunch) == 1
+        assert len(day.breakfast) >= 2
+        # Jeera Rice removed; Fruit Salad kept + backfill to 2
         assert day.lunch[0].recipe_name == "Fruit Salad"
-        assert len(day.dinner) == 1
-        assert len(day.snacks) == 0
+        assert len(day.lunch) >= 2
+        # Makhana Curry kept + backfill to 2
+        assert len(day.dinner) >= 2
+        # Roti Roll removed; backfill to 2
+        assert len(day.snacks) >= 2
 
     def test_fasting_day_removes_onion_garlic_recipes(self, service, base_prefs):
         plan = GeneratedMealPlan(
@@ -101,10 +105,12 @@ class TestFastingDayValidation:
         )
         result = service._enforce_rules(plan, base_prefs)
         day = result.days[0]
-        assert len(day.lunch) == 1
+        # Onion Pakora removed; Pumpkin Soup kept + backfill
         assert day.lunch[0].recipe_name == "Pumpkin Soup"
-        assert len(day.dinner) == 1
+        assert len(day.lunch) >= 2
+        # Garlic Naan removed; Paneer Tikka kept + backfill
         assert day.dinner[0].recipe_name == "Paneer Tikka"
+        assert len(day.dinner) >= 2
 
     def test_non_fasting_day_keeps_all_recipes(self, service, base_prefs):
         plan = GeneratedMealPlan(
@@ -147,9 +153,10 @@ class TestFastingDayValidation:
         )
         result = service._enforce_rules(plan, base_prefs)
         day = result.days[0]
-        assert len(day.breakfast) == 3
-        assert len(day.lunch) == 1
-        assert len(day.snacks) == 1
+        assert len(day.breakfast) == 3  # All safe, no removal needed
+        # Slots with 1 item get backfilled to 2
+        assert len(day.lunch) >= 2
+        assert len(day.snacks) >= 2
 
     def test_multiple_fasting_days_validated(self, service, base_prefs):
         plan = GeneratedMealPlan(
@@ -174,7 +181,118 @@ class TestFastingDayValidation:
             rules_applied={},
         )
         result = service._enforce_rules(plan, base_prefs)
-        assert len(result.days[0].breakfast) == 0
-        assert len(result.days[0].lunch) == 1
-        assert len(result.days[1].breakfast) == 0
-        assert len(result.days[1].lunch) == 0
+        # Wheat Paratha removed (grain), backfilled with fasting-safe item
+        assert len(result.days[0].breakfast) >= 1
+        assert len(result.days[0].lunch) >= 1
+        # Poha removed (grain-like via avoided_foods), Rice Bowl removed (rice)
+        # Both backfilled with fasting-safe items
+        assert len(result.days[1].breakfast) >= 1
+        assert len(result.days[1].lunch) >= 1
+
+
+class TestFastingDaySlotBackfill:
+    """Tests that fasting day enforcement backfills depleted slots with safe items."""
+
+    def test_empty_slot_gets_backfilled_to_minimum_2(self, service, base_prefs):
+        """When ALL items are removed from a slot, backfill to 2 fasting-safe items."""
+        plan = GeneratedMealPlan(
+            week_start_date="2026-03-23",
+            week_end_date="2026-03-29",
+            days=[
+                _make_day(
+                    "2026-03-24", "Tuesday",
+                    breakfast=[_make_item("Wheat Paratha"), _make_item("Rice Flakes")],
+                    lunch=[_make_item("Jeera Rice"), _make_item("Garlic Naan")],
+                    dinner=[_make_item("Egg Curry"), _make_item("Roti")],
+                    snacks=[_make_item("Wheat Biscuit"), _make_item("Onion Pakora")],
+                    festival={"name": "Navratri", "is_fasting_day": True, "special_foods": [], "avoided_foods": []},
+                )
+            ],
+            rules_applied={},
+        )
+        result = service._enforce_rules(plan, base_prefs)
+        day = result.days[0]
+        # Every slot should have at least 1 item after backfill
+        assert len(day.breakfast) >= 1, f"Breakfast empty after fasting enforcement"
+        assert len(day.lunch) >= 1, f"Lunch empty after fasting enforcement"
+        assert len(day.dinner) >= 1, f"Dinner empty after fasting enforcement"
+        assert len(day.snacks) >= 1, f"Snacks empty after fasting enforcement"
+
+    def test_partially_depleted_slot_gets_backfilled(self, service, base_prefs):
+        """When a slot goes from 2 items to 1, backfill to maintain 2."""
+        plan = GeneratedMealPlan(
+            week_start_date="2026-03-23",
+            week_end_date="2026-03-29",
+            days=[
+                _make_day(
+                    "2026-03-24", "Tuesday",
+                    breakfast=[_make_item("Sabudana Khichdi"), _make_item("Wheat Toast")],
+                    lunch=[_make_item("Fruit Salad"), _make_item("Rice Bowl")],
+                    dinner=[_make_item("Paneer Tikka"), _make_item("Roti")],
+                    snacks=[_make_item("Coconut Ladoo"), _make_item("Wheat Cracker")],
+                    festival={"name": "Ekadashi", "is_fasting_day": True, "special_foods": [], "avoided_foods": []},
+                )
+            ],
+            rules_applied={},
+        )
+        result = service._enforce_rules(plan, base_prefs)
+        day = result.days[0]
+        # Each slot had 1 item removed — should be backfilled to 2
+        assert len(day.breakfast) >= 2, f"Breakfast has {len(day.breakfast)} items, expected >= 2"
+        assert len(day.lunch) >= 2, f"Lunch has {len(day.lunch)} items, expected >= 2"
+        assert len(day.dinner) >= 2, f"Dinner has {len(day.dinner)} items, expected >= 2"
+        assert len(day.snacks) >= 2, f"Snacks has {len(day.snacks)} items, expected >= 2"
+
+    def test_backfilled_items_are_fasting_safe(self, service, base_prefs):
+        """Backfilled items must not contain fasting-excluded keywords."""
+        fasting_keywords = {"grain", "rice", "wheat", "atta", "maida", "roti", "naan",
+                            "onion", "garlic", "meat", "chicken", "fish", "egg"}
+        plan = GeneratedMealPlan(
+            week_start_date="2026-03-23",
+            week_end_date="2026-03-29",
+            days=[
+                _make_day(
+                    "2026-03-24", "Tuesday",
+                    breakfast=[_make_item("Wheat Paratha"), _make_item("Rice Flakes")],
+                    lunch=[],
+                    dinner=[_make_item("Egg Curry")],
+                    snacks=[],
+                    festival={"name": "Navratri", "is_fasting_day": True, "special_foods": [], "avoided_foods": []},
+                )
+            ],
+            rules_applied={},
+        )
+        result = service._enforce_rules(plan, base_prefs)
+        day = result.days[0]
+        for slot in ["breakfast", "lunch", "dinner", "snacks"]:
+            items = getattr(day, slot)
+            for item in items:
+                name_lower = item.recipe_name.lower()
+                for kw in fasting_keywords:
+                    assert kw not in name_lower, (
+                        f"Backfilled item '{item.recipe_name}' in {slot} contains "
+                        f"fasting-excluded keyword '{kw}'"
+                    )
+
+    def test_non_fasting_day_no_backfill(self, service, base_prefs):
+        """Non-fasting days don't trigger backfill (items removed for other reasons stay removed)."""
+        plan = GeneratedMealPlan(
+            week_start_date="2026-03-23",
+            week_end_date="2026-03-29",
+            days=[
+                _make_day(
+                    "2026-03-25", "Wednesday",
+                    breakfast=[_make_item("Paneer Paratha")],
+                    lunch=[],
+                    dinner=[_make_item("Dal Makhani")],
+                    snacks=[],
+                    festival=None,
+                )
+            ],
+            rules_applied={},
+        )
+        result = service._enforce_rules(plan, base_prefs)
+        day = result.days[0]
+        # Non-fasting: no backfill — lunch and snacks stay empty
+        assert len(day.lunch) == 0
+        assert len(day.snacks) == 0

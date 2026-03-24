@@ -248,3 +248,76 @@ Allow meal preference at each family member level
   - Guest Duration dialog
 
 +91 1111111111/	123456
+
+*********************
+
+  Autonomous E2E Journey Runner — Full Pipeline
+
+  Pre-flight Checks (MUST all pass before proceeding)
+
+  1. Backend: Verify curl -s http://localhost:8000/health returns healthy. If not, start it: cd backend && PYTHONPATH=. uvicorn app.main:app --reload & with
+   DEBUG=true.
+  2. Emulator ADB: Run adb devices and confirm the device shows device (NOT offline, NOT unauthorized). If offline:
+    - Run adb kill-server && sleep 3 && adb start-server && sleep 3 && adb devices
+    - If still offline, cold boot the emulator: $LOCALAPPDATA/Android/Sdk/emulator/emulator -avd <avd_name> -no-snapshot-load & and wait for adb
+  wait-for-device
+    - Confirm API level is 34: adb shell getprop ro.build.version.sdk
+    - Do NOT proceed until adb devices shows device
+  3. ADB health test: Run adb shell echo hello with a 5-second timeout. If it hangs or fails, ADB is broken — restart ADB server and emulator before        
+  continuing.
+  4. Clean test state: Run cd backend && PYTHONPATH=. python scripts/cleanup_user.py e2e-test@rasoiai.test
+  5. Gradle daemon: Run cd android && ./gradlew --stop to ensure no stale daemons. Then do a quick build check: ./gradlew assembleDebug
+  assembleDebugAndroidTest to pre-compile both APKs. This avoids slow first-run compilation during test execution.
+
+  Execution Rules
+
+  6. NEVER run ./gradlew --stop while tests are executing — it kills the daemon mid-run and corrupts the ADB connection. Only use --stop before starting a  
+  run, never during.
+  7. Run journeys ONE AT A TIME in foreground (not background). Use this exact command pattern per journey:
+  cd android && ./gradlew :app:connectedDebugAndroidTest \
+    --console=plain \
+    -Pandroid.testInstrumentationRunnerArguments.class=com.rasoiai.app.e2e.journeys.J{NN}_{SuiteName} \
+    2>&1 | tee journey_J{NN}_output.txt
+  7. The --console=plain disables Gradle's rich console (which buffers output) and tee captures output while showing progress live. The tail -N pipe must   
+  NEVER be used — it suppresses all output until the command finishes.
+  8. After each journey completes, immediately report the result:
+    - Extract test counts: grep "Tests.*completed" journey_J{NN}_output.txt | tail -1
+    - Report: J{NN}: PASS/FAIL — X/Y tests completed (Z failed)
+    - If PASS, clean up test user and move to next journey
+    - If FAIL, enter the auto-fix pipeline (step 10)
+  9. Between journeys: Run cleanup_user.py e2e-test@rasoiai.test for test isolation. Also verify ADB is still healthy: adb shell echo hello (5s timeout). If
+   ADB becomes unresponsive, restart ADB server before continuing.
+
+  Auto-Fix Pipeline (on failure)
+
+  10. When any journey fails:
+    - Save the failure output: journey_J{NN}_output.txt already has it
+    - Invoke /systematic-debugging to diagnose root cause (reproduce, isolate, hypothesize, gather evidence)
+    - Then invoke /fix-loop with the exact Gradle test command as the retest command to iterate until green
+    - If fix-loop exceeds 5 iterations, log the blocker and move to the next journey
+    - After each successful fix: Run /learn-n-improve session to capture the error→fix→lesson pattern
+
+  Cross-Journey Regression
+
+  11. After all 17 journeys are attempted, re-run any previously-fixed journeys to confirm fixes didn't break them.
+
+  Final Report
+
+  12. Produce a structured summary:
+    - Pass/Fail/Skipped count per journey
+    - For each failure: journey ID, failing test, root cause, fix applied (or blocker reason)
+    - List of files modified with commit-ready descriptions
+    - Any learnings captured via /learn-n-improve
+
+  Key Constraints
+
+  - Use foreground execution — never run Gradle test commands in background. Background execution hides failures and prevents live progress reporting.      
+  - Never use | tail on Gradle commands — it buffers all output, making it look like nothing is happening.
+  - ADB health check before each journey — one stale ADB connection wastes the entire run.
+  - Never kill Gradle mid-test — if a test appears stuck, wait for the Gradle timeout (5 min default) rather than killing the daemon.
+  - Use subagents for parallel work only on non-emulator tasks (e.g., researching fixes, reading code, debugging backend). The emulator is single-threaded —
+   only one Gradle test command at a time.
+  - Commit after each verified fix with Fix #journey: description format.
+
+
+  ********************
