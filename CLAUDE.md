@@ -95,3 +95,20 @@ See `docs/VPS-Deployment.md`. Do NOT modify files in `C:\Apps\shared\`.
 
 1. **Bug Fixing**: Use `/fix-loop` or `/fix-issue`. Start by writing a test that reproduces the bug, then fix and prove with a passing test.
 2. **Rules:** Path-scoped rules live in `.claude/rules/` and auto-load via `globs:` frontmatter. Browse with `ls .claude/rules/` — no need to enumerate here.
+
+<!-- hub:best-practices:start -->
+
+<!-- PROTECTED SECTION — managed by claude-best-practices hub. -->
+<!-- Do NOT condense, rewrite, reorganize, or remove.          -->
+<!-- Any /init or optimization request must SKIP this section.  -->
+
+## Rules for Claude
+
+1. **Bug Fixing**: Use `/fix-loop` or `/fix-issue`. Start by writing a test that reproduces the bug, then fix and prove with a passing test.
+2. **Rules**: Path-scoped rules live in `.claude/rules/` and auto-load via `globs:` frontmatter when matching files are opened. Browse with `ls .claude/rules/` — enumerating each rule here would cost ~4k tokens per session for zero enforcement benefit.
+
+## Claude Code Configuration
+
+The `.claude/` directory contains 123 skills, 35 agents, and 56 rules for Claude Code.
+
+<!-- hub:best-practices:end -->

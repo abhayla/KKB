@@ -1,14 +1,14 @@
 ---
-paths:
-  - "**/firebase/**"
-  - "**/auth/**/*.ts"
-  - "**/auth/**/*.kt"
-  - "**/auth/**/*.dart"
-  - "**/auth/**/*.py"
+globs: ["backend/app/**/*auth*.py", "backend/app/**/*firebase*.py", "backend/tests/**/*firebase*.py", "backend/tests/**/*auth*.py", "android/**/presentation/auth/**/*.kt", "android/**/*Firebase*.kt"]
 description: Firebase Auth, Firestore, and backend token verification patterns.
 ---
 
 # Firebase Rules
+
+> **Companion rules:** for **Android token storage + OkHttp interceptor**, see
+> `android-auth-token-lifecycle.md` (authoritative). For **FastAPI `Depends(current_user)`
+> injection**, see `backend-auth-dependency.md`. This file covers Firebase
+> initialization, Phone OTP, Firestore patterns, and multi-env config only.
 
 ## Initialization
 - Always wrap `Firebase.initializeApp()` with a timeout (10s max) — hangs indefinitely on devices without internet

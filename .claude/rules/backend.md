@@ -1,6 +1,5 @@
 ---
-paths:
-  - "backend/**/*.py"
+globs: ["backend/**/*.py"]
 ---
 
 # Backend Rules

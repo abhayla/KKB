@@ -1,10 +1,5 @@
 ---
-paths:
-  - "backend/app/models/**/*.py"
-  - "backend/app/db/**/*.py"
-  - "backend/app/repositories/**/*.py"
-  - "backend/alembic/**/*.py"
-  - "android/data/src/main/java/com/rasoiai/data/local/**/*.kt"
+globs: ["backend/app/models/**/*.py", "backend/app/db/**/*.py", "backend/app/repositories/**/*.py", "backend/alembic/**/*.py", "android/data/src/main/java/com/rasoiai/data/local/**/*.kt"]
 ---
 
 # Database Rules

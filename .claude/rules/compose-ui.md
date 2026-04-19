@@ -1,6 +1,5 @@
 ---
-paths:
-  - "android/app/src/main/java/com/rasoiai/app/presentation/**/*.kt"
+globs: ["android/**/src/main/java/**/presentation/**/*.kt", "android/**/src/main/java/**/ui/**/*.kt"]
 ---
 
 # Compose UI Rules

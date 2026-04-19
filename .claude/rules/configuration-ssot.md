@@ -1,4 +1,7 @@
-# Scope: global
+---
+description: Where Claude Code configuration belongs — CLAUDE.md vs .claude/rules vs .claude/skills vs settings.json. Fires only when authoring Claude config.
+globs: ["CLAUDE.md", "CLAUDE.local.md", ".claude/**/*.md", ".claude/**/*.json", ".claude/**/*.yml", ".claude/**/*.yaml"]
+---
 
 # Configuration Single Source of Truth (SSOT)
 
