@@ -1,21 +1,37 @@
 ---
 name: verify-screenshots
 description: >
-  Visual regression testing and screenshot verification. Validates files, uses multimodal
-  Read for content analysis, compares against baselines, manages baseline storage,
-  integrates with CI for automated visual diff reporting. Use for one-off verification
-  or full visual regression pipelines.
-allowed-tools: "Bash Read Grep Glob"
+  Validate screenshots against baselines using multimodal content analysis for visual
+  regression testing. Manages baseline storage and integrates with CI for automated
+  visual diff reporting. Use when running one-off screenshot verification or full
+  visual regression pipelines.
+  NOT for running full E2E suites with visual verification (use /e2e-visual-run),
+  cross-platform visual parity (use /cross-platform-visual), or pipeline-integrated
+  visual review as part of auto-verify (invoked automatically by /auto-verify Step 2.5).
+triggers:
+  - verify screenshot
+  - visual regression test
+  - screenshot baseline comparison
+  - update visual baselines
+  - screenshot diff check
+  - visual proof verification
+allowed-tools: "Bash Read Write Grep Glob"
 argument-hint: "<screenshot-path or directory> [--update-baselines] [--strict] [--threshold=N] [--proof-mode --run-id=<id>]"
-version: "1.1.0"
+version: "2.2.0"
 type: workflow
 ---
+
+**Preamble:** Strategy priority is ALWAYS baseline > text hint > generic AI — MUST NOT skip a higher-priority strategy. MUST NOT update baselines without visual review. When invoked by tester-agent, return a single PASSED/FAILED verdict — not a full report. If $ARGUMENTS is empty and --proof-mode is not set, error with usage instructions.
 
 # Verify Screenshots — Visual Regression Testing
 
 Validate screenshot files, compare against baselines, and manage visual regression testing end-to-end.
 
 **Target:** $ARGUMENTS
+
+If `$ARGUMENTS` is empty or contains only flags (no path and no `--proof-mode`):
+1. Check for `--proof-mode` flag → proceed to Step 0.5
+2. Otherwise: error "No screenshot path provided. Usage: `/verify-screenshots <path> [--update-baselines] [--proof-mode --run-id=<id>]`"
 
 ---
 
@@ -54,12 +70,77 @@ Ensure files are:
 - Valid image format (PNG, JPG, etc.)
 - Recently created/modified
 
+## STEP 1.5: Verification Strategy Selection
+
+For each screenshot, determine the verification strategy in priority order:
+
+```
+For each screenshot:
+  1. Check for baseline at baselines/{test_name}.png
+     → If exists: use BASELINE COMPARISON (pixel/AI diff — see Step 3)
+  2. Check for text hint:
+     a. In manifest entry: screenshots[].visual_expectation field
+     b. In visual-tests.yml: expectations.{test_name}.description
+     → If exists: use TEXT-HINT AI REVIEW (see Step 2, text-hint mode)
+  3. If neither baseline nor text hint exists:
+     → Use GENERIC AI REVIEW (see Step 2, generic mode)
+```
+
+| Strategy | Precision | Setup Required | Best For |
+|----------|-----------|----------------|----------|
+| Baseline comparison | Highest — pixel-level or AI semantic diff | Baseline screenshots must be committed | Stable UI, design system components |
+| Text-hint AI review | High — verifies specific expected elements | One-line description per test | Dynamic pages, data-driven screens |
+| Generic AI review | Medium — catches obvious failures only | None | First-run, prototype, exploratory tests |
+
+### visual-tests.yml Expectations Format
+
+Projects can define per-test visual expectations in `visual-tests.yml`:
+
+```yaml
+# visual-tests.yml (optional — placed in project root)
+expectations:
+  test_login_page:
+    description: "Login form with email and password fields, submit button enabled"
+  test_dashboard:
+    description: "3 chart widgets populated with data, sidebar navigation visible"
+  test_checkout_flow:
+    description: "Order summary with item list, total price, and payment button"
+
+# Override UI test detection (optional)
+ui_test_patterns:
+  include: ["tests/e2e/**", "tests/visual/**"]
+  exclude: ["tests/e2e/api_only/**"]
+```
+
+### Per-Test Verdict Return (when invoked by tester-agent)
+
+When this skill is invoked by `tester-agent` for per-test screenshot verification
+(not batch mode), return a single structured verdict:
+
+```json
+{
+  "test": "test_name",
+  "verdict": "PASSED|FAILED",
+  "confidence": "HIGH|MEDIUM|LOW",
+  "strategy": "baseline|text_hint|generic_ai",
+  "reason": "One-line explanation of verdict"
+}
+```
+
+Confidence levels:
+- **HIGH** — baseline match within threshold, or AI review with clear pass/fail signals
+- **MEDIUM** — AI review with some ambiguity (e.g., partial data load, borderline layout)
+- **LOW** — generic AI review with no baseline or text hint to compare against
+
 ## STEP 2: Content Analysis
 
 Use multimodal Read to analyze each screenshot:
 
 1. Read the image file to view its contents
-2. Check for:
+2. **If text hint available (from Step 1.5):** Verify the screenshot matches the
+   specific description. Check each element mentioned in the hint is present
+   and correctly rendered. Report which elements match and which are missing.
+3. **If no text hint (generic mode):** Check for:
    - Expected UI elements are visible
    - No error dialogs or crash screens
    - Text is readable and not truncated
@@ -383,15 +464,19 @@ visual-components:
 
 ---
 
-## RULES
+## CRITICAL RULES
 
-- Always validate file existence before attempting to read
-- Report specific issues, not just pass/fail
-- If screenshots show errors or crashes, flag as critical
-- Compare against expected state if provided in arguments
-- Never update baselines without visual review — always read both images before approving
-- Commit baseline updates in dedicated commits, separate from code changes
-- Use `--strict` for design system components and pixel-critical UI
-- Use masks for dynamic content — never disable visual tests because of timestamps or ads
-- In CI, always upload diff artifacts on failure so reviewers can inspect without re-running
-- When baselines are missing for a new screenshot, flag it as "needs baseline" rather than silently passing
+### MUST DO
+- MUST validate file existence before attempting to read — Why: multimodal Read on missing files produces confusing errors
+- MUST report specific issues per file, not just aggregate pass/fail — Why: reviewers need to know exactly which screenshot failed and why
+- MUST flag screenshots showing error dialogs or crash screens as CRITICAL — Why: these indicate app-level failures, not visual regressions
+- MUST follow strategy priority: baseline > text hint > generic AI — Why: higher-priority strategies have higher precision; skipping them produces false passes
+- MUST check every element in text-hint descriptions — Why: partial matches mask missing elements; list what was found and what was missing
+- MUST read both baseline and current images before approving baseline updates — Why: blind baseline updates can bake in regressions
+- MUST log corrupt/unreadable images as SKIPPED with reason, not FAILED — Why: corrupt files are infrastructure issues, not visual regressions
+
+### MUST NOT DO
+- MUST NOT update baselines without visual review — Why: auto-approving baseline updates defeats the purpose of visual testing
+- MUST NOT silently pass when baselines are missing — flag as "needs baseline" instead — Why: missing baselines mean no regression protection
+- MUST NOT produce a full report when invoked by tester-agent for per-test verdict — return single PASSED/FAILED with confidence and one-line reason instead — Why: tester-agent expects structured verdict, not prose
+- MUST NOT disable visual tests because of dynamic content — use masks instead — Why: disabling tests creates blind spots; masks preserve coverage while tolerating expected variance

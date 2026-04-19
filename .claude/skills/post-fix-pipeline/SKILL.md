@@ -3,16 +3,26 @@ name: post-fix-pipeline
 description: >
   Finalize verified changes by reading the upstream auto-verify gate, updating
   documentation, committing, and capturing learnings. Use after auto-verify
-  succeeds to complete the post-fix workflow. Does NOT re-run tests.
-allowed-tools: "Bash Read Grep Glob Write Edit Skill"
-argument-hint: "[fixes_applied] [commit_format] [--strict-gates] [--capture-proof | --no-capture-proof]"
-version: "2.0.0"
+  succeeds to complete the post-fix workflow. Does NOT re-run tests — use
+  /auto-verify for that. For the full fix→verify→commit chain, use /test-pipeline.
 type: workflow
+triggers:
+  - finalize fix
+  - commit after verify
+  - post fix pipeline
+  - commit verified changes
+  - finalize and commit
+  - post-fix commit
+allowed-tools: "Bash Read Grep Glob Write Agent Skill"
+argument-hint: "[fixes_applied] [commit_format] [--strict-gates] [--capture-proof | --no-capture-proof]"
+version: "3.1.0"
 ---
 
 # Post-Fix Pipeline
 
 Finalize verified changes: documentation, commit, and learning capture.
+
+**Critical:** This skill does NOT re-run tests. It reads upstream gate results from `test-results/auto-verify.json`. If the gate fails or is missing (with `--strict-gates`), it BLOCKS the commit. Always invoke `/auto-verify` before this skill.
 
 **Input:** $ARGUMENTS
 
@@ -45,11 +55,28 @@ Finalize verified changes: documentation, commit, and learning capture.
    - If any `overrides` exist (passed tests overridden to FAILED) → BLOCK.
    - Report which tests were visually overridden.
 
+4. **Screenshot verdict gate (defense-in-depth):** Read `test-results/auto-verify.json`
+   failures array. If ANY failure has `verdict_source: "screenshot"`, BLOCK commit.
+   This is redundant with auto-verify's own verdict (screenshot FAILED already
+   means auto-verify FAILED), but serves as an independent safety check — two
+   gates must agree before code is committed.
+
 ```bash
 if [ -f test-results/auto-verify.json ]; then
   UPSTREAM_RESULT=$(python3 -c "import json; print(json.load(open('test-results/auto-verify.json'))['result'])")
   if [ "$UPSTREAM_RESULT" = "FAILED" ]; then
     echo "BLOCKED: auto-verify reported FAILED"
+    exit 1
+  fi
+  # Defense-in-depth: check for screenshot-verdict failures even if result is PASSED
+  SCREENSHOT_FAILURES=$(python3 -c "
+import json
+d = json.load(open('test-results/auto-verify.json'))
+failures = [f for f in d.get('failures', []) if f.get('verdict_source') == 'screenshot']
+print(len(failures))
+")
+  if [ "$SCREENSHOT_FAILURES" -gt 0 ]; then
+    echo "BLOCKED: $SCREENSHOT_FAILURES UI test(s) failed screenshot verification"
     exit 1
   fi
   echo "auto-verify result: $UPSTREAM_RESULT — proceeding"
@@ -151,3 +178,14 @@ Post-Fix Pipeline:
   Documentation: UPDATED/SKIPPED
   Commit: [hash] — [message] / BLOCKED
 ```
+
+---
+
+## CRITICAL RULES
+
+- MUST read upstream gate results before any commit — never commit without verification evidence
+- MUST NOT re-run tests — this skill finalizes, it does not verify
+- MUST NOT commit when `auto-verify.json` reports FAILED or has screenshot-verdict failures
+- MUST NOT skip learning capture (Step 3) — every fix must be recorded via `/learn-n-improve`
+- MUST write structured JSON output to `test-results/post-fix-pipeline.json` for downstream consumption
+- MUST block commit if visual review has any overrides (passed tests visually broken)

@@ -1,21 +1,26 @@
 ---
 name: playwright
 description: >
-  Self-contained Playwright E2E testing skill for web applications. Write, run, and
-  debug Playwright tests including browser automation, Page Object Model, visual
+  Write, run, and debug Playwright E2E tests for web applications including browser
+  automation, Page Object Model, visual
   regression, network interception, cross-browser testing, and CI integration.
   Use when building or maintaining end-to-end tests for web UIs.
 triggers:
   - playwright
-  - playwright-test
-  - e2e-web
+  - playwright test
+  - write e2e test
+  - web e2e testing
+  - browser automation test
+  - visual regression test
 allowed-tools: "Bash Read Write Edit Grep Glob"
 argument-hint: "<user-flow-or-test-description>"
-version: "1.1.1"
+version: "1.2.0"
 type: workflow
 ---
 
 # Playwright E2E Testing
+
+**Critical:** This skill is Playwright-specific. For cross-framework E2E best practices, use /e2e-best-practices. For orchestrated visual E2E runs with auto-healing, use /e2e-visual-run.
 
 Write, run, and debug Playwright end-to-end tests for the requested user flow or scenario.
 
@@ -132,6 +137,7 @@ Key config decisions:
 
 ## STEP 2: Browser Automation Fundamentals
 
+**Read:** `e2e-best-practices/SKILL.md` for cross-framework E2E patterns (selectors, data isolation, anti-patterns).
 
 **Read:** `references/browser-automation-fundamentals.md` for detailed step 2: browser automation fundamentals reference material.
 
