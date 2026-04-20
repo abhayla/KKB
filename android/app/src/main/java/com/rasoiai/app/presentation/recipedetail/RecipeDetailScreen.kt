@@ -1,6 +1,7 @@
 package com.rasoiai.app.presentation.recipedetail
 
 import android.content.res.Configuration
+import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -193,10 +194,33 @@ internal fun RecipeDetailContent(
                             DropdownMenuItem(
                                 text = { Text("Add to Collection") },
                                 onClick = { showMenu = false }
+                                // TODO(#25 follow-up): launch collection picker and
+                                // call favoritesRepository.addToCollection(...).
                             )
                             DropdownMenuItem(
                                 text = { Text("Report Issue") },
-                                onClick = { showMenu = false }
+                                onClick = {
+                                    showMenu = false
+                                    uiState.recipe?.let { recipe ->
+                                        val subject = "RasoiAI: Issue with recipe \"${recipe.name}\""
+                                        val body = buildString {
+                                            append("Recipe ID: ${recipe.id}\n")
+                                            append("Recipe Name: ${recipe.name}\n")
+                                            append("Cuisine: ${recipe.cuisineType}\n\n")
+                                            append("Describe the issue below:\n\n")
+                                        }
+                                        val intent = Intent(Intent.ACTION_SENDTO).apply {
+                                            data = Uri.parse("mailto:support@rasoiai.com")
+                                            putExtra(Intent.EXTRA_SUBJECT, subject)
+                                            putExtra(Intent.EXTRA_TEXT, body)
+                                        }
+                                        runCatching {
+                                            context.startActivity(
+                                                Intent.createChooser(intent, "Report issue via")
+                                            )
+                                        }
+                                    }
+                                }
                             )
                         }
                     }
