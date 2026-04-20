@@ -38,7 +38,9 @@ jobs:
         env:
           # Test-only secret — Settings requires jwt_secret_key with no default.
           JWT_SECRET_KEY: ci-test-secret-not-used-in-production
-          DEBUG: "false"
+          # DEBUG=true is required by tests: enables fake firebase token auth
+          # and disables per-endpoint production rate limits (tests would 429).
+          DEBUG: "true"
         run: PYTHONPATH=. pytest -v --tb=short --junitxml=test-results/results.xml
 
       - name: Upload test results
