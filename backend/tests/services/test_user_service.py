@@ -1,15 +1,25 @@
-"""Tests for build_user_response() in user_service.
+"""Tests for user_service.
 
-Requirement: #35 - Service-level unit tests for user response building.
-Verifies field mapping from User + UserPreferences models to UserResponse DTO.
-This is a pure sync function — no DB session needed.
+Requirement: #35 - Service-level unit tests for user operations.
+Covers build_user_response (sync, no DB) plus get_user_with_preferences
+and update_user_preferences (async, DB-backed).
 """
 
 import uuid
+from datetime import datetime, timedelta, timezone
 
+import pytest
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.exceptions import ConflictError
 from app.models.user import User, UserPreferences
-from app.schemas.user import UserResponse
-from app.services.user_service import build_user_response
+from app.schemas.user import UserPreferencesUpdate, UserResponse
+from app.services.user_service import (
+    build_user_response,
+    get_user_with_preferences,
+    update_user_preferences,
+)
 
 
 def _make_user(**overrides) -> User:
@@ -157,3 +167,184 @@ class TestBuildUserResponse:
         )  # None -> default
         assert result.preferences.spice_level == "medium"  # None -> default
         assert result.preferences.busy_days == []
+
+
+# ==================== get_user_with_preferences ====================
+
+
+class TestGetUserWithPreferences:
+    """Tests for the DB-backed get_user_with_preferences()."""
+
+    @pytest.mark.asyncio
+    async def test_returns_response_when_preferences_exist(
+        self, db_session: AsyncSession, test_user: User
+    ):
+        prefs = UserPreferences(
+            id=str(uuid.uuid4()),
+            user_id=test_user.id,
+            family_size=3,
+            dietary_type="vegan",
+            cuisine_preferences=["north"],
+        )
+        db_session.add(prefs)
+        await db_session.commit()
+
+        result = await get_user_with_preferences(db_session, test_user)
+
+        assert result.id == test_user.id
+        assert result.preferences is not None
+        assert result.preferences.household_size == 3
+        assert result.preferences.dietary_type == "vegan"
+        assert result.preferences.cuisine_preferences == ["north"]
+
+    @pytest.mark.asyncio
+    async def test_returns_response_with_null_preferences_when_none_exist(
+        self, db_session: AsyncSession, test_user: User
+    ):
+        """A user without a UserPreferences row returns preferences=None."""
+        # Explicitly confirm no preferences exist for this user.
+        existing = (
+            await db_session.execute(
+                select(UserPreferences).where(UserPreferences.user_id == test_user.id)
+            )
+        ).scalar_one_or_none()
+        assert existing is None
+
+        result = await get_user_with_preferences(db_session, test_user)
+
+        assert result.id == test_user.id
+        assert result.preferences is None
+
+
+# ==================== update_user_preferences ====================
+
+
+class TestUpdateUserPreferences:
+    """Tests for the DB-backed update_user_preferences()."""
+
+    @pytest.mark.asyncio
+    async def test_creates_preferences_row_if_missing(
+        self, db_session: AsyncSession, test_user: User
+    ):
+        """A user with no UserPreferences row gets one created on first update."""
+        update = UserPreferencesUpdate(household_size=5)
+        result = await update_user_preferences(db_session, test_user, update)
+
+        assert result.preferences is not None
+        assert result.preferences.household_size == 5
+
+        # Confirm a row was actually created in the DB.
+        rows = (
+            await db_session.execute(
+                select(UserPreferences).where(UserPreferences.user_id == test_user.id)
+            )
+        ).scalars().all()
+        assert len(rows) == 1
+
+    @pytest.mark.asyncio
+    async def test_updates_existing_preferences(
+        self, db_session: AsyncSession, test_user: User
+    ):
+        """Existing preferences are updated in place, not duplicated."""
+        prefs = UserPreferences(
+            id=str(uuid.uuid4()),
+            user_id=test_user.id,
+            family_size=2,
+            spice_level="mild",
+        )
+        db_session.add(prefs)
+        await db_session.commit()
+
+        update = UserPreferencesUpdate(household_size=6, spice_level="spicy")
+        result = await update_user_preferences(db_session, test_user, update)
+
+        assert result.preferences.household_size == 6
+        assert result.preferences.spice_level == "spicy"
+
+        rows = (
+            await db_session.execute(
+                select(UserPreferences).where(UserPreferences.user_id == test_user.id)
+            )
+        ).scalars().all()
+        assert len(rows) == 1  # updated in place, no duplicate
+
+    @pytest.mark.asyncio
+    async def test_primary_diet_maps_to_dietary_type(
+        self, db_session: AsyncSession, test_user: User
+    ):
+        """primary_diet field on the update schema maps to the dietary_type column."""
+        update = UserPreferencesUpdate(primary_diet="jain")
+        result = await update_user_preferences(db_session, test_user, update)
+
+        assert result.preferences.dietary_type == "jain"
+
+    @pytest.mark.asyncio
+    async def test_partial_update_preserves_unspecified_fields(
+        self, db_session: AsyncSession, test_user: User
+    ):
+        """Only fields explicitly set on the update are changed; others are preserved."""
+        prefs = UserPreferences(
+            id=str(uuid.uuid4()),
+            user_id=test_user.id,
+            family_size=4,
+            spice_level="medium",
+            cooking_time_preference="moderate",
+        )
+        db_session.add(prefs)
+        await db_session.commit()
+
+        update = UserPreferencesUpdate(spice_level="spicy")
+        result = await update_user_preferences(db_session, test_user, update)
+
+        assert result.preferences.spice_level == "spicy"
+        # Untouched fields stay the same.
+        assert result.preferences.household_size == 4
+        assert result.preferences.cooking_time_preference == "moderate"
+
+    @pytest.mark.asyncio
+    async def test_marks_user_onboarded_on_first_update(
+        self, db_session: AsyncSession, test_user: User
+    ):
+        """A user that was not onboarded becomes onboarded after preferences update."""
+        test_user.is_onboarded = False
+        await db_session.commit()
+
+        update = UserPreferencesUpdate(household_size=3)
+        await update_user_preferences(db_session, test_user, update)
+
+        await db_session.refresh(test_user)
+        assert test_user.is_onboarded is True
+
+    @pytest.mark.asyncio
+    async def test_stale_update_raises_conflict_error(
+        self, db_session: AsyncSession, test_user: User
+    ):
+        """An update with client updated_at older than server's must raise ConflictError."""
+        now = datetime.now(timezone.utc)
+        test_user.preferences_updated_at = now
+        prefs = UserPreferences(
+            id=str(uuid.uuid4()), user_id=test_user.id, family_size=2
+        )
+        db_session.add(prefs)
+        await db_session.commit()
+
+        # Client thinks preferences were last updated 1 hour ago — stale.
+        stale = (now - timedelta(hours=1)).isoformat()
+        update = UserPreferencesUpdate(household_size=7, updated_at=stale)
+
+        with pytest.raises(ConflictError):
+            await update_user_preferences(db_session, test_user, update)
+
+    @pytest.mark.asyncio
+    async def test_updated_at_timestamp_is_recorded(
+        self, db_session: AsyncSession, test_user: User
+    ):
+        """A successful update must record user.preferences_updated_at."""
+        test_user.preferences_updated_at = None
+        await db_session.commit()
+
+        update = UserPreferencesUpdate(household_size=3)
+        await update_user_preferences(db_session, test_user, update)
+
+        await db_session.refresh(test_user)
+        assert test_user.preferences_updated_at is not None
