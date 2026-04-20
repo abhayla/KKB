@@ -71,6 +71,7 @@ sealed class StatsNavigationEvent {
     data object NavigateToFavorites : StatsNavigationEvent()
     data object NavigateToAllAchievements : StatsNavigationEvent()
     data object NavigateToFullLeaderboard : StatsNavigationEvent()
+    data class LaunchShare(val text: String, val chooserTitle: String) : StatsNavigationEvent()
 }
 
 @HiltViewModel
@@ -252,7 +253,23 @@ class StatsViewModel @Inject constructor(
 
     fun onShareAchievement(achievement: Achievement) {
         Timber.i("Share achievement: ${achievement.name}")
-        _uiState.update { it.copy(errorMessage = "Share: ${achievement.emoji} ${achievement.name} - Unlocked on RasoiAI!") }
+        val text = buildString {
+            append(achievement.emoji)
+            append(' ')
+            append(achievement.name)
+            append('\n')
+            if (achievement.description.isNotBlank()) {
+                append(achievement.description)
+                append('\n')
+            }
+            append("\nUnlocked on RasoiAI!")
+        }
+        _navigationEvent.trySend(
+            StatsNavigationEvent.LaunchShare(
+                text = text,
+                chooserTitle = "Share achievement"
+            )
+        )
     }
 
     fun buildShareText(): String {
