@@ -84,11 +84,6 @@ Android/Gradle issues — see `android/CLAUDE.md`. Backend import/env issues —
 | VPS deployment | `docs/VPS-Deployment.md` — do NOT modify `C:\Apps\shared\` |
 | MCP Servers | `.mcp.json` — Playwright (web screenshots), ADB (emulator automation) |
 
-## Rules for Claude
-
-1. **Bug Fixing**: Use `/fix-loop` or `/fix-issue`. Start by writing a test that reproduces the bug, then fix and prove with a passing test.
-2. **Rules:** Path-scoped rules auto-load from `.claude/rules/` via `globs:` frontmatter. Most-violated: `model-import-5-locations.md` (silent test/migration failures), `async-repository-session-maker-pattern.md` (MissingGreenlet errors), `baseviewmodel-pattern.md` (ViewModel state), `centralized-mapper-convention.md` (no per-feature mappers).
-
 <!-- hub:best-practices:start -->
 
 <!-- PROTECTED SECTION — managed by claude-best-practices hub. -->
