@@ -2,9 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Session continuity:** Use `/save-session` before ending work, `/start-session` to resume. Session files in `.claude/sessions/`.
-
-**Context compaction:** When compacting, always preserve: the 5-location model import rule, test fixture choices (client vs unauthenticated_client vs authenticated_client), all file paths that were modified, any test commands that were run, the current workflow step number, and any GitHub Issue numbers being worked on.
+**Session continuity:** Use `/save-session` before ending, `/start-session` to resume. On compaction, preserve modified file paths, test commands run, workflow step, and any GitHub Issue numbers.
 
 ## Project Overview
 
@@ -18,7 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture
 
-Four Android modules: `app` (presentation) -> `domain` (pure Kotlin interfaces/models) <- `data` (Room + Retrofit impls) -> `core` (shared utilities). Domain has zero Android dependencies. Offline-first: Room is source of truth, API syncs in background. Mappers centralized in `EntityMappers.kt` and `DtoMappers.kt`. Backend services are standalone async functions (not classes).
+Four Android modules: `app` (presentation) -> `domain` (pure Kotlin interfaces/models) <- `data` (Room + Retrofit impls) -> `core` (shared utilities). Domain has zero Android dependencies. Offline-first: Room is source of truth, API syncs in background. Mappers centralized — see `.claude/rules/centralized-mapper-convention.md`. Backend services are standalone async functions (not classes).
 
 **5-location model import rule (CRITICAL):** Adding a SQLAlchemy model requires updates in 5 files — see `.claude/rules/model-import-5-locations.md`. Partial updates cause silent test/migration failures.
 
@@ -46,7 +44,7 @@ uvicorn app.main:app --reload    # Dev server (DEBUG=true for /docs)
 
 ### Environment
 
-**Backend `.env`:** `DATABASE_URL`, `FIREBASE_CREDENTIALS_PATH`, `ANTHROPIC_API_KEY`, `GOOGLE_AI_API_KEY`, `JWT_SECRET_KEY` (REQUIRED, no default), `DEBUG=true`, `SENTRY_DSN` (optional). Android needs `google-services.json` in `android/app/` and `local.properties` with `sdk.dir`.
+**Backend `.env`:** `DATABASE_URL`, `FIREBASE_CREDENTIALS_PATH`, `ANTHROPIC_API_KEY`, `GOOGLE_AI_API_KEY`, `JWT_SECRET_KEY` (REQUIRED, no default), `DEBUG=true`, `SENTRY_DSN` (optional). Android needs `google-services.json` in `android/app/` and `local.properties` with `sdk.dir`. Personal overrides go in `CLAUDE.local.md` (gitignored).
 
 ## Test Fixtures (Backend)
 
@@ -76,25 +74,20 @@ Android/Gradle issues — see `android/CLAUDE.md`. Backend import/env issues —
 | Recipe ID 500s | Compare recipe IDs as strings — `uuid.UUID` vs `String(36)` mismatch |
 | E2E flakes on API 36 emulator | Use API 34 (API 36 has Espresso issues) |
 
-## VPS Deployment
-
-See `docs/VPS-Deployment.md`. Do NOT modify files in `C:\Apps\shared\`.
-
 ## Key Documentation
 
 | Resource | Location |
 |----------|----------|
-| Session checkpoints | `.claude/sessions/` (via `/save-session` + `/start-session`) |
 | Sub-directory CLAUDE.md | `android/CLAUDE.md`, `backend/CLAUDE.md`, `backend/tests/CLAUDE.md` |
 | E2E testing guide | `docs/testing/E2E-Testing-Prompt.md` |
 | Technical design | `docs/design/RasoiAI Technical Design.md` |
+| VPS deployment | `docs/VPS-Deployment.md` — do NOT modify `C:\Apps\shared\` |
 | MCP Servers | `.mcp.json` — Playwright (web screenshots), ADB (emulator automation) |
-
 
 ## Rules for Claude
 
 1. **Bug Fixing**: Use `/fix-loop` or `/fix-issue`. Start by writing a test that reproduces the bug, then fix and prove with a passing test.
-2. **Rules:** Path-scoped rules live in `.claude/rules/` and auto-load via `globs:` frontmatter. Browse with `ls .claude/rules/` — no need to enumerate here.
+2. **Rules:** Path-scoped rules auto-load from `.claude/rules/` via `globs:` frontmatter. Most-violated: `model-import-5-locations.md` (silent test/migration failures), `async-repository-session-maker-pattern.md` (MissingGreenlet errors), `baseviewmodel-pattern.md` (ViewModel state), `centralized-mapper-convention.md` (no per-feature mappers).
 
 <!-- hub:best-practices:start -->
 
