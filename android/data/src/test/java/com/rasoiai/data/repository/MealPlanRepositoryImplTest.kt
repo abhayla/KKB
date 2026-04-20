@@ -18,6 +18,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -550,6 +552,24 @@ class MealPlanRepositoryImplTest {
 
             // API should never be called — getMealPlanForDate is Room-only
             coVerify(exactly = 0) { mockApiService.getCurrentMealPlan() }
+        }
+    }
+
+    @Nested
+    @DisplayName("CancellationException propagation (structured concurrency)")
+    inner class CancellationPropagation {
+
+        @Test
+        @DisplayName("generateMealPlan should propagate CancellationException instead of wrapping in Result.failure")
+        fun `generateMealPlan should propagate CancellationException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.generateMealPlan(any()) } throws CancellationException("cancelled")
+            try {
+                repository.generateMealPlan(testDate)
+                fail("Expected CancellationException to propagate, got Result wrapper instead")
+            } catch (e: CancellationException) {
+                assertEquals("cancelled", e.message)
+            }
         }
     }
 }

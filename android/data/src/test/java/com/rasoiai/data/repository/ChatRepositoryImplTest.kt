@@ -9,6 +9,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -241,6 +243,23 @@ class ChatRepositoryImplTest {
             // Then
             assertTrue(result.isFailure)
             assertTrue(result.exceptionOrNull() is java.io.IOException || result.exceptionOrNull() is Exception)
+        }
+    }
+
+    @Nested
+    @DisplayName("CancellationException propagation (structured concurrency)")
+    inner class CancellationPropagation {
+
+        @Test
+        @DisplayName("sendMessage should propagate CancellationException instead of wrapping in Result.failure")
+        fun `sendMessage should propagate CancellationException`() = runTest {
+            coEvery { mockChatDao.insertMessage(any()) } throws CancellationException("cancelled")
+            try {
+                repository.sendMessage("Hello")
+                fail("Expected CancellationException to propagate, got Result wrapper instead")
+            } catch (e: CancellationException) {
+                assertEquals("cancelled", e.message)
+            }
         }
     }
 }
