@@ -176,8 +176,8 @@ class MealPlanDaoTest : BaseDaoTest() {
         // Given
         mealPlanDao.insertMealPlan(testMealPlan)
         val items = listOf(
-            testMealPlanItem.copy(date = "2026-01-27", recipeName = "Day 1 Breakfast"),
-            testMealPlanItem.copy(date = "2026-01-28", recipeId = "recipe-2", recipeName = "Day 2 Breakfast")
+            testMealPlanItem.copy(id = "item-1a", date = "2026-01-27", recipeName = "Day 1 Breakfast"),
+            testMealPlanItem.copy(id = "item-1b", date = "2026-01-28", recipeId = "recipe-2", recipeName = "Day 2 Breakfast")
         )
         mealPlanDao.insertMealPlanItems(items)
 
@@ -219,7 +219,7 @@ class MealPlanDaoTest : BaseDaoTest() {
         mealPlanDao.insertMealPlan(testMealPlan)
         val items = listOf(
             testMealPlanItem,
-            testMealPlanItem.copy(mealType = "lunch", recipeId = "recipe-2", recipeName = "Lunch Item")
+            testMealPlanItem.copy(id = "item-lunch", mealType = "lunch", recipeId = "recipe-2", recipeName = "Lunch Item")
         )
         mealPlanDao.insertMealPlanItems(items)
 
@@ -246,8 +246,8 @@ class MealPlanDaoTest : BaseDaoTest() {
         mealPlanDao.insertMealPlan(testMealPlan)
         mealPlanDao.insertMealPlanItems(listOf(
             testMealPlanItem,
-            testMealPlanItem.copy(mealType = "lunch", recipeId = "recipe-2"),
-            testMealPlanItem.copy(mealType = "dinner", recipeId = "recipe-3")
+            testMealPlanItem.copy(id = "item-d-lunch", mealType = "lunch", recipeId = "recipe-2"),
+            testMealPlanItem.copy(id = "item-d-dinner", mealType = "dinner", recipeId = "recipe-3")
         ))
 
         // When
@@ -323,11 +323,13 @@ class MealPlanDaoTest : BaseDaoTest() {
 
     @Test
     fun insertMealPlanWithItems_insertsAllAtomically() = runTest {
-        // Given
+        // Given — each item needs a unique id; after MIGRATION_10_11 the PK is
+        // the single `id` column (not a composite), so copies without id overrides
+        // would upsert onto the same row.
         val items = listOf(
             testMealPlanItem,
-            testMealPlanItem.copy(mealType = "lunch", recipeId = "recipe-2", recipeName = "Lunch"),
-            testMealPlanItem.copy(mealType = "dinner", recipeId = "recipe-3", recipeName = "Dinner")
+            testMealPlanItem.copy(id = "item-2", mealType = "lunch", recipeId = "recipe-2", recipeName = "Lunch"),
+            testMealPlanItem.copy(id = "item-3", mealType = "dinner", recipeId = "recipe-3", recipeName = "Dinner")
         )
         val festivals = listOf(testFestival)
 
@@ -357,8 +359,8 @@ class MealPlanDaoTest : BaseDaoTest() {
         // When - replace with new items
         val updatedPlan = testMealPlan.copy(updatedAt = System.currentTimeMillis())
         val newItems = listOf(
-            testMealPlanItem.copy(recipeName = "New Breakfast", recipeId = "new-recipe-1"),
-            testMealPlanItem.copy(mealType = "lunch", recipeId = "new-recipe-2", recipeName = "New Lunch")
+            testMealPlanItem.copy(id = "new-item-1", recipeName = "New Breakfast", recipeId = "new-recipe-1"),
+            testMealPlanItem.copy(id = "new-item-2", mealType = "lunch", recipeId = "new-recipe-2", recipeName = "New Lunch")
         )
         val newFestivals = listOf(
             testFestival.copy(id = "new-fest", name = "New Festival")
@@ -382,10 +384,10 @@ class MealPlanDaoTest : BaseDaoTest() {
         // Given
         mealPlanDao.insertMealPlan(testMealPlan)
         val items = listOf(
-            testMealPlanItem.copy(date = "2026-01-27", mealType = "dinner", order = 0, recipeId = "r1", recipeName = "Dinner"),
-            testMealPlanItem.copy(date = "2026-01-28", mealType = "breakfast", order = 0, recipeId = "r2", recipeName = "Next Day Breakfast"),
-            testMealPlanItem.copy(date = "2026-01-27", mealType = "breakfast", order = 1, recipeId = "r3", recipeName = "Second Breakfast Item"),
-            testMealPlanItem.copy(date = "2026-01-27", mealType = "breakfast", order = 0, recipeId = "r4", recipeName = "First Breakfast Item")
+            testMealPlanItem.copy(id = "sort-1", date = "2026-01-27", mealType = "dinner", order = 0, recipeId = "r1", recipeName = "Dinner"),
+            testMealPlanItem.copy(id = "sort-2", date = "2026-01-28", mealType = "breakfast", order = 0, recipeId = "r2", recipeName = "Next Day Breakfast"),
+            testMealPlanItem.copy(id = "sort-3", date = "2026-01-27", mealType = "breakfast", order = 1, recipeId = "r3", recipeName = "Second Breakfast Item"),
+            testMealPlanItem.copy(id = "sort-4", date = "2026-01-27", mealType = "breakfast", order = 0, recipeId = "r4", recipeName = "First Breakfast Item")
         )
         mealPlanDao.insertMealPlanItems(items)
 
