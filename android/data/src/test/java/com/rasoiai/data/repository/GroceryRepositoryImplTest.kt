@@ -14,6 +14,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -411,6 +413,23 @@ class GroceryRepositoryImplTest {
             // Then
             assertTrue(result.isFailure)
             assertEquals("Meal plan not found", result.exceptionOrNull()?.message)
+        }
+    }
+
+    @Nested
+    @DisplayName("CancellationException propagation (structured concurrency)")
+    inner class CancellationPropagation {
+
+        @Test
+        @DisplayName("deleteItem should propagate CancellationException instead of wrapping in Result.failure")
+        fun `deleteItem should propagate CancellationException`() = runTest {
+            coEvery { mockGroceryDao.deleteGroceryItem(any()) } throws CancellationException("cancelled")
+            try {
+                repository.deleteItem("grocery-1")
+                fail("Expected CancellationException to propagate, got Result wrapper instead")
+            } catch (e: CancellationException) {
+                assertEquals("cancelled", e.message)
+            }
         }
     }
 

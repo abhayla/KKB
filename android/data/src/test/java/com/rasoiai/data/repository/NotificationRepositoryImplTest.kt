@@ -17,6 +17,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -829,6 +831,23 @@ class NotificationRepositoryImplTest {
                 val count = awaitItem()
                 assertEquals(5, count)
                 awaitComplete()
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("CancellationException propagation (structured concurrency)")
+    inner class CancellationPropagation {
+
+        @Test
+        @DisplayName("deleteAllNotifications should propagate CancellationException instead of wrapping in Result.failure")
+        fun `deleteAllNotifications should propagate CancellationException`() = runTest {
+            coEvery { mockNotificationDao.deleteAllNotifications() } throws CancellationException("cancelled")
+            try {
+                repository.deleteAllNotifications()
+                fail("Expected CancellationException to propagate, got Result wrapper instead")
+            } catch (e: CancellationException) {
+                assertEquals("cancelled", e.message)
             }
         }
     }

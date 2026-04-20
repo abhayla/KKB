@@ -25,6 +25,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -450,6 +452,24 @@ class SettingsRepositoryImplTest {
                 assertEquals("test@example.com", user?.email)
                 assertTrue(user?.isOnboarded == true)
                 cancelAndIgnoreRemainingEvents()
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("CancellationException propagation (structured concurrency)")
+    inner class CancellationPropagation {
+
+        @Test
+        @DisplayName("updateDarkMode should propagate CancellationException instead of wrapping in Result.failure")
+        fun `updateDarkMode should propagate CancellationException`() = runTest {
+            every { mockUserPreferencesDataStore.appSettings } returns flowOf(AppSettings())
+            coEvery { mockUserPreferencesDataStore.saveAppSettings(any()) } throws CancellationException("cancelled")
+            try {
+                repository.updateDarkMode(DarkModePreference.DARK)
+                fail("Expected CancellationException to propagate, got Result wrapper instead")
+            } catch (e: CancellationException) {
+                assertEquals("cancelled", e.message)
             }
         }
     }
