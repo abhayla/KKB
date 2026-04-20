@@ -14,6 +14,7 @@ import com.rasoiai.domain.model.ChatMessage
 import com.rasoiai.domain.model.RecipeSuggestion
 import com.rasoiai.domain.repository.ChatRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -84,6 +85,8 @@ class ChatRepositoryImpl @Inject constructor(
             Timber.d("AI response saved: ${aiResponse.id}")
 
             Result.success(aiResponse)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to send message")
             Result.failure(e)
@@ -129,6 +132,8 @@ class ChatRepositoryImpl @Inject constructor(
             Timber.d("AI image analysis response saved: ${aiMessage.id}")
 
             Result.success(aiMessage)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: retrofit2.HttpException) {
             Timber.w(e, "HTTP ${e.code()} on send image message")
             Result.failure(e)
@@ -178,6 +183,8 @@ class ChatRepositoryImpl @Inject constructor(
 
             Timber.d("Image encoded successfully, Base64 length: ${base64.length}")
             base64
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to compress and encode image")
             null
@@ -192,6 +199,8 @@ class ChatRepositoryImpl @Inject constructor(
             chatDao.insertMessage(welcomeMessage.toEntity())
             Timber.i("Chat history cleared")
             Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to clear chat history")
             Result.failure(e)

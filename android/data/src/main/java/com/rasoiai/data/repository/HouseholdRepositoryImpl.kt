@@ -21,6 +21,7 @@ import com.rasoiai.domain.model.InviteCode
 import com.rasoiai.domain.model.MealPlan
 import com.rasoiai.domain.model.RecipeRule
 import com.rasoiai.domain.repository.HouseholdRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.flow
@@ -74,6 +75,8 @@ class HouseholdRepositoryImpl @Inject constructor(
             householdDao.replaceHouseholdWithMembers(householdEntity, memberEntities)
             Timber.i("Created household: ${response.household.id}")
             Result.success(response.toDomain())
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to create household")
             Result.failure(e)
@@ -96,6 +99,8 @@ class HouseholdRepositoryImpl @Inject constructor(
             householdDao.replaceHouseholdWithMembers(householdEntity, memberEntities)
             Timber.i("Updated household: $id")
             Result.success(response.toDomain())
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to update household")
             Result.failure(e)
@@ -108,6 +113,8 @@ class HouseholdRepositoryImpl @Inject constructor(
             householdDao.deactivateHousehold(id, LocalDateTime.now().toString())
             Timber.i("Deactivated household: $id")
             Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to deactivate household")
             Result.failure(e)
@@ -136,6 +143,8 @@ class HouseholdRepositoryImpl @Inject constructor(
             householdDao.insertMember(entity)
             Timber.i("Added member to household: $householdId")
             Result.success(entity.toDomain())
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to add member")
             Result.failure(e)
@@ -163,6 +172,8 @@ class HouseholdRepositoryImpl @Inject constructor(
             householdDao.updateMember(entity)
             Timber.i("Updated member: $memberId")
             Result.success(entity.toDomain())
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to update member")
             Result.failure(e)
@@ -175,6 +186,8 @@ class HouseholdRepositoryImpl @Inject constructor(
             householdDao.deleteMember(memberId)
             Timber.i("Removed member: $memberId")
             Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to remove member")
             Result.failure(e)
@@ -198,6 +211,8 @@ class HouseholdRepositoryImpl @Inject constructor(
                     expiresAt = LocalDateTime.parse(response.expiresAt)
                 )
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to refresh invite code")
             Result.failure(e)
@@ -212,6 +227,8 @@ class HouseholdRepositoryImpl @Inject constructor(
             householdDao.replaceHouseholdWithMembers(householdEntity, memberEntities)
             Timber.i("Joined household: ${response.household.id}")
             Result.success(response.toDomain())
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to join household")
             Result.failure(e)
@@ -224,6 +241,8 @@ class HouseholdRepositoryImpl @Inject constructor(
             householdDao.deleteHousehold(householdId)
             Timber.i("Left household: $householdId")
             Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to leave household")
             Result.failure(e)
@@ -241,6 +260,8 @@ class HouseholdRepositoryImpl @Inject constructor(
             )
             Timber.i("Transferred ownership to: $newOwnerMemberId")
             Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to transfer ownership")
             Result.failure(e)
@@ -255,6 +276,8 @@ class HouseholdRepositoryImpl @Inject constructor(
             emit(response.rules.map { dto ->
                 dto.toEntity().toDomain()
             })
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to get household recipe rules")
             emit(emptyList())
@@ -268,6 +291,8 @@ class HouseholdRepositoryImpl @Inject constructor(
             val items = response.toItemEntities()
             val festivals = response.toFestivalEntities()
             emit(entity.toDomain(items, festivals))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to get household meal plan")
             emit(null)
@@ -279,6 +304,8 @@ class HouseholdRepositoryImpl @Inject constructor(
             try {
                 val response = apiService.getHouseholdNotifications(householdId)
                 emit(response.map { it.toDomain() })
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get household notifications")
                 emit(emptyList())
@@ -292,6 +319,8 @@ class HouseholdRepositoryImpl @Inject constructor(
         return try {
             val response = apiService.getHouseholdStats(householdId, month)
             Result.success(response.toDomain())
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to get household stats")
             Result.failure(e)
@@ -305,6 +334,8 @@ class HouseholdRepositoryImpl @Inject constructor(
                 ?: return Result.failure(IllegalStateException("No active household"))
             apiService.markHouseholdNotificationRead(household.id, notificationId)
             Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to mark notification read")
             Result.failure(e)

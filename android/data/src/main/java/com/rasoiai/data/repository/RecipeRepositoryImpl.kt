@@ -16,6 +16,7 @@ import com.rasoiai.domain.model.DietaryTag
 import com.rasoiai.domain.model.MealType
 import com.rasoiai.domain.model.Recipe
 import com.rasoiai.domain.repository.RecipeRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -66,6 +67,8 @@ class RecipeRepositoryImpl @Inject constructor(
                 missingIds.forEach { id ->
                     try {
                         fetchAndCacheRecipe(id)
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to fetch recipe: $id")
                     }
@@ -117,11 +120,15 @@ class RecipeRepositoryImpl @Inject constructor(
             persistIngredientNames(recipes)
 
             Result.success(recipes)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: retrofit2.HttpException) {
             Timber.w(e, "HTTP ${e.code()} on search recipes")
             try {
                 val cached = searchLocalRecipes(query, cuisine, dietary, mealType, limit)
                 Result.success(cached)
+            } catch (e2: CancellationException) {
+                throw e2
             } catch (e2: Exception) {
                 Result.failure(e)
             }
@@ -130,6 +137,8 @@ class RecipeRepositoryImpl @Inject constructor(
             try {
                 val cached = searchLocalRecipes(query, cuisine, dietary, mealType, limit)
                 Result.success(cached)
+            } catch (e2: CancellationException) {
+                throw e2
             } catch (e2: Exception) {
                 Result.failure(e)
             }
@@ -139,6 +148,8 @@ class RecipeRepositoryImpl @Inject constructor(
             try {
                 val cached = searchLocalRecipes(query, cuisine, dietary, mealType, limit)
                 Result.success(cached)
+            } catch (e2: CancellationException) {
+                throw e2
             } catch (e2: Exception) {
                 Result.failure(e)
             }
@@ -166,6 +177,8 @@ class RecipeRepositoryImpl @Inject constructor(
             recipeDao.insertRecipe(response.toEntity(isFavorite))
 
             Result.success(response.toDomain())
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: retrofit2.HttpException) {
             Timber.w(e, "HTTP ${e.code()} on scale recipe")
             try {
@@ -174,6 +187,8 @@ class RecipeRepositoryImpl @Inject constructor(
                 val recipe = entity.toDomain()
                 val scaledRecipe = scaleRecipeLocally(recipe, servings)
                 Result.success(scaledRecipe)
+            } catch (e2: CancellationException) {
+                throw e2
             } catch (e2: Exception) {
                 Result.failure(e)
             }
@@ -185,6 +200,8 @@ class RecipeRepositoryImpl @Inject constructor(
                 val recipe = entity.toDomain()
                 val scaledRecipe = scaleRecipeLocally(recipe, servings)
                 Result.success(scaledRecipe)
+            } catch (e2: CancellationException) {
+                throw e2
             } catch (e2: Exception) {
                 Result.failure(e)
             }
@@ -198,6 +215,8 @@ class RecipeRepositoryImpl @Inject constructor(
                 val recipe = entity.toDomain()
                 val scaledRecipe = scaleRecipeLocally(recipe, servings)
                 Result.success(scaledRecipe)
+            } catch (e2: CancellationException) {
+                throw e2
             } catch (e2: Exception) {
                 Result.failure(e)
             }
@@ -224,6 +243,8 @@ class RecipeRepositoryImpl @Inject constructor(
 
             Timber.i("Favorite toggled: $recipeId = $newFavoriteState")
             Result.success(newFavoriteState)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to toggle favorite")
             Result.failure(e)
@@ -248,6 +269,8 @@ class RecipeRepositoryImpl @Inject constructor(
             val recipe = response.toDomain().copy(isFavorite = isFavorite)
             persistIngredientNames(listOf(recipe))
             recipe
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: retrofit2.HttpException) {
             Timber.w(e, "HTTP ${e.code()} fetching recipe from API: $recipeId")
             null
@@ -316,6 +339,8 @@ class RecipeRepositoryImpl @Inject constructor(
                 KnownIngredientEntity(name = it, source = "recipe_cache")
             }
             recipeRulesDao.insertKnownIngredients(entities)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Failed to persist ingredient names")
         }
@@ -332,6 +357,8 @@ class RecipeRepositoryImpl @Inject constructor(
         missing.forEach { id ->
             try {
                 fetchAndCacheRecipe(id)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to prefetch recipe: $id")
             }
@@ -344,6 +371,8 @@ class RecipeRepositoryImpl @Inject constructor(
                 apiService.rateRecipe(recipeId, RecipeRatingRequest(rating.toFloat(), feedback.ifBlank { null }))
             }
             Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: retrofit2.HttpException) {
             Timber.w(e, "HTTP ${e.code()} on submit recipe rating")
             Result.failure(e)

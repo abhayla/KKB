@@ -11,6 +11,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -257,6 +259,61 @@ class AuthRepositoryImplTest {
 
             // Then
             assertTrue(result.isFailure)
+        }
+    }
+
+    @Nested
+    @DisplayName("CancellationException propagation (structured concurrency)")
+    inner class CancellationPropagation {
+
+        @Test
+        @DisplayName("signInWithFirebase should propagate CancellationException instead of wrapping in Result.failure")
+        fun `signInWithFirebase should propagate CancellationException`() = runTest {
+            coEvery { mockApiService.authenticateWithFirebase(any()) } throws CancellationException("cancelled")
+            try {
+                repository.signInWithFirebase("firebase-id-token")
+                fail("Expected CancellationException to propagate, got Result wrapper instead")
+            } catch (e: CancellationException) {
+                assertEquals("cancelled", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("signOut should propagate CancellationException")
+        fun `signOut should propagate CancellationException`() = runTest {
+            coEvery { mockUserPreferencesDataStore.clearAuthTokens() } throws CancellationException("cancelled")
+            try {
+                repository.signOut()
+                fail("Expected CancellationException to propagate, got Result wrapper instead")
+            } catch (e: CancellationException) {
+                assertEquals("cancelled", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("refreshToken should propagate CancellationException")
+        fun `refreshToken should propagate CancellationException`() = runTest {
+            coEvery { mockUserPreferencesDataStore.getRefreshToken() } returns "refresh-token"
+            coEvery { mockApiService.refreshToken(any()) } throws CancellationException("cancelled")
+            try {
+                repository.refreshToken()
+                fail("Expected CancellationException to propagate, got Result wrapper instead")
+            } catch (e: CancellationException) {
+                assertEquals("cancelled", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("loadCurrentUser should propagate CancellationException")
+        fun `loadCurrentUser should propagate CancellationException`() = runTest {
+            every { mockUserPreferencesDataStore.isAuthenticated } returns flowOf(true)
+            coEvery { mockApiService.getCurrentUser() } throws CancellationException("cancelled")
+            try {
+                repository.loadCurrentUser()
+                fail("Expected CancellationException to propagate, got Result wrapper instead")
+            } catch (e: CancellationException) {
+                assertEquals("cancelled", e.message)
+            }
         }
     }
 
