@@ -67,7 +67,7 @@ import com.rasoiai.data.local.entity.KnownIngredientEntity
         HouseholdEntity::class,
         HouseholdMemberEntity::class
     ],
-    version = 14,
+    version = 15,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -291,6 +291,59 @@ abstract class RasoiDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migration from version 14 to 15: Rename `order` column -> `item_order`.
+         *
+         * `order` is a SQL reserved keyword. Room does not reliably backtick-quote
+         * it in generated INSERT statements, causing failures on stricter SQLite
+         * versions (e.g., API 29 emulator). Renaming avoids the collision entirely.
+         *
+         * SQLite on min-SDK 24 (Android 7.0) predates ALTER TABLE RENAME COLUMN
+         * (added in SQLite 3.25). Use the standard "recreate table" dance.
+         *
+         * Downgrade behavior: rolls back to a table with `order` column; data
+         * preserved. Re-upgrade re-renames the column.
+         */
+        val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE meal_plan_items_new (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        mealPlanId TEXT NOT NULL,
+                        date TEXT NOT NULL,
+                        dayName TEXT NOT NULL,
+                        mealType TEXT NOT NULL,
+                        recipeId TEXT NOT NULL,
+                        recipeName TEXT NOT NULL,
+                        recipeImageUrl TEXT,
+                        prepTimeMinutes INTEGER NOT NULL,
+                        calories INTEGER NOT NULL,
+                        dietaryTags TEXT NOT NULL,
+                        isLocked INTEGER NOT NULL DEFAULT 0,
+                        isDayLocked INTEGER NOT NULL DEFAULT 0,
+                        isMealTypeLocked INTEGER NOT NULL DEFAULT 0,
+                        item_order INTEGER NOT NULL DEFAULT 0,
+                        FOREIGN KEY (mealPlanId) REFERENCES meal_plans(id) ON DELETE CASCADE
+                    )
+                """)
+                db.execSQL("""
+                    INSERT INTO meal_plan_items_new
+                    (id, mealPlanId, date, dayName, mealType, recipeId, recipeName,
+                     recipeImageUrl, prepTimeMinutes, calories, dietaryTags, isLocked,
+                     isDayLocked, isMealTypeLocked, item_order)
+                    SELECT
+                     id, mealPlanId, date, dayName, mealType, recipeId, recipeName,
+                     recipeImageUrl, prepTimeMinutes, calories, dietaryTags, isLocked,
+                     isDayLocked, isMealTypeLocked, `order`
+                    FROM meal_plan_items
+                """)
+                db.execSQL("DROP TABLE meal_plan_items")
+                db.execSQL("ALTER TABLE meal_plan_items_new RENAME TO meal_plan_items")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_meal_plan_items_mealPlanId ON meal_plan_items (mealPlanId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_meal_plan_items_date ON meal_plan_items (date)")
+            }
+        }
+
         val MIGRATION_12_13 = object : Migration(12, 13) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("""
@@ -335,7 +388,7 @@ abstract class RasoiDatabase : RoomDatabase() {
                 RasoiDatabase::class.java,
                 DATABASE_NAME
             )
-                .addMigrations(MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
+                .addMigrations(MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
                 .addCallback(object : Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
