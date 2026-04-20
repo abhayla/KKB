@@ -22,7 +22,16 @@
 #     }
 #   }
 
-FILE=$(echo "$TOOL_INPUT" | jq -r '.file_path // .path // empty')
+TOOL_INPUT=$(cat)
+if command -v jq >/dev/null 2>&1; then
+  FILE=$(echo "$TOOL_INPUT" | jq -r '.tool_input.file_path // .tool_input.path // .file_path // .path // empty' 2>/dev/null)
+else
+  FILE=$(echo "$TOOL_INPUT" | python -c "import sys,json
+try:
+  d=json.load(sys.stdin); ti=d.get('tool_input',d) if isinstance(d,dict) else {}
+  print(ti.get('file_path') or ti.get('path') or d.get('file_path') or d.get('path') or '')
+except Exception: pass" 2>/dev/null)
+fi
 if [[ -z "$FILE" ]] || [[ ! -f "$FILE" ]]; then exit 0; fi
 
 case "$FILE" in
