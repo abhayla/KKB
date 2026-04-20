@@ -2,19 +2,21 @@ name: Android CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
-      - 'android/**'
-      - '.github/workflows/android-ci.yml'
+      - "android/**"
+      - ".github/workflows/android-ci.yml"
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
-      - 'android/**'
-      - '.github/workflows/android-ci.yml'
+      - "android/**"
+      - ".github/workflows/android-ci.yml"
 
 env:
-  JAVA_VERSION: '17'
-  JAVA_DISTRIBUTION: 'temurin'
+  # Kotlin 2.2+ daemon requires JDK 21; build targets JDK 17 bytecode
+  # (sourceCompatibility/targetCompatibility=17 in build.gradle.kts).
+  JAVA_VERSION: "21"
+  JAVA_DISTRIBUTION: "temurin"
 
 jobs:
   build:
