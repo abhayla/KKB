@@ -268,7 +268,10 @@ internal fun RecipeDetailContent(
                             calories = uiState.scaledNutrition?.calories,
                             isVegetarian = uiState.isVegetarian,
                             tags = uiState.displayTags,
-                            lockState = uiState.lockState
+                            lockState = uiState.lockState,
+                            averageRating = uiState.recipe.averageRating,
+                            ratingCount = uiState.recipe.ratingCount,
+                            userRating = uiState.recipe.userRating
                         )
 
                         Spacer(modifier = Modifier.height(spacing.md))
