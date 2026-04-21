@@ -507,6 +507,86 @@ class ChatViewModelTest {
     }
 
     @Nested
+    @DisplayName("Initial Context (issue #24)")
+    inner class InitialContext {
+
+        @Test
+        @DisplayName("null context should leave input empty and not auto-send")
+        fun `null context should leave input empty and not auto-send`() = runTest {
+            val handle = SavedStateHandle()
+            val viewModel = ChatViewModel(handle, mockChatRepository, mockMealPlanRepository)
+
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals("", state.inputText)
+            coVerify(exactly = 0) { mockChatRepository.sendMessage(any()) }
+        }
+
+        @Test
+        @DisplayName("blank context should not auto-send")
+        fun `blank context should not auto-send`() = runTest {
+            val handle = SavedStateHandle(mapOf("context" to "   "))
+            val viewModel = ChatViewModel(handle, mockChatRepository, mockMealPlanRepository)
+
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            coVerify(exactly = 0) { mockChatRepository.sendMessage(any()) }
+        }
+
+        @Test
+        @DisplayName("empty string context should not auto-send")
+        fun `empty string context should not auto-send`() = runTest {
+            val handle = SavedStateHandle(mapOf("context" to ""))
+            val viewModel = ChatViewModel(handle, mockChatRepository, mockMealPlanRepository)
+
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            coVerify(exactly = 0) { mockChatRepository.sendMessage(any()) }
+        }
+
+        @Test
+        @DisplayName("non-blank context should auto-send message to repository")
+        fun `non-blank context should auto-send message to repository`() = runTest {
+            val responseMessage = ChatMessage(
+                id = "response-1",
+                content = "Sure! Here's help with Paneer Butter Masala...",
+                isFromUser = false,
+                timestamp = System.currentTimeMillis()
+            )
+            coEvery { mockChatRepository.sendMessage(any()) } returns Result.success(responseMessage)
+
+            val contextText = "Help with Paneer Butter Masala"
+            val handle = SavedStateHandle(mapOf("context" to contextText))
+            val viewModel = ChatViewModel(handle, mockChatRepository, mockMealPlanRepository)
+
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            coVerify(exactly = 1) { mockChatRepository.sendMessage(contextText) }
+        }
+
+        @Test
+        @DisplayName("after auto-send, inputText should be cleared")
+        fun `after auto-send, inputText should be cleared`() = runTest {
+            val responseMessage = ChatMessage(
+                id = "response-1",
+                content = "Response",
+                isFromUser = false,
+                timestamp = System.currentTimeMillis()
+            )
+            coEvery { mockChatRepository.sendMessage(any()) } returns Result.success(responseMessage)
+
+            val handle = SavedStateHandle(mapOf("context" to "Some context"))
+            val viewModel = ChatViewModel(handle, mockChatRepository, mockMealPlanRepository)
+
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals("", state.inputText)
+        }
+    }
+
+    @Nested
     @DisplayName("Scope Toggle")
     inner class ScopeToggleTests {
 
