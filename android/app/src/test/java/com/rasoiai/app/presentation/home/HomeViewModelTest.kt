@@ -1690,6 +1690,66 @@ class HomeViewModelTest {
     }
 
     @Nested
+    @DisplayName("Offline Banner (issue #58)")
+    inner class OfflineBannerState {
+
+        @Test
+        @DisplayName("Initial isOffline reflects networkMonitor.isOnline=true")
+        fun `initial isOffline is false when online`() = runTest {
+            coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
+            coEvery { mockNetworkMonitor.isOnline } returns flowOf(true)
+
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
+
+            viewModel.uiState.test {
+                testDispatcher.scheduler.advanceUntilIdle()
+                assertFalse(expectMostRecentItem().isOffline)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("isOffline becomes true when networkMonitor.isOnline=false")
+        fun `isOffline becomes true when offline`() = runTest {
+            coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
+            coEvery { mockNetworkMonitor.isOnline } returns flowOf(false)
+
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
+
+            viewModel.uiState.test {
+                testDispatcher.scheduler.advanceUntilIdle()
+                assertTrue(expectMostRecentItem().isOffline)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("isOffline toggles when networkMonitor flow emits")
+        fun `isOffline toggles when flow emits`() = runTest {
+            coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
+            val onlineFlow = kotlinx.coroutines.flow.MutableStateFlow(true)
+            coEvery { mockNetworkMonitor.isOnline } returns onlineFlow
+
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
+
+            viewModel.uiState.test {
+                testDispatcher.scheduler.advanceUntilIdle()
+                assertFalse(expectMostRecentItem().isOffline)
+
+                onlineFlow.value = false
+                testDispatcher.scheduler.advanceUntilIdle()
+                assertTrue(expectMostRecentItem().isOffline)
+
+                onlineFlow.value = true
+                testDispatcher.scheduler.advanceUntilIdle()
+                assertFalse(expectMostRecentItem().isOffline)
+
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+    }
+
+    @Nested
     @DisplayName("Notification Badge Count (issue #57)")
     inner class NotificationBadgeCount {
 
