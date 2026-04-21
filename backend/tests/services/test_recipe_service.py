@@ -388,3 +388,144 @@ async def test_rate_recipe_update_can_clear_feedback(
 
     assert updated.rating == 4.0
     assert updated.feedback is None
+
+
+# ==================== Rating aggregation surfacing (issue #21 Part 2) ====================
+
+
+class TestBuildRecipeResponseRatingSummary:
+    """build_recipe_response should surface average_rating/rating_count/user_rating."""
+
+    def test_no_rating_summary_defaults_to_null_and_zero(self):
+        recipe = _make_recipe()
+        response = build_recipe_response(recipe)
+
+        assert response.average_rating is None
+        assert response.rating_count == 0
+        assert response.user_rating is None
+
+    def test_rating_summary_populates_fields(self):
+        recipe = _make_recipe()
+        summary = {
+            "average_rating": 4.25,
+            "rating_count": 4,
+            "user_rating": 5.0,
+        }
+        response = build_recipe_response(recipe, rating_summary=summary)
+
+        assert response.average_rating == 4.25
+        assert response.rating_count == 4
+        assert response.user_rating == 5.0
+
+    def test_rating_summary_with_no_user_rating(self):
+        recipe = _make_recipe()
+        summary = {
+            "average_rating": 3.5,
+            "rating_count": 2,
+            "user_rating": None,
+        }
+        response = build_recipe_response(recipe, rating_summary=summary)
+
+        assert response.average_rating == 3.5
+        assert response.rating_count == 2
+        assert response.user_rating is None
+
+
+@pytest.mark.asyncio
+async def test_get_recipe_by_id_with_no_ratings(
+    db_session: AsyncSession, test_user: User
+):
+    recipe = await _persist_minimal_recipe(db_session)
+
+    response = await get_recipe_by_id(db_session, recipe.id, user_id=test_user.id)
+
+    assert response.average_rating is None
+    assert response.rating_count == 0
+    assert response.user_rating is None
+
+
+@pytest.mark.asyncio
+async def test_get_recipe_by_id_without_user_id_omits_user_rating(
+    db_session: AsyncSession, test_user: User
+):
+    recipe = await _persist_minimal_recipe(db_session)
+    await rate_recipe(
+        db=db_session,
+        recipe_id=recipe.id,
+        user_id=test_user.id,
+        rating=4.0,
+    )
+
+    response = await get_recipe_by_id(db_session, recipe.id)
+
+    assert response.rating_count == 1
+    assert response.average_rating == 4.0
+    assert response.user_rating is None
+
+
+@pytest.mark.asyncio
+async def test_get_recipe_by_id_with_user_id_returns_user_rating(
+    db_session: AsyncSession, test_user: User
+):
+    recipe = await _persist_minimal_recipe(db_session)
+    await rate_recipe(
+        db=db_session,
+        recipe_id=recipe.id,
+        user_id=test_user.id,
+        rating=4.0,
+    )
+
+    response = await get_recipe_by_id(db_session, recipe.id, user_id=test_user.id)
+
+    assert response.user_rating == 4.0
+    assert response.rating_count == 1
+    assert response.average_rating == 4.0
+
+
+@pytest.mark.asyncio
+async def test_get_recipe_by_id_user_not_rated_returns_null_user_rating(
+    db_session: AsyncSession, test_user: User
+):
+    recipe = await _persist_minimal_recipe(db_session)
+    # Different user rates — create one directly via the model to avoid needing a second user fixture
+    other_rating = RecipeRating(
+        id=str(uuid.uuid4()),
+        recipe_id=recipe.id,
+        user_id=str(uuid.uuid4()),  # some other user
+        rating=3.0,
+        feedback=None,
+    )
+    db_session.add(other_rating)
+    await db_session.commit()
+
+    response = await get_recipe_by_id(db_session, recipe.id, user_id=test_user.id)
+
+    assert response.rating_count == 1
+    assert response.average_rating == 3.0
+    # test_user hasn't rated, so their user_rating should be null
+    assert response.user_rating is None
+
+
+@pytest.mark.asyncio
+async def test_get_recipe_by_id_averages_multiple_ratings(
+    db_session: AsyncSession, test_user: User
+):
+    recipe = await _persist_minimal_recipe(db_session)
+
+    # Three different users rate: 3, 4, 5 → average 4.0
+    for rating_value in (3.0, 4.0, 5.0):
+        db_session.add(
+            RecipeRating(
+                id=str(uuid.uuid4()),
+                recipe_id=recipe.id,
+                user_id=str(uuid.uuid4()),
+                rating=rating_value,
+                feedback=None,
+            )
+        )
+    await db_session.commit()
+
+    response = await get_recipe_by_id(db_session, recipe.id)
+
+    assert response.rating_count == 3
+    assert response.average_rating == 4.0

@@ -148,6 +148,40 @@ class RecipeModelTest {
         }
     }
 
+    @Nested
+    @DisplayName("Recipe rating fields (issue #21)")
+    inner class RatingFields {
+        @Test
+        fun `default averageRating is null`() {
+            val r = recipe(prep = 0, cook = 0)
+            assertNull(r.averageRating)
+        }
+
+        @Test
+        fun `default ratingCount is zero`() {
+            val r = recipe(prep = 0, cook = 0)
+            assertEquals(0, r.ratingCount)
+        }
+
+        @Test
+        fun `default userRating is null`() {
+            val r = recipe(prep = 0, cook = 0)
+            assertNull(r.userRating)
+        }
+
+        @Test
+        fun `rating fields are preserved by copy()`() {
+            val r = recipe(prep = 0, cook = 0).copy(
+                averageRating = 4.25,
+                ratingCount = 8,
+                userRating = 5.0,
+            )
+            assertEquals(4.25, r.averageRating)
+            assertEquals(8, r.ratingCount)
+            assertEquals(5.0, r.userRating)
+        }
+    }
+
     // ==================== Factories ====================
 
     private fun recipe(prep: Int, cook: Int) = Recipe(

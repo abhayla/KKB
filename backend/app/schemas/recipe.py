@@ -63,6 +63,9 @@ class RecipeResponse(BaseModel):
     ingredients: list[IngredientDto]
     instructions: list[InstructionDto]
     nutrition: Optional[NutritionDto] = None
+    average_rating: Optional[float] = None
+    rating_count: int = 0
+    user_rating: Optional[float] = None
 
     model_config = ConfigDict(from_attributes=True)
 

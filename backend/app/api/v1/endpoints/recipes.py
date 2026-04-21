@@ -115,8 +115,14 @@ async def get_by_id(
     db: DbSession,
     current_user: CurrentUser,
 ) -> RecipeResponse:
-    """Get a specific recipe by ID."""
-    return await get_recipe_by_id(db, recipe_id)
+    """Get a specific recipe by ID.
+
+    Response includes rating aggregates:
+    - **average_rating**: mean rating across all users (null if unrated)
+    - **rating_count**: total number of ratings
+    - **user_rating**: this user's own rating (null if not yet rated)
+    """
+    return await get_recipe_by_id(db, recipe_id, user_id=current_user.id)
 
 
 @router.get("/{recipe_id}/scale", response_model=RecipeResponse)

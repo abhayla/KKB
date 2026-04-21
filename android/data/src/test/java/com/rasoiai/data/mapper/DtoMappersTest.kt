@@ -184,6 +184,47 @@ class DtoMappersTest {
             assertEquals(10, domain.fatGrams)
             assertEquals(5, domain.fiberGrams)
         }
+
+        @Test
+        @DisplayName("Should default rating fields when absent from response (issue #21)")
+        fun `should default rating fields when absent from response`() {
+            val dto = RecipeResponse(
+                id = "r1", name = "x", description = "y", imageUrl = null,
+                prepTimeMinutes = 1, cookTimeMinutes = 1, servings = 1,
+                difficulty = "easy", cuisineType = "north",
+                mealTypes = emptyList(), dietaryTags = emptyList(),
+                ingredients = emptyList(), instructions = emptyList(),
+                nutrition = null
+            )
+
+            val domain = dto.toDomain()
+
+            assertNull(domain.averageRating)
+            assertEquals(0, domain.ratingCount)
+            assertNull(domain.userRating)
+        }
+
+        @Test
+        @DisplayName("Should propagate rating fields when populated (issue #21)")
+        fun `should propagate rating fields when populated`() {
+            val dto = RecipeResponse(
+                id = "r1", name = "x", description = "y", imageUrl = null,
+                prepTimeMinutes = 1, cookTimeMinutes = 1, servings = 1,
+                difficulty = "easy", cuisineType = "north",
+                mealTypes = emptyList(), dietaryTags = emptyList(),
+                ingredients = emptyList(), instructions = emptyList(),
+                nutrition = null,
+                averageRating = 4.25,
+                ratingCount = 12,
+                userRating = 5.0
+            )
+
+            val domain = dto.toDomain()
+
+            assertEquals(4.25, domain.averageRating)
+            assertEquals(12, domain.ratingCount)
+            assertEquals(5.0, domain.userRating)
+        }
     }
 
     @Nested
