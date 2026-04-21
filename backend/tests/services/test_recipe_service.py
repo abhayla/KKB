@@ -4,23 +4,26 @@ Covers:
 - build_recipe_response: pure fn — response mapping + ingredient/nutrition scaling
 - get_recipe_by_id: NotFound paths (invalid UUID + non-existent)
 - scale_recipe: NotFound paths
+- rate_recipe: issue #21 — full coverage of upsert + validation branches
 
 The DB-backed happy paths for get_recipe_by_id / scale_recipe / search /
-rate / suggest_from_pantry need heavy Recipe+Ingredient+Nutrition fixtures
-and are exercised by the existing recipe integration tests.
+suggest_from_pantry need heavy Recipe+Ingredient+Nutrition fixtures and
+are exercised by the existing recipe integration tests.
 """
 
 import uuid
+from sqlalchemy import select
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
-from app.models.recipe import Recipe, RecipeIngredient, RecipeInstruction, RecipeNutrition
+from app.models.recipe import Recipe, RecipeIngredient, RecipeInstruction, RecipeNutrition, RecipeRating
 from app.models.user import User
 from app.services.recipe_service import (
     build_recipe_response,
     get_recipe_by_id,
+    rate_recipe,
     scale_recipe,
 )
 
@@ -212,3 +215,176 @@ async def test_scale_recipe_not_found_when_missing(
 ):
     with pytest.raises(NotFoundError):
         await scale_recipe(db_session, str(uuid.uuid4()), target_servings=6)
+
+
+# ==================== rate_recipe (issue #21) ====================
+
+
+async def _persist_minimal_recipe(db_session: AsyncSession, **overrides) -> Recipe:
+    """Persist a minimally-valid Recipe row. rate_recipe only needs existence + is_active."""
+    defaults: dict = {
+        "id": str(uuid.uuid4()),
+        "name": "Test Recipe",
+        "description": "desc",
+        "image_url": None,
+        "cuisine_type": "north",
+        "meal_types": ["dinner"],
+        "dietary_tags": ["vegetarian"],
+        "difficulty_level": "easy",
+        "prep_time_minutes": 10,
+        "cook_time_minutes": 15,
+        "total_time_minutes": 25,
+        "servings": 2,
+        "is_active": True,
+    }
+    defaults.update(overrides)
+    recipe = Recipe(**defaults)
+    db_session.add(recipe)
+    await db_session.commit()
+    await db_session.refresh(recipe)
+    return recipe
+
+
+@pytest.mark.asyncio
+async def test_rate_recipe_rejects_invalid_uuid(
+    db_session: AsyncSession, test_user: User
+):
+    with pytest.raises(NotFoundError):
+        await rate_recipe(
+            db=db_session, recipe_id="not-a-uuid", user_id=test_user.id, rating=4.0
+        )
+
+
+@pytest.mark.asyncio
+async def test_rate_recipe_not_found_when_recipe_missing(
+    db_session: AsyncSession, test_user: User
+):
+    with pytest.raises(NotFoundError):
+        await rate_recipe(
+            db=db_session,
+            recipe_id=str(uuid.uuid4()),
+            user_id=test_user.id,
+            rating=4.0,
+        )
+
+
+@pytest.mark.asyncio
+async def test_rate_recipe_not_found_when_recipe_inactive(
+    db_session: AsyncSession, test_user: User
+):
+    recipe = await _persist_minimal_recipe(db_session, is_active=False)
+    with pytest.raises(NotFoundError):
+        await rate_recipe(
+            db=db_session, recipe_id=recipe.id, user_id=test_user.id, rating=5.0
+        )
+
+
+@pytest.mark.asyncio
+async def test_rate_recipe_creates_new_rating_when_none_exists(
+    db_session: AsyncSession, test_user: User
+):
+    recipe = await _persist_minimal_recipe(db_session)
+
+    response = await rate_recipe(
+        db=db_session,
+        recipe_id=recipe.id,
+        user_id=test_user.id,
+        rating=4.5,
+        feedback="solid weeknight dal",
+    )
+
+    assert response.recipe_id == recipe.id
+    assert response.rating == 4.5
+    assert response.feedback == "solid weeknight dal"
+    assert response.id is not None
+    # Persisted row matches
+    row = (
+        await db_session.execute(
+            select(RecipeRating).where(
+                RecipeRating.recipe_id == recipe.id,
+                RecipeRating.user_id == test_user.id,
+            )
+        )
+    ).scalar_one()
+    assert row.rating == 4.5
+    assert row.feedback == "solid weeknight dal"
+
+
+@pytest.mark.asyncio
+async def test_rate_recipe_updates_existing_rating_upsert(
+    db_session: AsyncSession, test_user: User
+):
+    recipe = await _persist_minimal_recipe(db_session)
+
+    first = await rate_recipe(
+        db=db_session,
+        recipe_id=recipe.id,
+        user_id=test_user.id,
+        rating=3.0,
+        feedback="okay",
+    )
+    second = await rate_recipe(
+        db=db_session,
+        recipe_id=recipe.id,
+        user_id=test_user.id,
+        rating=5.0,
+        feedback="nailed it second time",
+    )
+
+    # Upsert — same row id, updated values
+    assert second.id == first.id
+    assert second.rating == 5.0
+    assert second.feedback == "nailed it second time"
+    # Only one row exists for (recipe, user)
+    rows = (
+        await db_session.execute(
+            select(RecipeRating).where(
+                RecipeRating.recipe_id == recipe.id,
+                RecipeRating.user_id == test_user.id,
+            )
+        )
+    ).scalars().all()
+    assert len(rows) == 1
+
+
+@pytest.mark.asyncio
+async def test_rate_recipe_allows_null_feedback(
+    db_session: AsyncSession, test_user: User
+):
+    recipe = await _persist_minimal_recipe(db_session)
+
+    response = await rate_recipe(
+        db=db_session,
+        recipe_id=recipe.id,
+        user_id=test_user.id,
+        rating=4.0,
+        feedback=None,
+    )
+
+    assert response.rating == 4.0
+    assert response.feedback is None
+
+
+@pytest.mark.asyncio
+async def test_rate_recipe_update_can_clear_feedback(
+    db_session: AsyncSession, test_user: User
+):
+    recipe = await _persist_minimal_recipe(db_session)
+
+    await rate_recipe(
+        db=db_session,
+        recipe_id=recipe.id,
+        user_id=test_user.id,
+        rating=3.0,
+        feedback="first pass note",
+    )
+    updated = await rate_recipe(
+        db=db_session,
+        recipe_id=recipe.id,
+        user_id=test_user.id,
+        rating=4.0,
+        feedback=None,
+    )
+
+    assert updated.rating == 4.0
+    assert updated.feedback is None
