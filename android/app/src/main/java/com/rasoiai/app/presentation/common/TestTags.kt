@@ -66,7 +66,7 @@ object TestTags {
     const val AUTH_SCREEN = "auth_screen"
     const val AUTH_WELCOME_TEXT = "auth_welcome_text"
     const val PHONE_NUMBER_FIELD = "phone_number_field"
-    const val COUNTRY_CODE_PREFIX = "country_code_prefix"
+    const val COUNTRY_CODE_FIELD = "country_code_field"
     const val SEND_OTP_BUTTON = "send_otp_button"
     const val OTP_INPUT_PREFIX = "otp_input_"
     const val VERIFY_OTP_BUTTON = "verify_otp_button"

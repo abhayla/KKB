@@ -170,7 +170,7 @@ class AuthScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithTag(TestTags.COUNTRY_CODE_PREFIX).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(TestTags.COUNTRY_CODE_FIELD).assertIsDisplayed()
         composeTestRule.onNodeWithText("+91").assertIsDisplayed()
     }
 
@@ -451,7 +451,7 @@ private fun PhoneInputTestContent(
                 Text(
                     text = "+91",
                     style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.testTag(TestTags.COUNTRY_CODE_PREFIX)
+                    modifier = Modifier.testTag(TestTags.COUNTRY_CODE_FIELD)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 OutlinedTextField(
