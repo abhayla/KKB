@@ -67,7 +67,7 @@ import com.rasoiai.data.local.entity.KnownIngredientEntity
         HouseholdEntity::class,
         HouseholdMemberEntity::class
     ],
-    version = 15,
+    version = 16,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -344,6 +344,27 @@ abstract class RasoiDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migration from version 15 to 16: Add rating aggregate columns to recipes.
+         *
+         * Satisfies the deferred offline-caching acceptance criterion from #21.
+         * Backend RecipeResponse already carries average_rating / rating_count /
+         * user_rating (commit a48fb10). Without persisting them on RecipeEntity
+         * the aggregate was dropped at the Room layer, so the next offline open
+         * showed stale or missing ratings.
+         *
+         * Additive-only migration. Existing rows get NULL/0 defaults. No data
+         * loss. Downgrade would drop the three columns (data is a cache and
+         * refetched from the backend).
+         */
+        val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE recipes ADD COLUMN averageRating REAL")
+                db.execSQL("ALTER TABLE recipes ADD COLUMN ratingCount INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE recipes ADD COLUMN userRating REAL")
+            }
+        }
+
         val MIGRATION_12_13 = object : Migration(12, 13) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("""
@@ -388,7 +409,7 @@ abstract class RasoiDatabase : RoomDatabase() {
                 RasoiDatabase::class.java,
                 DATABASE_NAME
             )
-                .addMigrations(MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
+                .addMigrations(MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16)
                 .addCallback(object : Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
