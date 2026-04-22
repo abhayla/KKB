@@ -70,7 +70,7 @@ Android/Gradle issues — see `android/CLAUDE.md`. Backend import/env issues —
 | Issue | Fix |
 |-------|-----|
 | MissingGreenlet | Use `selectinload()` for eager loading |
-| Meal gen timeout | 180s endpoint timeout, ~35s typical. Logs: `logs/MEAL_PLAN-*.json` |
+| Meal gen timeout | 180s endpoint timeout, ~35s typical. Logs: uvicorn stdout (JSON in prod, text in DEBUG) |
 | Recipe ID 500s | Compare recipe IDs as strings — `uuid.UUID` vs `String(36)` mismatch |
 | E2E flakes on API 36 emulator | Use API 34 (API 36 has Espresso issues) |
 
@@ -78,7 +78,7 @@ Android/Gradle issues — see `android/CLAUDE.md`. Backend import/env issues —
 
 | Resource | Location |
 |----------|----------|
-| Sub-directory CLAUDE.md | `android/CLAUDE.md`, `backend/CLAUDE.md`, `backend/tests/CLAUDE.md` |
+| Sub-directory CLAUDE.md | `android/CLAUDE.md`, `android/app/src/androidTest/CLAUDE.md`, `backend/CLAUDE.md`, `backend/tests/CLAUDE.md` |
 | E2E testing guide | `docs/testing/E2E-Testing-Prompt.md` |
 | Technical design | `docs/design/RasoiAI Technical Design.md` |
 | VPS deployment | `docs/VPS-Deployment.md` — do NOT modify `C:\Apps\shared\` |
