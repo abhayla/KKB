@@ -88,9 +88,6 @@ class AuthRepositoryImpl @Inject constructor(
         } catch (e: IOException) {
             Timber.w(e, "Network error on Firebase token exchange")
             Result.failure(e)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to exchange Firebase token for backend JWT")
-            Result.failure(e)
         }
     }
 
@@ -106,10 +103,7 @@ class AuthRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Timber.w(e, "IO error on sign out")
-            Result.failure(e)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to sign out")
+            Timber.w(e, "Network error on sign out")
             Result.failure(e)
         }
     }
@@ -159,9 +153,6 @@ class AuthRepositoryImpl @Inject constructor(
         } catch (e: IOException) {
             Timber.w(e, "Network error on token refresh")
             Result.failure(e)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to refresh token")
-            Result.failure(e)
         }
     }
 
@@ -187,9 +178,6 @@ class AuthRepositoryImpl @Inject constructor(
             Result.failure(e)
         } catch (e: IOException) {
             Timber.w(e, "Network error on load current user")
-            Result.failure(e)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to load current user")
             Result.failure(e)
         }
     }
