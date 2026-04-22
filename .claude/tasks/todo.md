@@ -36,6 +36,7 @@ See "Blocked" below for items still requiring user/emulator action.
 - [x] **#21 rate_recipe service tests** (8dfa626) — 7 TDD tests.
 - [x] **#21 Part 2 rating aggregation backend+Android** (a48fb10) — atomic 9-file change with 14 new tests (8 backend service + 2 Android DTO mapper + 4 domain model).
 - [x] **#21 Part 2 UI display** (0850520) — RatingRow composable in RecipeHeader, threaded from RecipeDetailScreen.
+- [x] **#21 Part 3 offline cache** — RecipeEntity now carries `averageRating`/`ratingCount`/`userRating`; Room v15→v16 migration (additive-only `ALTER TABLE ADD COLUMN`); EntityMappers round-trips the fields. 4 new mapper tests + 2 migration tests + schema snapshot `16.json`. Completes the deferred offline-caching acceptance criterion.
 - [x] **#57 notificationBadgeCount tests** (7b8ca92) — 3 TDD tests covering ViewModel flow propagation.
 - [x] **#58 isOffline propagation tests** (338585a) — 3 TDD tests covering network monitor flow.
 - [x] **7 commits pushed** to `origin/loop/repo-exceptions-and-hook-fixes` — PR #89 CI running.
@@ -73,11 +74,10 @@ Both issues can be closed with a short deployment note when the user gets to the
 ### What to watch
 - `claude-review` CI consistently fails — needs the user to install the Claude Code GitHub App and set `ANTHROPIC_API_KEY` repo secret.
 - Instrumented Tests job relies on GitHub-hosted API 29 emulator queue which has been extremely backed up; PR #89 shows `Instrumented Tests: pending (0s)` repeatedly.
-- `MealPlanItemEntity.order` → `item_order` Room migration is live at v15. Any future entity change must bump to v16 with a matching migration.
-- Rating "stored locally" acceptance criterion (#21) is intentionally deferred — Room has no recipe_ratings table. Would need a v15→v16 migration + DAO. Not in scope for this branch.
+- `MealPlanItemEntity.order` → `item_order` Room migration is live at v15. Room is now at v16 after the #21 offline-caching follow-up.
 
 ### Follow-ups (if resumed)
-- Consider adding a Room `recipe_ratings` table + DAO to cache ratings for offline display; add `ratingCount`/`averageRating`/`userRating` to `RecipeEntity` to persist the aggregate on the last fetched detail.
+- ~~Consider adding a Room `recipe_ratings` table + DAO to cache ratings for offline display; add `ratingCount`/`averageRating`/`userRating` to `RecipeEntity`~~ — **Done**: landed the simpler 3-columns-on-`RecipeEntity` variant (no separate table/DAO) as v15→v16 migration. Rationale: the backend aggregate is already a single scalar triple per recipe; a dedicated `recipe_ratings` table with FK would have been over-engineering for a cache that is refetched on reconnect.
 - Consider adding a pure-JVM Compose snapshot test for `RatingRow` + `OfflineBanner` using Paparazzi (non-emulator) to improve UI regression safety.
 - Switch CI Instrumented Tests to API 34 to match local dev and avoid the API 29 hosted-runner queue.
 - **CI Instrumented Tests scope + mockk-android upgrade** (surfaced in attempt `f0601b8`, reverted in `edc596c`): excluding `com.rasoiai.app.e2e.*` from `connectedCheck` let 430 presentation-layer tests run in CI but exposed two pre-existing issues. (1) 73 `NoClassDefFoundError: io.mockk.impl.JvmMockKGateway` failures in `presentation.settings.screens.*` on API 29 x86_64 — needs mockk 1.13.12+ or a migration off mockk for these instrumented tests. (2) 8 `AssertionError: The component is not displayed` failures in `StatsScreenTest` — Compose timing or seeded-state issues. Both predate PR #89 and are out of scope for the #34 sweep; a follow-up PR should (a) bump `mockk = "1.13.9"` in `gradle/libs.versions.toml` and verify, (b) fix or migrate the 8 Stats Compose tests, then (c) re-land the CI scope change with `notPackage=com.rasoiai.app.e2e`.
