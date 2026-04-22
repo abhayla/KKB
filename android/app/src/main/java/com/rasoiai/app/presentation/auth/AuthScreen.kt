@@ -194,7 +194,7 @@ private fun PhoneInputContent(
             prefix = {
                 Text(
                     text = "+91 ",
-                    modifier = Modifier.testTag(TestTags.COUNTRY_CODE_PREFIX)
+                    modifier = Modifier.testTag(TestTags.COUNTRY_CODE_FIELD)
                 )
             },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),

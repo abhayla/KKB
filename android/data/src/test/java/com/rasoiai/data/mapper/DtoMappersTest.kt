@@ -184,6 +184,110 @@ class DtoMappersTest {
             assertEquals(10, domain.fatGrams)
             assertEquals(5, domain.fiberGrams)
         }
+
+        @Test
+        @DisplayName("Should default rating fields when absent from response (issue #21)")
+        fun `should default rating fields when absent from response`() {
+            val dto = RecipeResponse(
+                id = "r1", name = "x", description = "y", imageUrl = null,
+                prepTimeMinutes = 1, cookTimeMinutes = 1, servings = 1,
+                difficulty = "easy", cuisineType = "north",
+                mealTypes = emptyList(), dietaryTags = emptyList(),
+                ingredients = emptyList(), instructions = emptyList(),
+                nutrition = null
+            )
+
+            val domain = dto.toDomain()
+
+            assertNull(domain.averageRating)
+            assertEquals(0, domain.ratingCount)
+            assertNull(domain.userRating)
+        }
+
+        @Test
+        @DisplayName("Should propagate rating fields when populated (issue #21)")
+        fun `should propagate rating fields when populated`() {
+            val dto = RecipeResponse(
+                id = "r1", name = "x", description = "y", imageUrl = null,
+                prepTimeMinutes = 1, cookTimeMinutes = 1, servings = 1,
+                difficulty = "easy", cuisineType = "north",
+                mealTypes = emptyList(), dietaryTags = emptyList(),
+                ingredients = emptyList(), instructions = emptyList(),
+                nutrition = null,
+                averageRating = 4.25,
+                ratingCount = 12,
+                userRating = 5.0
+            )
+
+            val domain = dto.toDomain()
+
+            assertEquals(4.25, domain.averageRating)
+            assertEquals(12, domain.ratingCount)
+            assertEquals(5.0, domain.userRating)
+        }
+
+        @Test
+        @DisplayName("Should copy rating fields from RecipeResponse to RecipeEntity (issue #21 offline cache)")
+        fun `should copy rating fields from RecipeResponse to RecipeEntity`() {
+            // Given — API response with populated rating aggregate
+            val dto = RecipeResponse(
+                id = "recipe-1",
+                name = "x",
+                description = "y",
+                imageUrl = null,
+                prepTimeMinutes = 1,
+                cookTimeMinutes = 1,
+                servings = 1,
+                difficulty = "easy",
+                cuisineType = "north",
+                mealTypes = emptyList(),
+                dietaryTags = emptyList(),
+                ingredients = emptyList(),
+                instructions = emptyList(),
+                nutrition = null,
+                averageRating = 3.75,
+                ratingCount = 8,
+                userRating = 4.0
+            )
+
+            // When — map DTO to Room entity
+            val entity = dto.toEntity()
+
+            // Then — rating fields land on the entity so they survive offline open
+            assertEquals(3.75, entity.averageRating)
+            assertEquals(8, entity.ratingCount)
+            assertEquals(4.0, entity.userRating)
+        }
+
+        @Test
+        @DisplayName("Should default rating fields on RecipeEntity when absent from DTO")
+        fun `should default rating fields on RecipeEntity when DTO omits them`() {
+            // Given — API response with no rating data (defaults from schema)
+            val dto = RecipeResponse(
+                id = "recipe-1",
+                name = "x",
+                description = "y",
+                imageUrl = null,
+                prepTimeMinutes = 1,
+                cookTimeMinutes = 1,
+                servings = 1,
+                difficulty = "easy",
+                cuisineType = "north",
+                mealTypes = emptyList(),
+                dietaryTags = emptyList(),
+                ingredients = emptyList(),
+                instructions = emptyList(),
+                nutrition = null
+            )
+
+            // When
+            val entity = dto.toEntity()
+
+            // Then
+            assertNull(entity.averageRating)
+            assertEquals(0, entity.ratingCount)
+            assertNull(entity.userRating)
+        }
     }
 
     @Nested

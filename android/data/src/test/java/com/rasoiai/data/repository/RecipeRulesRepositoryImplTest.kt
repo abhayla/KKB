@@ -1,6 +1,7 @@
 package com.rasoiai.data.repository
 
 import android.content.Context
+import android.database.sqlite.SQLiteException
 import app.cash.turbine.test
 import com.rasoiai.data.local.dao.FavoriteDao
 import com.rasoiai.data.local.dao.OfflineQueueDao
@@ -26,6 +27,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -37,10 +39,12 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import java.io.IOException
 import java.time.LocalDateTime
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -503,6 +507,516 @@ class RecipeRulesRepositoryImplTest {
             coVerify { mockOfflineQueueDao.insertAction(match {
                 it.actionType == OfflineActionType.CREATE_RECIPE_RULE.value
             }) }
+        }
+    }
+
+    @Nested
+    @DisplayName("CancellationException propagation (structured concurrency)")
+    inner class CancellationPropagation {
+
+        @Test
+        @DisplayName("resetWeeklyProgress should propagate CancellationException instead of wrapping in Result.failure")
+        fun `resetWeeklyProgress should propagate CancellationException`() = runTest {
+            coEvery { mockRecipeRulesDao.resetAllNutritionGoalProgress(any()) } throws CancellationException("cancelled")
+            try {
+                repository.resetWeeklyProgress()
+                fail("Expected CancellationException to propagate, got Result wrapper instead")
+            } catch (e: CancellationException) {
+                assertEquals("cancelled", e.message)
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Unexpected exception propagation (issue #34)")
+    inner class UnexpectedExceptionPropagation {
+
+        private fun http500() = retrofit2.HttpException(
+            retrofit2.Response.error<Any>(500, okhttp3.ResponseBody.create(null, ""))
+        )
+
+        // ---- createRule ----
+
+        @Test
+        @DisplayName("createRule wraps SQLiteException in Result.failure")
+        fun `createRule wraps SQLiteException`() = runTest {
+            coEvery { mockRecipeRulesDao.findDuplicate(any(), any(), any()) } returns null
+            coEvery { mockRecipeRulesDao.insertRule(any()) } throws SQLiteException("disk full")
+
+            val rule = RecipeRule(
+                id = "",
+                type = RuleType.INGREDIENT,
+                action = RuleAction.EXCLUDE,
+                targetId = "onion",
+                targetName = "Onion",
+                frequency = RuleFrequency.NEVER,
+                enforcement = RuleEnforcement.REQUIRED,
+                isActive = true
+            )
+
+            val result = repository.createRule(rule)
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
+        }
+
+        @Test
+        @DisplayName("createRule propagates IllegalStateException instead of wrapping")
+        fun `createRule propagates IllegalStateException`() = runTest {
+            coEvery { mockRecipeRulesDao.findDuplicate(any(), any(), any()) } throws IllegalStateException("db closed")
+
+            val rule = RecipeRule(
+                id = "",
+                type = RuleType.INGREDIENT,
+                action = RuleAction.EXCLUDE,
+                targetId = "onion",
+                targetName = "Onion",
+                frequency = RuleFrequency.NEVER,
+                enforcement = RuleEnforcement.REQUIRED,
+                isActive = true
+            )
+            try {
+                repository.createRule(rule)
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        // ---- updateRule ----
+
+        @Test
+        @DisplayName("updateRule wraps SQLiteException in Result.failure")
+        fun `updateRule wraps SQLiteException`() = runTest {
+            coEvery { mockRecipeRulesDao.updateRule(any()) } throws SQLiteException("disk full")
+
+            val rule = RecipeRule(
+                id = "rule-1",
+                type = RuleType.INGREDIENT,
+                action = RuleAction.EXCLUDE,
+                targetId = "onion",
+                targetName = "Onion",
+                frequency = RuleFrequency.NEVER,
+                enforcement = RuleEnforcement.REQUIRED,
+                isActive = true
+            )
+
+            val result = repository.updateRule(rule)
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
+        }
+
+        @Test
+        @DisplayName("updateRule propagates IllegalStateException instead of wrapping")
+        fun `updateRule propagates IllegalStateException`() = runTest {
+            coEvery { mockRecipeRulesDao.updateRule(any()) } throws IllegalStateException("db closed")
+
+            val rule = RecipeRule(
+                id = "rule-1",
+                type = RuleType.INGREDIENT,
+                action = RuleAction.EXCLUDE,
+                targetId = "onion",
+                targetName = "Onion",
+                frequency = RuleFrequency.NEVER,
+                enforcement = RuleEnforcement.REQUIRED,
+                isActive = true
+            )
+            try {
+                repository.updateRule(rule)
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        // ---- deleteRule ----
+
+        @Test
+        @DisplayName("deleteRule wraps SQLiteException in Result.failure")
+        fun `deleteRule wraps SQLiteException`() = runTest {
+            coEvery { mockRecipeRulesDao.deleteRule(any()) } throws SQLiteException("disk full")
+
+            val result = repository.deleteRule("rule-1")
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
+        }
+
+        @Test
+        @DisplayName("deleteRule propagates IllegalStateException instead of wrapping")
+        fun `deleteRule propagates IllegalStateException`() = runTest {
+            coEvery { mockRecipeRulesDao.deleteRule(any()) } throws IllegalStateException("db closed")
+            try {
+                repository.deleteRule("rule-1")
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        // ---- toggleRuleActive ----
+
+        @Test
+        @DisplayName("toggleRuleActive wraps SQLiteException in Result.failure")
+        fun `toggleRuleActive wraps SQLiteException`() = runTest {
+            coEvery { mockRecipeRulesDao.updateRuleActive(any(), any(), any()) } throws SQLiteException("disk full")
+
+            val result = repository.toggleRuleActive("rule-1", false)
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
+        }
+
+        @Test
+        @DisplayName("toggleRuleActive propagates IllegalStateException instead of wrapping")
+        fun `toggleRuleActive propagates IllegalStateException`() = runTest {
+            coEvery { mockRecipeRulesDao.updateRuleActive(any(), any(), any()) } throws IllegalStateException("db closed")
+            try {
+                repository.toggleRuleActive("rule-1", false)
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        // ---- createNutritionGoal ----
+
+        @Test
+        @DisplayName("createNutritionGoal wraps SQLiteException in Result.failure")
+        fun `createNutritionGoal wraps SQLiteException`() = runTest {
+            coEvery { mockRecipeRulesDao.insertNutritionGoal(any()) } throws SQLiteException("disk full")
+
+            val goal = NutritionGoal(
+                id = "",
+                foodCategory = FoodCategory.IRON_RICH,
+                weeklyTarget = 2,
+                currentProgress = 0,
+                isActive = true,
+                createdAt = LocalDateTime.now(),
+                updatedAt = LocalDateTime.now()
+            )
+
+            val result = repository.createNutritionGoal(goal)
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
+        }
+
+        @Test
+        @DisplayName("createNutritionGoal propagates IllegalStateException instead of wrapping")
+        fun `createNutritionGoal propagates IllegalStateException`() = runTest {
+            coEvery { mockRecipeRulesDao.insertNutritionGoal(any()) } throws IllegalStateException("db closed")
+
+            val goal = NutritionGoal(
+                id = "",
+                foodCategory = FoodCategory.IRON_RICH,
+                weeklyTarget = 2,
+                currentProgress = 0,
+                isActive = true,
+                createdAt = LocalDateTime.now(),
+                updatedAt = LocalDateTime.now()
+            )
+            try {
+                repository.createNutritionGoal(goal)
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        // ---- updateNutritionGoal ----
+
+        @Test
+        @DisplayName("updateNutritionGoal propagates IllegalStateException instead of wrapping")
+        fun `updateNutritionGoal propagates IllegalStateException`() = runTest {
+            coEvery { mockRecipeRulesDao.updateNutritionGoal(any()) } throws IllegalStateException("db closed")
+
+            val goal = NutritionGoal(
+                id = "goal-1",
+                foodCategory = FoodCategory.IRON_RICH,
+                weeklyTarget = 2,
+                currentProgress = 0,
+                isActive = true,
+                createdAt = LocalDateTime.now(),
+                updatedAt = LocalDateTime.now()
+            )
+            try {
+                repository.updateNutritionGoal(goal)
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        // ---- deleteNutritionGoal ----
+
+        @Test
+        @DisplayName("deleteNutritionGoal propagates IllegalStateException instead of wrapping")
+        fun `deleteNutritionGoal propagates IllegalStateException`() = runTest {
+            coEvery { mockRecipeRulesDao.deleteNutritionGoal(any()) } throws IllegalStateException("db closed")
+            try {
+                repository.deleteNutritionGoal("goal-1")
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        // ---- toggleNutritionGoalActive ----
+
+        @Test
+        @DisplayName("toggleNutritionGoalActive propagates IllegalStateException instead of wrapping")
+        fun `toggleNutritionGoalActive propagates IllegalStateException`() = runTest {
+            coEvery { mockRecipeRulesDao.updateNutritionGoalActive(any(), any(), any()) } throws IllegalStateException("db closed")
+            try {
+                repository.toggleNutritionGoalActive("goal-1", false)
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        // ---- updateNutritionGoalProgress ----
+
+        @Test
+        @DisplayName("updateNutritionGoalProgress propagates IllegalStateException instead of wrapping")
+        fun `updateNutritionGoalProgress propagates IllegalStateException`() = runTest {
+            coEvery { mockRecipeRulesDao.updateNutritionGoalProgress(any(), any(), any()) } throws IllegalStateException("db closed")
+            try {
+                repository.updateNutritionGoalProgress("goal-1", 5)
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        // ---- resetWeeklyProgress ----
+
+        @Test
+        @DisplayName("resetWeeklyProgress wraps SQLiteException in Result.failure")
+        fun `resetWeeklyProgress wraps SQLiteException`() = runTest {
+            coEvery { mockRecipeRulesDao.resetAllNutritionGoalProgress(any()) } throws SQLiteException("disk full")
+
+            val result = repository.resetWeeklyProgress()
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
+        }
+
+        @Test
+        @DisplayName("resetWeeklyProgress propagates IllegalStateException instead of wrapping")
+        fun `resetWeeklyProgress propagates IllegalStateException`() = runTest {
+            coEvery { mockRecipeRulesDao.resetAllNutritionGoalProgress(any()) } throws IllegalStateException("db closed")
+            try {
+                repository.resetWeeklyProgress()
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        // ---- syncWithBackend ----
+
+        @Test
+        @DisplayName("syncWithBackend wraps SQLiteException in Result.failure")
+        fun `syncWithBackend wraps SQLiteException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockRecipeRulesDao.getPendingRules() } throws SQLiteException("disk full")
+
+            val result = repository.syncWithBackend()
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
+        }
+
+        @Test
+        @DisplayName("syncWithBackend propagates IllegalStateException instead of wrapping")
+        fun `syncWithBackend propagates IllegalStateException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockRecipeRulesDao.getPendingRules() } throws IllegalStateException("db closed")
+            try {
+                repository.syncWithBackend()
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        // ---- fetchFromBackend ----
+
+        @Test
+        @DisplayName("fetchFromBackend wraps SQLiteException in Result.failure")
+        fun `fetchFromBackend wraps SQLiteException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.getRecipeRules() } returns com.rasoiai.data.remote.dto.RecipeRulesListResponse(
+                rules = emptyList(),
+                totalCount = 0
+            )
+            coEvery { mockApiService.getNutritionGoals() } returns com.rasoiai.data.remote.dto.NutritionGoalsListResponse(
+                goals = emptyList(),
+                totalCount = 0
+            )
+            coEvery { mockRecipeRulesDao.insertRules(any()) } throws SQLiteException("disk full")
+
+            val result = repository.fetchFromBackend()
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
+        }
+
+        @Test
+        @DisplayName("fetchFromBackend propagates IllegalStateException instead of wrapping")
+        fun `fetchFromBackend propagates IllegalStateException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.getRecipeRules() } throws IllegalStateException("mapper bug")
+            try {
+                repository.fetchFromBackend()
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("mapper bug", e.message)
+            }
+        }
+
+        // ---- searchRecipes (Flow) ----
+
+        @Test
+        @DisplayName("searchRecipes emits empty list on HttpException (API failure)")
+        fun `searchRecipes emits empty on HttpException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            // Force local cache miss: no recipes matching "Biryani"
+            every { mockRecipeDao.getAllRecipes() } returns flowOf(emptyList())
+            every { mockFavoriteDao.getAllFavorites() } returns flowOf(emptyList())
+            coEvery { mockApiService.searchAiRecipeCatalog(any(), any(), any()) } throws http500()
+
+            repository.searchRecipes("Biryani").test {
+                val recipes = awaitItem()
+                assertTrue(recipes.isEmpty())
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("searchRecipes propagates IllegalStateException through the Flow")
+        fun `searchRecipes propagates IllegalStateException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            every { mockRecipeDao.getAllRecipes() } returns flowOf(emptyList())
+            every { mockFavoriteDao.getAllFavorites() } returns flowOf(emptyList())
+            coEvery { mockApiService.searchAiRecipeCatalog(any(), any(), any()) } throws IllegalStateException("unexpected")
+
+            repository.searchRecipes("Biryani").test {
+                val error = awaitError()
+                assertTrue(error is IllegalStateException)
+                assertEquals("unexpected", error.message)
+            }
+        }
+
+        // ---- getPopularRecipes (Flow) ----
+
+        @Test
+        @DisplayName("getPopularRecipes emits empty list on HttpException (API failure)")
+        fun `getPopularRecipes emits empty on HttpException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            every { mockRecipeDao.getAllRecipes() } returns flowOf(emptyList())
+            every { mockFavoriteDao.getAllFavorites() } returns flowOf(emptyList())
+            coEvery { mockApiService.searchAiRecipeCatalog(any(), any(), any()) } throws http500()
+
+            repository.getPopularRecipes().test {
+                val recipes = awaitItem()
+                assertTrue(recipes.isEmpty())
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("getPopularRecipes propagates IllegalStateException through the Flow")
+        fun `getPopularRecipes propagates IllegalStateException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            every { mockRecipeDao.getAllRecipes() } returns flowOf(emptyList())
+            every { mockFavoriteDao.getAllFavorites() } returns flowOf(emptyList())
+            coEvery { mockApiService.searchAiRecipeCatalog(any(), any(), any()) } throws IllegalStateException("unexpected")
+
+            repository.getPopularRecipes().test {
+                val error = awaitError()
+                assertTrue(error is IllegalStateException)
+                assertEquals("unexpected", error.message)
+            }
+        }
+
+        // ---- persistIngredientsFromRecipes (returns Unit, swallows) ----
+
+        @Test
+        @DisplayName("persistIngredientsFromRecipes propagates IllegalStateException instead of swallowing")
+        fun `persistIngredientsFromRecipes propagates IllegalStateException`() = runTest {
+            coEvery { mockRecipeRulesDao.insertKnownIngredients(any()) } throws IllegalStateException("db closed")
+
+            val recipe = com.rasoiai.domain.model.Recipe(
+                id = "r1",
+                name = "Test",
+                description = "",
+                imageUrl = null,
+                prepTimeMinutes = 10,
+                cookTimeMinutes = 10,
+                servings = 2,
+                difficulty = com.rasoiai.domain.model.Difficulty.EASY,
+                cuisineType = com.rasoiai.domain.model.CuisineType.NORTH,
+                mealTypes = emptyList(),
+                dietaryTags = emptyList(),
+                ingredients = listOf(
+                    com.rasoiai.domain.model.Ingredient(
+                        id = "i1",
+                        name = "Paneer",
+                        quantity = "200",
+                        unit = "g",
+                        category = com.rasoiai.domain.model.IngredientCategory.DAIRY
+                    )
+                ),
+                instructions = emptyList(),
+                nutrition = null,
+                isFavorite = false
+            )
+
+            try {
+                repository.persistIngredientsFromRecipes(listOf(recipe))
+                fail("Expected IllegalStateException to propagate, got silent swallow instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("persistIngredientsFromRecipes wraps SQLiteException as no-op (logged, swallowed)")
+        fun `persistIngredientsFromRecipes swallows SQLiteException`() = runTest {
+            coEvery { mockRecipeRulesDao.insertKnownIngredients(any()) } throws SQLiteException("disk full")
+
+            val recipe = com.rasoiai.domain.model.Recipe(
+                id = "r1",
+                name = "Test",
+                description = "",
+                imageUrl = null,
+                prepTimeMinutes = 10,
+                cookTimeMinutes = 10,
+                servings = 2,
+                difficulty = com.rasoiai.domain.model.Difficulty.EASY,
+                cuisineType = com.rasoiai.domain.model.CuisineType.NORTH,
+                mealTypes = emptyList(),
+                dietaryTags = emptyList(),
+                ingredients = listOf(
+                    com.rasoiai.domain.model.Ingredient(
+                        id = "i1",
+                        name = "Paneer",
+                        quantity = "200",
+                        unit = "g",
+                        category = com.rasoiai.domain.model.IngredientCategory.DAIRY
+                    )
+                ),
+                instructions = emptyList(),
+                nutrition = null,
+                isFavorite = false
+            )
+
+            // Should NOT throw — method is best-effort and returns Unit.
+            repository.persistIngredientsFromRecipes(listOf(recipe))
         }
     }
 }

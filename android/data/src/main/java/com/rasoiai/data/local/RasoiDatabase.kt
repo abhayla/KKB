@@ -67,7 +67,7 @@ import com.rasoiai.data.local.entity.KnownIngredientEntity
         HouseholdEntity::class,
         HouseholdMemberEntity::class
     ],
-    version = 14,
+    version = 16,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -291,6 +291,80 @@ abstract class RasoiDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migration from version 14 to 15: Rename `order` column -> `item_order`.
+         *
+         * `order` is a SQL reserved keyword. Room does not reliably backtick-quote
+         * it in generated INSERT statements, causing failures on stricter SQLite
+         * versions (e.g., API 29 emulator). Renaming avoids the collision entirely.
+         *
+         * SQLite on min-SDK 24 (Android 7.0) predates ALTER TABLE RENAME COLUMN
+         * (added in SQLite 3.25). Use the standard "recreate table" dance.
+         *
+         * Downgrade behavior: rolls back to a table with `order` column; data
+         * preserved. Re-upgrade re-renames the column.
+         */
+        val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE meal_plan_items_new (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        mealPlanId TEXT NOT NULL,
+                        date TEXT NOT NULL,
+                        dayName TEXT NOT NULL,
+                        mealType TEXT NOT NULL,
+                        recipeId TEXT NOT NULL,
+                        recipeName TEXT NOT NULL,
+                        recipeImageUrl TEXT,
+                        prepTimeMinutes INTEGER NOT NULL,
+                        calories INTEGER NOT NULL,
+                        dietaryTags TEXT NOT NULL,
+                        isLocked INTEGER NOT NULL DEFAULT 0,
+                        isDayLocked INTEGER NOT NULL DEFAULT 0,
+                        isMealTypeLocked INTEGER NOT NULL DEFAULT 0,
+                        item_order INTEGER NOT NULL DEFAULT 0,
+                        FOREIGN KEY (mealPlanId) REFERENCES meal_plans(id) ON DELETE CASCADE
+                    )
+                """)
+                db.execSQL("""
+                    INSERT INTO meal_plan_items_new
+                    (id, mealPlanId, date, dayName, mealType, recipeId, recipeName,
+                     recipeImageUrl, prepTimeMinutes, calories, dietaryTags, isLocked,
+                     isDayLocked, isMealTypeLocked, item_order)
+                    SELECT
+                     id, mealPlanId, date, dayName, mealType, recipeId, recipeName,
+                     recipeImageUrl, prepTimeMinutes, calories, dietaryTags, isLocked,
+                     isDayLocked, isMealTypeLocked, `order`
+                    FROM meal_plan_items
+                """)
+                db.execSQL("DROP TABLE meal_plan_items")
+                db.execSQL("ALTER TABLE meal_plan_items_new RENAME TO meal_plan_items")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_meal_plan_items_mealPlanId ON meal_plan_items (mealPlanId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_meal_plan_items_date ON meal_plan_items (date)")
+            }
+        }
+
+        /**
+         * Migration from version 15 to 16: Add rating aggregate columns to recipes.
+         *
+         * Satisfies the deferred offline-caching acceptance criterion from #21.
+         * Backend RecipeResponse already carries average_rating / rating_count /
+         * user_rating (commit a48fb10). Without persisting them on RecipeEntity
+         * the aggregate was dropped at the Room layer, so the next offline open
+         * showed stale or missing ratings.
+         *
+         * Additive-only migration. Existing rows get NULL/0 defaults. No data
+         * loss. Downgrade would drop the three columns (data is a cache and
+         * refetched from the backend).
+         */
+        val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE recipes ADD COLUMN averageRating REAL")
+                db.execSQL("ALTER TABLE recipes ADD COLUMN ratingCount INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE recipes ADD COLUMN userRating REAL")
+            }
+        }
+
         val MIGRATION_12_13 = object : Migration(12, 13) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("""
@@ -335,7 +409,7 @@ abstract class RasoiDatabase : RoomDatabase() {
                 RasoiDatabase::class.java,
                 DATABASE_NAME
             )
-                .addMigrations(MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
+                .addMigrations(MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16)
                 .addCallback(object : Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)

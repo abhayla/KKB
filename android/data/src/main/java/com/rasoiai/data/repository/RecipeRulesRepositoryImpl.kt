@@ -1,6 +1,7 @@
 package com.rasoiai.data.repository
 
 import android.content.Context
+import android.database.sqlite.SQLiteException
 import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.data.local.dao.FavoriteDao
 import com.rasoiai.data.local.dao.OfflineQueueDao
@@ -27,6 +28,7 @@ import com.rasoiai.domain.model.RecipeRule
 import com.rasoiai.domain.model.RuleType
 import com.rasoiai.domain.repository.RecipeRulesRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -35,6 +37,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import retrofit2.HttpException
 import timber.log.Timber
 import java.io.IOException
 import java.time.LocalDateTime
@@ -191,16 +194,18 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                             )
                         }
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: IOException) {
                     val nowStr = now.format(dateTimeFormatter)
                     recipeRulesDao.updateRuleSyncStatus(newRule.id, SyncStatus.PENDING, nowStr)
                     queueRuleAction(newRule, OfflineActionType.CREATE_RECIPE_RULE)
                     Timber.w(e, "Network error syncing rule to backend, queued for retry")
-                } catch (e: Exception) {
+                } catch (e: HttpException) {
                     val nowStr = now.format(dateTimeFormatter)
                     recipeRulesDao.updateRuleSyncStatus(newRule.id, SyncStatus.PENDING, nowStr)
                     queueRuleAction(newRule, OfflineActionType.CREATE_RECIPE_RULE)
-                    Timber.w(e, "Failed to sync rule to backend, queued for retry")
+                    Timber.w(e, "HTTP ${e.code()} syncing rule to backend, queued for retry")
                 }
             } else {
                 // Offline: queue for later sync
@@ -208,8 +213,11 @@ class RecipeRulesRepositoryImpl @Inject constructor(
             }
 
             Result.success(newRule)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to create rule")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
+            // Guards the DAO findDuplicate/insertRule path (#34). Unexpected exceptions propagate for debugging.
+            Timber.e(e, "Failed to create rule (DB error)")
             Result.failure(e)
         }
     }
@@ -242,20 +250,25 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                     )
                     apiService.updateRecipeRule(rule.id, request)
                     Timber.i("Synced rule update to backend: ${rule.id}")
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: IOException) {
                     val nowStr = now.format(dateTimeFormatter)
                     recipeRulesDao.updateRuleSyncStatus(rule.id, SyncStatus.PENDING, nowStr)
                     Timber.w(e, "Network error syncing rule update to backend")
-                } catch (e: Exception) {
+                } catch (e: HttpException) {
                     val nowStr = now.format(dateTimeFormatter)
                     recipeRulesDao.updateRuleSyncStatus(rule.id, SyncStatus.PENDING, nowStr)
-                    Timber.w(e, "Failed to sync rule update to backend")
+                    Timber.w(e, "HTTP ${e.code()} syncing rule update to backend")
                 }
             }
 
             Result.success(Unit)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to update rule")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
+            // Guards the DAO updateRule path (#34).
+            Timber.e(e, "Failed to update rule (DB error)")
             Result.failure(e)
         }
     }
@@ -271,12 +284,14 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                 try {
                     apiService.deleteRecipeRule(ruleId)
                     Timber.i("Synced rule deletion to backend: $ruleId")
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: IOException) {
                     queueDeleteRuleAction(ruleId)
                     Timber.w(e, "Network error syncing rule deletion, queued for retry")
-                } catch (e: Exception) {
+                } catch (e: HttpException) {
                     queueDeleteRuleAction(ruleId)
-                    Timber.w(e, "Failed to sync rule deletion, queued for retry")
+                    Timber.w(e, "HTTP ${e.code()} syncing rule deletion, queued for retry")
                 }
             } else {
                 // Offline: queue for later sync
@@ -284,8 +299,11 @@ class RecipeRulesRepositoryImpl @Inject constructor(
             }
 
             Result.success(Unit)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to delete rule")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
+            // Guards the DAO deleteRule path (#34).
+            Timber.e(e, "Failed to delete rule (DB error)")
             Result.failure(e)
         }
     }
@@ -301,7 +319,11 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                 )
             )
             Timber.d("Queued DELETE_RECIPE_RULE for rule=$ruleId")
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
+            // Broad catch intentional (#34): best-effort offline-queue helper; a failed
+            // queue insert must not crash the caller's delete path. Cancellation rethrown above.
             Timber.w(e, "Failed to queue rule delete action")
         }
     }
@@ -336,23 +358,33 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                         recipeRulesDao.updateRuleSyncStatus(ruleId, SyncStatus.SYNCED, now)
                         offlineQueueDao.deleteAction(queueId)
                         Timber.i("Synced toggle to backend: $ruleId")
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: IOException) {
                         Timber.w(e, "Network error syncing rule toggle, queued for WorkManager")
-                    } catch (e: Exception) {
-                        Timber.w(e, "Failed to sync toggle, queued for WorkManager")
+                    } catch (e: HttpException) {
+                        Timber.w(e, "HTTP ${e.code()} syncing rule toggle, queued for WorkManager")
                     }
                 }
 
                 // 4. Trigger WorkManager for reliability (best-effort)
                 try {
                     SyncWorker.triggerImmediateSync(context)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
+                    // Broad catch intentional (#34): WorkManager trigger is best-effort; a
+                    // failure here must not invalidate the already-persisted toggle + queued
+                    // action. Cancellation rethrown above.
                     Timber.w(e, "Could not trigger immediate sync, queued action will be processed later")
                 }
 
                 Result.success(Unit)
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to toggle rule active state")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: SQLiteException) {
+                // Guards the DAO updateRuleActive + offlineQueueDao.insertAction path (#34).
+                Timber.e(e, "Failed to toggle rule active state (DB error)")
                 Result.failure(e)
             }
         }
@@ -406,20 +438,25 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                     )
                     apiService.createNutritionGoal(request)
                     Timber.i("Synced nutrition goal to backend: ${newGoal.id}")
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: IOException) {
                     val nowStr = now.format(dateTimeFormatter)
                     recipeRulesDao.updateNutritionGoalSyncStatus(newGoal.id, SyncStatus.PENDING, nowStr)
                     Timber.w(e, "Network error syncing nutrition goal to backend")
-                } catch (e: Exception) {
+                } catch (e: HttpException) {
                     val nowStr = now.format(dateTimeFormatter)
                     recipeRulesDao.updateNutritionGoalSyncStatus(newGoal.id, SyncStatus.PENDING, nowStr)
-                    Timber.w(e, "Failed to sync nutrition goal to backend")
+                    Timber.w(e, "HTTP ${e.code()} syncing nutrition goal to backend")
                 }
             }
 
             Result.success(newGoal)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to create nutrition goal")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
+            // Guards the DAO insertNutritionGoal path (#34).
+            Timber.e(e, "Failed to create nutrition goal (DB error)")
             Result.failure(e)
         }
     }
@@ -446,20 +483,25 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                     )
                     apiService.updateNutritionGoal(goal.id, request)
                     Timber.i("Synced nutrition goal update to backend: ${goal.id}")
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: IOException) {
                     val nowStr = now.format(dateTimeFormatter)
                     recipeRulesDao.updateNutritionGoalSyncStatus(goal.id, SyncStatus.PENDING, nowStr)
                     Timber.w(e, "Network error syncing nutrition goal update to backend")
-                } catch (e: Exception) {
+                } catch (e: HttpException) {
                     val nowStr = now.format(dateTimeFormatter)
                     recipeRulesDao.updateNutritionGoalSyncStatus(goal.id, SyncStatus.PENDING, nowStr)
-                    Timber.w(e, "Failed to sync nutrition goal update to backend")
+                    Timber.w(e, "HTTP ${e.code()} syncing nutrition goal update to backend")
                 }
             }
 
             Result.success(Unit)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to update nutrition goal")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
+            // Guards the DAO updateNutritionGoal path (#34).
+            Timber.e(e, "Failed to update nutrition goal (DB error)")
             Result.failure(e)
         }
     }
@@ -474,16 +516,21 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                 try {
                     apiService.deleteNutritionGoal(goalId)
                     Timber.i("Synced nutrition goal deletion to backend: $goalId")
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: IOException) {
                     Timber.w(e, "Network error syncing nutrition goal deletion to backend")
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to sync nutrition goal deletion to backend")
+                } catch (e: HttpException) {
+                    Timber.w(e, "HTTP ${e.code()} syncing nutrition goal deletion to backend")
                 }
             }
 
             Result.success(Unit)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to delete nutrition goal")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
+            // Guards the DAO deleteNutritionGoal path (#34).
+            Timber.e(e, "Failed to delete nutrition goal (DB error)")
             Result.failure(e)
         }
     }
@@ -518,23 +565,33 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                         recipeRulesDao.updateNutritionGoalSyncStatus(goalId, SyncStatus.SYNCED, now)
                         offlineQueueDao.deleteAction(queueId)
                         Timber.i("Synced toggle to backend: $goalId")
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: IOException) {
                         Timber.w(e, "Network error syncing nutrition goal toggle, queued for WorkManager")
-                    } catch (e: Exception) {
-                        Timber.w(e, "Failed to sync toggle, queued for WorkManager")
+                    } catch (e: HttpException) {
+                        Timber.w(e, "HTTP ${e.code()} syncing nutrition goal toggle, queued for WorkManager")
                     }
                 }
 
                 // 4. Trigger WorkManager for reliability (best-effort)
                 try {
                     SyncWorker.triggerImmediateSync(context)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
+                    // Broad catch intentional (#34): WorkManager trigger is best-effort; a
+                    // failure here must not invalidate the already-persisted toggle + queued
+                    // action. Cancellation rethrown above.
                     Timber.w(e, "Could not trigger immediate sync, queued action will be processed later")
                 }
 
                 Result.success(Unit)
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to toggle nutrition goal active state")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: SQLiteException) {
+                // Guards the DAO updateNutritionGoalActive + offlineQueueDao.insertAction path (#34).
+                Timber.e(e, "Failed to toggle nutrition goal active state (DB error)")
                 Result.failure(e)
             }
         }
@@ -553,16 +610,21 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                     val request = com.rasoiai.data.remote.dto.NutritionGoalUpdateRequest(currentProgress = progress)
                     apiService.updateNutritionGoal(goalId, request)
                     recipeRulesDao.updateNutritionGoalSyncStatus(goalId, SyncStatus.SYNCED, now)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: IOException) {
                     Timber.w(e, "Network error syncing progress to backend")
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to sync progress to backend")
+                } catch (e: HttpException) {
+                    Timber.w(e, "HTTP ${e.code()} syncing progress to backend")
                 }
             }
 
             Result.success(Unit)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to update nutrition goal progress")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
+            // Guards the DAO updateNutritionGoalProgress path (#34).
+            Timber.e(e, "Failed to update nutrition goal progress (DB error)")
             Result.failure(e)
         }
     }
@@ -573,8 +635,11 @@ class RecipeRulesRepositoryImpl @Inject constructor(
             recipeRulesDao.resetAllNutritionGoalProgress(now)
             Timber.i("Reset weekly progress for all nutrition goals")
             Result.success(Unit)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to reset weekly progress")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
+            // Guards the DAO resetAllNutritionGoalProgress path (#34). DAO-only method.
+            Timber.e(e, "Failed to reset weekly progress (DB error)")
             Result.failure(e)
         }
     }
@@ -647,14 +712,17 @@ class RecipeRulesRepositoryImpl @Inject constructor(
 
             Timber.i("Sync completed successfully")
             Result.success(Unit)
-        } catch (e: retrofit2.HttpException) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: HttpException) {
             Timber.w(e, "HTTP ${e.code()} on sync with backend")
             Result.failure(e)
         } catch (e: IOException) {
             Timber.w(e, "Network error on sync with backend")
             Result.failure(e)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to sync with backend")
+        } catch (e: SQLiteException) {
+            // Guards the DAO getPendingRules/insertRule/deleteRules paths (#34).
+            Timber.e(e, "Failed to sync with backend (DB error)")
             Result.failure(e)
         }
     }
@@ -679,14 +747,17 @@ class RecipeRulesRepositoryImpl @Inject constructor(
 
             Timber.i("Fetched ${rulesResponse.totalCount} rules and ${goalsResponse.totalCount} goals from backend")
             Result.success(Unit)
-        } catch (e: retrofit2.HttpException) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: HttpException) {
             Timber.w(e, "HTTP ${e.code()} fetching from backend")
             Result.failure(e)
         } catch (e: IOException) {
             Timber.w(e, "Network error fetching from backend")
             Result.failure(e)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to fetch from backend")
+        } catch (e: SQLiteException) {
+            // Guards the DAO insertRules/insertNutritionGoals paths (#34).
+            Timber.e(e, "Failed to fetch from backend (DB error)")
             Result.failure(e)
         }
     }
@@ -728,11 +799,14 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                         limit = 10
                     )
                     emit(catalogResults.map { it.toDomain() })
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: IOException) {
                     Timber.w(e, "Network error searching AI recipe catalog")
                     emit(emptyList())
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to search AI recipe catalog")
+                } catch (e: HttpException) {
+                    // API-only flow (#34): emit empty fallback on expected HTTP failures only.
+                    Timber.w(e, "HTTP ${e.code()} searching AI recipe catalog")
                     emit(emptyList())
                 }
             } else {
@@ -763,11 +837,14 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                         limit = 10
                     )
                     emit(catalogResults.map { it.toDomain() })
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: IOException) {
                     Timber.w(e, "Network error getting popular recipes from AI catalog")
                     emit(emptyList())
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to get popular recipes from AI catalog")
+                } catch (e: HttpException) {
+                    // API-only flow (#34): emit empty fallback on expected HTTP failures only.
+                    Timber.w(e, "HTTP ${e.code()} getting popular recipes from AI catalog")
                     emit(emptyList())
                 }
             } else {
@@ -788,13 +865,20 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                 try {
                     val recipes = recipeDao.getAllRecipes().first()
                     recipes.find { it.id == fav.recipeId }?.name
-                } catch (e: Exception) {
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: SQLiteException) {
+                    // Per-favorite lookup: treat a single DB error as "no match" rather
+                    // than aborting the whole lookup (#34).
                     null
                 }
             }
             names.joinToString(",").takeIf { it.isNotEmpty() }
-        } catch (e: Exception) {
-            Timber.w(e, "Failed to get favorite names for catalog")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
+            // DAO-only method (#34): both favoriteDao and recipeDao reads.
+            Timber.w(e, "Failed to get favorite names for catalog (DB error)")
             null
         }
     }
@@ -838,8 +922,12 @@ class RecipeRulesRepositoryImpl @Inject constructor(
             }
             recipeRulesDao.insertKnownIngredients(entities) // INSERT OR IGNORE — no duplicates
             Timber.d("Persisted ${ingredientNames.size} ingredient names from ${recipes.size} recipes")
-        } catch (e: Exception) {
-            Timber.w(e, "Failed to persist ingredients from recipes")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
+            // Best-effort cache-warm (#34): log + swallow DB errors so the caller's
+            // primary flow (meal-plan generation, recipe fetch) is not disturbed.
+            Timber.w(e, "Failed to persist ingredients from recipes (DB error)")
         }
     }
 
@@ -863,7 +951,12 @@ class RecipeRulesRepositoryImpl @Inject constructor(
                 )
             )
             Timber.d("Queued ${actionType.value} for rule=${rule.id}")
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
+            // Broad catch intentional (#34): best-effort offline-queue helper; a failed
+            // queue insert must not crash the caller's create/delete path. Cancellation
+            // rethrown above.
             Timber.w(e, "Failed to queue rule action")
         }
     }

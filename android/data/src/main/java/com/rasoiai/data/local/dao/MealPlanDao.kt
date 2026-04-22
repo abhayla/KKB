@@ -38,16 +38,16 @@ interface MealPlanDao {
 
     // ==================== Meal Plan Items ====================
 
-    @Query("SELECT * FROM meal_plan_items WHERE mealPlanId = :mealPlanId ORDER BY date, mealType, `order`")
+    @Query("SELECT * FROM meal_plan_items WHERE mealPlanId = :mealPlanId ORDER BY date, mealType, item_order")
     fun getMealPlanItems(mealPlanId: String): Flow<List<MealPlanItemEntity>>
 
-    @Query("SELECT * FROM meal_plan_items WHERE mealPlanId = :mealPlanId ORDER BY date, mealType, `order`")
+    @Query("SELECT * FROM meal_plan_items WHERE mealPlanId = :mealPlanId ORDER BY date, mealType, item_order")
     suspend fun getMealPlanItemsSync(mealPlanId: String): List<MealPlanItemEntity>
 
-    @Query("SELECT * FROM meal_plan_items WHERE mealPlanId = :mealPlanId AND date = :date ORDER BY mealType, `order`")
+    @Query("SELECT * FROM meal_plan_items WHERE mealPlanId = :mealPlanId AND date = :date ORDER BY mealType, item_order")
     fun getMealPlanItemsForDate(mealPlanId: String, date: String): Flow<List<MealPlanItemEntity>>
 
-    @Query("SELECT * FROM meal_plan_items WHERE mealPlanId = :mealPlanId AND date = :date AND mealType = :mealType ORDER BY `order`")
+    @Query("SELECT * FROM meal_plan_items WHERE mealPlanId = :mealPlanId AND date = :date AND mealType = :mealType ORDER BY item_order")
     suspend fun getMealPlanItemsForDateAndType(mealPlanId: String, date: String, mealType: String): List<MealPlanItemEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

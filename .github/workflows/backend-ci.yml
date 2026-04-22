@@ -4,13 +4,13 @@ on:
   push:
     branches: [main]
     paths:
-      - 'backend/**'
-      - '.github/workflows/backend-ci.yml'
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
   pull_request:
     branches: [main]
     paths:
-      - 'backend/**'
-      - '.github/workflows/backend-ci.yml'
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
 
 jobs:
   test:
@@ -27,14 +27,20 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          python-version: "3.11"
+          cache: "pip"
           cache-dependency-path: backend/requirements.txt
 
       - name: Install dependencies
         run: pip install -r requirements.txt
 
       - name: Run tests
+        env:
+          # Test-only secret — Settings requires jwt_secret_key with no default.
+          JWT_SECRET_KEY: ci-test-secret-not-used-in-production
+          # DEBUG=true is required by tests: enables fake firebase token auth
+          # and disables per-endpoint production rate limits (tests would 429).
+          DEBUG: "true"
         run: PYTHONPATH=. pytest -v --tb=short --junitxml=test-results/results.xml
 
       - name: Upload test results

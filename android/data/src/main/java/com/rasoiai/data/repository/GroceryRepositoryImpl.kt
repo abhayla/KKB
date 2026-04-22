@@ -1,5 +1,6 @@
 package com.rasoiai.data.repository
 
+import android.database.sqlite.SQLiteException
 import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.data.local.dao.GroceryDao
 import com.rasoiai.data.local.dao.MealPlanDao
@@ -13,6 +14,7 @@ import com.rasoiai.domain.model.GroceryList
 import com.rasoiai.domain.model.Ingredient
 import com.rasoiai.domain.model.IngredientCategory
 import com.rasoiai.domain.repository.GroceryRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -78,7 +80,9 @@ class GroceryRepositoryImpl @Inject constructor(
             groceryDao.updateCheckState(itemId, newCheckedState)
 
             Result.success(item.copy(isChecked = newCheckedState).toDomain())
-        } catch (e: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to toggle item purchased")
             Result.failure(e)
         }
@@ -100,7 +104,9 @@ class GroceryRepositoryImpl @Inject constructor(
             groceryDao.insertGroceryItem(updatedItem)
 
             Result.success(updatedItem.toDomain())
-        } catch (e: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to update item quantity")
             Result.failure(e)
         }
@@ -111,7 +117,9 @@ class GroceryRepositoryImpl @Inject constructor(
             Timber.d("Deleting grocery item: $itemId")
             groceryDao.deleteGroceryItem(itemId)
             Result.success(Unit)
-        } catch (e: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to delete item")
             Result.failure(e)
         }
@@ -135,7 +143,9 @@ class GroceryRepositoryImpl @Inject constructor(
             groceryDao.insertGroceryItem(entity)
 
             Result.success(itemWithId)
-        } catch (e: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to add custom item")
             Result.failure(e)
         }
@@ -153,11 +163,14 @@ class GroceryRepositoryImpl @Inject constructor(
                     groceryDao.deleteGroceryItemsForMealPlan(mealPlanId)
                     groceryDao.insertGroceryItems(groceryItems)
                     Timber.i("Generated grocery list from API: ${groceryItems.size} items")
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: IOException) {
                     Timber.w(e, "Network error fetching grocery list from API, generating locally")
                     generateGroceryListLocally(mealPlanId)
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to fetch grocery list from API, generating locally")
+                } catch (e: retrofit2.HttpException) {
+                    // Non-2xx API response falls back to local generation (#34: was broad Exception).
+                    Timber.w(e, "HTTP ${e.code()} fetching grocery list, generating locally")
                     generateGroceryListLocally(mealPlanId)
                 }
             } else {
@@ -175,7 +188,10 @@ class GroceryRepositoryImpl @Inject constructor(
 
             val groceryList = items.toGroceryList(mealPlanId, startDate, endDate)
             Result.success(groceryList)
-        } catch (e: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
+            // Outer guards DAO reads and the local-generation path (#34).
             Timber.e(e, "Failed to generate grocery list")
             Result.failure(e)
         }
@@ -190,7 +206,9 @@ class GroceryRepositoryImpl @Inject constructor(
             groceryDao.deleteCheckedItems()
 
             Result.success(purchasedCount)
-        } catch (e: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to clear purchased items")
             Result.failure(e)
         }
@@ -324,7 +342,9 @@ class GroceryRepositoryImpl @Inject constructor(
 
             Timber.i("Added ${addedItems.size} ingredients to grocery list from recipe: $recipeName")
             Result.success(addedItems)
-        } catch (e: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to add ingredients from recipe")
             Result.failure(e)
         }

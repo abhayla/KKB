@@ -22,7 +22,13 @@ data class RecipeResponse(
     val dietaryTags: List<String>,
     val ingredients: List<IngredientDto>,
     val instructions: List<InstructionDto>,
-    val nutrition: NutritionDto?
+    val nutrition: NutritionDto?,
+    @SerializedName("average_rating")
+    val averageRating: Double? = null,
+    @SerializedName("rating_count")
+    val ratingCount: Int = 0,
+    @SerializedName("user_rating")
+    val userRating: Double? = null
 )
 
 data class IngredientDto(

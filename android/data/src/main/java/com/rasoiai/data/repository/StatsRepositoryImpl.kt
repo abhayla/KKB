@@ -17,10 +17,13 @@ import com.rasoiai.domain.model.LeaderboardEntry
 import com.rasoiai.domain.model.MonthlyStats
 import com.rasoiai.domain.model.WeeklyChallenge
 import com.rasoiai.domain.repository.StatsRepository
+import android.database.sqlite.SQLiteException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
+import retrofit2.HttpException
 import timber.log.Timber
 import java.io.IOException
 import java.time.LocalDate
@@ -86,10 +89,12 @@ class StatsRepositoryImpl @Inject constructor(
                     val avgRating = (response["average_rating"] as? Number)?.toFloat() ?: 0f
 
                     return Result.success(MonthlyStats(mealsCooked, newRecipes, avgRating))
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: IOException) {
                     Timber.w(e, "Network error fetching monthly stats from API, using local")
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to fetch monthly stats from API, using local")
+                } catch (e: HttpException) {
+                    Timber.w(e, "HTTP ${e.code()} on fetch monthly stats from API, using local")
                 }
             }
 
@@ -105,7 +110,9 @@ class StatsRepositoryImpl @Inject constructor(
                 newRecipes = newRecipes,
                 averageRating = 4.2f // Default rating
             ))
-        } catch (e: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to get monthly stats")
             Result.failure(e)
         }
@@ -132,7 +139,9 @@ class StatsRepositoryImpl @Inject constructor(
                 .toList()
 
             Result.success(allDays)
-        } catch (e: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to get cooking days")
             Result.failure(e)
         }
@@ -161,7 +170,9 @@ class StatsRepositoryImpl @Inject constructor(
             statsDao.updateChallengeJoinedStatus(challengeId, true)
             Timber.i("Joined challenge: $challengeId")
             Result.success(Unit)
-        } catch (e: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to join challenge")
             Result.failure(e)
         }
@@ -185,9 +196,8 @@ class StatsRepositoryImpl @Inject constructor(
             ).take(limit)
 
             Result.success(entries)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get leaderboard")
-            Result.failure(e)
+        } catch (e: CancellationException) {
+            throw e
         }
     }
 
@@ -229,7 +239,9 @@ class StatsRepositoryImpl @Inject constructor(
 
             Timber.i("Recorded cooked meal for $todayStr")
             Result.success(Unit)
-        } catch (e: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to record cooked meal")
             Result.failure(e)
         }
@@ -386,7 +398,9 @@ class StatsRepositoryImpl @Inject constructor(
             }
 
             Result.success(Unit)
-        } catch (e: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to record cooked recipe")
             Result.failure(e)
         }
@@ -398,7 +412,9 @@ class StatsRepositoryImpl @Inject constructor(
             val result = breakdown.map { it.cuisineType to it.count }
             Timber.d("Cuisine breakdown: $result")
             Result.success(result)
-        } catch (e: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to get cuisine breakdown")
             Result.failure(e)
         }

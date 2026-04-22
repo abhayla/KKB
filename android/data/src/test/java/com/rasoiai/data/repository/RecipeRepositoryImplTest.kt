@@ -1,5 +1,6 @@
 package com.rasoiai.data.repository
 
+import android.database.sqlite.SQLiteException
 import app.cash.turbine.test
 import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.data.local.dao.FavoriteDao
@@ -19,6 +20,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -31,6 +33,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -251,25 +254,26 @@ class RecipeRepositoryImplTest {
         }
 
         @Test
-        @DisplayName("Should fallback to local search on API error")
-        fun `should fallback to local search on API error`() = runTest {
-            // Given
+        @DisplayName("Should propagate RuntimeException from API instead of silent local fallback (issue #34)")
+        fun `should propagate RuntimeException from API`() = runTest {
+            // Per issue #34 ("unexpected exceptions still crash for debugging"),
+            // unexpected exceptions like RuntimeException are no longer silently
+            // swallowed into a local-cache fallback. Known network errors
+            // (HttpException, IOException) still trigger fallback — see the
+            // SocketTimeoutException test below.
             every { mockNetworkMonitor.isOnline } returns flowOf(true)
-            coEvery { mockApiService.searchRecipes(any(), any(), any(), any(), any(), any()) } throws RuntimeException("API error")
-            every { mockRecipeDao.getRecipesByCuisine("north") } returns flowOf(listOf(testRecipeEntity))
-
-            // When
-            val result = repository.searchRecipes(
-                query = "paneer",
-                cuisine = CuisineType.NORTH,
-                dietary = null,
-                mealType = null,
-                page = 1,
-                limit = 10
-            )
-
-            // Then
-            assertTrue(result.isSuccess)
+            coEvery {
+                mockApiService.searchRecipes(any(), any(), any(), any(), any(), any())
+            } throws RuntimeException("API error")
+            try {
+                repository.searchRecipes(
+                    query = "paneer", cuisine = CuisineType.NORTH, dietary = null,
+                    mealType = null, page = 1, limit = 10
+                )
+                fail("Expected RuntimeException to propagate")
+            } catch (e: RuntimeException) {
+                assertEquals("API error", e.message)
+            }
         }
     }
 
@@ -463,6 +467,103 @@ class RecipeRepositoryImplTest {
             // Then — API was attempted for each missing recipe
             coVerify(atLeast = 1) { mockApiService.getRecipeById(any()) }
             // No exception thrown — test passes if we reach here
+        }
+    }
+
+    @Nested
+    @DisplayName("CancellationException propagation (structured concurrency)")
+    inner class CancellationPropagation {
+
+        @Test
+        @DisplayName("toggleFavorite should propagate CancellationException instead of wrapping in Result.failure")
+        fun `toggleFavorite should propagate CancellationException`() = runTest {
+            coEvery { mockFavoriteDao.isFavoriteSync(any()) } throws CancellationException("cancelled")
+            try {
+                repository.toggleFavorite("recipe-1")
+                fail("Expected CancellationException to propagate, got Result wrapper instead")
+            } catch (e: CancellationException) {
+                assertEquals("cancelled", e.message)
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Unexpected exception propagation (issue #34)")
+    inner class UnexpectedExceptionPropagation {
+
+        @Test
+        @DisplayName("toggleFavorite should still wrap SQLiteException in Result.failure")
+        fun `toggleFavorite wraps SQLiteException`() = runTest {
+            coEvery { mockFavoriteDao.isFavoriteSync(any()) } throws SQLiteException("disk full")
+            val result = repository.toggleFavorite("recipe-1")
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
+        }
+
+        @Test
+        @DisplayName("toggleFavorite should propagate IllegalStateException")
+        fun `toggleFavorite propagates IllegalStateException`() = runTest {
+            coEvery { mockFavoriteDao.isFavoriteSync(any()) } throws IllegalStateException("db closed")
+            try {
+                repository.toggleFavorite("recipe-1")
+                fail("Expected IllegalStateException to propagate")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("searchRecipes should propagate IllegalStateException from API")
+        fun `searchRecipes propagates IllegalStateException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery {
+                mockApiService.searchRecipes(any(), any(), any(), any(), any(), any())
+            } throws IllegalStateException("api misconfigured")
+            try {
+                repository.searchRecipes(
+                    query = "paneer", cuisine = null, dietary = null,
+                    mealType = null, page = 1, limit = 10
+                )
+                fail("Expected IllegalStateException to propagate")
+            } catch (e: IllegalStateException) {
+                assertEquals("api misconfigured", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("scaleRecipe should propagate IllegalStateException from API")
+        fun `scaleRecipe propagates IllegalStateException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.scaleRecipe(any(), any()) } throws IllegalStateException("api misconfigured")
+            try {
+                repository.scaleRecipe("recipe-1", 4)
+                fail("Expected IllegalStateException to propagate")
+            } catch (e: IllegalStateException) {
+                assertEquals("api misconfigured", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("rateRecipe should propagate IllegalStateException from API")
+        fun `rateRecipe propagates IllegalStateException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.rateRecipe(any(), any()) } throws IllegalStateException("api misconfigured")
+            try {
+                repository.rateRecipe("recipe-1", 5, "great")
+                fail("Expected IllegalStateException to propagate")
+            } catch (e: IllegalStateException) {
+                assertEquals("api misconfigured", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("rateRecipe should still wrap IOException in Result.failure")
+        fun `rateRecipe wraps IOException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.rateRecipe(any(), any()) } throws java.io.IOException("Network down")
+            val result = repository.rateRecipe("recipe-1", 5, "great")
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is java.io.IOException)
         }
     }
 }

@@ -1688,4 +1688,126 @@ class HomeViewModelTest {
             }
         }
     }
+
+    @Nested
+    @DisplayName("Offline Banner (issue #58)")
+    inner class OfflineBannerState {
+
+        @Test
+        @DisplayName("Initial isOffline reflects networkMonitor.isOnline=true")
+        fun `initial isOffline is false when online`() = runTest {
+            coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
+            coEvery { mockNetworkMonitor.isOnline } returns flowOf(true)
+
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
+
+            viewModel.uiState.test {
+                testDispatcher.scheduler.advanceUntilIdle()
+                assertFalse(expectMostRecentItem().isOffline)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("isOffline becomes true when networkMonitor.isOnline=false")
+        fun `isOffline becomes true when offline`() = runTest {
+            coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
+            coEvery { mockNetworkMonitor.isOnline } returns flowOf(false)
+
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
+
+            viewModel.uiState.test {
+                testDispatcher.scheduler.advanceUntilIdle()
+                assertTrue(expectMostRecentItem().isOffline)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("isOffline toggles when networkMonitor flow emits")
+        fun `isOffline toggles when flow emits`() = runTest {
+            coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
+            val onlineFlow = kotlinx.coroutines.flow.MutableStateFlow(true)
+            coEvery { mockNetworkMonitor.isOnline } returns onlineFlow
+
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
+
+            viewModel.uiState.test {
+                testDispatcher.scheduler.advanceUntilIdle()
+                assertFalse(expectMostRecentItem().isOffline)
+
+                onlineFlow.value = false
+                testDispatcher.scheduler.advanceUntilIdle()
+                assertTrue(expectMostRecentItem().isOffline)
+
+                onlineFlow.value = true
+                testDispatcher.scheduler.advanceUntilIdle()
+                assertFalse(expectMostRecentItem().isOffline)
+
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Notification Badge Count (issue #57)")
+    inner class NotificationBadgeCount {
+
+        @Test
+        @DisplayName("Initial notificationBadgeCount defaults to zero when repo emits 0")
+        fun `initial notificationBadgeCount defaults to zero`() = runTest {
+            coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
+            coEvery { mockNotificationRepository.getUnreadCount() } returns flowOf(0)
+
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
+
+            viewModel.uiState.test {
+                testDispatcher.scheduler.advanceUntilIdle()
+                val state = expectMostRecentItem()
+                assertEquals(0, state.notificationBadgeCount)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("notificationBadgeCount propagates non-zero count from repository")
+        fun `notificationBadgeCount propagates non-zero count`() = runTest {
+            coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
+            coEvery { mockNotificationRepository.getUnreadCount() } returns flowOf(7)
+
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
+
+            viewModel.uiState.test {
+                testDispatcher.scheduler.advanceUntilIdle()
+                val state = expectMostRecentItem()
+                assertEquals(7, state.notificationBadgeCount)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("notificationBadgeCount updates when repository flow emits new values")
+        fun `notificationBadgeCount updates when flow emits new values`() = runTest {
+            coEvery { mockMealPlanRepository.getMealPlanForDate(any()) } returns flowOf(testMealPlan)
+            val countFlow = kotlinx.coroutines.flow.MutableStateFlow(0)
+            coEvery { mockNotificationRepository.getUnreadCount() } returns countFlow
+
+            val viewModel = HomeViewModel(mockMealPlanRepository, mockRecipeRepository, mockNetworkMonitor, mockNotificationRepository)
+
+            viewModel.uiState.test {
+                testDispatcher.scheduler.advanceUntilIdle()
+                assertEquals(0, expectMostRecentItem().notificationBadgeCount)
+
+                countFlow.value = 3
+                testDispatcher.scheduler.advanceUntilIdle()
+                assertEquals(3, expectMostRecentItem().notificationBadgeCount)
+
+                countFlow.value = 42
+                testDispatcher.scheduler.advanceUntilIdle()
+                assertEquals(42, expectMostRecentItem().notificationBadgeCount)
+
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+    }
 }

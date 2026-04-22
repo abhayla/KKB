@@ -430,4 +430,65 @@ class StatsViewModelTest {
             }
         }
     }
+
+    @Nested
+    @DisplayName("onShareAchievement")
+    inner class ShareAchievement {
+
+        @Test
+        @DisplayName("Emits LaunchShare with achievement text and keeps errorMessage null")
+        fun `emits LaunchShare with achievement text`() = runTest {
+            val viewModel = StatsViewModel(mockStatsRepository)
+            val achievement = Achievement(
+                id = "ach-42",
+                name = "Week Warrior",
+                description = "Cook for 7 days straight",
+                emoji = "🔥",
+                isUnlocked = true
+            )
+
+            viewModel.navigationEvent.test {
+                viewModel.onShareAchievement(achievement)
+
+                val event = awaitItem()
+                assertTrue(event is StatsNavigationEvent.LaunchShare)
+                val share = event as StatsNavigationEvent.LaunchShare
+                assertTrue(share.text.contains("🔥"))
+                assertTrue(share.text.contains("Week Warrior"))
+                assertTrue(share.text.contains("Cook for 7 days straight"))
+                assertTrue(share.text.contains("Unlocked on RasoiAI!"))
+                assertEquals("Share achievement", share.chooserTitle)
+
+                // Bug regression: previous impl stuffed share text into errorMessage;
+                // the new impl must NOT surface anything in the snackbar.
+                assertNull(viewModel.uiState.value.errorMessage)
+
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+        @Test
+        @DisplayName("Omits description line when achievement.description is blank")
+        fun `omits description line when blank`() = runTest {
+            val viewModel = StatsViewModel(mockStatsRepository)
+            val achievement = Achievement(
+                id = "ach-43",
+                name = "Mystery Chef",
+                description = "",
+                emoji = "👨‍🍳",
+                isUnlocked = true
+            )
+
+            viewModel.navigationEvent.test {
+                viewModel.onShareAchievement(achievement)
+
+                val event = awaitItem() as StatsNavigationEvent.LaunchShare
+                // Must NOT start with an empty line after the header block.
+                assertFalse(event.text.contains("\n\n\n"))
+                assertTrue(event.text.contains("Mystery Chef"))
+
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+    }
 }

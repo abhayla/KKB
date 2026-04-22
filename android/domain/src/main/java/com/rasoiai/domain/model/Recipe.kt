@@ -15,7 +15,10 @@ data class Recipe(
     val ingredients: List<Ingredient>,
     val instructions: List<Instruction>,
     val nutrition: Nutrition?,
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    val averageRating: Double? = null,
+    val ratingCount: Int = 0,
+    val userRating: Double? = null
 ) {
     val totalTimeMinutes: Int get() = prepTimeMinutes + cookTimeMinutes
 }

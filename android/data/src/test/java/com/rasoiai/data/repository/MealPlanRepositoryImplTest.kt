@@ -1,5 +1,6 @@
 package com.rasoiai.data.repository
 
+import android.database.sqlite.SQLiteException
 import app.cash.turbine.test
 import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.data.local.dao.MealPlanDao
@@ -18,6 +19,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -30,6 +32,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -307,9 +310,14 @@ class MealPlanRepositoryImplTest {
         @Test
         @DisplayName("Should return failure on API error")
         fun `should return failure on API error`() = runTest {
-            // Given
+            // Given — realistic API-path error is an HttpException (non-2xx) rather than a bare
+            // RuntimeException. Issue #34 narrowed the outer catch in generateMealPlan to
+            // SQLiteException, so an unrelated RuntimeException here would propagate instead
+            // of becoming Result.failure.
             every { mockNetworkMonitor.isOnline } returns flowOf(true)
-            coEvery { mockApiService.generateMealPlan(any()) } throws RuntimeException("API error")
+            coEvery { mockApiService.generateMealPlan(any()) } throws retrofit2.HttpException(
+                retrofit2.Response.error<Any>(500, okhttp3.ResponseBody.create(null, ""))
+            )
 
             // When
             val result = repository.generateMealPlan(testDate)
@@ -429,11 +437,15 @@ class MealPlanRepositoryImplTest {
         @Test
         @DisplayName("Should continue syncing other plans if one fails")
         fun `should continue syncing other plans if one fails`() = runTest {
-            // Given
+            // Given — the inner per-plan catch in syncMealPlans was narrowed (issue #34) to
+            // HttpException + IOException. HttpException represents the realistic API-path
+            // failure; unrelated RuntimeException would now propagate and break the loop.
             val secondPlan = testMealPlanEntity.copy(id = "plan-2")
             every { mockNetworkMonitor.isOnline } returns flowOf(true)
             coEvery { mockMealPlanDao.getUnsyncedMealPlans() } returns listOf(testMealPlanEntity, secondPlan)
-            coEvery { mockApiService.getMealPlanById("plan-1") } throws RuntimeException("API error")
+            coEvery { mockApiService.getMealPlanById("plan-1") } throws retrofit2.HttpException(
+                retrofit2.Response.error<Any>(500, okhttp3.ResponseBody.create(null, ""))
+            )
             coEvery { mockApiService.getMealPlanById("plan-2") } returns testMealPlanResponse.copy(id = "plan-2")
 
             // When
@@ -550,6 +562,283 @@ class MealPlanRepositoryImplTest {
 
             // API should never be called — getMealPlanForDate is Room-only
             coVerify(exactly = 0) { mockApiService.getCurrentMealPlan() }
+        }
+    }
+
+    @Nested
+    @DisplayName("CancellationException propagation (structured concurrency)")
+    inner class CancellationPropagation {
+
+        @Test
+        @DisplayName("generateMealPlan should propagate CancellationException instead of wrapping in Result.failure")
+        fun `generateMealPlan should propagate CancellationException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.generateMealPlan(any()) } throws CancellationException("cancelled")
+            try {
+                repository.generateMealPlan(testDate)
+                fail("Expected CancellationException to propagate, got Result wrapper instead")
+            } catch (e: CancellationException) {
+                assertEquals("cancelled", e.message)
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Unexpected exception propagation (issue #34)")
+    inner class UnexpectedExceptionPropagation {
+
+        // ---- generateMealPlan ----
+
+        @Test
+        @DisplayName("generateMealPlan wraps SQLiteException in Result.failure")
+        fun `generateMealPlan wraps SQLiteException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.generateMealPlan(any()) } returns testMealPlanResponse
+            coEvery { mockMealPlanDao.replaceMealPlan(any(), any(), any()) } throws SQLiteException("disk full")
+
+            val result = repository.generateMealPlan(testDate)
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
+        }
+
+        @Test
+        @DisplayName("generateMealPlan propagates IllegalStateException from DAO instead of wrapping")
+        fun `generateMealPlan propagates IllegalStateException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.generateMealPlan(any()) } returns testMealPlanResponse
+            coEvery { mockMealPlanDao.replaceMealPlan(any(), any(), any()) } throws IllegalStateException("db closed")
+
+            try {
+                repository.generateMealPlan(testDate)
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        // ---- swapMeal ----
+
+        @Test
+        @DisplayName("swapMeal wraps SQLiteException in Result.failure")
+        fun `swapMeal wraps SQLiteException`() = runTest {
+            val items = listOf(testMealItems.first().copy(mealType = "breakfast"))
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockMealPlanDao.getMealPlanItemsSync("plan-1") } returns items
+            coEvery { mockApiService.swapMealItem(any(), any(), any()) } returns testMealPlanResponse
+            coEvery { mockMealPlanDao.replaceMealPlan(any(), any(), any()) } throws SQLiteException("disk full")
+
+            val result = repository.swapMeal(
+                mealPlanId = "plan-1",
+                date = testDate,
+                mealType = MealType.BREAKFAST,
+                currentRecipeId = "recipe-1"
+            )
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
+        }
+
+        @Test
+        @DisplayName("swapMeal propagates IllegalStateException from DAO instead of wrapping")
+        fun `swapMeal propagates IllegalStateException`() = runTest {
+            val items = listOf(testMealItems.first().copy(mealType = "breakfast"))
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockMealPlanDao.getMealPlanItemsSync("plan-1") } returns items
+            coEvery { mockApiService.swapMealItem(any(), any(), any()) } returns testMealPlanResponse
+            coEvery { mockMealPlanDao.replaceMealPlan(any(), any(), any()) } throws IllegalStateException("db closed")
+
+            try {
+                repository.swapMeal(
+                    mealPlanId = "plan-1",
+                    date = testDate,
+                    mealType = MealType.BREAKFAST,
+                    currentRecipeId = "recipe-1"
+                )
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        // ---- setMealLockState ----
+
+        @Test
+        @DisplayName("setMealLockState propagates IllegalStateException from DAO instead of wrapping")
+        fun `setMealLockState propagates IllegalStateException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(false)
+            coEvery { mockMealPlanDao.updateMealItemLockState(any(), any(), any(), any(), any()) } throws
+                IllegalStateException("db closed")
+
+            try {
+                repository.setMealLockState(
+                    mealPlanId = "plan-1",
+                    date = testDate,
+                    mealType = MealType.BREAKFAST,
+                    recipeId = "recipe-1",
+                    isLocked = true
+                )
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        // ---- removeRecipeFromMeal ----
+
+        @Test
+        @DisplayName("removeRecipeFromMeal propagates IllegalStateException from DAO instead of wrapping")
+        fun `removeRecipeFromMeal propagates IllegalStateException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(false)
+            coEvery { mockMealPlanDao.deleteMealPlanItem(any(), any(), any(), any()) } throws
+                IllegalStateException("db closed")
+
+            try {
+                repository.removeRecipeFromMeal(
+                    mealPlanId = "plan-1",
+                    date = testDate,
+                    mealType = MealType.BREAKFAST,
+                    recipeId = "recipe-1"
+                )
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        // ---- addRecipeToMeal ----
+
+        @Test
+        @DisplayName("addRecipeToMeal wraps SQLiteException in Result.failure")
+        fun `addRecipeToMeal wraps SQLiteException`() = runTest {
+            coEvery { mockMealPlanDao.getMealPlanItemsForDateAndType(any(), any(), any()) } returns emptyList()
+            coEvery { mockMealPlanDao.insertMealPlanItem(any()) } throws SQLiteException("unique violation")
+
+            val result = repository.addRecipeToMeal(
+                mealPlanId = "plan-1",
+                date = testDate,
+                mealType = MealType.BREAKFAST,
+                recipeId = "recipe-new",
+                recipeName = "Test",
+                recipeImageUrl = null,
+                prepTimeMinutes = 10,
+                calories = 100
+            )
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
+        }
+
+        @Test
+        @DisplayName("addRecipeToMeal propagates IllegalStateException from DAO instead of wrapping")
+        fun `addRecipeToMeal propagates IllegalStateException`() = runTest {
+            coEvery { mockMealPlanDao.getMealPlanItemsForDateAndType(any(), any(), any()) } throws
+                IllegalStateException("db closed")
+
+            try {
+                repository.addRecipeToMeal(
+                    mealPlanId = "plan-1",
+                    date = testDate,
+                    mealType = MealType.BREAKFAST,
+                    recipeId = "recipe-new",
+                    recipeName = "Test",
+                    recipeImageUrl = null,
+                    prepTimeMinutes = 10,
+                    calories = 100
+                )
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        // ---- setDayLockState ----
+
+        @Test
+        @DisplayName("setDayLockState wraps SQLiteException in Result.failure")
+        fun `setDayLockState wraps SQLiteException`() = runTest {
+            coEvery { mockMealPlanDao.updateDayLockState(any(), any(), any()) } throws SQLiteException("disk full")
+
+            val result = repository.setDayLockState(
+                mealPlanId = "plan-1",
+                date = testDate,
+                isLocked = true
+            )
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
+        }
+
+        @Test
+        @DisplayName("setDayLockState propagates IllegalStateException from DAO instead of wrapping")
+        fun `setDayLockState propagates IllegalStateException`() = runTest {
+            coEvery { mockMealPlanDao.updateDayLockState(any(), any(), any()) } throws
+                IllegalStateException("db closed")
+
+            try {
+                repository.setDayLockState(
+                    mealPlanId = "plan-1",
+                    date = testDate,
+                    isLocked = true
+                )
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        // ---- setMealTypeLockState ----
+
+        @Test
+        @DisplayName("setMealTypeLockState propagates IllegalStateException from DAO instead of wrapping")
+        fun `setMealTypeLockState propagates IllegalStateException`() = runTest {
+            coEvery { mockMealPlanDao.updateMealTypeLockState(any(), any(), any(), any()) } throws
+                IllegalStateException("db closed")
+
+            try {
+                repository.setMealTypeLockState(
+                    mealPlanId = "plan-1",
+                    date = testDate,
+                    mealType = MealType.BREAKFAST,
+                    isLocked = true
+                )
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        // ---- syncMealPlans ----
+
+        @Test
+        @DisplayName("syncMealPlans propagates IllegalStateException from getUnsyncedMealPlans")
+        fun `syncMealPlans propagates IllegalStateException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockMealPlanDao.getUnsyncedMealPlans() } throws IllegalStateException("db closed")
+
+            try {
+                repository.syncMealPlans()
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        // ---- fetchCurrentMealPlan ----
+
+        @Test
+        @DisplayName("fetchCurrentMealPlan propagates IllegalStateException from DAO instead of returning null silently")
+        fun `fetchCurrentMealPlan propagates IllegalStateException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.getCurrentMealPlan() } returns testMealPlanResponse
+            coEvery { mockMealPlanDao.replaceMealPlan(any(), any(), any()) } throws IllegalStateException("db closed")
+
+            try {
+                repository.fetchCurrentMealPlan()
+                fail("Expected IllegalStateException to propagate, got null instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
         }
     }
 }

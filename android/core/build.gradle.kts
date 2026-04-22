@@ -42,6 +42,12 @@ android {
         abortOnError = false
         warningsAsErrors = false
     }
+
+    testOptions {
+        unitTests.all {
+            it.useJUnitPlatform()
+        }
+    }
 }
 
 dependencies {

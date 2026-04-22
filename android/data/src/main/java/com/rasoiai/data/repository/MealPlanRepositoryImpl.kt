@@ -1,5 +1,6 @@
 package com.rasoiai.data.repository
 
+import android.database.sqlite.SQLiteException
 import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.data.local.dao.MealPlanDao
 import com.rasoiai.data.local.mapper.toDomain
@@ -17,6 +18,7 @@ import java.time.DayOfWeek
 import com.rasoiai.domain.repository.GroceryRepository
 import com.rasoiai.domain.repository.MealPlanRepository
 import com.rasoiai.domain.repository.RecipeRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -97,21 +99,29 @@ class MealPlanRepositoryImpl @Inject constructor(
 
             mealPlanDao.replaceMealPlan(entity, items, festivals)
 
-            // Pre-cache recipe details for offline access
+            // Pre-cache recipe details for offline access.
+            // Broad catch intentional (#34): prefetch traverses Retrofit + Room + mapper layers
+            // and may fail for many reasons — all non-critical. Cancellation is rethrown above.
             try {
                 val recipeIds = items.map { it.recipeId }.distinct().filter { it.isNotBlank() }
                 if (recipeIds.isNotEmpty()) {
                     recipeRepository.prefetchRecipes(recipeIds)
                     Timber.i("Pre-cached ${recipeIds.size} recipes from meal plan")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to pre-cache recipes, non-critical")
             }
 
-            // Auto-generate grocery list from the new meal plan
+            // Auto-generate grocery list from the new meal plan.
+            // Broad catch intentional (#34): grocery generation spans its own repository chain;
+            // a failure here must not invalidate the already-persisted meal plan.
             try {
                 groceryRepository.generateFromMealPlan(entity.id)
                 Timber.i("Auto-generated grocery list for meal plan: ${entity.id}")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to auto-generate grocery list, non-critical")
             }
@@ -125,13 +135,17 @@ class MealPlanRepositoryImpl @Inject constructor(
             // Return domain model
             val mealPlan = entity.toDomain(items, festivals)
             Result.success(mealPlan)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: retrofit2.HttpException) {
             Timber.w(e, "HTTP ${e.code()} on generate meal plan")
             Result.failure(e)
         } catch (e: IOException) {
             Timber.w(e, "Network error on generate meal plan")
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
+            // After HttpException + IOException, the remaining failure surface is the DAO
+            // (#34). Unexpected exceptions (IllegalStateException, mapper bugs, ...) propagate.
             Timber.e(e, "Failed to generate meal plan")
             Result.failure(e)
         }
@@ -180,23 +194,30 @@ class MealPlanRepositoryImpl @Inject constructor(
 
             Timber.i("Meal swapped successfully")
 
-            // Refresh grocery list after swap
+            // Refresh grocery list after swap.
+            // Broad catch intentional (#34): grocery regeneration spans its own repository chain;
+            // a failure must not invalidate the already-persisted swap.
             try {
                 groceryRepository.generateFromMealPlan(mealPlanId)
                 Timber.d("Grocery list refreshed after swap")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to refresh grocery list after swap (non-fatal)")
             }
 
             val mealPlan = entity.toDomain(newItems, festivals)
             Result.success(mealPlan)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: retrofit2.HttpException) {
             Timber.w(e, "HTTP ${e.code()} on swap meal")
             Result.failure(e)
         } catch (e: IOException) {
             Timber.w(e, "Network error on swap meal")
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
+            // After HttpException + IOException, the residual surface is the DAO replace path (#34).
             Timber.e(e, "Failed to swap meal")
             Result.failure(e)
         }
@@ -231,13 +252,15 @@ class MealPlanRepositoryImpl @Inject constructor(
                         itemId = "${mealPlanId}-${dateStr}-${mealType.value}-${recipeId}"
                     )
                     Timber.d("Lock state synced to server")
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: IOException) {
                     mealPlanDao.updateSyncStatus(mealPlanId, false)
                     Timber.w(e, "Network error syncing lock state, queued for later")
-                } catch (e: Exception) {
-                    // Mark as unsynced for later
+                } catch (e: retrofit2.HttpException) {
+                    // Mark as unsynced for later (#34: was broad Exception)
                     mealPlanDao.updateSyncStatus(mealPlanId, false)
-                    Timber.w(e, "Failed to sync lock state, queued for later")
+                    Timber.w(e, "HTTP ${e.code()} syncing lock state, queued for later")
                 }
             } else {
                 // Mark as unsynced
@@ -246,7 +269,10 @@ class MealPlanRepositoryImpl @Inject constructor(
             }
 
             Result.success(Unit)
-        } catch (e: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
+            // Outer guards the local DAO updates (#34).
             Timber.e(e, "Failed to set lock state")
             Result.failure(e)
         }
@@ -280,13 +306,15 @@ class MealPlanRepositoryImpl @Inject constructor(
                         itemId = itemId
                     )
                     Timber.d("Recipe removal synced to server")
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: IOException) {
                     mealPlanDao.updateSyncStatus(mealPlanId, false)
                     Timber.w(e, "Network error syncing recipe removal, queued for later")
-                } catch (e: Exception) {
-                    // Mark as unsynced for later
+                } catch (e: retrofit2.HttpException) {
+                    // Mark as unsynced for later (#34: was broad Exception)
                     mealPlanDao.updateSyncStatus(mealPlanId, false)
-                    Timber.w(e, "Failed to sync recipe removal, queued for later")
+                    Timber.w(e, "HTTP ${e.code()} syncing recipe removal, queued for later")
                 }
             } else {
                 // Mark as unsynced
@@ -295,7 +323,10 @@ class MealPlanRepositoryImpl @Inject constructor(
             }
 
             Result.success(Unit)
-        } catch (e: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
+            // Outer guards the local DAO deletion + sync-status update (#34).
             Timber.e(e, "Failed to remove recipe from meal")
             Result.failure(e)
         }
@@ -355,7 +386,9 @@ class MealPlanRepositoryImpl @Inject constructor(
 
             val mealPlan = mealPlanEntity.toDomain(allItems, festivals)
             Result.success(mealPlan)
-        } catch (e: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to add recipe to meal")
             Result.failure(e)
         }
@@ -380,21 +413,27 @@ class MealPlanRepositoryImpl @Inject constructor(
 
                     mealPlanDao.replaceMealPlan(entity, items, festivals)
                     Timber.d("Synced meal plan: ${plan.id}")
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: IOException) {
                     Timber.w(e, "Network error syncing meal plan: ${plan.id}")
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to sync meal plan: ${plan.id}")
+                } catch (e: retrofit2.HttpException) {
+                    // Per-plan HTTP failure skips this plan and continues the loop (#34: was broad).
+                    Timber.w(e, "HTTP ${e.code()} syncing meal plan: ${plan.id}")
                 }
             }
 
             Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: retrofit2.HttpException) {
             Timber.w(e, "HTTP ${e.code()} on sync meal plans")
             Result.failure(e)
         } catch (e: IOException) {
             Timber.w(e, "Network error on sync meal plans")
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
+            // Guards the DAO getUnsyncedMealPlans() call (#34).
             Timber.e(e, "Failed to sync meal plans")
             Result.failure(e)
         }
@@ -423,33 +462,43 @@ class MealPlanRepositoryImpl @Inject constructor(
 
             mealPlanDao.replaceMealPlan(entity, items, festivals)
 
-            // Pre-cache recipe details for offline access
+            // Pre-cache recipe details for offline access.
+            // Broad catch intentional (#34): prefetch spans network + Room + mapping layers and
+            // must never invalidate the fetched meal plan.
             try {
                 val recipeIds = items.map { it.recipeId }.distinct().filter { it.isNotBlank() }
                 if (recipeIds.isNotEmpty()) {
                     recipeRepository.prefetchRecipes(recipeIds)
                     Timber.i("Pre-cached ${recipeIds.size} recipes from fetched meal plan")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to pre-cache recipes on fetch, non-critical")
             }
 
-            // Auto-generate grocery list from fetched meal plan
+            // Auto-generate grocery list from fetched meal plan.
+            // Broad catch intentional (#34): grocery generation spans its own repository chain.
             try {
                 groceryRepository.generateFromMealPlan(entity.id)
                 Timber.i("Auto-generated grocery list for fetched meal plan: ${entity.id}")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to auto-generate grocery list on fetch, non-critical")
             }
 
             entity.toDomain(items, festivals)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: retrofit2.HttpException) {
             Timber.w(e, "HTTP ${e.code()} fetching meal plan from API")
             null
         } catch (e: IOException) {
             Timber.w(e, "Network error fetching meal plan from API")
             null
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
+            // Outer residual is DAO/mapping after HttpException + IOException (#34).
             Timber.e(e, "Failed to fetch meal plan from API")
             null
         }
@@ -461,7 +510,9 @@ class MealPlanRepositoryImpl @Inject constructor(
             mealPlanDao.updateDayLockState(mealPlanId, dateStr, isLocked)
             Timber.d("Day lock persisted: $dateStr = $isLocked")
             Result.success(Unit)
-        } catch (e: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to persist day lock state")
             Result.failure(e)
         }
@@ -473,7 +524,9 @@ class MealPlanRepositoryImpl @Inject constructor(
             mealPlanDao.updateMealTypeLockState(mealPlanId, dateStr, mealType.value, isLocked)
             Timber.d("Meal type lock persisted: $dateStr ${mealType.value} = $isLocked")
             Result.success(Unit)
-        } catch (e: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to persist meal type lock state")
             Result.failure(e)
         }

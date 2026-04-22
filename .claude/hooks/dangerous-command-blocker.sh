@@ -20,7 +20,16 @@
 #     }
 #   }
 
-COMMAND=$(echo "$TOOL_INPUT" | jq -r '.command // empty')
+TOOL_INPUT=$(cat)
+if command -v jq >/dev/null 2>&1; then
+  COMMAND=$(echo "$TOOL_INPUT" | jq -r '.tool_input.command // .command // empty' 2>/dev/null)
+else
+  COMMAND=$(echo "$TOOL_INPUT" | python -c "import sys,json
+try:
+  d=json.load(sys.stdin); ti=d.get('tool_input',d) if isinstance(d,dict) else {}
+  print(ti.get('command') or d.get('command') or '')
+except Exception: pass" 2>/dev/null)
+fi
 if [[ -z "$COMMAND" ]]; then exit 0; fi
 
 # --- Catastrophic commands (always block) ---

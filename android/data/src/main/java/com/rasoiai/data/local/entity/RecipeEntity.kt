@@ -22,5 +22,11 @@ data class RecipeEntity(
     val nutritionInfo: String?, // JSON string of nutrition data
     val calories: Int?,
     val isFavorite: Boolean = false,
-    val cachedAt: Long = System.currentTimeMillis()
+    val cachedAt: Long = System.currentTimeMillis(),
+    // Rating aggregate (issue #21 offline-cache acceptance criterion).
+    // Mirrors RecipeResponse.average_rating / rating_count / user_rating so
+    // the rating aggregate survives an offline-open round-trip.
+    val averageRating: Double? = null,
+    val ratingCount: Int = 0,
+    val userRating: Double? = null
 )

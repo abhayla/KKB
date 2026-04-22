@@ -50,7 +50,10 @@ fun RecipeResponse.toDomain(): Recipe = Recipe(
     dietaryTags = dietaryTags.mapNotNull { DietaryTag.fromValue(it) },
     ingredients = ingredients.map { it.toDomain() },
     instructions = instructions.map { it.toDomain() },
-    nutrition = nutrition?.toDomain()
+    nutrition = nutrition?.toDomain(),
+    averageRating = averageRating,
+    ratingCount = ratingCount,
+    userRating = userRating
 )
 
 fun IngredientDto.toDomain(): Ingredient = Ingredient(

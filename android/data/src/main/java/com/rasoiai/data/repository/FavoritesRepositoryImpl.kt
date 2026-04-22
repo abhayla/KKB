@@ -12,11 +12,13 @@ import com.rasoiai.domain.model.CuisineType
 import com.rasoiai.domain.model.FavoriteCollection
 import com.rasoiai.domain.model.Recipe
 import com.rasoiai.domain.repository.FavoritesRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import android.database.sqlite.SQLiteConstraintException
+import android.database.sqlite.SQLiteException
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -183,10 +185,12 @@ class FavoritesRepositoryImpl @Inject constructor(
             }
 
             Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: SQLiteConstraintException) {
             Timber.w(e, "Constraint violation adding to recently viewed")
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to add to recently viewed")
             Result.failure(e)
         }
@@ -207,10 +211,12 @@ class FavoritesRepositoryImpl @Inject constructor(
             Timber.i("Created collection: ${collection.name}")
 
             Result.success(collection.toDomain())
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: SQLiteConstraintException) {
             Timber.w(e, "Constraint violation creating collection")
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to create collection")
             Result.failure(e)
         }
@@ -241,10 +247,12 @@ class FavoritesRepositoryImpl @Inject constructor(
             Timber.i("Deleted collection: $collectionId")
 
             Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: SQLiteConstraintException) {
             Timber.w(e, "Constraint violation deleting collection")
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to delete collection")
             Result.failure(e)
         }
@@ -278,10 +286,12 @@ class FavoritesRepositoryImpl @Inject constructor(
 
             Timber.i("Added recipe $recipeId to collection $collectionId")
             Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: SQLiteConstraintException) {
             Timber.w(e, "Constraint violation adding recipe to collection")
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to add recipe to collection")
             Result.failure(e)
         }
@@ -293,10 +303,12 @@ class FavoritesRepositoryImpl @Inject constructor(
             favoriteDao.moveToCollection(recipeId, null)
             Timber.i("Removed recipe $recipeId from collection $collectionId")
             Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: SQLiteConstraintException) {
             Timber.w(e, "Constraint violation removing recipe from collection")
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to remove recipe from collection")
             Result.failure(e)
         }
@@ -308,10 +320,12 @@ class FavoritesRepositoryImpl @Inject constructor(
             recipeDao.updateFavoriteStatus(recipeId, false)
             Timber.i("Removed recipe $recipeId from all favorites")
             Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: SQLiteConstraintException) {
             Timber.w(e, "Constraint violation removing favorite")
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to remove from favorites")
             Result.failure(e)
         }
@@ -324,10 +338,12 @@ class FavoritesRepositoryImpl @Inject constructor(
             }
             Timber.d("Reordered ${recipeIds.size} recipes in collection $collectionId")
             Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: SQLiteConstraintException) {
             Timber.w(e, "Constraint violation reordering recipes")
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to reorder recipes")
             Result.failure(e)
         }

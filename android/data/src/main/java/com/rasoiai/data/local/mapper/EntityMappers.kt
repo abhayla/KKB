@@ -250,7 +250,10 @@ fun RecipeResponse.toEntity(isFavorite: Boolean = false): RecipeEntity = RecipeE
     nutritionInfo = nutrition?.let { gson.toJson(it) },
     calories = nutrition?.calories,
     isFavorite = isFavorite,
-    cachedAt = System.currentTimeMillis()
+    cachedAt = System.currentTimeMillis(),
+    averageRating = averageRating,
+    ratingCount = ratingCount,
+    userRating = userRating
 )
 
 // ==================== Recipe Entity to Domain Mappers ====================
@@ -293,7 +296,10 @@ fun RecipeEntity.toDomain(): Recipe {
         ingredients = ingredientDtos.map { it.toDomainIngredient() },
         instructions = instructionDtos.map { it.toDomainInstruction() },
         nutrition = nutritionDto?.toDomainNutrition(),
-        isFavorite = isFavorite
+        isFavorite = isFavorite,
+        averageRating = averageRating,
+        ratingCount = ratingCount,
+        userRating = userRating
     )
 }
 

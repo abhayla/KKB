@@ -12,11 +12,15 @@ import com.rasoiai.domain.repository.PantryRepository
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import android.database.sqlite.SQLiteConstraintException
+import android.database.sqlite.SQLiteException
+import retrofit2.HttpException
 import timber.log.Timber
+import java.io.IOException
 import java.time.LocalDate
 import java.util.UUID
 import javax.inject.Inject
@@ -82,10 +86,12 @@ class PantryRepositoryImpl @Inject constructor(
             Timber.i("Added pantry item: ${item.name} (${item.category.displayName})")
 
             Result.success(item)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: SQLiteConstraintException) {
             Timber.w(e, "Constraint violation adding pantry item")
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to add pantry item")
             Result.failure(e)
         }
@@ -115,10 +121,12 @@ class PantryRepositoryImpl @Inject constructor(
             Timber.i("Added ${pantryItems.size} items from scan")
 
             Result.success(pantryItems)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: SQLiteConstraintException) {
             Timber.w(e, "Constraint violation adding scanned items")
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to add items from scan")
             Result.failure(e)
         }
@@ -129,10 +137,12 @@ class PantryRepositoryImpl @Inject constructor(
             pantryDao.updateItem(item.toEntity())
             Timber.d("Updated pantry item: ${item.name}")
             Result.success(item)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: SQLiteConstraintException) {
             Timber.w(e, "Constraint violation updating pantry item")
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to update pantry item")
             Result.failure(e)
         }
@@ -143,10 +153,12 @@ class PantryRepositoryImpl @Inject constructor(
             pantryDao.deleteItem(itemId)
             Timber.d("Removed pantry item: $itemId")
             Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: SQLiteConstraintException) {
             Timber.w(e, "Constraint violation removing pantry item")
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to remove pantry item")
             Result.failure(e)
         }
@@ -157,10 +169,12 @@ class PantryRepositoryImpl @Inject constructor(
             val count = pantryDao.deleteExpiredItems()
             Timber.i("Removed $count expired pantry items")
             Result.success(count)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: SQLiteConstraintException) {
             Timber.w(e, "Constraint violation removing expired items")
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to remove expired items")
             Result.failure(e)
         }
@@ -205,13 +219,17 @@ class PantryRepositoryImpl @Inject constructor(
 
             Timber.d("Found $matchingCount recipes matching pantry items")
             Result.success(matchingCount)
-        } catch (e: Exception) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to calculate matching recipe count")
             // Return estimated count based on pantry size
             try {
                 val itemCount = pantryDao.getItemCountSync()
                 Result.success(itemCount * 2) // Rough estimate
-            } catch (e2: Exception) {
+            } catch (e2: CancellationException) {
+                throw e2
+            } catch (e2: SQLiteException) {
                 Result.failure(e)
             }
         }
@@ -237,8 +255,13 @@ class PantryRepositoryImpl @Inject constructor(
 
             Timber.i("Photo analysis returned ${items.size} items")
             Result.success(items)
-        } catch (e: Exception) {
-            Timber.e(e, "Photo analysis failed")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: HttpException) {
+            Timber.w(e, "HTTP ${e.code()} on analyze photo")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on analyze photo")
             Result.failure(e)
         }
     }

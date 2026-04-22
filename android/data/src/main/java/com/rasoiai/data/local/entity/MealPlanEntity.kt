@@ -1,5 +1,6 @@
 package com.rasoiai.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -44,6 +45,10 @@ data class MealPlanItemEntity(
     val isLocked: Boolean = false,
     val isDayLocked: Boolean = false,
     val isMealTypeLocked: Boolean = false,
+    // DB column name is `item_order` — `order` is a SQL reserved keyword that Room
+    // does not reliably backtick-quote in generated INSERT statements (fails on the
+    // API 29 emulator SQLite). Kotlin property name stays `order` for callsite compat.
+    @ColumnInfo(name = "item_order")
     val order: Int = 0
 )
 

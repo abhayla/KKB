@@ -138,6 +138,75 @@ class EntityMappersTest {
             assertTrue(domain.instructions.isEmpty())
             assertNull(domain.nutrition)
         }
+
+        @Test
+        @DisplayName("Should round-trip rating fields through RecipeEntity (issue #21 offline cache)")
+        fun `should round-trip rating fields through RecipeEntity`() {
+            // Given — an entity with all three rating aggregate fields populated
+            val entity = RecipeEntity(
+                id = "recipe-r1",
+                name = "Test",
+                description = "desc",
+                imageUrl = null,
+                prepTimeMinutes = 10,
+                cookTimeMinutes = 20,
+                servings = 2,
+                difficulty = "easy",
+                cuisineType = "north",
+                mealTypes = emptyList(),
+                dietaryTags = emptyList(),
+                ingredients = "[]",
+                instructions = "[]",
+                nutritionInfo = null,
+                calories = null,
+                isFavorite = false,
+                cachedAt = System.currentTimeMillis(),
+                averageRating = 4.5,
+                ratingCount = 10,
+                userRating = 5.0
+            )
+
+            // When — map entity to domain
+            val domain = entity.toDomain()
+
+            // Then — rating fields survive the mapping
+            assertEquals(4.5, domain.averageRating)
+            assertEquals(10, domain.ratingCount)
+            assertEquals(5.0, domain.userRating)
+        }
+
+        @Test
+        @DisplayName("Should default rating fields to null/0 when absent from RecipeEntity")
+        fun `should default rating fields to null and zero when absent`() {
+            // Given — an entity constructed without specifying rating fields
+            val entity = RecipeEntity(
+                id = "recipe-r2",
+                name = "Test",
+                description = "desc",
+                imageUrl = null,
+                prepTimeMinutes = 10,
+                cookTimeMinutes = 20,
+                servings = 2,
+                difficulty = "easy",
+                cuisineType = "north",
+                mealTypes = emptyList(),
+                dietaryTags = emptyList(),
+                ingredients = "[]",
+                instructions = "[]",
+                nutritionInfo = null,
+                calories = null,
+                isFavorite = false,
+                cachedAt = System.currentTimeMillis()
+            )
+
+            // When
+            val domain = entity.toDomain()
+
+            // Then — matches the defaults defined on Recipe + RecipeEntity
+            assertNull(domain.averageRating)
+            assertEquals(0, domain.ratingCount)
+            assertNull(domain.userRating)
+        }
     }
 
     @Nested

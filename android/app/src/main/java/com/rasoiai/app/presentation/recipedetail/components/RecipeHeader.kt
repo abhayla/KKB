@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -51,6 +52,9 @@ fun RecipeHeader(
     isVegetarian: Boolean,
     tags: List<String>,
     lockState: RecipeLockState = RecipeLockState.NO_CONTEXT,
+    averageRating: Double? = null,
+    ratingCount: Int = 0,
+    userRating: Double? = null,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -119,6 +123,13 @@ fun RecipeHeader(
             modifier = Modifier.padding(horizontal = spacing.md, vertical = spacing.xs)
         )
 
+        RatingRow(
+            averageRating = averageRating,
+            ratingCount = ratingCount,
+            userRating = userRating,
+            modifier = Modifier.padding(horizontal = spacing.md, vertical = spacing.xs)
+        )
+
         Spacer(modifier = Modifier.height(spacing.sm))
 
         // Quick Info Row
@@ -137,6 +148,53 @@ fun RecipeHeader(
             isVegetarian = isVegetarian,
             modifier = Modifier.padding(horizontal = spacing.md)
         )
+    }
+}
+
+@Composable
+internal fun RatingRow(
+    averageRating: Double?,
+    ratingCount: Int,
+    userRating: Double?,
+    modifier: Modifier = Modifier
+) {
+    if (averageRating == null && userRating == null) return
+
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (averageRating != null) {
+            Icon(
+                imageVector = Icons.Default.Star,
+                contentDescription = "Average rating",
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(spacing.xs))
+            Text(
+                text = "%.1f".format(averageRating),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.width(spacing.xs))
+            val countSuffix = if (ratingCount == 1) "$ratingCount rating" else "$ratingCount ratings"
+            Text(
+                text = "($countSuffix)",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        if (userRating != null) {
+            if (averageRating != null) Spacer(modifier = Modifier.width(spacing.md))
+            Text(
+                text = "Your rating: %.1f★".format(userRating),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }
 

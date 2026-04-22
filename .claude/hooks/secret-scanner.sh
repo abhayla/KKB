@@ -20,8 +20,22 @@
 #   }
 
 # Extract content to scan — Write uses "content", Edit uses "new_string"
-CONTENT=$(echo "$TOOL_INPUT" | jq -r '.content // .new_string // empty')
-FILE_PATH=$(echo "$TOOL_INPUT" | jq -r '.file_path // empty')
+TOOL_INPUT=$(cat)
+if command -v jq >/dev/null 2>&1; then
+  CONTENT=$(echo "$TOOL_INPUT" | jq -r '.tool_input.content // .tool_input.new_string // .content // .new_string // empty' 2>/dev/null)
+  FILE_PATH=$(echo "$TOOL_INPUT" | jq -r '.tool_input.file_path // .file_path // empty' 2>/dev/null)
+else
+  CONTENT=$(echo "$TOOL_INPUT" | python -c "import sys,json
+try:
+  d=json.load(sys.stdin); ti=d.get('tool_input',d) if isinstance(d,dict) else {}
+  print(ti.get('content') or ti.get('new_string') or d.get('content') or d.get('new_string') or '')
+except Exception: pass" 2>/dev/null)
+  FILE_PATH=$(echo "$TOOL_INPUT" | python -c "import sys,json
+try:
+  d=json.load(sys.stdin); ti=d.get('tool_input',d) if isinstance(d,dict) else {}
+  print(ti.get('file_path') or d.get('file_path') or '')
+except Exception: pass" 2>/dev/null)
+fi
 if [[ -z "$CONTENT" ]]; then exit 0; fi
 
 # Skip scanning known safe file types
@@ -47,7 +61,7 @@ if echo "$CONTENT" | grep -qiE '(api_key|apikey|api_secret|access_token|auth_tok
 fi
 
 # --- Private keys ---
-if echo "$CONTENT" | grep -qE '-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----'; then
+if echo "$CONTENT" | grep -qE -- '-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----'; then
   FOUND="${FOUND}\n- Private key (PEM format)"
 fi
 

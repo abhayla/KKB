@@ -70,6 +70,8 @@ fun StatsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    val context = LocalContext.current
+
     // Handle navigation events
     LaunchedEffect(Unit) {
         viewModel.navigationEvent.collect { event ->
@@ -81,6 +83,13 @@ fun StatsScreen(
                 StatsNavigationEvent.NavigateToFavorites -> onNavigateToFavorites()
                 StatsNavigationEvent.NavigateToAllAchievements -> onNavigateToAchievements()
                 StatsNavigationEvent.NavigateToFullLeaderboard -> onNavigateToLeaderboard()
+                is StatsNavigationEvent.LaunchShare -> {
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, event.text)
+                    }
+                    context.startActivity(Intent.createChooser(intent, event.chooserTitle))
+                }
             }
         }
     }
@@ -92,8 +101,6 @@ fun StatsScreen(
             viewModel.clearError()
         }
     }
-
-    val context = LocalContext.current
 
     StatsScreenContent(
         uiState = uiState,

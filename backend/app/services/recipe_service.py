@@ -19,12 +19,19 @@ from app.schemas.recipe import (
 )
 
 
-def build_recipe_response(recipe: Recipe, scale_factor: float = 1.0) -> RecipeResponse:
+def build_recipe_response(
+    recipe: Recipe,
+    scale_factor: float = 1.0,
+    rating_summary: Optional[dict] = None,
+) -> RecipeResponse:
     """Build RecipeResponse from Recipe model.
 
     Args:
         recipe: Recipe model with relations loaded
         scale_factor: Factor to scale ingredient quantities
+        rating_summary: Optional dict with keys average_rating (Optional[float]),
+            rating_count (int), user_rating (Optional[float]). When None, the
+            response reports no ratings (null/0/null).
 
     Returns:
         RecipeResponse schema
@@ -72,6 +79,14 @@ def build_recipe_response(recipe: Recipe, scale_factor: float = 1.0) -> RecipeRe
             sodium=int((recipe.nutrition.sodium_mg or 0) * scale_factor),
         )
 
+    avg_rating: Optional[float] = None
+    count: int = 0
+    user_rating_value: Optional[float] = None
+    if rating_summary is not None:
+        avg_rating = rating_summary.get("average_rating")
+        count = int(rating_summary.get("rating_count") or 0)
+        user_rating_value = rating_summary.get("user_rating")
+
     return RecipeResponse(
         id=str(recipe.id),
         name=recipe.name,
@@ -87,21 +102,71 @@ def build_recipe_response(recipe: Recipe, scale_factor: float = 1.0) -> RecipeRe
         ingredients=ingredients,
         instructions=instructions,
         nutrition=nutrition,
+        average_rating=avg_rating,
+        rating_count=count,
+        user_rating=user_rating_value,
     )
+
+
+async def _get_rating_summary(
+    db: AsyncSession,
+    recipe_id: str,
+    user_id: Optional[str] = None,
+) -> dict:
+    """Compute rating aggregates for a recipe.
+
+    Returns a dict with keys:
+      - average_rating (Optional[float]): AVG across all ratings, or None when no ratings
+      - rating_count (int): total number of ratings
+      - user_rating (Optional[float]): the given user's rating, or None when user_id
+        is not provided or the user has not rated this recipe
+    """
+    agg_row = (
+        await db.execute(
+            select(
+                func.avg(RecipeRating.rating),
+                func.count(RecipeRating.id),
+            ).where(RecipeRating.recipe_id == recipe_id)
+        )
+    ).one()
+    avg_value, count_value = agg_row
+    avg_float: Optional[float] = float(avg_value) if avg_value is not None else None
+
+    user_rating_value: Optional[float] = None
+    if user_id is not None:
+        user_rating_value = (
+            await db.execute(
+                select(RecipeRating.rating).where(
+                    RecipeRating.recipe_id == recipe_id,
+                    RecipeRating.user_id == user_id,
+                )
+            )
+        ).scalar_one_or_none()
+
+    return {
+        "average_rating": avg_float,
+        "rating_count": int(count_value or 0),
+        "user_rating": user_rating_value,
+    }
 
 
 async def get_recipe_by_id(
     db: AsyncSession,
     recipe_id: str,
+    user_id: Optional[str] = None,
 ) -> RecipeResponse:
     """Get recipe by ID.
 
     Args:
         db: Database session
         recipe_id: Recipe UUID
+        user_id: Optional requesting user UUID — when provided, the response
+            populates user_rating with that user's own rating (or null if
+            they have not rated this recipe).
 
     Returns:
-        RecipeResponse
+        RecipeResponse with average_rating, rating_count, and (when user_id
+        is provided) user_rating populated.
 
     Raises:
         NotFoundError: If recipe not found
@@ -125,7 +190,8 @@ async def get_recipe_by_id(
     if not recipe:
         raise NotFoundError("Recipe not found")
 
-    return build_recipe_response(recipe)
+    rating_summary = await _get_rating_summary(db, str(recipe_uuid), user_id)
+    return build_recipe_response(recipe, rating_summary=rating_summary)
 
 
 async def scale_recipe(

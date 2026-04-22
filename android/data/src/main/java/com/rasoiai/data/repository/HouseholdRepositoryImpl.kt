@@ -1,5 +1,6 @@
 package com.rasoiai.data.repository
 
+import android.database.sqlite.SQLiteException
 import com.rasoiai.data.local.dao.HouseholdDao
 import com.rasoiai.data.local.mapper.toDomain
 import com.rasoiai.data.local.mapper.toEntity
@@ -21,10 +22,13 @@ import com.rasoiai.domain.model.InviteCode
 import com.rasoiai.domain.model.MealPlan
 import com.rasoiai.domain.model.RecipeRule
 import com.rasoiai.domain.repository.HouseholdRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.flow
+import retrofit2.HttpException
 import timber.log.Timber
+import java.io.IOException
 import java.time.LocalDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -74,8 +78,17 @@ class HouseholdRepositoryImpl @Inject constructor(
             householdDao.replaceHouseholdWithMembers(householdEntity, memberEntities)
             Timber.i("Created household: ${response.household.id}")
             Result.success(response.toDomain())
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to create household")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: HttpException) {
+            Timber.w(e, "HTTP ${e.code()} on create household")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on create household")
+            Result.failure(e)
+        } catch (e: SQLiteException) {
+            // Guards the DAO replace path (#34). Unexpected exceptions propagate for debugging.
+            Timber.e(e, "Failed to cache created household")
             Result.failure(e)
         }
     }
@@ -96,8 +109,17 @@ class HouseholdRepositoryImpl @Inject constructor(
             householdDao.replaceHouseholdWithMembers(householdEntity, memberEntities)
             Timber.i("Updated household: $id")
             Result.success(response.toDomain())
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to update household")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: HttpException) {
+            Timber.w(e, "HTTP ${e.code()} on update household")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on update household")
+            Result.failure(e)
+        } catch (e: SQLiteException) {
+            // Guards the DAO replace path (#34).
+            Timber.e(e, "Failed to cache updated household")
             Result.failure(e)
         }
     }
@@ -108,8 +130,17 @@ class HouseholdRepositoryImpl @Inject constructor(
             householdDao.deactivateHousehold(id, LocalDateTime.now().toString())
             Timber.i("Deactivated household: $id")
             Result.success(Unit)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to deactivate household")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: HttpException) {
+            Timber.w(e, "HTTP ${e.code()} on deactivate household")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on deactivate household")
+            Result.failure(e)
+        } catch (e: SQLiteException) {
+            // Guards the DAO deactivate call (#34).
+            Timber.e(e, "Failed to cache household deactivation")
             Result.failure(e)
         }
     }
@@ -136,8 +167,17 @@ class HouseholdRepositoryImpl @Inject constructor(
             householdDao.insertMember(entity)
             Timber.i("Added member to household: $householdId")
             Result.success(entity.toDomain())
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to add member")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: HttpException) {
+            Timber.w(e, "HTTP ${e.code()} on add member")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on add member")
+            Result.failure(e)
+        } catch (e: SQLiteException) {
+            // Guards the DAO insert call (#34).
+            Timber.e(e, "Failed to cache added member")
             Result.failure(e)
         }
     }
@@ -163,8 +203,17 @@ class HouseholdRepositoryImpl @Inject constructor(
             householdDao.updateMember(entity)
             Timber.i("Updated member: $memberId")
             Result.success(entity.toDomain())
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to update member")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: HttpException) {
+            Timber.w(e, "HTTP ${e.code()} on update member")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on update member")
+            Result.failure(e)
+        } catch (e: SQLiteException) {
+            // Guards the DAO update call (#34).
+            Timber.e(e, "Failed to cache updated member")
             Result.failure(e)
         }
     }
@@ -175,8 +224,17 @@ class HouseholdRepositoryImpl @Inject constructor(
             householdDao.deleteMember(memberId)
             Timber.i("Removed member: $memberId")
             Result.success(Unit)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to remove member")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: HttpException) {
+            Timber.w(e, "HTTP ${e.code()} on remove member")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on remove member")
+            Result.failure(e)
+        } catch (e: SQLiteException) {
+            // Guards the DAO delete call (#34).
+            Timber.e(e, "Failed to cache removed member")
             Result.failure(e)
         }
     }
@@ -198,8 +256,17 @@ class HouseholdRepositoryImpl @Inject constructor(
                     expiresAt = LocalDateTime.parse(response.expiresAt)
                 )
             )
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to refresh invite code")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: HttpException) {
+            Timber.w(e, "HTTP ${e.code()} on refresh invite code")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on refresh invite code")
+            Result.failure(e)
+        } catch (e: SQLiteException) {
+            // Guards the DAO invite-code update (#34).
+            Timber.e(e, "Failed to cache refreshed invite code")
             Result.failure(e)
         }
     }
@@ -212,8 +279,17 @@ class HouseholdRepositoryImpl @Inject constructor(
             householdDao.replaceHouseholdWithMembers(householdEntity, memberEntities)
             Timber.i("Joined household: ${response.household.id}")
             Result.success(response.toDomain())
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to join household")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: HttpException) {
+            Timber.w(e, "HTTP ${e.code()} on join household")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on join household")
+            Result.failure(e)
+        } catch (e: SQLiteException) {
+            // Guards the DAO replace path (#34).
+            Timber.e(e, "Failed to cache joined household")
             Result.failure(e)
         }
     }
@@ -224,8 +300,17 @@ class HouseholdRepositoryImpl @Inject constructor(
             householdDao.deleteHousehold(householdId)
             Timber.i("Left household: $householdId")
             Result.success(Unit)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to leave household")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: HttpException) {
+            Timber.w(e, "HTTP ${e.code()} on leave household")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on leave household")
+            Result.failure(e)
+        } catch (e: SQLiteException) {
+            // Guards the DAO delete call (#34).
+            Timber.e(e, "Failed to cache household deletion")
             Result.failure(e)
         }
     }
@@ -241,8 +326,14 @@ class HouseholdRepositoryImpl @Inject constructor(
             )
             Timber.i("Transferred ownership to: $newOwnerMemberId")
             Result.success(Unit)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to transfer ownership")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: HttpException) {
+            // API-only path (#34): no DAO call here.
+            Timber.w(e, "HTTP ${e.code()} on transfer ownership")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on transfer ownership")
             Result.failure(e)
         }
     }
@@ -255,8 +346,14 @@ class HouseholdRepositoryImpl @Inject constructor(
             emit(response.rules.map { dto ->
                 dto.toEntity().toDomain()
             })
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get household recipe rules")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: HttpException) {
+            // API-only flow (#34): emit empty fallback on expected HTTP failures only.
+            Timber.w(e, "HTTP ${e.code()} on get household recipe rules")
+            emit(emptyList())
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on get household recipe rules")
             emit(emptyList())
         }
     }
@@ -268,8 +365,14 @@ class HouseholdRepositoryImpl @Inject constructor(
             val items = response.toItemEntities()
             val festivals = response.toFestivalEntities()
             emit(entity.toDomain(items, festivals))
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get household meal plan")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: HttpException) {
+            // API-only flow (#34): emit null fallback on expected HTTP failures only.
+            Timber.w(e, "HTTP ${e.code()} on get household meal plan")
+            emit(null)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on get household meal plan")
             emit(null)
         }
     }
@@ -279,8 +382,14 @@ class HouseholdRepositoryImpl @Inject constructor(
             try {
                 val response = apiService.getHouseholdNotifications(householdId)
                 emit(response.map { it.toDomain() })
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get household notifications")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: HttpException) {
+                // API-only flow (#34): emit empty fallback on expected HTTP failures only.
+                Timber.w(e, "HTTP ${e.code()} on get household notifications")
+                emit(emptyList())
+            } catch (e: IOException) {
+                Timber.w(e, "Network error on get household notifications")
                 emit(emptyList())
             }
         }
@@ -292,8 +401,14 @@ class HouseholdRepositoryImpl @Inject constructor(
         return try {
             val response = apiService.getHouseholdStats(householdId, month)
             Result.success(response.toDomain())
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get household stats")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: HttpException) {
+            // API-only path (#34): no DAO call here.
+            Timber.w(e, "HTTP ${e.code()} on get household stats")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on get household stats")
             Result.failure(e)
         }
     }
@@ -305,8 +420,17 @@ class HouseholdRepositoryImpl @Inject constructor(
                 ?: return Result.failure(IllegalStateException("No active household"))
             apiService.markHouseholdNotificationRead(household.id, notificationId)
             Result.success(Unit)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to mark notification read")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: HttpException) {
+            Timber.w(e, "HTTP ${e.code()} on mark notification read")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on mark notification read")
+            Result.failure(e)
+        } catch (e: SQLiteException) {
+            // Guards the getActiveHouseholdSync() DAO read (#34).
+            Timber.e(e, "Failed to read active household for notification")
             Result.failure(e)
         }
     }

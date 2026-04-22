@@ -9,6 +9,7 @@ import com.rasoiai.data.remote.mapper.toDomain
 import com.rasoiai.data.remote.mapper.toUser
 import com.rasoiai.domain.model.User
 import com.rasoiai.domain.repository.AuthRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -79,14 +80,13 @@ class AuthRepositoryImpl @Inject constructor(
 
             Timber.i("Successfully authenticated user: ${user.email}")
             Result.success(user)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: retrofit2.HttpException) {
             Timber.w(e, "HTTP ${e.code()} on Firebase token exchange")
             Result.failure(e)
         } catch (e: IOException) {
             Timber.w(e, "Network error on Firebase token exchange")
-            Result.failure(e)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to exchange Firebase token for backend JWT")
             Result.failure(e)
         }
     }
@@ -100,11 +100,10 @@ class AuthRepositoryImpl @Inject constructor(
 
             Timber.i("User signed out successfully")
             Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: IOException) {
-            Timber.w(e, "IO error on sign out")
-            Result.failure(e)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to sign out")
+            Timber.w(e, "Network error on sign out")
             Result.failure(e)
         }
     }
@@ -146,14 +145,13 @@ class AuthRepositoryImpl @Inject constructor(
 
             Timber.i("Successfully refreshed access token")
             Result.success(response.accessToken)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: retrofit2.HttpException) {
             Timber.w(e, "HTTP ${e.code()} on token refresh")
             Result.failure(e)
         } catch (e: IOException) {
             Timber.w(e, "Network error on token refresh")
-            Result.failure(e)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to refresh token")
             Result.failure(e)
         }
     }
@@ -173,14 +171,13 @@ class AuthRepositoryImpl @Inject constructor(
             val user = userResponse.toDomain()
             _currentUser.value = user
             Result.success(user)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: retrofit2.HttpException) {
             Timber.w(e, "HTTP ${e.code()} on load current user")
             Result.failure(e)
         } catch (e: IOException) {
             Timber.w(e, "Network error on load current user")
-            Result.failure(e)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to load current user")
             Result.failure(e)
         }
     }
