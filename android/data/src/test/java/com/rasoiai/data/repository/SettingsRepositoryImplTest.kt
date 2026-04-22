@@ -3,6 +3,7 @@ package com.rasoiai.data.repository
 import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.database.sqlite.SQLiteException
 import app.cash.turbine.test
 import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.data.local.datastore.UserPreferencesDataStore
@@ -43,6 +44,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsRepositoryImplTest {
@@ -243,8 +245,9 @@ class SettingsRepositoryImplTest {
         @Test
         @DisplayName("Should preserve preferences in DataStore even if queue insert fails")
         fun `should preserve preferences in DataStore even if queue insert fails`() = runTest {
-            // Given
-            coEvery { mockOfflineQueueDao.insertAction(any()) } throws RuntimeException("DB error")
+            // Given — realistic DB error. Issue #34 kept queuePreferencesSync's broad catch
+            // (documented fire-and-forget side-effect helper) so the SQLiteException is swallowed.
+            coEvery { mockOfflineQueueDao.insertAction(any()) } throws SQLiteException("DB error")
 
             // When
             val result = repository.updateUserPreferences(testPreferences)
@@ -393,10 +396,16 @@ class SettingsRepositoryImplTest {
         }
 
         @Test
-        @DisplayName("Should return default version on error")
-        fun `should return default version on error`() {
-            // Given
-            every { mockContext.packageManager } throws RuntimeException("Error")
+        @DisplayName("Should return default version when package not found")
+        fun `should return default version when package not found`() {
+            // Given — realistic PackageManager error. Issue #34 narrowed broad catch so bare
+            // RuntimeException now propagates; NameNotFoundException is the documented failure mode.
+            val mockPackageManager = mockk<PackageManager>()
+            every { mockContext.packageManager } returns mockPackageManager
+            every { mockContext.packageName } returns "com.rasoiai.app"
+            every {
+                mockPackageManager.getPackageInfo("com.rasoiai.app", 0)
+            } throws PackageManager.NameNotFoundException("com.rasoiai.app")
 
             // When
             val version = repository.getAppVersion()
@@ -470,6 +479,252 @@ class SettingsRepositoryImplTest {
                 fail("Expected CancellationException to propagate, got Result wrapper instead")
             } catch (e: CancellationException) {
                 assertEquals("cancelled", e.message)
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Unexpected exception propagation (issue #34)")
+    inner class UnexpectedExceptionPropagation {
+
+        private val newMember = FamilyMember(
+            id = "",
+            name = "New Member",
+            type = MemberType.ADULT,
+            age = 25,
+            specialNeeds = emptyList()
+        )
+
+        // ---- updateDarkMode ----
+
+        @Test
+        @DisplayName("updateDarkMode propagates IllegalStateException instead of wrapping")
+        fun `updateDarkMode propagates IllegalStateException`() = runTest {
+            every { mockUserPreferencesDataStore.appSettings } returns flowOf(AppSettings())
+            coEvery { mockUserPreferencesDataStore.saveAppSettings(any()) } throws IllegalStateException("unexpected")
+            try {
+                repository.updateDarkMode(DarkModePreference.DARK)
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("updateDarkMode wraps IOException in Result.failure")
+        fun `updateDarkMode wraps IOException`() = runTest {
+            every { mockUserPreferencesDataStore.appSettings } returns flowOf(AppSettings())
+            coEvery { mockUserPreferencesDataStore.saveAppSettings(any()) } throws IOException("disk full")
+
+            val result = repository.updateDarkMode(DarkModePreference.DARK)
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is IOException)
+        }
+
+        // ---- updateNotifications ----
+
+        @Test
+        @DisplayName("updateNotifications propagates IllegalStateException instead of wrapping")
+        fun `updateNotifications propagates IllegalStateException`() = runTest {
+            every { mockUserPreferencesDataStore.appSettings } returns flowOf(AppSettings())
+            coEvery { mockUserPreferencesDataStore.saveAppSettings(any()) } throws IllegalStateException("unexpected")
+            try {
+                repository.updateNotifications(false)
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        // ---- updateUserPreferences ----
+
+        @Test
+        @DisplayName("updateUserPreferences propagates IllegalStateException instead of wrapping")
+        fun `updateUserPreferences propagates IllegalStateException`() = runTest {
+            coEvery {
+                mockUserPreferencesDataStore.saveOnboardingComplete(any())
+            } throws IllegalStateException("unexpected")
+            try {
+                repository.updateUserPreferences(testPreferences)
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("updateUserPreferences wraps IOException in Result.failure")
+        fun `updateUserPreferences wraps IOException`() = runTest {
+            coEvery {
+                mockUserPreferencesDataStore.saveOnboardingComplete(any())
+            } throws IOException("disk full")
+
+            val result = repository.updateUserPreferences(testPreferences)
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is IOException)
+        }
+
+        // ---- queuePreferencesSync (retained broad catch — side-effect helper) ----
+
+        @Test
+        @DisplayName("queuePreferencesSync swallows SQLiteException (retained broad catch; best-effort queue insert)")
+        fun `queuePreferencesSync swallows SQLiteException`() = runTest {
+            // queuePreferencesSync is private; exercise via updateUserPreferences where DataStore
+            // save succeeds but queue insert fails. The caller's work must still be considered successful.
+            coEvery { mockOfflineQueueDao.insertAction(any()) } throws SQLiteException("disk full")
+
+            val result = repository.updateUserPreferences(testPreferences)
+
+            assertTrue(result.isSuccess)
+            coVerify { mockUserPreferencesDataStore.saveOnboardingComplete(testPreferences) }
+        }
+
+        // ---- addFamilyMember ----
+
+        @Test
+        @DisplayName("addFamilyMember propagates IllegalStateException instead of wrapping")
+        fun `addFamilyMember propagates IllegalStateException`() = runTest {
+            every { mockUserPreferencesDataStore.userPreferences } returns flowOf(testPreferences)
+            coEvery {
+                mockUserPreferencesDataStore.saveOnboardingComplete(any())
+            } throws IllegalStateException("unexpected")
+            try {
+                repository.addFamilyMember(newMember)
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("addFamilyMember wraps IOException in Result.failure")
+        fun `addFamilyMember wraps IOException`() = runTest {
+            every { mockUserPreferencesDataStore.userPreferences } returns flowOf(testPreferences)
+            coEvery {
+                mockUserPreferencesDataStore.saveOnboardingComplete(any())
+            } throws IOException("disk full")
+
+            val result = repository.addFamilyMember(newMember)
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is IOException)
+        }
+
+        // ---- updateFamilyMember ----
+
+        @Test
+        @DisplayName("updateFamilyMember propagates IllegalStateException instead of wrapping")
+        fun `updateFamilyMember propagates IllegalStateException`() = runTest {
+            every { mockUserPreferencesDataStore.userPreferences } returns flowOf(testPreferences)
+            coEvery {
+                mockUserPreferencesDataStore.saveOnboardingComplete(any())
+            } throws IllegalStateException("unexpected")
+            val updatedMember = testPreferences.familyMembers.first().copy(name = "Updated")
+            try {
+                repository.updateFamilyMember(updatedMember)
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        // ---- removeFamilyMember ----
+
+        @Test
+        @DisplayName("removeFamilyMember propagates IllegalStateException instead of wrapping")
+        fun `removeFamilyMember propagates IllegalStateException`() = runTest {
+            every { mockUserPreferencesDataStore.userPreferences } returns flowOf(testPreferences)
+            coEvery {
+                mockUserPreferencesDataStore.saveOnboardingComplete(any())
+            } throws IllegalStateException("unexpected")
+            try {
+                repository.removeFamilyMember("member-1")
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        // ---- updateAppSettings ----
+
+        @Test
+        @DisplayName("updateAppSettings propagates IllegalStateException instead of wrapping")
+        fun `updateAppSettings propagates IllegalStateException`() = runTest {
+            coEvery {
+                mockUserPreferencesDataStore.saveAppSettings(any())
+            } throws IllegalStateException("unexpected")
+            try {
+                repository.updateAppSettings(AppSettings())
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("updateAppSettings wraps IOException in Result.failure")
+        fun `updateAppSettings wraps IOException`() = runTest {
+            coEvery {
+                mockUserPreferencesDataStore.saveAppSettings(any())
+            } throws IOException("disk full")
+
+            val result = repository.updateAppSettings(AppSettings())
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is IOException)
+        }
+
+        // ---- signOut ----
+
+        @Test
+        @DisplayName("signOut propagates IllegalStateException instead of wrapping")
+        fun `signOut propagates IllegalStateException`() = runTest {
+            coEvery {
+                mockUserPreferencesDataStore.clearPreferences()
+            } throws IllegalStateException("unexpected")
+            try {
+                repository.signOut()
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        // ---- getAppVersion ----
+
+        @Test
+        @DisplayName("getAppVersion propagates IllegalStateException instead of returning default")
+        fun `getAppVersion propagates IllegalStateException`() {
+            every { mockContext.packageManager } throws IllegalStateException("unexpected")
+            try {
+                repository.getAppVersion()
+                fail("Expected IllegalStateException to propagate, got default value instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        // ---- updateMealGenerationSettings ----
+
+        @Test
+        @DisplayName("updateMealGenerationSettings propagates IllegalStateException instead of wrapping")
+        fun `updateMealGenerationSettings propagates IllegalStateException`() = runTest {
+            every { mockUserPreferencesDataStore.userPreferences } returns flowOf(testPreferences)
+            coEvery {
+                mockUserPreferencesDataStore.saveOnboardingComplete(any())
+            } throws IllegalStateException("unexpected")
+            try {
+                repository.updateMealGenerationSettings(
+                    itemsPerMeal = 3,
+                    strictAllergenMode = null,
+                    strictDietaryMode = null,
+                    allowRecipeRepeat = null
+                )
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
             }
         }
     }

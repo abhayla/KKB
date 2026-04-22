@@ -1,6 +1,7 @@
 package com.rasoiai.data.repository
 
 import android.content.Context
+import android.content.pm.PackageManager
 import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.data.local.dao.OfflineQueueDao
 import com.rasoiai.data.local.datastore.UserPreferencesDataStoreInterface
@@ -81,10 +82,7 @@ class SettingsRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Timber.w(e, "IO error updating dark mode")
-            Result.failure(e)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to update dark mode")
+            Timber.w(e, "Network error on update dark mode")
             Result.failure(e)
         }
     }
@@ -98,10 +96,7 @@ class SettingsRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Timber.w(e, "IO error updating notifications")
-            Result.failure(e)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to update notifications")
+            Timber.w(e, "Network error on update notifications")
             Result.failure(e)
         }
     }
@@ -119,10 +114,7 @@ class SettingsRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Timber.w(e, "IO error updating user preferences")
-            Result.failure(e)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to update user preferences")
+            Timber.w(e, "Network error on update user preferences")
             Result.failure(e)
         }
     }
@@ -141,6 +133,10 @@ class SettingsRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            // Broad catch intentional (#34): fire-and-forget side-effect helper. A failed queue
+            // insert (SQLite, serialization, etc.) must not invalidate the caller's already-
+            // completed DataStore write (updateUserPreferences, addFamilyMember, ...).
+            // Cancellation rethrown above.
             Timber.w(e, "Failed to queue preferences sync, saved locally only")
         }
     }
@@ -174,10 +170,7 @@ class SettingsRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Timber.w(e, "IO error adding family member")
-            Result.failure(e)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to add family member")
+            Timber.w(e, "Network error on add family member")
             Result.failure(e)
         }
     }
@@ -202,10 +195,7 @@ class SettingsRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Timber.w(e, "IO error updating family member")
-            Result.failure(e)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to update family member")
+            Timber.w(e, "Network error on update family member")
             Result.failure(e)
         }
     }
@@ -232,10 +222,7 @@ class SettingsRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Timber.w(e, "IO error removing family member")
-            Result.failure(e)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to remove family member")
+            Timber.w(e, "Network error on remove family member")
             Result.failure(e)
         }
     }
@@ -248,10 +235,7 @@ class SettingsRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Timber.w(e, "IO error updating app settings")
-            Result.failure(e)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to update app settings")
+            Timber.w(e, "Network error on update app settings")
             Result.failure(e)
         }
     }
@@ -268,10 +252,7 @@ class SettingsRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Timber.w(e, "IO error on sign out")
-            Result.failure(e)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to sign out")
+            Timber.w(e, "Network error on sign out")
             Result.failure(e)
         }
     }
@@ -282,7 +263,8 @@ class SettingsRepositoryImpl @Inject constructor(
             packageInfo.versionName ?: "1.0.0"
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: PackageManager.NameNotFoundException) {
+            Timber.w(e, "Package name not found, falling back to default version")
             "1.0.0"
         }
     }
@@ -309,10 +291,7 @@ class SettingsRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            Timber.w(e, "IO error updating meal generation settings")
-            Result.failure(e)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to update meal generation settings")
+            Timber.w(e, "Network error on update meal generation settings")
             Result.failure(e)
         }
     }
