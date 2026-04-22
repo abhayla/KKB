@@ -17,7 +17,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import android.database.sqlite.SQLiteConstraintException
+import android.database.sqlite.SQLiteException
+import retrofit2.HttpException
 import timber.log.Timber
+import java.io.IOException
 import java.time.LocalDate
 import java.util.UUID
 import javax.inject.Inject
@@ -88,7 +91,7 @@ class PantryRepositoryImpl @Inject constructor(
         } catch (e: SQLiteConstraintException) {
             Timber.w(e, "Constraint violation adding pantry item")
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to add pantry item")
             Result.failure(e)
         }
@@ -123,7 +126,7 @@ class PantryRepositoryImpl @Inject constructor(
         } catch (e: SQLiteConstraintException) {
             Timber.w(e, "Constraint violation adding scanned items")
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to add items from scan")
             Result.failure(e)
         }
@@ -139,7 +142,7 @@ class PantryRepositoryImpl @Inject constructor(
         } catch (e: SQLiteConstraintException) {
             Timber.w(e, "Constraint violation updating pantry item")
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to update pantry item")
             Result.failure(e)
         }
@@ -155,7 +158,7 @@ class PantryRepositoryImpl @Inject constructor(
         } catch (e: SQLiteConstraintException) {
             Timber.w(e, "Constraint violation removing pantry item")
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to remove pantry item")
             Result.failure(e)
         }
@@ -171,7 +174,7 @@ class PantryRepositoryImpl @Inject constructor(
         } catch (e: SQLiteConstraintException) {
             Timber.w(e, "Constraint violation removing expired items")
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to remove expired items")
             Result.failure(e)
         }
@@ -218,7 +221,7 @@ class PantryRepositoryImpl @Inject constructor(
             Result.success(matchingCount)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to calculate matching recipe count")
             // Return estimated count based on pantry size
             try {
@@ -226,7 +229,7 @@ class PantryRepositoryImpl @Inject constructor(
                 Result.success(itemCount * 2) // Rough estimate
             } catch (e2: CancellationException) {
                 throw e2
-            } catch (e2: Exception) {
+            } catch (e2: SQLiteException) {
                 Result.failure(e)
             }
         }
@@ -254,8 +257,11 @@ class PantryRepositoryImpl @Inject constructor(
             Result.success(items)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            Timber.e(e, "Photo analysis failed")
+        } catch (e: HttpException) {
+            Timber.w(e, "HTTP ${e.code()} on analyze photo")
+            Result.failure(e)
+        } catch (e: IOException) {
+            Timber.w(e, "Network error on analyze photo")
             Result.failure(e)
         }
     }
