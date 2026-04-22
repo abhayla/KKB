@@ -114,19 +114,9 @@ jobs:
         # emulator would fail at the first HTTP call. Local dev and manual
         # test runs still use ./gradlew :app:connectedDebugAndroidTest (no
         # filter) against a running backend.
-        #
-        # API level: 34 to match local dev (see android/CLAUDE.md — "Use
-        # API 34 locally"). API 29 is known to be unreliable for mockk-android
-        # 1.13.x (JvmMockKGateway NoClassDefFoundError across the 11
-        # presentation.settings.screens.* tests regardless of 1.13.9 vs 1.13.13)
-        # and renders LazyColumn items below the fold on the smaller screen
-        # (causing "performScrollTo" / "not displayed" assertion failures in
-        # HomeScreen, PantryScreen, HouseholdScreen). API 34 resolves both
-        # without touching test code.
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: 29
           arch: x86_64
-          target: google_apis
           working-directory: android
           script: ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.notPackage=com.rasoiai.app.e2e
