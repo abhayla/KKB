@@ -5,11 +5,11 @@
 
 ## Current Task
 
-Loop iteration on 2026-04-22 — PR #89 follow-on work. Issue #34 (broad exception handling in repositories) implemented for the two production files listed in the issue body, plus extended to ChatRepositoryImpl as #34-spirit follow-up. Branch is now 60 commits.
+Loop iteration on 2026-04-22 — PR #89 follow-on work. Issue #34 (broad exception handling in repositories) now extended to MealPlanRepositoryImpl as the fourth sibling in the sweep.
 
 ### Pending
 
-- [ ] **#34 sweep extension to remaining 9 files** (optional) — ~105 broad `catch (e: Exception)` instances remain across MealPlanRepositoryImpl, HouseholdRepositoryImpl, RecipeRulesRepositoryImpl, NotificationRepositoryImpl, AuthRepositoryImpl, GroceryRepositoryImpl, SettingsRepositoryImpl, PantryRepositoryImpl, StatsRepositoryImpl. Same TDD pattern (RED test → narrow to typed catch → GREEN). MealPlanRepositoryImpl (17 catches) is the largest single target if continuing.
+- [ ] **#34 sweep extension to remaining 8 files** (optional) — ~88 broad `catch (e: Exception)` instances remain across HouseholdRepositoryImpl, RecipeRulesRepositoryImpl, NotificationRepositoryImpl, AuthRepositoryImpl, GroceryRepositoryImpl, SettingsRepositoryImpl, PantryRepositoryImpl, StatsRepositoryImpl. Same TDD pattern (RED test → narrow to typed catch → GREEN).
 
 See "Blocked" below for items still requiring user/emulator action.
 
@@ -18,6 +18,7 @@ See "Blocked" below for items still requiring user/emulator action.
 - [x] **#34 FavoritesRepositoryImpl exception narrowing** (605ee1b) — 7 broad `catch (e: Exception)` → `catch (e: SQLiteException)`. 9 new TDD tests (7 propagation + 2 contract). All 28 tests in file pass.
 - [x] **#34 RecipeRepositoryImpl exception narrowing** (68598b7) — 14 broad catches narrowed to HttpException/IOException/SQLiteException by call type. Inner forEach swallows removed (fetchAndCacheRecipe handles known errors). 6 new TDD tests + 1 pre-existing test updated to assert new contract. All 23 tests in file pass.
 - [x] **#34 ChatRepositoryImpl exception narrowing** (b49ce01) — 3 of 4 broad catches narrowed (SQLiteException for DB, dropped outer for sendImageMessage). compressAndEncodeImage broad catch retained with documented justification (BitmapFactory/Base64 exception diversity). 4 new TDD tests + 2 pre-existing tests rewritten (one was passing for the wrong reason via `Uri.parse` RuntimeException being silently wrapped). Full `:data:testDebugUnitTest` green (360 tests).
+- [x] **#34 MealPlanRepositoryImpl exception narrowing** (pending commit) — 12 of 17 broad catches narrowed: 8 outers → SQLiteException (generateMealPlan, swapMeal, setMealLockState, removeRecipeFromMeal, addRecipeToMeal, syncMealPlans, fetchAndCacheMealPlan, setDayLockState, setMealTypeLockState — note fetchAndCacheMealPlan returns null not Result), 3 inner sync-to-server catches → HttpException (setMealLockState, removeRecipeFromMeal, syncMealPlans per-plan loop). 5 inner side-effect broad catches around `recipeRepository.prefetchRecipes` and `groceryRepository.generateFromMealPlan` intentionally retained with inline `#34` justification per ChatRepositoryImpl `compressAndEncodeImage` precedent — these are fire-and-forget side effects that must not invalidate the already-persisted meal plan. 13 new TDD tests (8 propagation + 5 SQLiteException-wrap contract) + 2 pre-existing tests updated (`generateMealPlan API error` + `syncMealPlans continue on fail` now throw realistic `retrofit2.HttpException` instead of `RuntimeException` — the old tests were passing via broad swallowing). 34/34 MealPlanRepositoryImplTest tests pass, full `:data:testDebugUnitTest` green.
 
 ## Completed (2026-04-21 loop iteration)
 
