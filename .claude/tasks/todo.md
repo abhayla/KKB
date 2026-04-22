@@ -5,13 +5,20 @@
 
 ## Current Task
 
-Loop iteration on 2026-04-21 — PR #89 follow-on work. This session added 7 commits to PR #89 (56 commits total on the branch). All autonomous actionable work is complete; remaining open issues require emulator, user credentials, or user authorisation.
+Loop iteration on 2026-04-22 — PR #89 follow-on work. Issue #34 (broad exception handling in repositories) implemented for the two production files listed in the issue body. Branch is now 58 commits.
 
 ### Pending
 
-_None autonomously actionable._ See "Blocked" below.
+- [ ] **#34 sweep extension** (optional) — 10 other repository files contain ~115 broad `catch (e: Exception)` instances not in the issue's literal scope. Same TDD pattern would apply.
 
-## Completed (this session)
+See "Blocked" below for items still requiring user/emulator action.
+
+## Completed (2026-04-22 loop iteration)
+
+- [x] **#34 FavoritesRepositoryImpl exception narrowing** (605ee1b) — 7 broad `catch (e: Exception)` → `catch (e: SQLiteException)`. 9 new TDD tests (7 propagation + 2 contract). All 28 tests in file pass.
+- [x] **#34 RecipeRepositoryImpl exception narrowing** (68598b7) — 14 broad catches narrowed to HttpException/IOException/SQLiteException by call type. Inner forEach swallows removed (fetchAndCacheRecipe handles known errors). 6 new TDD tests + 1 pre-existing test updated to assert new contract. All 23 tests in file pass; full `:data:testDebugUnitTest` green.
+
+## Completed (2026-04-21 loop iteration)
 
 - [x] **Commit Room v15.json schema** (5d200ed) — completes MIGRATION_14_15.
 - [x] **Verify #27 + #28 nav** — both wired already, draft close notes prepared.
