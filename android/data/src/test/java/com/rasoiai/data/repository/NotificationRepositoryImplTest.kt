@@ -1,5 +1,6 @@
 package com.rasoiai.data.repository
 
+import android.database.sqlite.SQLiteException
 import app.cash.turbine.test
 import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.data.local.dao.NotificationDao
@@ -35,6 +36,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import retrofit2.HttpException
+import retrofit2.Response
 import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -379,10 +382,13 @@ class NotificationRepositoryImplTest {
         }
 
         @Test
-        @DisplayName("queues sync when API call throws generic exception")
-        fun queuesSyncOnGenericError() = runTest {
+        @DisplayName("queues sync when API call throws HttpException (server error)")
+        fun queuesSyncOnHttpError() = runTest {
             every { mockNetworkMonitor.isOnline } returns flowOf(true)
-            coEvery { mockApiService.markNotificationAsRead("notif-1") } throws RuntimeException("Server error")
+            // Realistic API error — issue #34 narrowed broad catch so bare RuntimeException now propagates.
+            coEvery { mockApiService.markNotificationAsRead("notif-1") } throws HttpException(
+                Response.error<Any>(500, okhttp3.ResponseBody.create(null, ""))
+            )
 
             val result = repository.markAsRead("notif-1")
 
@@ -529,14 +535,15 @@ class NotificationRepositoryImplTest {
         }
 
         @Test
-        @DisplayName("returns failure when DAO throws")
+        @DisplayName("returns failure when DAO throws SQLiteException")
         fun returnsFailureOnDaoError() = runTest {
-            coEvery { mockNotificationDao.deleteAllNotifications() } throws RuntimeException("DB error")
+            // Realistic DB error — issue #34 narrowed broad catch so bare RuntimeException now propagates.
+            coEvery { mockNotificationDao.deleteAllNotifications() } throws SQLiteException("DB error")
 
             val result = repository.deleteAllNotifications()
 
             assertTrue(result.isFailure)
-            assertEquals("DB error", result.exceptionOrNull()!!.message)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
         }
     }
 
@@ -647,11 +654,12 @@ class NotificationRepositoryImplTest {
         }
 
         @Test
-        @DisplayName("does not throw when DAO fails")
+        @DisplayName("does not throw when DAO fails with SQLiteException")
         fun doesNotThrowOnDaoError() = runTest {
-            coEvery { mockNotificationDao.deleteExpiredNotifications(any()) } throws RuntimeException("DB error")
+            // Realistic DB error — issue #34 narrowed broad catch so bare RuntimeException now propagates.
+            coEvery { mockNotificationDao.deleteExpiredNotifications(any()) } throws SQLiteException("DB error")
 
-            // Should not throw — cleanupNotifications catches exceptions internally
+            // Should not throw — cleanupNotifications catches SQLiteException internally (best-effort cleanup)
             repository.cleanupNotifications()
         }
     }
@@ -849,6 +857,351 @@ class NotificationRepositoryImplTest {
             } catch (e: CancellationException) {
                 assertEquals("cancelled", e.message)
             }
+        }
+    }
+
+    @Nested
+    @DisplayName("Unexpected exception propagation (issue #34)")
+    inner class UnexpectedExceptionPropagation {
+
+        private fun http500() = HttpException(
+            Response.error<Any>(500, okhttp3.ResponseBody.create(null, ""))
+        )
+
+        // ---- markAsRead ----
+
+        @Test
+        @DisplayName("markAsRead propagates IllegalStateException instead of wrapping")
+        fun `markAsRead propagates IllegalStateException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.markNotificationAsRead("notif-1") } throws IllegalStateException("unexpected")
+            try {
+                repository.markAsRead("notif-1")
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("markAsRead wraps SQLiteException (DAO write failure) in Result.failure")
+        fun `markAsRead wraps SQLiteException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockNotificationDao.markAsRead("notif-1") } throws SQLiteException("disk full")
+
+            val result = repository.markAsRead("notif-1")
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
+        }
+
+        @Test
+        @DisplayName("markAsRead queues on HttpException from API (inner catch)")
+        fun `markAsRead queues on HttpException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.markNotificationAsRead("notif-1") } throws http500()
+
+            val result = repository.markAsRead("notif-1")
+
+            assertTrue(result.isSuccess)
+            coVerify { mockOfflineQueueDao.insertAction(any()) }
+        }
+
+        // ---- markAllAsRead ----
+
+        @Test
+        @DisplayName("markAllAsRead propagates IllegalStateException instead of wrapping")
+        fun `markAllAsRead propagates IllegalStateException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.markAllNotificationsAsRead() } throws IllegalStateException("unexpected")
+            try {
+                repository.markAllAsRead()
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("markAllAsRead succeeds on HttpException from API (inner catch swallows)")
+        fun `markAllAsRead swallows HttpException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.markAllNotificationsAsRead() } throws http500()
+
+            val result = repository.markAllAsRead()
+
+            assertTrue(result.isSuccess)
+            coVerify { mockNotificationDao.markAllAsRead() }
+        }
+
+        @Test
+        @DisplayName("markAllAsRead wraps SQLiteException (DAO write failure) in Result.failure")
+        fun `markAllAsRead wraps SQLiteException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(false)
+            coEvery { mockNotificationDao.markAllAsRead() } throws SQLiteException("disk full")
+
+            val result = repository.markAllAsRead()
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
+        }
+
+        // ---- deleteNotification ----
+
+        @Test
+        @DisplayName("deleteNotification propagates IllegalStateException instead of wrapping")
+        fun `deleteNotification propagates IllegalStateException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.deleteNotification("notif-1") } throws IllegalStateException("unexpected")
+            try {
+                repository.deleteNotification("notif-1")
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("deleteNotification queues on HttpException from API (inner catch)")
+        fun `deleteNotification queues on HttpException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.deleteNotification("notif-1") } throws http500()
+
+            val result = repository.deleteNotification("notif-1")
+
+            assertTrue(result.isSuccess)
+            coVerify { mockOfflineQueueDao.insertAction(any()) }
+        }
+
+        // ---- deleteAllNotifications ----
+
+        @Test
+        @DisplayName("deleteAllNotifications propagates IllegalStateException instead of wrapping")
+        fun `deleteAllNotifications propagates IllegalStateException`() = runTest {
+            coEvery { mockNotificationDao.deleteAllNotifications() } throws IllegalStateException("unexpected")
+            try {
+                repository.deleteAllNotifications()
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        // ---- refreshNotifications ----
+
+        @Test
+        @DisplayName("refreshNotifications propagates IllegalStateException instead of wrapping")
+        fun `refreshNotifications propagates IllegalStateException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.getNotifications() } throws IllegalStateException("unexpected")
+            try {
+                repository.refreshNotifications()
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("refreshNotifications wraps SQLiteException (insert failure) in Result.failure")
+        fun `refreshNotifications wraps SQLiteException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.getNotifications() } returns emptyNotificationsResponse
+            coEvery { mockNotificationDao.insertNotifications(any()) } throws SQLiteException("disk full")
+
+            val result = repository.refreshNotifications()
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
+        }
+
+        // ---- cleanupNotifications ----
+
+        @Test
+        @DisplayName("cleanupNotifications propagates IllegalStateException instead of swallowing")
+        fun `cleanupNotifications propagates IllegalStateException`() = runTest {
+            coEvery { mockNotificationDao.deleteExpiredNotifications(any()) } throws IllegalStateException("unexpected")
+            try {
+                repository.cleanupNotifications()
+                fail("Expected IllegalStateException to propagate, got silent swallow instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        // ---- registerFcmToken ----
+
+        @Test
+        @DisplayName("registerFcmToken propagates IllegalStateException instead of wrapping")
+        fun `registerFcmToken propagates IllegalStateException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.registerFcmToken(any()) } throws IllegalStateException("unexpected")
+            try {
+                repository.registerFcmToken("fcm-token-xyz")
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("registerFcmToken queues on HttpException from API (inner catch)")
+        fun `registerFcmToken queues on HttpException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.registerFcmToken(any()) } throws http500()
+
+            val result = repository.registerFcmToken("fcm-token-xyz")
+
+            assertTrue(result.isSuccess)
+            coVerify { mockOfflineQueueDao.insertAction(any()) }
+        }
+
+        // ---- unregisterFcmToken ----
+
+        @Test
+        @DisplayName("unregisterFcmToken propagates IllegalStateException instead of wrapping")
+        fun `unregisterFcmToken propagates IllegalStateException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockApiService.unregisterFcmToken(any()) } throws IllegalStateException("unexpected")
+            try {
+                repository.unregisterFcmToken("fcm-token-xyz")
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        // ---- processOfflineQueue ----
+
+        @Test
+        @DisplayName("processOfflineQueue propagates IllegalStateException from per-action API call")
+        fun `processOfflineQueue propagates IllegalStateException from api`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            val pendingEntity = OfflineQueueEntity(
+                id = "action-99",
+                actionType = "mark_notification_read",
+                payload = """{"notification_id": "notif-x"}""",
+                status = "pending",
+                retryCount = 0,
+                errorMessage = null,
+                createdAt = 1700000000000L,
+                lastAttemptAt = null
+            )
+            coEvery { mockOfflineQueueDao.getPendingActions() } returns listOf(pendingEntity)
+            coEvery { mockApiService.markNotificationAsRead(any()) } throws IllegalStateException("unexpected")
+            try {
+                repository.processOfflineQueue()
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("processOfflineQueue propagates IllegalStateException from DAO read")
+        fun `processOfflineQueue propagates IllegalStateException from dao`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockOfflineQueueDao.getPendingActions() } throws IllegalStateException("unexpected")
+            try {
+                repository.processOfflineQueue()
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("processOfflineQueue wraps SQLiteException (DAO read failure) in Result.failure")
+        fun `processOfflineQueue wraps SQLiteException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            coEvery { mockOfflineQueueDao.getPendingActions() } throws SQLiteException("disk full")
+
+            val result = repository.processOfflineQueue()
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
+        }
+
+        @Test
+        @DisplayName("processOfflineQueue marks action failed on HttpException (per-action inner catch)")
+        fun `processOfflineQueue marks failed on HttpException`() = runTest {
+            every { mockNetworkMonitor.isOnline } returns flowOf(true)
+            val pendingEntity = OfflineQueueEntity(
+                id = "action-http",
+                actionType = "delete_notification",
+                payload = """{"notification_id": "notif-y"}""",
+                status = "pending",
+                retryCount = 0,
+                errorMessage = null,
+                createdAt = 1700000000000L,
+                lastAttemptAt = null
+            )
+            coEvery { mockOfflineQueueDao.getPendingActions() } returns listOf(pendingEntity)
+            coEvery { mockApiService.deleteNotification(any()) } throws http500()
+
+            val result = repository.processOfflineQueue()
+
+            assertTrue(result.isSuccess)
+            assertEquals(0, result.getOrNull())
+            coVerify { mockOfflineQueueDao.markFailed(eq("action-http"), any(), any()) }
+        }
+
+        // ---- insertLocalNotification ----
+
+        @Test
+        @DisplayName("insertLocalNotification propagates IllegalStateException instead of swallowing")
+        fun `insertLocalNotification propagates IllegalStateException`() = runTest {
+            coEvery { mockNotificationDao.insertNotification(any()) } throws IllegalStateException("unexpected")
+            val notification = com.rasoiai.domain.model.Notification(
+                id = "local-notif-err",
+                type = com.rasoiai.domain.model.NotificationType.MEAL_PLAN_UPDATE,
+                title = "Test",
+                body = "Test body",
+                isRead = false,
+                createdAt = 1700000000000L
+            )
+            try {
+                repository.insertLocalNotification(notification)
+                fail("Expected IllegalStateException to propagate, got silent swallow instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("insertLocalNotification swallows SQLiteException (best-effort local insert)")
+        fun `insertLocalNotification swallows SQLiteException`() = runTest {
+            coEvery { mockNotificationDao.insertNotification(any()) } throws SQLiteException("disk full")
+            val notification = com.rasoiai.domain.model.Notification(
+                id = "local-notif-err",
+                type = com.rasoiai.domain.model.NotificationType.MEAL_PLAN_UPDATE,
+                title = "Test",
+                body = "Test body",
+                isRead = false,
+                createdAt = 1700000000000L
+            )
+
+            // Should not throw — SQLiteException is the expected failure mode for best-effort local insert.
+            repository.insertLocalNotification(notification)
+        }
+
+        // ---- queueAction (retained broad catch — side-effect helper) ----
+
+        @Test
+        @DisplayName("queueAction swallows SQLiteException (retained broad catch; best-effort queue insert)")
+        fun `queueAction swallows SQLiteException`() = runTest {
+            coEvery { mockOfflineQueueDao.insertAction(any()) } throws SQLiteException("disk full")
+            val action = com.rasoiai.domain.model.OfflineAction(
+                id = "a-1",
+                actionType = com.rasoiai.domain.model.OfflineActionType.MARK_NOTIFICATION_READ,
+                payload = """{"notification_id": "notif-z"}""",
+                status = com.rasoiai.domain.model.ActionStatus.PENDING,
+                createdAt = 1700000000000L
+            )
+
+            // Should not throw — queueAction is a fire-and-forget side-effect helper that must not
+            // invalidate the caller's already-completed work.
+            repository.queueAction(action)
         }
     }
 }

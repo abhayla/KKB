@@ -12,11 +12,13 @@ import com.rasoiai.domain.model.Notification
 import com.rasoiai.domain.model.NotificationType
 import com.rasoiai.domain.model.OfflineAction
 import com.rasoiai.domain.model.OfflineActionType
+import android.database.sqlite.SQLiteException
 import com.rasoiai.domain.repository.NotificationRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import retrofit2.HttpException
 import timber.log.Timber
 import java.io.IOException
 import java.util.UUID
@@ -79,8 +81,8 @@ class NotificationRepositoryImpl @Inject constructor(
                 } catch (e: IOException) {
                     Timber.w(e, "Network error syncing mark-as-read to server, will retry later")
                     queueAction(createMarkReadAction(notificationId))
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to sync mark-as-read to server, will retry later")
+                } catch (e: HttpException) {
+                    Timber.w(e, "HTTP ${e.code()} syncing mark-as-read to server, will retry later")
                     queueAction(createMarkReadAction(notificationId))
                 }
             } else {
@@ -91,7 +93,7 @@ class NotificationRepositoryImpl @Inject constructor(
             Result.success(Unit)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to mark notification as read: $notificationId")
             Result.failure(e)
         }
@@ -112,8 +114,8 @@ class NotificationRepositoryImpl @Inject constructor(
                     throw e
                 } catch (e: IOException) {
                     Timber.w(e, "Network error syncing mark-all-read to server")
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to sync mark-all-read to server")
+                } catch (e: HttpException) {
+                    Timber.w(e, "HTTP ${e.code()} syncing mark-all-read to server")
                     // We don't queue this action since local state is already correct
                 }
             }
@@ -121,7 +123,7 @@ class NotificationRepositoryImpl @Inject constructor(
             Result.success(Unit)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to mark all notifications as read")
             Result.failure(e)
         }
@@ -143,8 +145,8 @@ class NotificationRepositoryImpl @Inject constructor(
                 } catch (e: IOException) {
                     Timber.w(e, "Network error syncing delete to server, will retry later")
                     queueAction(createDeleteAction(notificationId))
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to sync delete to server, will retry later")
+                } catch (e: HttpException) {
+                    Timber.w(e, "HTTP ${e.code()} syncing delete to server, will retry later")
                     queueAction(createDeleteAction(notificationId))
                 }
             } else {
@@ -155,7 +157,7 @@ class NotificationRepositoryImpl @Inject constructor(
             Result.success(Unit)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to delete notification: $notificationId")
             Result.failure(e)
         }
@@ -168,7 +170,7 @@ class NotificationRepositoryImpl @Inject constructor(
             Result.success(Unit)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to delete all notifications")
             Result.failure(e)
         }
@@ -191,14 +193,14 @@ class NotificationRepositoryImpl @Inject constructor(
             Result.success(Unit)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: retrofit2.HttpException) {
+        } catch (e: HttpException) {
             Timber.w(e, "HTTP ${e.code()} on refresh notifications")
             Result.failure(e)
         } catch (e: IOException) {
             Timber.w(e, "Network error on refresh notifications")
             Result.failure(e)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to refresh notifications")
+        } catch (e: SQLiteException) {
+            Timber.e(e, "Failed to persist refreshed notifications")
             Result.failure(e)
         }
     }
@@ -215,7 +217,7 @@ class NotificationRepositoryImpl @Inject constructor(
             Timber.d("Notification cleanup completed")
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to cleanup notifications")
         }
     }
@@ -236,8 +238,8 @@ class NotificationRepositoryImpl @Inject constructor(
                 } catch (e: IOException) {
                     Timber.w(e, "Network error registering FCM token on server, will retry later")
                     queueAction(createRegisterFcmTokenAction(token))
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to register FCM token on server, will retry later")
+                } catch (e: HttpException) {
+                    Timber.w(e, "HTTP ${e.code()} registering FCM token on server, will retry later")
                     queueAction(createRegisterFcmTokenAction(token))
                 }
             } else {
@@ -248,7 +250,7 @@ class NotificationRepositoryImpl @Inject constructor(
             Result.success(Unit)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to register FCM token")
             Result.failure(e)
         }
@@ -266,8 +268,8 @@ class NotificationRepositoryImpl @Inject constructor(
                 } catch (e: IOException) {
                     Timber.w(e, "Network error unregistering FCM token from server")
                     queueAction(createUnregisterFcmTokenAction(token))
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to unregister FCM token from server")
+                } catch (e: HttpException) {
+                    Timber.w(e, "HTTP ${e.code()} unregistering FCM token from server")
                     queueAction(createUnregisterFcmTokenAction(token))
                 }
             } else {
@@ -278,7 +280,7 @@ class NotificationRepositoryImpl @Inject constructor(
             Result.success(Unit)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to unregister FCM token")
             Result.failure(e)
         }
@@ -305,6 +307,10 @@ class NotificationRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            // Broad catch intentional (#34): fire-and-forget side-effect helper. A failed queue
+            // insert (SQLite, serialization, etc.) must not invalidate the caller's already-
+            // completed work (markAsRead, deleteNotification, registerFcmToken, ...).
+            // Cancellation rethrown above.
             Timber.e(e, "Failed to queue action: ${action.actionType.value}")
         }
     }
@@ -365,9 +371,9 @@ class NotificationRepositoryImpl @Inject constructor(
                     if (action.retryCount >= OfflineAction.MAX_RETRIES - 1) {
                         Timber.w("Action ${action.id} has reached max retries")
                     }
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to process action: ${action.actionType.value} (${action.id})")
-                    offlineQueueDao.markFailed(action.id, e.message ?: "Unknown error")
+                } catch (e: HttpException) {
+                    Timber.w(e, "HTTP ${e.code()} processing action: ${action.actionType.value} (${action.id})")
+                    offlineQueueDao.markFailed(action.id, e.message ?: "HTTP ${e.code()}")
 
                     // If max retries reached, keep it as failed
                     if (action.retryCount >= OfflineAction.MAX_RETRIES - 1) {
@@ -383,13 +389,13 @@ class NotificationRepositoryImpl @Inject constructor(
             Result.success(processedCount)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: retrofit2.HttpException) {
+        } catch (e: HttpException) {
             Timber.w(e, "HTTP ${e.code()} on process offline queue")
             Result.failure(e)
         } catch (e: IOException) {
             Timber.w(e, "Network error on process offline queue")
             Result.failure(e)
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to process offline queue")
             Result.failure(e)
         }
@@ -412,7 +418,7 @@ class NotificationRepositoryImpl @Inject constructor(
             Timber.d("Inserted local notification: ${notification.id}")
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to insert local notification")
         }
     }
