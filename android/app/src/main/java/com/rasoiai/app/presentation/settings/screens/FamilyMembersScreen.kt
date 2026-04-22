@@ -161,6 +161,33 @@ fun FamilyMembersScreen(
     viewModel: FamilyMembersViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    FamilyMembersScreenContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onShowAddSheet = viewModel::showAddSheet,
+        onShowEditSheet = viewModel::showEditSheet,
+        onShowDeleteDialog = viewModel::showDeleteDialog,
+        onDismissSheet = viewModel::dismissSheet,
+        onSaveMember = viewModel::saveMember,
+        onDismissDeleteDialog = viewModel::dismissDeleteDialog,
+        onDeleteMember = viewModel::deleteMember
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun FamilyMembersScreenContent(
+    uiState: FamilyMembersUiState,
+    onNavigateBack: () -> Unit = {},
+    onShowAddSheet: () -> Unit = {},
+    onShowEditSheet: (FamilyMember) -> Unit = {},
+    onShowDeleteDialog: (String) -> Unit = {},
+    onDismissSheet: () -> Unit = {},
+    onSaveMember: (String, MemberType, Int?, List<SpecialDietaryNeed>) -> Unit = { _, _, _, _ -> },
+    onDismissDeleteDialog: () -> Unit = {},
+    onDeleteMember: () -> Unit = {}
+) {
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.errorMessage) {
@@ -182,7 +209,7 @@ fun FamilyMembersScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = viewModel::showAddSheet) {
+            FloatingActionButton(onClick = onShowAddSheet) {
                 Icon(Icons.Default.Add, contentDescription = "Add family member")
             }
         },
@@ -249,10 +276,10 @@ fun FamilyMembersScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
-                                IconButton(onClick = { viewModel.showEditSheet(member) }) {
+                                IconButton(onClick = { onShowEditSheet(member) }) {
                                     Icon(Icons.Default.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                                IconButton(onClick = { viewModel.showDeleteDialog(member.id) }) {
+                                IconButton(onClick = { onShowDeleteDialog(member.id) }) {
                                     Icon(Icons.Default.Delete, contentDescription = "Remove", tint = MaterialTheme.colorScheme.error)
                                 }
                             }
@@ -267,24 +294,24 @@ fun FamilyMembersScreen(
     if (uiState.showAddEditSheet) {
         FamilyMemberSheet(
             editingMember = uiState.editingMember,
-            onDismiss = viewModel::dismissSheet,
-            onSave = viewModel::saveMember
+            onDismiss = onDismissSheet,
+            onSave = onSaveMember
         )
     }
 
     // Delete Confirmation Dialog
     if (uiState.showDeleteDialog) {
         AlertDialog(
-            onDismissRequest = viewModel::dismissDeleteDialog,
+            onDismissRequest = onDismissDeleteDialog,
             title = { Text("Remove Family Member") },
             text = { Text("Are you sure you want to remove this family member?") },
             confirmButton = {
-                TextButton(onClick = viewModel::deleteMember) {
+                TextButton(onClick = onDeleteMember) {
                     Text("Remove", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = viewModel::dismissDeleteDialog) {
+                TextButton(onClick = onDismissDeleteDialog) {
                     Text("Cancel")
                 }
             }

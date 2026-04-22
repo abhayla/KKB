@@ -9,10 +9,6 @@ import com.rasoiai.app.presentation.theme.RasoiAITheme
 import com.rasoiai.domain.model.SmallMeasurementUnit
 import com.rasoiai.domain.model.VolumeUnit
 import com.rasoiai.domain.model.WeightUnit
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.verify
-import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,105 +19,139 @@ class UnitsScreenTest {
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    private fun setupScreen(uiState: UnitsUiState): UnitsViewModel {
-        val mockViewModel = mockk<UnitsViewModel>(relaxed = true)
-        every { mockViewModel.uiState } returns MutableStateFlow(uiState)
-        composeTestRule.setContent {
-            RasoiAITheme {
-                UnitsScreen(onNavigateBack = {}, viewModel = mockViewModel)
-            }
-        }
-        return mockViewModel
-    }
-
     @Test
     fun screen_displaysTitle() {
-        setupScreen(
-            UnitsUiState(
-                isLoading = false,
-                isSaving = false,
-                volumeUnit = VolumeUnit.METRIC,
-                weightUnit = WeightUnit.METRIC,
-                smallMeasurementUnit = SmallMeasurementUnit.METRIC
-            )
-        )
+        composeTestRule.setContent {
+            RasoiAITheme {
+                UnitsTestContent(
+                    uiState = UnitsUiState(
+                        isLoading = false,
+                        isSaving = false,
+                        volumeUnit = VolumeUnit.METRIC,
+                        weightUnit = WeightUnit.METRIC,
+                        smallMeasurementUnit = SmallMeasurementUnit.METRIC
+                    )
+                )
+            }
+        }
         composeTestRule.onNodeWithText("Units", substring = true, ignoreCase = true)
             .assertIsDisplayed()
     }
 
     @Test
     fun screen_displaysSaveButton() {
-        setupScreen(
-            UnitsUiState(
-                isLoading = false,
-                isSaving = false,
-                volumeUnit = VolumeUnit.METRIC,
-                weightUnit = WeightUnit.METRIC,
-                smallMeasurementUnit = SmallMeasurementUnit.METRIC
-            )
-        )
+        composeTestRule.setContent {
+            RasoiAITheme {
+                UnitsTestContent(
+                    uiState = UnitsUiState(
+                        isLoading = false,
+                        isSaving = false,
+                        volumeUnit = VolumeUnit.METRIC,
+                        weightUnit = WeightUnit.METRIC,
+                        smallMeasurementUnit = SmallMeasurementUnit.METRIC
+                    )
+                )
+            }
+        }
         composeTestRule.onNodeWithText("Save", substring = true, ignoreCase = true)
             .assertIsDisplayed()
     }
 
     @Test
     fun loadingState_hidesContent() {
-        setupScreen(
-            UnitsUiState(
-                isLoading = true,
-                isSaving = false,
-                volumeUnit = VolumeUnit.METRIC,
-                weightUnit = WeightUnit.METRIC,
-                smallMeasurementUnit = SmallMeasurementUnit.METRIC
-            )
-        )
+        composeTestRule.setContent {
+            RasoiAITheme {
+                UnitsTestContent(
+                    uiState = UnitsUiState(
+                        isLoading = true,
+                        isSaving = false,
+                        volumeUnit = VolumeUnit.METRIC,
+                        weightUnit = WeightUnit.METRIC,
+                        smallMeasurementUnit = SmallMeasurementUnit.METRIC
+                    )
+                )
+            }
+        }
         composeTestRule.onNodeWithText("Volume", substring = true, ignoreCase = true)
             .assertDoesNotExist()
     }
 
     @Test
     fun volumeUnitSection_isVisible() {
-        setupScreen(
-            UnitsUiState(
-                isLoading = false,
-                isSaving = false,
-                volumeUnit = VolumeUnit.METRIC,
-                weightUnit = WeightUnit.METRIC,
-                smallMeasurementUnit = SmallMeasurementUnit.METRIC
-            )
-        )
+        composeTestRule.setContent {
+            RasoiAITheme {
+                UnitsTestContent(
+                    uiState = UnitsUiState(
+                        isLoading = false,
+                        isSaving = false,
+                        volumeUnit = VolumeUnit.METRIC,
+                        weightUnit = WeightUnit.METRIC,
+                        smallMeasurementUnit = SmallMeasurementUnit.METRIC
+                    )
+                )
+            }
+        }
         composeTestRule.onNodeWithText("Volume", substring = true, ignoreCase = true)
             .assertIsDisplayed()
     }
 
     @Test
     fun weightUnitSection_isVisible() {
-        setupScreen(
-            UnitsUiState(
-                isLoading = false,
-                isSaving = false,
-                volumeUnit = VolumeUnit.METRIC,
-                weightUnit = WeightUnit.METRIC,
-                smallMeasurementUnit = SmallMeasurementUnit.METRIC
-            )
-        )
+        composeTestRule.setContent {
+            RasoiAITheme {
+                UnitsTestContent(
+                    uiState = UnitsUiState(
+                        isLoading = false,
+                        isSaving = false,
+                        volumeUnit = VolumeUnit.METRIC,
+                        weightUnit = WeightUnit.METRIC,
+                        smallMeasurementUnit = SmallMeasurementUnit.METRIC
+                    )
+                )
+            }
+        }
         composeTestRule.onNodeWithText("Weight", substring = true, ignoreCase = true)
             .assertIsDisplayed()
     }
 
     @Test
-    fun saveButtonClick_callsViewModelSave() {
-        val mockViewModel = setupScreen(
-            UnitsUiState(
-                isLoading = false,
-                isSaving = false,
-                volumeUnit = VolumeUnit.METRIC,
-                weightUnit = WeightUnit.METRIC,
-                smallMeasurementUnit = SmallMeasurementUnit.METRIC
-            )
-        )
+    fun saveButtonClick_callsOnSave() {
+        var saveCalled = false
+        composeTestRule.setContent {
+            RasoiAITheme {
+                UnitsTestContent(
+                    uiState = UnitsUiState(
+                        isLoading = false,
+                        isSaving = false,
+                        volumeUnit = VolumeUnit.METRIC,
+                        weightUnit = WeightUnit.METRIC,
+                        smallMeasurementUnit = SmallMeasurementUnit.METRIC
+                    ),
+                    onSave = { saveCalled = true }
+                )
+            }
+        }
         composeTestRule.onNodeWithText("Save", substring = true, ignoreCase = true)
             .performClick()
-        verify { mockViewModel.save() }
+        assert(saveCalled) { "onSave callback was not triggered" }
     }
+}
+
+@androidx.compose.runtime.Composable
+private fun UnitsTestContent(
+    uiState: UnitsUiState,
+    onNavigateBack: () -> Unit = {},
+    onUpdateVolumeUnit: (VolumeUnit) -> Unit = {},
+    onUpdateWeightUnit: (WeightUnit) -> Unit = {},
+    onUpdateSmallMeasurementUnit: (SmallMeasurementUnit) -> Unit = {},
+    onSave: () -> Unit = {}
+) {
+    UnitsScreenContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onUpdateVolumeUnit = onUpdateVolumeUnit,
+        onUpdateWeightUnit = onUpdateWeightUnit,
+        onUpdateSmallMeasurementUnit = onUpdateSmallMeasurementUnit,
+        onSave = onSave
+    )
 }

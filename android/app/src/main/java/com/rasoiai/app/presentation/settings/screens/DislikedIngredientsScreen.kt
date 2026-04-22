@@ -139,11 +139,32 @@ fun DislikedIngredientsScreen(
     viewModel: DislikedIngredientsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.saveSuccess) {
         if (uiState.saveSuccess) onNavigateBack()
     }
+
+    DislikedIngredientsScreenContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onUpdateSearchQuery = viewModel::updateSearchQuery,
+        onAddCustomIngredient = viewModel::addCustomIngredient,
+        onToggleIngredient = viewModel::toggleIngredient,
+        onSave = viewModel::save
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+internal fun DislikedIngredientsScreenContent(
+    uiState: DislikedIngredientsUiState,
+    onNavigateBack: () -> Unit = {},
+    onUpdateSearchQuery: (String) -> Unit = {},
+    onAddCustomIngredient: (String) -> Unit = {},
+    onToggleIngredient: (String) -> Unit = {},
+    onSave: () -> Unit = {}
+) {
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { snackbarHostState.showSnackbar(it) }
@@ -182,14 +203,14 @@ fun DislikedIngredientsScreen(
                 // Search field
                 OutlinedTextField(
                     value = uiState.searchQuery,
-                    onValueChange = viewModel::updateSearchQuery,
+                    onValueChange = onUpdateSearchQuery,
                     placeholder = { Text("Search ingredients...") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(spacing.sm),
                     singleLine = true,
                     trailingIcon = {
                         if (uiState.searchQuery.isNotBlank()) {
-                            IconButton(onClick = { viewModel.addCustomIngredient(uiState.searchQuery) }) {
+                            IconButton(onClick = { onAddCustomIngredient(uiState.searchQuery) }) {
                                 Icon(Icons.Default.Add, contentDescription = "Add")
                             }
                         }
@@ -214,7 +235,7 @@ fun DislikedIngredientsScreen(
                         val isSelected = name in uiState.dislikedIngredients
                         FilterChip(
                             selected = isSelected,
-                            onClick = { viewModel.toggleIngredient(name) },
+                            onClick = { onToggleIngredient(name) },
                             label = {
                                 Column {
                                     Text(name)
@@ -264,7 +285,7 @@ fun DislikedIngredientsScreen(
                         customIngredients.forEach { ingredient ->
                             FilterChip(
                                 selected = true,
-                                onClick = { viewModel.toggleIngredient(ingredient) },
+                                onClick = { onToggleIngredient(ingredient) },
                                 label = { Text(ingredient) },
                                 trailingIcon = {
                                     Icon(
@@ -292,7 +313,7 @@ fun DislikedIngredientsScreen(
             }
 
             Button(
-                onClick = viewModel::save,
+                onClick = onSave,
                 enabled = !uiState.isSaving,
                 modifier = Modifier
                     .fillMaxWidth()

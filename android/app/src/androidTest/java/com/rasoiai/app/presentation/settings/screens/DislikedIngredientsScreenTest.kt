@@ -7,10 +7,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.rasoiai.app.presentation.theme.RasoiAITheme
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.verify
-import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -21,78 +17,79 @@ class DislikedIngredientsScreenTest {
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    private fun setupScreen(uiState: DislikedIngredientsUiState): DislikedIngredientsViewModel {
-        val mockViewModel = mockk<DislikedIngredientsViewModel>(relaxed = true)
-        every { mockViewModel.uiState } returns MutableStateFlow(uiState)
-        composeTestRule.setContent {
-            RasoiAITheme {
-                DislikedIngredientsScreen(onNavigateBack = {}, viewModel = mockViewModel)
-            }
-        }
-        return mockViewModel
-    }
-
     @Test
     fun screen_displaysTitle() {
-        setupScreen(
-            DislikedIngredientsUiState(
-                isLoading = false,
-                isSaving = false,
-                dislikedIngredients = emptySet(),
-                searchQuery = "",
-                saveSuccess = false,
-                errorMessage = null
-            )
-        )
-
+        composeTestRule.setContent {
+            RasoiAITheme {
+                DislikedIngredientsTestContent(
+                    uiState = DislikedIngredientsUiState(
+                        isLoading = false,
+                        isSaving = false,
+                        dislikedIngredients = emptySet(),
+                        searchQuery = "",
+                        saveSuccess = false,
+                        errorMessage = null
+                    )
+                )
+            }
+        }
         composeTestRule.onNodeWithText("Disliked Ingredients").assertIsDisplayed()
     }
 
     @Test
     fun screen_displaysSaveButton() {
-        setupScreen(
-            DislikedIngredientsUiState(
-                isLoading = false,
-                isSaving = false,
-                dislikedIngredients = emptySet(),
-                searchQuery = "",
-                saveSuccess = false,
-                errorMessage = null
-            )
-        )
-
+        composeTestRule.setContent {
+            RasoiAITheme {
+                DislikedIngredientsTestContent(
+                    uiState = DislikedIngredientsUiState(
+                        isLoading = false,
+                        isSaving = false,
+                        dislikedIngredients = emptySet(),
+                        searchQuery = "",
+                        saveSuccess = false,
+                        errorMessage = null
+                    )
+                )
+            }
+        }
         composeTestRule.onNodeWithText("Save").performScrollTo().assertIsDisplayed()
     }
 
     @Test
     fun loadingState_hidesContent() {
-        setupScreen(
-            DislikedIngredientsUiState(
-                isLoading = true,
-                isSaving = false,
-                dislikedIngredients = emptySet(),
-                searchQuery = "",
-                saveSuccess = false,
-                errorMessage = null
-            )
-        )
-
+        composeTestRule.setContent {
+            RasoiAITheme {
+                DislikedIngredientsTestContent(
+                    uiState = DislikedIngredientsUiState(
+                        isLoading = true,
+                        isSaving = false,
+                        dislikedIngredients = emptySet(),
+                        searchQuery = "",
+                        saveSuccess = false,
+                        errorMessage = null
+                    )
+                )
+            }
+        }
         composeTestRule.onNodeWithText("Save").assertDoesNotExist()
     }
 
     @Test
     fun dislikedIngredients_shownAsChips() {
-        setupScreen(
-            DislikedIngredientsUiState(
-                isLoading = false,
-                isSaving = false,
-                dislikedIngredients = setOf("Bitter Gourd", "Okra", "Eggplant"),
-                searchQuery = "",
-                saveSuccess = false,
-                errorMessage = null
-            )
-        )
-
+        composeTestRule.setContent {
+            RasoiAITheme {
+                DislikedIngredientsTestContent(
+                    uiState = DislikedIngredientsUiState(
+                        isLoading = false,
+                        isSaving = false,
+                        dislikedIngredients = setOf("Bitter Gourd", "Okra", "Eggplant"),
+                        searchQuery = "",
+                        saveSuccess = false,
+                        errorMessage = null
+                    )
+                )
+            }
+        }
         composeTestRule.onNodeWithText("Bitter Gourd").assertIsDisplayed()
         composeTestRule.onNodeWithText("Okra").assertIsDisplayed()
         composeTestRule.onNodeWithText("Eggplant").assertIsDisplayed()
@@ -100,35 +97,61 @@ class DislikedIngredientsScreenTest {
 
     @Test
     fun searchField_isVisible() {
-        setupScreen(
-            DislikedIngredientsUiState(
-                isLoading = false,
-                isSaving = false,
-                dislikedIngredients = emptySet(),
-                searchQuery = "",
-                saveSuccess = false,
-                errorMessage = null
-            )
-        )
-
+        composeTestRule.setContent {
+            RasoiAITheme {
+                DislikedIngredientsTestContent(
+                    uiState = DislikedIngredientsUiState(
+                        isLoading = false,
+                        isSaving = false,
+                        dislikedIngredients = emptySet(),
+                        searchQuery = "",
+                        saveSuccess = false,
+                        errorMessage = null
+                    )
+                )
+            }
+        }
         composeTestRule.onNodeWithText("Search ingredients", useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test
-    fun saveButton_callsViewModelSave() {
-        val mockViewModel = setupScreen(
-            DislikedIngredientsUiState(
-                isLoading = false,
-                isSaving = false,
-                dislikedIngredients = setOf("Bitter Gourd"),
-                searchQuery = "",
-                saveSuccess = false,
-                errorMessage = null
-            )
-        )
-
+    fun saveButton_callsOnSave() {
+        var saveCalled = false
+        composeTestRule.setContent {
+            RasoiAITheme {
+                DislikedIngredientsTestContent(
+                    uiState = DislikedIngredientsUiState(
+                        isLoading = false,
+                        isSaving = false,
+                        dislikedIngredients = setOf("Bitter Gourd"),
+                        searchQuery = "",
+                        saveSuccess = false,
+                        errorMessage = null
+                    ),
+                    onSave = { saveCalled = true }
+                )
+            }
+        }
         composeTestRule.onNodeWithText("Save").performScrollTo().performClick()
-
-        verify { mockViewModel.save() }
+        assert(saveCalled) { "onSave callback was not triggered" }
     }
+}
+
+@androidx.compose.runtime.Composable
+private fun DislikedIngredientsTestContent(
+    uiState: DislikedIngredientsUiState,
+    onNavigateBack: () -> Unit = {},
+    onUpdateSearchQuery: (String) -> Unit = {},
+    onAddCustomIngredient: (String) -> Unit = {},
+    onToggleIngredient: (String) -> Unit = {},
+    onSave: () -> Unit = {}
+) {
+    DislikedIngredientsScreenContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onUpdateSearchQuery = onUpdateSearchQuery,
+        onAddCustomIngredient = onAddCustomIngredient,
+        onToggleIngredient = onToggleIngredient,
+        onSave = onSave
+    )
 }

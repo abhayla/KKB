@@ -327,13 +327,40 @@ fun AchievementsScreen(
     viewModel: AchievementsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+
+    AchievementsScreenContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onShareItem = { item ->
+            val shareText = viewModel.buildShareText(item)
+            val shareIntent = Intent.createChooser(
+                Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, shareText)
+                },
+                "Share Achievement"
+            )
+            context.startActivity(shareIntent)
+        },
+        onClearError = viewModel::clearError
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun AchievementsScreenContent(
+    uiState: AchievementsUiState,
+    onNavigateBack: () -> Unit = {},
+    onShareItem: (AchievementItem) -> Unit = {},
+    onClearError: () -> Unit = {}
+) {
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { error ->
             snackbarHostState.showSnackbar(error)
-            viewModel.clearError()
+            onClearError()
         }
     }
 
@@ -414,17 +441,7 @@ fun AchievementsScreen(
                         ) { item ->
                             AchievementDetailCard(
                                 item = item,
-                                onShareClick = {
-                                    val shareText = viewModel.buildShareText(item)
-                                    val shareIntent = Intent.createChooser(
-                                        Intent(Intent.ACTION_SEND).apply {
-                                            type = "text/plain"
-                                            putExtra(Intent.EXTRA_TEXT, shareText)
-                                        },
-                                        "Share Achievement"
-                                    )
-                                    context.startActivity(shareIntent)
-                                },
+                                onShareClick = { onShareItem(item) },
                                 modifier = Modifier.padding(horizontal = spacing.md)
                             )
                         }

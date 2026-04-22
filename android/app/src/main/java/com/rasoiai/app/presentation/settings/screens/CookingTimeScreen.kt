@@ -142,12 +142,33 @@ fun CookingTimeScreen(
     viewModel: CookingTimeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val cookingTimeOptions = listOf(15, 30, 45, 60, 90)
 
     LaunchedEffect(uiState.saveSuccess) {
         if (uiState.saveSuccess) onNavigateBack()
     }
+
+    CookingTimeScreenContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onUpdateWeekdayCookingTime = viewModel::updateWeekdayCookingTime,
+        onUpdateWeekendCookingTime = viewModel::updateWeekendCookingTime,
+        onToggleBusyDay = viewModel::toggleBusyDay,
+        onSave = viewModel::save
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+internal fun CookingTimeScreenContent(
+    uiState: CookingTimeUiState,
+    onNavigateBack: () -> Unit = {},
+    onUpdateWeekdayCookingTime: (Int) -> Unit = {},
+    onUpdateWeekendCookingTime: (Int) -> Unit = {},
+    onToggleBusyDay: (DayOfWeek) -> Unit = {},
+    onSave: () -> Unit = {}
+) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val cookingTimeOptions = listOf(15, 30, 45, 60, 90)
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { snackbarHostState.showSnackbar(it) }
@@ -214,7 +235,7 @@ fun CookingTimeScreen(
                             DropdownMenuItem(
                                 text = { Text("$time minutes") },
                                 onClick = {
-                                    viewModel.updateWeekdayCookingTime(time)
+                                    onUpdateWeekdayCookingTime(time)
                                     weekdayExpanded = false
                                 }
                             )
@@ -255,7 +276,7 @@ fun CookingTimeScreen(
                             DropdownMenuItem(
                                 text = { Text("$time minutes") },
                                 onClick = {
-                                    viewModel.updateWeekendCookingTime(time)
+                                    onUpdateWeekendCookingTime(time)
                                     weekendExpanded = false
                                 }
                             )
@@ -282,7 +303,7 @@ fun CookingTimeScreen(
                         val isSelected = day in uiState.busyDays
                         FilterChip(
                             selected = isSelected,
-                            onClick = { viewModel.toggleBusyDay(day) },
+                            onClick = { onToggleBusyDay(day) },
                             label = { Text(day.shortName) },
                             leadingIcon = if (isSelected) {
                                 {
@@ -299,7 +320,7 @@ fun CookingTimeScreen(
             }
 
             Button(
-                onClick = viewModel::save,
+                onClick = onSave,
                 enabled = !uiState.isSaving,
                 modifier = Modifier
                     .fillMaxWidth()

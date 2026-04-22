@@ -51,7 +51,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -134,11 +133,32 @@ fun UnitsScreen(
     viewModel: UnitsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.saveSuccess) {
         if (uiState.saveSuccess) onNavigateBack()
     }
+
+    UnitsScreenContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onUpdateVolumeUnit = viewModel::updateVolumeUnit,
+        onUpdateWeightUnit = viewModel::updateWeightUnit,
+        onUpdateSmallMeasurementUnit = viewModel::updateSmallMeasurementUnit,
+        onSave = viewModel::save
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun UnitsScreenContent(
+    uiState: UnitsUiState,
+    onNavigateBack: () -> Unit = {},
+    onUpdateVolumeUnit: (VolumeUnit) -> Unit = {},
+    onUpdateWeightUnit: (WeightUnit) -> Unit = {},
+    onUpdateSmallMeasurementUnit: (SmallMeasurementUnit) -> Unit = {},
+    onSave: () -> Unit = {}
+) {
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { snackbarHostState.showSnackbar(it) }
@@ -186,7 +206,7 @@ fun UnitsScreen(
                     UnitRadioRow(
                         label = unit.displayName,
                         isSelected = unit == uiState.volumeUnit,
-                        onClick = { viewModel.updateVolumeUnit(unit) }
+                        onClick = { onUpdateVolumeUnit(unit) }
                     )
                 }
 
@@ -204,7 +224,7 @@ fun UnitsScreen(
                     UnitRadioRow(
                         label = unit.displayName,
                         isSelected = unit == uiState.weightUnit,
-                        onClick = { viewModel.updateWeightUnit(unit) }
+                        onClick = { onUpdateWeightUnit(unit) }
                     )
                 }
 
@@ -222,13 +242,13 @@ fun UnitsScreen(
                     UnitRadioRow(
                         label = unit.displayName,
                         isSelected = unit == uiState.smallMeasurementUnit,
-                        onClick = { viewModel.updateSmallMeasurementUnit(unit) }
+                        onClick = { onUpdateSmallMeasurementUnit(unit) }
                     )
                 }
             }
 
             Button(
-                onClick = viewModel::save,
+                onClick = onSave,
                 enabled = !uiState.isSaving,
                 modifier = Modifier
                     .fillMaxWidth()

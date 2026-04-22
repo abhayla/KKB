@@ -109,7 +109,30 @@ fun NotificationSettingsScreen(
     viewModel: NotificationSettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    NotificationSettingsScreenContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onToggleMasterNotifications = viewModel::toggleMasterNotifications,
+        onToggleMealReminders = viewModel::toggleMealReminders,
+        onToggleShoppingReminders = viewModel::toggleShoppingReminders,
+        onToggleCookingReminders = viewModel::toggleCookingReminders,
+        onToggleFestivalSuggestions = viewModel::toggleFestivalSuggestions,
+        onToggleAchievementNotifications = viewModel::toggleAchievementNotifications
+    )
+}
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun NotificationSettingsScreenContent(
+    uiState: NotificationSettingsUiState,
+    onNavigateBack: () -> Unit = {},
+    onToggleMasterNotifications: (Boolean) -> Unit = {},
+    onToggleMealReminders: (Boolean) -> Unit = {},
+    onToggleShoppingReminders: (Boolean) -> Unit = {},
+    onToggleCookingReminders: (Boolean) -> Unit = {},
+    onToggleFestivalSuggestions: (Boolean) -> Unit = {},
+    onToggleAchievementNotifications: (Boolean) -> Unit = {}
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -140,7 +163,7 @@ fun NotificationSettingsScreen(
                 title = "All Notifications",
                 subtitle = "Enable or disable all notifications",
                 isChecked = uiState.notificationsEnabled,
-                onToggle = viewModel::toggleMasterNotifications
+                onToggle = onToggleMasterNotifications
             )
 
             HorizontalDivider(modifier = Modifier.padding(vertical = spacing.md))
@@ -159,7 +182,7 @@ fun NotificationSettingsScreen(
                 subtitle = "Daily reminder to check your meal plan",
                 isChecked = uiState.mealReminders && uiState.notificationsEnabled,
                 enabled = uiState.notificationsEnabled,
-                onToggle = viewModel::toggleMealReminders
+                onToggle = onToggleMealReminders
             )
 
             NotificationToggleRow(
@@ -167,7 +190,7 @@ fun NotificationSettingsScreen(
                 subtitle = "Reminder to pick up groceries",
                 isChecked = uiState.shoppingReminders && uiState.notificationsEnabled,
                 enabled = uiState.notificationsEnabled,
-                onToggle = viewModel::toggleShoppingReminders
+                onToggle = onToggleShoppingReminders
             )
 
             NotificationToggleRow(
@@ -175,7 +198,7 @@ fun NotificationSettingsScreen(
                 subtitle = "Time to start cooking notification",
                 isChecked = uiState.cookingReminders && uiState.notificationsEnabled,
                 enabled = uiState.notificationsEnabled,
-                onToggle = viewModel::toggleCookingReminders
+                onToggle = onToggleCookingReminders
             )
 
             NotificationToggleRow(
@@ -183,7 +206,7 @@ fun NotificationSettingsScreen(
                 subtitle = "Special dish suggestions for festivals",
                 isChecked = uiState.festivalSuggestions && uiState.notificationsEnabled,
                 enabled = uiState.notificationsEnabled,
-                onToggle = viewModel::toggleFestivalSuggestions
+                onToggle = onToggleFestivalSuggestions
             )
 
             NotificationToggleRow(
@@ -191,7 +214,7 @@ fun NotificationSettingsScreen(
                 subtitle = "Cooking streak and badge notifications",
                 isChecked = uiState.achievementNotifications && uiState.notificationsEnabled,
                 enabled = uiState.notificationsEnabled,
-                onToggle = viewModel::toggleAchievementNotifications
+                onToggle = onToggleAchievementNotifications
             )
         }
     }

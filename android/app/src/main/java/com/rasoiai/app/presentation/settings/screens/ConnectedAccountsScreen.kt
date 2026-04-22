@@ -84,7 +84,15 @@ fun ConnectedAccountsScreen(
     viewModel: ConnectedAccountsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    ConnectedAccountsScreenContent(uiState = uiState, onNavigateBack = onNavigateBack)
+}
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun ConnectedAccountsScreenContent(
+    uiState: ConnectedAccountsUiState,
+    onNavigateBack: () -> Unit = {}
+) {
     Scaffold(
         topBar = {
             TopAppBar(

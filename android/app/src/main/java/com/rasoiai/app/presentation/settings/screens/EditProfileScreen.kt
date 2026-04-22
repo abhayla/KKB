@@ -113,11 +113,28 @@ fun EditProfileScreen(
     viewModel: EditProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.saveSuccess) {
         if (uiState.saveSuccess) onNavigateBack()
     }
+
+    EditProfileScreenContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onUpdateName = viewModel::updateName,
+        onSave = viewModel::save
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun EditProfileScreenContent(
+    uiState: EditProfileUiState,
+    onNavigateBack: () -> Unit = {},
+    onUpdateName: (String) -> Unit = {},
+    onSave: () -> Unit = {}
+) {
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { snackbarHostState.showSnackbar(it) }
@@ -176,7 +193,7 @@ fun EditProfileScreen(
                 // Name field
                 OutlinedTextField(
                     value = uiState.name,
-                    onValueChange = viewModel::updateName,
+                    onValueChange = onUpdateName,
                     label = { Text("Name") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -204,7 +221,7 @@ fun EditProfileScreen(
             }
 
             Button(
-                onClick = viewModel::save,
+                onClick = onSave,
                 enabled = !uiState.isSaving,
                 modifier = Modifier
                     .fillMaxWidth()
