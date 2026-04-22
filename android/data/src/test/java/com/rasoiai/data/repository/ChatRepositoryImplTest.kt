@@ -1,14 +1,18 @@
 package com.rasoiai.data.repository
 
 import android.content.Context
+import android.database.sqlite.SQLiteException
 import app.cash.turbine.test
 import com.rasoiai.data.local.dao.ChatDao
 import com.rasoiai.data.local.entity.ChatMessageEntity
 import com.rasoiai.data.remote.api.RasoiApiService
+import android.net.Uri
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -218,31 +222,47 @@ class ChatRepositoryImplTest {
     inner class NetworkTimeoutAndExceptionHandling {
 
         @Test
-        @DisplayName("Should return error when sendMessage encounters SocketTimeoutException from DAO")
-        fun `should return error when sendMessage encounters SocketTimeoutException`() = runTest {
-            // Given — DAO throws (simulating underlying storage/network failure)
-            coEvery { mockChatDao.insertMessage(any()) } throws java.net.SocketTimeoutException("timeout")
+        @DisplayName("Should return error when sendMessage encounters SQLiteException from DAO")
+        fun `should return error when sendMessage encounters SQLiteException`() = runTest {
+            // Given — DAO throws a realistic storage failure
+            // (Replaced SocketTimeoutException after issue #34 narrowed catches —
+            // a DAO never realistically throws SocketTimeoutException; if it did,
+            // it would now propagate as an unexpected exception per the new contract.)
+            coEvery { mockChatDao.insertMessage(any()) } throws SQLiteException("disk I/O")
 
             // When
             val result = repository.sendMessage("Hello")
 
             // Then
             assertTrue(result.isFailure)
-            assertTrue(result.exceptionOrNull() is java.net.SocketTimeoutException)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
         }
 
         @Test
-        @DisplayName("Should return error when sendImageMessage encounters IOException")
-        fun `should return error when sendImageMessage encounters IOException`() = runTest {
-            // Given — API throws on image upload
-            coEvery { mockApiService.sendImageChatMessage(any()) } throws java.io.IOException("Network unreachable")
+        @DisplayName("Should return error when sendImageMessage cannot process image (early-return path)")
+        fun `should return error when sendImageMessage cannot process image`() = runTest {
+            // Pre-#34, this test asserted IOException from the API call but actually
+            // returned earlier on Uri.parse's "not mocked" RuntimeException, which the
+            // broad catch silently wrapped. After #34 narrowing, that confusion is gone:
+            // we now explicitly cover the real reachable path — image-processing failure
+            // returns Result.failure with the "Failed to process image" Exception. The
+            // IOException-from-API assertion would require a live image fixture and is
+            // better covered by an instrumented test, not a JVM unit test.
+            mockkStatic(Uri::class)
+            try {
+                every { Uri.parse(any()) } returns mockk(relaxed = true)
 
-            // When
-            val result = repository.sendImageMessage("content://media/image/1")
+                // When — context.contentResolver is relaxed-mocked, openInputStream
+                // returns null, compressAndEncodeImage returns null, sendImageMessage
+                // takes the early-return failure branch.
+                val result = repository.sendImageMessage("content://media/image/1")
 
-            // Then
-            assertTrue(result.isFailure)
-            assertTrue(result.exceptionOrNull() is java.io.IOException || result.exceptionOrNull() is Exception)
+                // Then
+                assertTrue(result.isFailure)
+                assertEquals("Failed to process image", result.exceptionOrNull()?.message)
+            } finally {
+                unmockkStatic(Uri::class)
+            }
         }
     }
 
@@ -259,6 +279,65 @@ class ChatRepositoryImplTest {
                 fail("Expected CancellationException to propagate, got Result wrapper instead")
             } catch (e: CancellationException) {
                 assertEquals("cancelled", e.message)
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Unexpected exception propagation (issue #34)")
+    inner class UnexpectedExceptionPropagation {
+
+        @Test
+        @DisplayName("sendMessage should still wrap SQLiteException in Result.failure")
+        fun `sendMessage wraps SQLiteException`() = runTest {
+            coEvery { mockChatDao.insertMessage(any()) } throws SQLiteException("disk full")
+            val result = repository.sendMessage("Hello")
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
+        }
+
+        @Test
+        @DisplayName("sendMessage should propagate IllegalStateException")
+        fun `sendMessage propagates IllegalStateException`() = runTest {
+            coEvery { mockChatDao.insertMessage(any()) } throws IllegalStateException("db closed")
+            try {
+                repository.sendMessage("Hello")
+                fail("Expected IllegalStateException to propagate")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("clearHistory should propagate IllegalStateException")
+        fun `clearHistory propagates IllegalStateException`() = runTest {
+            coEvery { mockChatDao.clearAllMessages() } throws IllegalStateException("db closed")
+            try {
+                repository.clearHistory()
+                fail("Expected IllegalStateException to propagate")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("sendImageMessage should propagate IllegalStateException from DAO insert (early in flow)")
+        fun `sendImageMessage propagates IllegalStateException from DAO`() = runTest {
+            // Mock Uri.parse so sendImageMessage reaches the DAO call path without
+            // crashing on the unmocked Android static API. The broad-catch removal
+            // means an IllegalStateException from insertMessage now propagates.
+            mockkStatic(Uri::class)
+            try {
+                every { Uri.parse(any()) } returns mockk(relaxed = true)
+                coEvery { mockChatDao.insertMessage(any()) } throws IllegalStateException("db closed")
+                try {
+                    repository.sendImageMessage("content://media/image/1")
+                    fail("Expected IllegalStateException to propagate")
+                } catch (e: IllegalStateException) {
+                    assertEquals("db closed", e.message)
+                }
+            } finally {
+                unmockkStatic(Uri::class)
             }
         }
     }
