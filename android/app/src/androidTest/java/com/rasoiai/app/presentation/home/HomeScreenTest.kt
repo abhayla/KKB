@@ -38,9 +38,11 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.dp
 import com.rasoiai.app.presentation.common.TestTags
 import com.rasoiai.app.presentation.home.components.RasoiBottomNavigation
@@ -269,10 +271,17 @@ class HomeScreenTest {
             }
         }
 
+        // BREAKFAST / LUNCH render above the fold on most emulator sizes, but DINNER / SNACKS
+        // are later items in a LazyColumn — performScrollTo() on a LazyColumn child doesn't
+        // compose the target, so we scroll the list itself via performScrollToNode.
+        composeTestRule.onNodeWithTag("home_lazy_column").performScrollToNode(hasText("BREAKFAST"))
         composeTestRule.onNodeWithText("BREAKFAST").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("home_lazy_column").performScrollToNode(hasText("LUNCH"))
         composeTestRule.onNodeWithText("LUNCH").assertIsDisplayed()
-        composeTestRule.onNodeWithText("DINNER").performScrollTo().assertIsDisplayed()
-        composeTestRule.onNodeWithText("SNACKS").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithTag("home_lazy_column").performScrollToNode(hasText("DINNER"))
+        composeTestRule.onNodeWithText("DINNER").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("home_lazy_column").performScrollToNode(hasText("SNACKS"))
+        composeTestRule.onNodeWithText("SNACKS").assertIsDisplayed()
     }
 
     @Test
@@ -285,7 +294,10 @@ class HomeScreenTest {
             }
         }
 
+        // Meal items are nested inside LazyColumn sections; scroll each into view first.
+        composeTestRule.onNodeWithTag("home_lazy_column").performScrollToNode(hasText("Poha"))
         composeTestRule.onNodeWithText("Poha").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("home_lazy_column").performScrollToNode(hasText("Dal Tadka"))
         composeTestRule.onNodeWithText("Dal Tadka").assertIsDisplayed()
     }
 
@@ -611,6 +623,7 @@ private fun HomeScreenTestContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
+                    .testTag("home_lazy_column")
             ) {
                 // Week Header
                 item {

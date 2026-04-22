@@ -3,12 +3,13 @@ package com.rasoiai.app.presentation.pantry
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.rasoiai.app.presentation.common.TestTags
 import com.rasoiai.app.presentation.navigation.Screen
@@ -184,7 +185,10 @@ class PantryScreenTest {
             }
         }
 
-        // Screen shows expiry legend "⚠️ = Expiring soon"
+        // Screen shows expiry legend "⚠️ = Expiring soon" — inside the pantry LazyColumn,
+        // which renders below camera scan + item list on small screens.
+        composeTestRule.onNodeWithTag(TestTags.PANTRY_LAZY_COLUMN)
+            .performScrollToNode(hasText("Expiring soon", substring = true))
         composeTestRule.onNodeWithText("Expiring soon", substring = true).assertIsDisplayed()
     }
 
@@ -254,7 +258,11 @@ class PantryScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Find Recipes", substring = true).performScrollTo().assertIsDisplayed()
+        // Find Recipes is the last item in the pantry LazyColumn — performScrollTo() on a
+        // LazyColumn child doesn't compose the target; scroll the list itself instead.
+        composeTestRule.onNodeWithTag(TestTags.PANTRY_LAZY_COLUMN)
+            .performScrollToNode(hasText("Find Recipes", substring = true))
+        composeTestRule.onNodeWithText("Find Recipes", substring = true).assertIsDisplayed()
     }
 
     @Test
@@ -267,7 +275,9 @@ class PantryScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("12", substring = true).performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithTag(TestTags.PANTRY_LAZY_COLUMN)
+            .performScrollToNode(hasText("12", substring = true))
+        composeTestRule.onNodeWithText("12", substring = true).assertIsDisplayed()
     }
 
     @Test
@@ -284,7 +294,9 @@ class PantryScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Find Recipes", substring = true).performScrollTo().performClick()
+        composeTestRule.onNodeWithTag(TestTags.PANTRY_LAZY_COLUMN)
+            .performScrollToNode(hasText("Find Recipes", substring = true))
+        composeTestRule.onNodeWithText("Find Recipes", substring = true).performClick()
 
         assert(findRecipesClicked) { "Find recipes callback was not triggered" }
     }
@@ -365,7 +377,9 @@ class PantryScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("View All", substring = true).performScrollTo().performClick()
+        composeTestRule.onNodeWithTag(TestTags.PANTRY_LAZY_COLUMN)
+            .performScrollToNode(hasText("View All", substring = true))
+        composeTestRule.onNodeWithText("View All", substring = true).performClick()
 
         assert(viewAllClicked) { "View All callback was not triggered" }
     }
