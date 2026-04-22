@@ -1,5 +1,6 @@
 package com.rasoiai.data.repository
 
+import android.database.sqlite.SQLiteException
 import com.rasoiai.core.network.NetworkMonitor
 import com.rasoiai.data.local.dao.FavoriteDao
 import com.rasoiai.data.local.dao.RecipeDao
@@ -63,16 +64,10 @@ class RecipeRepositoryImpl @Inject constructor(
             val missingIds = ids.filter { it !in cachedIds }
 
             if (missingIds.isNotEmpty() && networkMonitor.isOnline.first()) {
-                // Fetch missing recipes in background
-                missingIds.forEach { id ->
-                    try {
-                        fetchAndCacheRecipe(id)
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        Timber.w(e, "Failed to fetch recipe: $id")
-                    }
-                }
+                // Fetch missing recipes in background — fetchAndCacheRecipe handles
+                // its own known errors (returns null). Unexpected exceptions propagate
+                // per issue #34 ("unexpected exceptions still crash for debugging").
+                missingIds.forEach { id -> fetchAndCacheRecipe(id) }
             }
 
             entities.map { it.toDomain() }
@@ -129,7 +124,7 @@ class RecipeRepositoryImpl @Inject constructor(
                 Result.success(cached)
             } catch (e2: CancellationException) {
                 throw e2
-            } catch (e2: Exception) {
+            } catch (e2: SQLiteException) {
                 Result.failure(e)
             }
         } catch (e: IOException) {
@@ -139,21 +134,11 @@ class RecipeRepositoryImpl @Inject constructor(
                 Result.success(cached)
             } catch (e2: CancellationException) {
                 throw e2
-            } catch (e2: Exception) {
-                Result.failure(e)
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to search recipes")
-            // Fallback to local search on error
-            try {
-                val cached = searchLocalRecipes(query, cuisine, dietary, mealType, limit)
-                Result.success(cached)
-            } catch (e2: CancellationException) {
-                throw e2
-            } catch (e2: Exception) {
+            } catch (e2: SQLiteException) {
                 Result.failure(e)
             }
         }
+        // Unexpected exceptions propagate per issue #34 — broad catch removed.
     }
 
     override suspend fun scaleRecipe(recipeId: String, servings: Int): Result<Recipe> {
@@ -189,7 +174,7 @@ class RecipeRepositoryImpl @Inject constructor(
                 Result.success(scaledRecipe)
             } catch (e2: CancellationException) {
                 throw e2
-            } catch (e2: Exception) {
+            } catch (e2: SQLiteException) {
                 Result.failure(e)
             }
         } catch (e: IOException) {
@@ -202,25 +187,11 @@ class RecipeRepositoryImpl @Inject constructor(
                 Result.success(scaledRecipe)
             } catch (e2: CancellationException) {
                 throw e2
-            } catch (e2: Exception) {
-                Result.failure(e)
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to scale recipe")
-
-            // Fallback to local scaling
-            try {
-                val entity = recipeDao.getRecipeByIdSync(recipeId)
-                    ?: return Result.failure(e)
-                val recipe = entity.toDomain()
-                val scaledRecipe = scaleRecipeLocally(recipe, servings)
-                Result.success(scaledRecipe)
-            } catch (e2: CancellationException) {
-                throw e2
-            } catch (e2: Exception) {
+            } catch (e2: SQLiteException) {
                 Result.failure(e)
             }
         }
+        // Unexpected exceptions propagate per issue #34 — broad catch removed.
     }
 
     override suspend fun toggleFavorite(recipeId: String): Result<Boolean> {
@@ -245,7 +216,7 @@ class RecipeRepositoryImpl @Inject constructor(
             Result.success(newFavoriteState)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.e(e, "Failed to toggle favorite")
             Result.failure(e)
         }
@@ -277,10 +248,11 @@ class RecipeRepositoryImpl @Inject constructor(
         } catch (e: IOException) {
             Timber.w(e, "Network error fetching recipe from API: $recipeId")
             null
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to fetch recipe from API: $recipeId")
+        } catch (e: SQLiteException) {
+            Timber.e(e, "Failed to cache recipe locally: $recipeId")
             null
         }
+        // Unexpected exceptions propagate per issue #34 — broad catch removed.
     }
 
     /**
@@ -341,7 +313,7 @@ class RecipeRepositoryImpl @Inject constructor(
             recipeRulesDao.insertKnownIngredients(entities)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: SQLiteException) {
             Timber.w(e, "Failed to persist ingredient names")
         }
     }
@@ -354,15 +326,9 @@ class RecipeRepositoryImpl @Inject constructor(
             return
         }
         Timber.d("prefetchRecipes: ${missing.size}/${recipeIds.size} recipes need fetching")
-        missing.forEach { id ->
-            try {
-                fetchAndCacheRecipe(id)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.w(e, "Failed to prefetch recipe: $id")
-            }
-        }
+        // fetchAndCacheRecipe handles its own known errors (returns null). Unexpected
+        // exceptions propagate per issue #34 ("unexpected exceptions still crash").
+        missing.forEach { id -> fetchAndCacheRecipe(id) }
     }
 
     override suspend fun rateRecipe(recipeId: String, rating: Int, feedback: String): Result<Unit> {
@@ -379,10 +345,8 @@ class RecipeRepositoryImpl @Inject constructor(
         } catch (e: IOException) {
             Timber.w(e, "Network error on submit recipe rating")
             Result.failure(e)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to submit recipe rating")
-            Result.failure(e)
         }
+        // Unexpected exceptions propagate per issue #34 — broad catch removed.
     }
 
     /**
