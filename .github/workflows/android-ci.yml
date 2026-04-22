@@ -107,16 +107,9 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Run Instrumented Tests
-        # Scope: only presentation-layer androidTests (Compose UI). The
-        # com.rasoiai.app.e2e.* package contains flow tests + journey suites
-        # that assume a real backend at http://10.0.2.2:8000 with seeded
-        # PostgreSQL reference data; running those on a bare GitHub-hosted
-        # emulator would fail at the first HTTP call. Local dev and manual
-        # test runs still use ./gradlew :app:connectedDebugAndroidTest (no
-        # filter) against a running backend.
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 29
           arch: x86_64
           working-directory: android
-          script: ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.notPackage=com.rasoiai.app.e2e
+          script: ./gradlew connectedCheck
