@@ -5,18 +5,19 @@
 
 ## Current Task
 
-Loop iteration on 2026-04-22 — PR #89 follow-on work. Issue #34 (broad exception handling in repositories) implemented for the two production files listed in the issue body. Branch is now 58 commits.
+Loop iteration on 2026-04-22 — PR #89 follow-on work. Issue #34 (broad exception handling in repositories) implemented for the two production files listed in the issue body, plus extended to ChatRepositoryImpl as #34-spirit follow-up. Branch is now 60 commits.
 
 ### Pending
 
-- [ ] **#34 sweep extension** (optional) — 10 other repository files contain ~115 broad `catch (e: Exception)` instances not in the issue's literal scope. Same TDD pattern would apply.
+- [ ] **#34 sweep extension to remaining 9 files** (optional) — ~105 broad `catch (e: Exception)` instances remain across MealPlanRepositoryImpl, HouseholdRepositoryImpl, RecipeRulesRepositoryImpl, NotificationRepositoryImpl, AuthRepositoryImpl, GroceryRepositoryImpl, SettingsRepositoryImpl, PantryRepositoryImpl, StatsRepositoryImpl. Same TDD pattern (RED test → narrow to typed catch → GREEN). MealPlanRepositoryImpl (17 catches) is the largest single target if continuing.
 
 See "Blocked" below for items still requiring user/emulator action.
 
 ## Completed (2026-04-22 loop iteration)
 
 - [x] **#34 FavoritesRepositoryImpl exception narrowing** (605ee1b) — 7 broad `catch (e: Exception)` → `catch (e: SQLiteException)`. 9 new TDD tests (7 propagation + 2 contract). All 28 tests in file pass.
-- [x] **#34 RecipeRepositoryImpl exception narrowing** (68598b7) — 14 broad catches narrowed to HttpException/IOException/SQLiteException by call type. Inner forEach swallows removed (fetchAndCacheRecipe handles known errors). 6 new TDD tests + 1 pre-existing test updated to assert new contract. All 23 tests in file pass; full `:data:testDebugUnitTest` green.
+- [x] **#34 RecipeRepositoryImpl exception narrowing** (68598b7) — 14 broad catches narrowed to HttpException/IOException/SQLiteException by call type. Inner forEach swallows removed (fetchAndCacheRecipe handles known errors). 6 new TDD tests + 1 pre-existing test updated to assert new contract. All 23 tests in file pass.
+- [x] **#34 ChatRepositoryImpl exception narrowing** (b49ce01) — 3 of 4 broad catches narrowed (SQLiteException for DB, dropped outer for sendImageMessage). compressAndEncodeImage broad catch retained with documented justification (BitmapFactory/Base64 exception diversity). 4 new TDD tests + 2 pre-existing tests rewritten (one was passing for the wrong reason via `Uri.parse` RuntimeException being silently wrapped). Full `:data:testDebugUnitTest` green (360 tests).
 
 ## Completed (2026-04-21 loop iteration)
 
