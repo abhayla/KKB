@@ -1,5 +1,7 @@
 package com.rasoiai.data.repository
 
+import android.database.sqlite.SQLiteConstraintException
+import android.database.sqlite.SQLiteException
 import app.cash.turbine.test
 import com.rasoiai.data.local.dao.CollectionDao
 import com.rasoiai.data.local.dao.FavoriteDao
@@ -438,6 +440,113 @@ class FavoritesRepositoryImplTest {
             } catch (e: CancellationException) {
                 assertEquals("cancelled", e.message)
             }
+        }
+    }
+
+    @Nested
+    @DisplayName("Unexpected exception propagation (issue #34)")
+    inner class UnexpectedExceptionPropagation {
+
+        @Test
+        @DisplayName("addToRecentlyViewed should still wrap SQLiteException in Result.failure")
+        fun `addToRecentlyViewed wraps SQLiteException`() = runTest {
+            coEvery { mockCollectionDao.insertRecentlyViewed(any()) } throws SQLiteException("disk full")
+            val result = repository.addToRecentlyViewed("recipe-1")
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
+        }
+
+        @Test
+        @DisplayName("addToRecentlyViewed should propagate IllegalStateException instead of swallowing it")
+        fun `addToRecentlyViewed propagates IllegalStateException`() = runTest {
+            coEvery { mockCollectionDao.insertRecentlyViewed(any()) } throws IllegalStateException("db closed")
+            try {
+                repository.addToRecentlyViewed("recipe-1")
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("createCollection should propagate IllegalStateException")
+        fun `createCollection propagates IllegalStateException`() = runTest {
+            coEvery { mockCollectionDao.getCollectionCount() } throws IllegalStateException("not initialized")
+            try {
+                repository.createCollection("Test")
+                fail("Expected IllegalStateException to propagate")
+            } catch (e: IllegalStateException) {
+                assertEquals("not initialized", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("deleteCollection should propagate IllegalStateException")
+        fun `deleteCollection propagates IllegalStateException`() = runTest {
+            coEvery { mockCollectionDao.getCollectionByIdSync("collection-1") } throws IllegalStateException("db closed")
+            try {
+                repository.deleteCollection("collection-1")
+                fail("Expected IllegalStateException to propagate")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("addRecipeToCollection should propagate IllegalStateException")
+        fun `addRecipeToCollection propagates IllegalStateException`() = runTest {
+            coEvery { mockFavoriteDao.isFavoriteSync("recipe-1") } throws IllegalStateException("db closed")
+            try {
+                repository.addRecipeToCollection("recipe-1", "collection-1")
+                fail("Expected IllegalStateException to propagate")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("removeRecipeFromCollection should propagate IllegalStateException")
+        fun `removeRecipeFromCollection propagates IllegalStateException`() = runTest {
+            coEvery { mockFavoriteDao.moveToCollection("recipe-1", null) } throws IllegalStateException("db closed")
+            try {
+                repository.removeRecipeFromCollection("recipe-1", "collection-1")
+                fail("Expected IllegalStateException to propagate")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("removeFromFavorites should propagate IllegalStateException")
+        fun `removeFromFavorites propagates IllegalStateException`() = runTest {
+            coEvery { mockFavoriteDao.deleteFavorite("recipe-1") } throws IllegalStateException("db closed")
+            try {
+                repository.removeFromFavorites("recipe-1")
+                fail("Expected IllegalStateException to propagate")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("reorderRecipes should propagate IllegalStateException")
+        fun `reorderRecipes propagates IllegalStateException`() = runTest {
+            coEvery { mockFavoriteDao.updateOrder(any(), any()) } throws IllegalStateException("db closed")
+            try {
+                repository.reorderRecipes("collection-1", listOf("recipe-1"))
+                fail("Expected IllegalStateException to propagate")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        @Test
+        @DisplayName("createCollection should still wrap SQLiteConstraintException in Result.failure")
+        fun `createCollection wraps SQLiteConstraintException`() = runTest {
+            coEvery { mockCollectionDao.insertCollection(any()) } throws SQLiteConstraintException("UNIQUE")
+            val result = repository.createCollection("Duplicate Name")
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is SQLiteConstraintException)
         }
     }
 }
