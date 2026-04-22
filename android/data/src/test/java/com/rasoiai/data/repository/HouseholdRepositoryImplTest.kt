@@ -1,5 +1,6 @@
 package com.rasoiai.data.repository
 
+import android.database.sqlite.SQLiteException
 import app.cash.turbine.test
 import com.rasoiai.data.local.dao.HouseholdDao
 import com.rasoiai.data.local.entity.HouseholdEntity
@@ -19,6 +20,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -33,6 +35,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HouseholdRepositoryImplTest {
@@ -249,12 +252,15 @@ class HouseholdRepositoryImplTest {
         @Test
         @DisplayName("returns failure on API error")
         fun returnsFailureOnError() = runTest {
-            coEvery { mockApiService.createHousehold(any()) } throws RuntimeException("Network error")
+            // Realistic API error — issue #34 narrowed broad catch so bare RuntimeException now propagates.
+            coEvery { mockApiService.createHousehold(any()) } throws retrofit2.HttpException(
+                retrofit2.Response.error<Any>(500, okhttp3.ResponseBody.create(null, ""))
+            )
 
             val result = repository.createHousehold("Sharma Family")
 
             assertTrue(result.isFailure)
-            assertEquals("Network error", result.exceptionOrNull()!!.message)
+            assertTrue(result.exceptionOrNull() is retrofit2.HttpException)
         }
     }
 
@@ -277,7 +283,10 @@ class HouseholdRepositoryImplTest {
         @Test
         @DisplayName("returns failure on API error")
         fun returnsFailureOnError() = runTest {
-            coEvery { mockApiService.updateHousehold("hh-1", any()) } throws RuntimeException("Forbidden")
+            // Realistic API error — issue #34 narrowed broad catch so bare RuntimeException now propagates.
+            coEvery { mockApiService.updateHousehold("hh-1", any()) } throws retrofit2.HttpException(
+                retrofit2.Response.error<Any>(403, okhttp3.ResponseBody.create(null, ""))
+            )
 
             val result = repository.updateHousehold("hh-1", name = "Updated Family", slotConfig = null, maxMembers = null)
 
@@ -304,7 +313,10 @@ class HouseholdRepositoryImplTest {
         @Test
         @DisplayName("returns failure on API error")
         fun returnsFailureOnError() = runTest {
-            coEvery { mockApiService.deactivateHousehold("hh-1") } throws RuntimeException("Not found")
+            // Realistic API error — issue #34 narrowed broad catch so bare RuntimeException now propagates.
+            coEvery { mockApiService.deactivateHousehold("hh-1") } throws retrofit2.HttpException(
+                retrofit2.Response.error<Any>(404, okhttp3.ResponseBody.create(null, ""))
+            )
 
             val result = repository.deactivateHousehold("hh-1")
 
@@ -428,7 +440,10 @@ class HouseholdRepositoryImplTest {
         @Test
         @DisplayName("getHouseholdNotifications emits empty list on error")
         fun getNotificationsEmptyOnError() = runTest {
-            coEvery { mockApiService.getHouseholdNotifications("hh-1") } throws RuntimeException("Server error")
+            // Realistic API error — issue #34 narrowed broad catch so bare RuntimeException now propagates.
+            coEvery { mockApiService.getHouseholdNotifications("hh-1") } throws retrofit2.HttpException(
+                retrofit2.Response.error<Any>(500, okhttp3.ResponseBody.create(null, ""))
+            )
 
             repository.getHouseholdNotifications("hh-1").test {
                 val notifications = awaitItem()
@@ -479,6 +494,307 @@ class HouseholdRepositoryImplTest {
                 fail("Expected CancellationException to propagate, got Result wrapper instead")
             } catch (e: CancellationException) {
                 assertEquals("cancelled", e.message)
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Unexpected exception propagation (issue #34)")
+    inner class UnexpectedExceptionPropagation {
+
+        // ---- createHousehold ----
+
+        @Test
+        @DisplayName("createHousehold wraps SQLiteException in Result.failure")
+        fun `createHousehold wraps SQLiteException`() = runTest {
+            coEvery { mockApiService.createHousehold(any()) } returns testDetailResponse
+            coEvery { mockHouseholdDao.replaceHouseholdWithMembers(any(), any()) } throws SQLiteException("disk full")
+
+            val result = repository.createHousehold("Sharma Family")
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
+        }
+
+        @Test
+        @DisplayName("createHousehold wraps IOException in Result.failure")
+        fun `createHousehold wraps IOException`() = runTest {
+            coEvery { mockApiService.createHousehold(any()) } throws IOException("no network")
+
+            val result = repository.createHousehold("Sharma Family")
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is IOException)
+        }
+
+        @Test
+        @DisplayName("createHousehold propagates IllegalStateException instead of wrapping")
+        fun `createHousehold propagates IllegalStateException`() = runTest {
+            coEvery { mockApiService.createHousehold(any()) } throws IllegalStateException("db closed")
+            try {
+                repository.createHousehold("Sharma Family")
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        // ---- updateHousehold ----
+
+        @Test
+        @DisplayName("updateHousehold wraps SQLiteException in Result.failure")
+        fun `updateHousehold wraps SQLiteException`() = runTest {
+            coEvery { mockApiService.updateHousehold("hh-1", any()) } returns testDetailResponse
+            coEvery { mockHouseholdDao.replaceHouseholdWithMembers(any(), any()) } throws SQLiteException("disk full")
+
+            val result = repository.updateHousehold("hh-1", name = "x", slotConfig = null, maxMembers = null)
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is SQLiteException)
+        }
+
+        @Test
+        @DisplayName("updateHousehold propagates IllegalStateException instead of wrapping")
+        fun `updateHousehold propagates IllegalStateException`() = runTest {
+            coEvery { mockApiService.updateHousehold("hh-1", any()) } throws IllegalStateException("db closed")
+            try {
+                repository.updateHousehold("hh-1", name = "x", slotConfig = null, maxMembers = null)
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        // ---- deactivateHousehold ----
+
+        @Test
+        @DisplayName("deactivateHousehold propagates IllegalStateException instead of wrapping")
+        fun `deactivateHousehold propagates IllegalStateException`() = runTest {
+            coEvery { mockApiService.deactivateHousehold("hh-1") } throws IllegalStateException("db closed")
+            try {
+                repository.deactivateHousehold("hh-1")
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("db closed", e.message)
+            }
+        }
+
+        // ---- addMember ----
+
+        @Test
+        @DisplayName("addMember wraps HttpException in Result.failure")
+        fun `addMember wraps HttpException`() = runTest {
+            coEvery { mockApiService.addHouseholdMember("hh-1", any()) } throws retrofit2.HttpException(
+                retrofit2.Response.error<Any>(400, okhttp3.ResponseBody.create(null, ""))
+            )
+
+            val result = repository.addMember("hh-1", "+919876543210", isTemporary = false)
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is retrofit2.HttpException)
+        }
+
+        @Test
+        @DisplayName("addMember propagates IllegalStateException instead of wrapping")
+        fun `addMember propagates IllegalStateException`() = runTest {
+            coEvery { mockApiService.addHouseholdMember("hh-1", any()) } throws IllegalStateException("unexpected")
+            try {
+                repository.addMember("hh-1", "+919876543210", isTemporary = false)
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        // ---- updateMember ----
+
+        @Test
+        @DisplayName("updateMember propagates IllegalStateException instead of wrapping")
+        fun `updateMember propagates IllegalStateException`() = runTest {
+            coEvery { mockApiService.updateHouseholdMember("hh-1", "mem-2", any()) } throws
+                IllegalStateException("unexpected")
+            try {
+                repository.updateMember(
+                    householdId = "hh-1",
+                    memberId = "mem-2",
+                    canEditSharedPlan = true,
+                    portionSize = 1.0f,
+                    isTemporary = null
+                )
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        // ---- removeMember ----
+
+        @Test
+        @DisplayName("removeMember propagates IllegalStateException instead of wrapping")
+        fun `removeMember propagates IllegalStateException`() = runTest {
+            coEvery { mockApiService.removeHouseholdMember("hh-1", "mem-2") } throws
+                IllegalStateException("unexpected")
+            try {
+                repository.removeMember("hh-1", "mem-2")
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        // ---- refreshInviteCode ----
+
+        @Test
+        @DisplayName("refreshInviteCode propagates IllegalStateException instead of wrapping")
+        fun `refreshInviteCode propagates IllegalStateException`() = runTest {
+            coEvery { mockApiService.refreshInviteCode("hh-1") } throws IllegalStateException("unexpected")
+            try {
+                repository.refreshInviteCode("hh-1")
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        // ---- joinHousehold ----
+
+        @Test
+        @DisplayName("joinHousehold propagates IllegalStateException instead of wrapping")
+        fun `joinHousehold propagates IllegalStateException`() = runTest {
+            coEvery { mockApiService.joinHousehold(any()) } throws IllegalStateException("unexpected")
+            try {
+                repository.joinHousehold("ABC123")
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        // ---- leaveHousehold ----
+
+        @Test
+        @DisplayName("leaveHousehold propagates IllegalStateException instead of wrapping")
+        fun `leaveHousehold propagates IllegalStateException`() = runTest {
+            coEvery { mockApiService.leaveHousehold("hh-1") } throws IllegalStateException("unexpected")
+            try {
+                repository.leaveHousehold("hh-1")
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        // ---- transferOwnership ----
+
+        @Test
+        @DisplayName("transferOwnership propagates IllegalStateException instead of wrapping")
+        fun `transferOwnership propagates IllegalStateException`() = runTest {
+            coEvery { mockApiService.transferOwnership("hh-1", any()) } throws IllegalStateException("unexpected")
+            try {
+                repository.transferOwnership("hh-1", "mem-2")
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        // ---- getHouseholdRecipeRules (Flow) ----
+
+        @Test
+        @DisplayName("getHouseholdRecipeRules emits empty list on HttpException")
+        fun `getHouseholdRecipeRules emits empty on HttpException`() = runTest {
+            coEvery { mockApiService.getHouseholdRecipeRules("hh-1") } throws retrofit2.HttpException(
+                retrofit2.Response.error<Any>(500, okhttp3.ResponseBody.create(null, ""))
+            )
+
+            repository.getHouseholdRecipeRules("hh-1").test {
+                val rules = awaitItem()
+                assertTrue(rules.isEmpty())
+                awaitComplete()
+            }
+        }
+
+        @Test
+        @DisplayName("getHouseholdRecipeRules propagates IllegalStateException instead of emitting empty")
+        fun `getHouseholdRecipeRules propagates IllegalStateException`() = runTest {
+            coEvery { mockApiService.getHouseholdRecipeRules("hh-1") } throws IllegalStateException("unexpected")
+            try {
+                repository.getHouseholdRecipeRules("hh-1").collect()
+                fail("Expected IllegalStateException to propagate")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        // ---- getHouseholdMealPlan (Flow) ----
+
+        @Test
+        @DisplayName("getHouseholdMealPlan emits null on HttpException")
+        fun `getHouseholdMealPlan emits null on HttpException`() = runTest {
+            coEvery { mockApiService.getHouseholdMealPlan("hh-1") } throws retrofit2.HttpException(
+                retrofit2.Response.error<Any>(500, okhttp3.ResponseBody.create(null, ""))
+            )
+
+            repository.getHouseholdMealPlan("hh-1").test {
+                val mealPlan = awaitItem()
+                assertNull(mealPlan)
+                awaitComplete()
+            }
+        }
+
+        @Test
+        @DisplayName("getHouseholdMealPlan propagates IllegalStateException instead of emitting null")
+        fun `getHouseholdMealPlan propagates IllegalStateException`() = runTest {
+            coEvery { mockApiService.getHouseholdMealPlan("hh-1") } throws IllegalStateException("unexpected")
+            try {
+                repository.getHouseholdMealPlan("hh-1").collect()
+                fail("Expected IllegalStateException to propagate")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        // ---- getHouseholdNotifications (Flow) ----
+
+        @Test
+        @DisplayName("getHouseholdNotifications propagates IllegalStateException instead of emitting empty")
+        fun `getHouseholdNotifications propagates IllegalStateException`() = runTest {
+            coEvery { mockApiService.getHouseholdNotifications("hh-1") } throws IllegalStateException("unexpected")
+            try {
+                repository.getHouseholdNotifications("hh-1").collect()
+                fail("Expected IllegalStateException to propagate")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        // ---- getHouseholdStats ----
+
+        @Test
+        @DisplayName("getHouseholdStats propagates IllegalStateException instead of wrapping")
+        fun `getHouseholdStats propagates IllegalStateException`() = runTest {
+            coEvery { mockApiService.getHouseholdStats("hh-1", null) } throws IllegalStateException("unexpected")
+            try {
+                repository.getHouseholdStats("hh-1", null)
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
+            }
+        }
+
+        // ---- markNotificationRead ----
+
+        @Test
+        @DisplayName("markNotificationRead propagates IllegalStateException from API instead of wrapping")
+        fun `markNotificationRead propagates IllegalStateException`() = runTest {
+            coEvery { mockHouseholdDao.getActiveHouseholdSync() } returns testHouseholdEntity
+            coEvery { mockApiService.markHouseholdNotificationRead("hh-1", "notif-1") } throws
+                IllegalStateException("unexpected")
+            try {
+                repository.markNotificationRead("notif-1")
+                fail("Expected IllegalStateException to propagate, got Result wrapper instead")
+            } catch (e: IllegalStateException) {
+                assertEquals("unexpected", e.message)
             }
         }
     }
