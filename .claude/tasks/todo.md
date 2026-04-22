@@ -52,7 +52,7 @@ Both issues can be closed with a short deployment note when the user gets to the
 | Issue | Reason | Owner |
 |-------|--------|-------|
 | Merging PR #89 | CI settling + `claude-review` needs GitHub App install + ANTHROPIC_API_KEY secret | User |
-| Closing stale issues (#21 #24 #25 #27 #28 #30 #34 #35 #38 #57 #58 #67 #70) | `gh issue close` is an external visible action | User |
+| ~~Closing stale issues~~ | Closed on 2026-04-22: #21 #24 #25 #27 #28 #30 #34 #35 #38 #57 #58 #67 #70 — all 13 closed with evidence-linked comments pointing to specific commits on `loop/repo-exceptions-and-hook-fixes`. | ✅ Done |
 | #12 voice input | Requires Android microphone permission + emulator audio stack | Emulator-gated |
 | #14 camera / #15 gallery | Requires camera permissions + emulator | Emulator-gated |
 | #36 #37 #78 #79 E2E tests | Requires Compose instrumented runner | Emulator-gated |
