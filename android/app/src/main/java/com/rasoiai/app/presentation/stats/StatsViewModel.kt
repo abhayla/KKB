@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.time.YearMonth
+import java.util.Locale
 import javax.inject.Inject
 
 /**
@@ -284,7 +285,7 @@ class StatsViewModel @Inject constructor(
                 append("This Month:\n")
                 append("  Meals Cooked: ${it.mealsCooked}\n")
                 append("  New Recipes: ${it.newRecipes}\n")
-                append("  Avg Rating: ${String.format("%.1f", it.averageRating)}\n\n")
+                append("  Avg Rating: ${String.format(Locale.US, "%.1f", it.averageRating)}\n\n")
             }
             val unlocked = state.unlockedAchievements
             if (unlocked.isNotEmpty()) {

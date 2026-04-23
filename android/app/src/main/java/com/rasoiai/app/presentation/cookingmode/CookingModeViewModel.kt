@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.util.Locale
 import javax.inject.Inject
 
 /**
@@ -85,7 +86,7 @@ data class CookingModeUiState(
         get() = timerRemainingSeconds % 60
 
     val timerDisplayText: String
-        get() = String.format("%02d:%02d", timerDisplayMinutes, timerDisplaySeconds)
+        get() = String.format(Locale.US, "%02d:%02d", timerDisplayMinutes, timerDisplaySeconds)
 }
 
 /**

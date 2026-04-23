@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
 import java.io.IOException
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -355,8 +356,8 @@ class RecipeRepositoryImpl @Inject constructor(
     private fun formatQuantity(value: Double): String {
         return when {
             value == value.toLong().toDouble() -> value.toLong().toString()
-            value < 1 -> String.format("%.2f", value).trimEnd('0').trimEnd('.')
-            else -> String.format("%.1f", value).trimEnd('0').trimEnd('.')
+            value < 1 -> String.format(Locale.US, "%.2f", value).trimEnd('0').trimEnd('.')
+            else -> String.format(Locale.US, "%.1f", value).trimEnd('0').trimEnd('.')
         }
     }
 }

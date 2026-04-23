@@ -22,6 +22,7 @@ import timber.log.Timber
 import java.io.IOException
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -369,7 +370,7 @@ class GroceryRepositoryImpl @Inject constructor(
                 val sumStr = if (sum == sum.toLong().toDouble()) {
                     sum.toLong().toString()
                 } else {
-                    String.format("%.1f", sum)
+                    String.format(Locale.US, "%.1f", sum)
                 }
                 return sumStr to (unit1.ifBlank { unit2 })
             }

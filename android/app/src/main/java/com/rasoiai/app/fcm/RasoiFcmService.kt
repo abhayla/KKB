@@ -7,6 +7,7 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import com.rasoiai.app.R
 import com.rasoiai.data.local.dao.NotificationDao
 import com.rasoiai.data.local.entity.NotificationEntity
 import com.rasoiai.domain.repository.NotificationRepository
@@ -220,7 +221,7 @@ class RasoiFcmService : FirebaseMessagingService() {
 
         // Build notification
         val builder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(android.R.drawable.ic_dialog_info) // TODO: Use app icon
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
             .setContentText(body)
             .setAutoCancel(true)

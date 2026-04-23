@@ -51,6 +51,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import java.util.Locale
 import javax.inject.Inject
 
 // ==================== ViewModel ====================
@@ -268,7 +269,7 @@ fun HouseholdMemberDetailScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "${String.format("%.1f", uiState.portionSize)}x",
+                        text = "${String.format(Locale.US, "%.1f", uiState.portionSize)}x",
                         style = MaterialTheme.typography.headlineMedium,
                         color = MaterialTheme.colorScheme.primary
                     )

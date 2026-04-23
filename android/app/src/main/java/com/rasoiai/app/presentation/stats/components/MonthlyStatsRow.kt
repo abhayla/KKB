@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.rasoiai.app.presentation.theme.RasoiAITheme
 import com.rasoiai.app.presentation.theme.spacing
 import com.rasoiai.domain.model.MonthlyStats
+import java.util.Locale
 
 @Composable
 fun MonthlyStatsRow(
@@ -54,7 +55,7 @@ fun MonthlyStatsRow(
             )
 
             StatCard(
-                value = String.format("%.1f", stats.averageRating),
+                value = String.format(Locale.US, "%.1f", stats.averageRating),
                 label = "Avg\nRating",
                 modifier = Modifier.weight(1f)
             )
