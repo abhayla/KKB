@@ -179,9 +179,8 @@ internal fun RatingRow(
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.width(spacing.xs))
-            val countSuffix = if (ratingCount == 1) "$ratingCount rating" else "$ratingCount ratings"
             Text(
-                text = "($countSuffix)",
+                text = "(${formatRatingCountLabel(ratingCount)})",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
