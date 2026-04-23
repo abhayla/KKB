@@ -4,7 +4,6 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.rasoiai.app.presentation.theme.RasoiAITheme
 import com.rasoiai.domain.model.CuisineType
@@ -51,7 +50,8 @@ class CuisinePreferencesScreenTest {
                 )
             }
         }
-        composeTestRule.onNodeWithText("Save").performScrollTo().assertIsDisplayed()
+        // Save button is outside the scrollable body Column — performScrollTo is not valid here
+        composeTestRule.onNodeWithText("Save").assertIsDisplayed()
     }
 
     @Test
@@ -87,8 +87,9 @@ class CuisinePreferencesScreenTest {
                 )
             }
         }
-        composeTestRule.onNodeWithText("North Indian").performScrollTo().assertIsDisplayed()
-        composeTestRule.onNodeWithText("South Indian").performScrollTo().assertIsDisplayed()
+        // CuisineCard renders cuisine.displayName.uppercase() — "NORTH INDIAN", "SOUTH INDIAN"
+        composeTestRule.onNodeWithText("NORTH INDIAN").assertIsDisplayed()
+        composeTestRule.onNodeWithText("SOUTH INDIAN").assertIsDisplayed()
     }
 
     @Test
@@ -108,7 +109,8 @@ class CuisinePreferencesScreenTest {
                 )
             }
         }
-        composeTestRule.onNodeWithText("Save").performScrollTo().performClick()
+        // Save button is outside the scrollable body Column — performScrollTo is not valid here
+        composeTestRule.onNodeWithText("Save").performClick()
         assert(saveCalled) { "onSave callback was not triggered" }
     }
 }

@@ -31,7 +31,8 @@ class FriendsLeaderboardScreenTest {
                 )
             }
         }
-        composeTestRule.onNodeWithText("Friends", substring = true, ignoreCase = true)
+        // Title is "Friends & Leaderboard"; "Friends" substring also matches "Invite Friends" button
+        composeTestRule.onNodeWithText("Friends & Leaderboard", substring = false, ignoreCase = false)
             .assertIsDisplayed()
     }
 
@@ -90,8 +91,8 @@ class FriendsLeaderboardScreenTest {
                 )
             }
         }
-        // Should show an empty state message when no leaderboard entries
-        composeTestRule.onNodeWithText("No friends", substring = true, ignoreCase = true)
+        // Empty state card shows "No leaderboard data yet"
+        composeTestRule.onNodeWithText("No leaderboard data yet", substring = true, ignoreCase = true)
             .assertIsDisplayed()
     }
 

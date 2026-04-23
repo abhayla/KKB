@@ -2,6 +2,8 @@ package com.rasoiai.app.presentation.settings.screens
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.rasoiai.app.presentation.theme.RasoiAITheme
@@ -28,7 +30,9 @@ class ConnectedAccountsScreenTest {
                 )
             }
         }
-        composeTestRule.onNodeWithText("Connected Accounts", substring = true, ignoreCase = true)
+        // TopAppBar title and its parent both expose this text — take the first match
+        composeTestRule.onAllNodesWithText("Connected Accounts", substring = false, ignoreCase = false)
+            .onFirst()
             .assertIsDisplayed()
     }
 
@@ -73,7 +77,9 @@ class ConnectedAccountsScreenTest {
                 ConnectedAccountsTestContent(
                     uiState = ConnectedAccountsUiState(
                         isLoading = false,
-                        googleEmail = "abhay@gmail.com",
+                        // googleEmail must be blank for googleName to be shown:
+                        // detail = googleEmail.ifBlank { googleName }
+                        googleEmail = "",
                         googleName = "Abhay Sharma"
                     )
                 )

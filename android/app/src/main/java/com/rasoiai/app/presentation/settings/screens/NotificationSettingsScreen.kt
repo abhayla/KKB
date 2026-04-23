@@ -1,5 +1,6 @@
 package com.rasoiai.app.presentation.settings.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -231,6 +232,7 @@ private fun NotificationToggleRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(enabled = enabled) { onToggle(!isChecked) }
             .padding(vertical = spacing.sm),
         verticalAlignment = Alignment.CenterVertically
     ) {
