@@ -4,7 +4,6 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.rasoiai.app.presentation.theme.RasoiAITheme
 import com.rasoiai.domain.model.DayOfWeek
@@ -76,7 +75,8 @@ class CookingTimeScreenTest {
                 )
             }
         }
-        composeTestRule.onNodeWithText("Save").performScrollTo().assertIsDisplayed()
+        // Save button is in the outer Column (not inside the verticalScroll body), so performScrollTo is invalid
+        composeTestRule.onNodeWithText("Save").assertIsDisplayed()
     }
 
     @Test
@@ -116,7 +116,9 @@ class CookingTimeScreenTest {
                 )
             }
         }
-        composeTestRule.onNodeWithText("Busy Days", substring = true).performScrollTo().assertIsDisplayed()
+        // Section header text is "Busy days (quick meals only):" — match by substring "Busy days"
+        // The section is inside the verticalScroll Column; no performScrollTo needed for a Column
+        composeTestRule.onNodeWithText("Busy days", substring = true).assertIsDisplayed()
     }
 
     @Test
@@ -138,7 +140,8 @@ class CookingTimeScreenTest {
                 )
             }
         }
-        composeTestRule.onNodeWithText("Save").performScrollTo().performClick()
+        // Save button is outside the scrollable body — performScrollTo not valid here
+        composeTestRule.onNodeWithText("Save").performClick()
         assert(saveCalled) { "onSave callback was not triggered" }
     }
 }

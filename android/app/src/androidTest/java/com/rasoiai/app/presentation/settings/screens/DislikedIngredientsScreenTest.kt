@@ -52,7 +52,8 @@ class DislikedIngredientsScreenTest {
                 )
             }
         }
-        composeTestRule.onNodeWithText("Save").performScrollTo().assertIsDisplayed()
+        // Save button is outside the scrollable body Column — performScrollTo is not valid here
+        composeTestRule.onNodeWithText("Save").assertIsDisplayed()
     }
 
     @Test
@@ -90,9 +91,10 @@ class DislikedIngredientsScreenTest {
                 )
             }
         }
-        composeTestRule.onNodeWithText("Bitter Gourd").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Okra").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Eggplant").assertIsDisplayed()
+        // Custom ingredients appear in a FlowRow below the common-dislikes section; scroll to them
+        composeTestRule.onNodeWithText("Bitter Gourd").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Okra").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Eggplant").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -111,7 +113,9 @@ class DislikedIngredientsScreenTest {
                 )
             }
         }
-        composeTestRule.onNodeWithText("Search ingredients", useUnmergedTree = true).assertIsDisplayed()
+        // Placeholder text is "Search ingredients..." — use substring match
+        composeTestRule.onNodeWithText("Search ingredients", substring = true, useUnmergedTree = true)
+            .assertIsDisplayed()
     }
 
     @Test
@@ -132,7 +136,8 @@ class DislikedIngredientsScreenTest {
                 )
             }
         }
-        composeTestRule.onNodeWithText("Save").performScrollTo().performClick()
+        // Save button is outside the scrollable body Column — performScrollTo is not valid here
+        composeTestRule.onNodeWithText("Save").performClick()
         assert(saveCalled) { "onSave callback was not triggered" }
     }
 }

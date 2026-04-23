@@ -2,6 +2,8 @@ package com.rasoiai.app.presentation.settings.screens
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -33,7 +35,9 @@ class NotificationSettingsScreenTest {
                 )
             }
         }
-        composeTestRule.onNodeWithText("Notifications", substring = true, ignoreCase = true)
+        // "Notifications" substring matches TopAppBar title, toggle rows, and label — take the first
+        composeTestRule.onAllNodesWithText("Notifications", substring = true, ignoreCase = false)
+            .onFirst()
             .assertIsDisplayed()
     }
 
@@ -75,7 +79,8 @@ class NotificationSettingsScreenTest {
                 )
             }
         }
-        composeTestRule.onNodeWithText("Notifications", substring = true, ignoreCase = true)
+        // Master toggle row title is "All Notifications" — assert on unique exact text
+        composeTestRule.onNodeWithText("All Notifications", substring = false, ignoreCase = false)
             .assertIsDisplayed()
     }
 
@@ -96,15 +101,16 @@ class NotificationSettingsScreenTest {
                 )
             }
         }
-        composeTestRule.onNodeWithText("Meal", substring = true, ignoreCase = true)
+        // Use exact row titles to avoid multi-node ambiguity from subtitle text
+        composeTestRule.onNodeWithText("Meal Plan Reminders", substring = false, ignoreCase = false)
             .assertIsDisplayed()
-        composeTestRule.onNodeWithText("Shopping", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithText("Shopping List Reminders", substring = false, ignoreCase = false)
             .assertIsDisplayed()
-        composeTestRule.onNodeWithText("Cooking", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithText("Cooking Time Reminders", substring = false, ignoreCase = false)
             .assertIsDisplayed()
-        composeTestRule.onNodeWithText("Festival", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithText("Festival Food Suggestions", substring = false, ignoreCase = false)
             .assertIsDisplayed()
-        composeTestRule.onNodeWithText("Achievement", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithText("Achievements", substring = false, ignoreCase = false)
             .assertIsDisplayed()
     }
 
@@ -127,8 +133,8 @@ class NotificationSettingsScreenTest {
                 )
             }
         }
-        // Click on the master notification toggle text/row
-        composeTestRule.onNodeWithText("Enable Notifications", substring = true, ignoreCase = true)
+        // Master toggle row title is "All Notifications" (not "Enable Notifications")
+        composeTestRule.onNodeWithText("All Notifications", substring = false, ignoreCase = false)
             .performClick()
         assert(toggleValue != null) { "onToggleMasterNotifications callback was not triggered" }
     }
@@ -150,15 +156,16 @@ class NotificationSettingsScreenTest {
                 )
             }
         }
-        composeTestRule.onNodeWithText("Meal", substring = true, ignoreCase = true)
+        // Use exact row titles to avoid multi-node ambiguity from subtitle text
+        composeTestRule.onNodeWithText("Meal Plan Reminders", substring = false, ignoreCase = false)
             .assertIsDisplayed()
-        composeTestRule.onNodeWithText("Shopping", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithText("Shopping List Reminders", substring = false, ignoreCase = false)
             .assertIsDisplayed()
-        composeTestRule.onNodeWithText("Cooking", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithText("Cooking Time Reminders", substring = false, ignoreCase = false)
             .assertIsDisplayed()
-        composeTestRule.onNodeWithText("Festival", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithText("Festival Food Suggestions", substring = false, ignoreCase = false)
             .assertIsDisplayed()
-        composeTestRule.onNodeWithText("Achievement", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithText("Achievements", substring = false, ignoreCase = false)
             .assertIsDisplayed()
     }
 }

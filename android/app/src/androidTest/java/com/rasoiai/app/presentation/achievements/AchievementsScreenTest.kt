@@ -2,8 +2,10 @@ package com.rasoiai.app.presentation.achievements
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.rasoiai.app.presentation.common.TestTags
 import com.rasoiai.app.presentation.theme.RasoiAITheme
 import com.rasoiai.domain.model.Achievement
 import org.junit.Rule
@@ -109,7 +111,8 @@ class AchievementsScreenTest {
                 )
             }
         }
-        composeTestRule.onNodeWithText("Unlocked", substring = true, ignoreCase = true)
+        // Section header text is "UNLOCKED" (uppercase); use TestTag for reliable selection
+        composeTestRule.onNodeWithTag(TestTags.ACHIEVEMENTS_UNLOCKED_SECTION)
             .assertIsDisplayed()
     }
 
@@ -129,7 +132,8 @@ class AchievementsScreenTest {
                 )
             }
         }
-        composeTestRule.onNodeWithText("Locked", substring = true, ignoreCase = true)
+        // Section header text is "IN PROGRESS" (not "Locked"); use TestTag for reliable selection
+        composeTestRule.onNodeWithTag(TestTags.ACHIEVEMENTS_LOCKED_SECTION)
             .assertIsDisplayed()
     }
 
@@ -150,9 +154,8 @@ class AchievementsScreenTest {
                 )
             }
         }
-        composeTestRule.onNodeWithText("1", substring = true, ignoreCase = false)
-            .assertIsDisplayed()
-        composeTestRule.onNodeWithText("3", substring = true, ignoreCase = false)
+        // completionText = "1 / 3 Unlocked" — assert the full string to avoid multi-node ambiguity
+        composeTestRule.onNodeWithText("1 / 3 Unlocked", substring = false, ignoreCase = false)
             .assertIsDisplayed()
     }
 

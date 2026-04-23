@@ -113,7 +113,8 @@ class DietaryRestrictionsScreenTest {
                 )
             }
         }
-        composeTestRule.onNodeWithText("Save").performScrollTo().assertIsDisplayed()
+        // Save button is outside the scrollable body Column — performScrollTo is not valid here
+        composeTestRule.onNodeWithText("Save").assertIsDisplayed()
     }
 
     @Test
@@ -153,7 +154,8 @@ class DietaryRestrictionsScreenTest {
                 )
             }
         }
-        composeTestRule.onNodeWithText("Save").performScrollTo().performClick()
+        // Save button is outside the scrollable body Column — performScrollTo is not valid here
+        composeTestRule.onNodeWithText("Save").performClick()
         assert(saveCalled) { "onSave callback was not triggered" }
     }
 }
