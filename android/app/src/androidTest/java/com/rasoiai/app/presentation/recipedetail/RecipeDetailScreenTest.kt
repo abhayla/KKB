@@ -558,7 +558,8 @@ private fun RecipeDetailTestContent(
     onIngredientChecked: (String) -> Unit = {},
     onAddAllToGrocery: () -> Unit = {},
     onStartCookingMode: () -> Unit = {},
-    onModifyWithAI: () -> Unit = {}
+    onModifyWithAI: () -> Unit = {},
+    onAddToCollection: (String) -> Unit = {}
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -572,7 +573,8 @@ private fun RecipeDetailTestContent(
         onIngredientChecked = onIngredientChecked,
         onAddAllToGrocery = onAddAllToGrocery,
         onStartCookingMode = onStartCookingMode,
-        onModifyWithAI = onModifyWithAI
+        onModifyWithAI = onModifyWithAI,
+        onAddToCollection = onAddToCollection
     )
 }
 

@@ -9,11 +9,14 @@ import com.rasoiai.domain.model.Difficulty
 import com.rasoiai.domain.model.Ingredient
 import com.rasoiai.domain.model.IngredientCategory
 import com.rasoiai.domain.model.Instruction
+import com.rasoiai.domain.model.FavoriteCollection
 import com.rasoiai.domain.model.Nutrition
 import com.rasoiai.domain.model.Recipe
+import com.rasoiai.domain.repository.FavoritesRepository
 import com.rasoiai.domain.repository.GroceryRepository
 import com.rasoiai.domain.repository.RecipeRepository
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -39,7 +42,35 @@ class RecipeDetailViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var mockRecipeRepository: RecipeRepository
     private lateinit var mockGroceryRepository: GroceryRepository
+    private lateinit var mockFavoritesRepository: FavoritesRepository
     private lateinit var savedStateHandle: SavedStateHandle
+
+    private val testCollections = listOf(
+        FavoriteCollection(
+            id = "all",
+            name = "All",
+            recipeIds = emptyList(),
+            coverImageUrl = null,
+            isDefault = true,
+            createdAt = 0L
+        ),
+        FavoriteCollection(
+            id = "weeknight-quick",
+            name = "Weeknight Quick",
+            recipeIds = listOf("other-recipe"),
+            coverImageUrl = null,
+            isDefault = false,
+            createdAt = 1_000L
+        ),
+        FavoriteCollection(
+            id = "weekend-feasts",
+            name = "Weekend Feasts",
+            recipeIds = emptyList(),
+            coverImageUrl = null,
+            isDefault = false,
+            createdAt = 2_000L
+        )
+    )
 
     private val testRecipe = Recipe(
         id = "test-recipe-1",
@@ -72,6 +103,8 @@ class RecipeDetailViewModelTest {
         Dispatchers.setMain(testDispatcher)
         mockRecipeRepository = mockk(relaxed = true)
         mockGroceryRepository = mockk(relaxed = true)
+        mockFavoritesRepository = mockk(relaxed = true)
+        coEvery { mockFavoritesRepository.getCollections() } returns flowOf(emptyList())
         savedStateHandle = SavedStateHandle().apply {
             set(Screen.RecipeDetail.ARG_RECIPE_ID, "test-recipe-1")
             set(Screen.RecipeDetail.ARG_IS_LOCKED, false)
@@ -93,7 +126,7 @@ class RecipeDetailViewModelTest {
         fun `initial state should be loading`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(null)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository, mockFavoritesRepository)
 
             viewModel.uiState.test {
                 val initialState = awaitItem()
@@ -107,7 +140,7 @@ class RecipeDetailViewModelTest {
         fun `after loading recipe isLoading should be false`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository, mockFavoritesRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial loading
@@ -126,7 +159,7 @@ class RecipeDetailViewModelTest {
         fun `lock state should be NO_CONTEXT when not from meal plan`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository, mockFavoritesRepository)
 
             viewModel.uiState.test {
                 val state = awaitItem()
@@ -144,7 +177,7 @@ class RecipeDetailViewModelTest {
             }
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository, mockFavoritesRepository)
 
             viewModel.uiState.test {
                 val state = awaitItem()
@@ -164,7 +197,7 @@ class RecipeDetailViewModelTest {
         fun `selectTab should update selected tab index`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository, mockFavoritesRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -187,7 +220,7 @@ class RecipeDetailViewModelTest {
         fun `toggleIngredientChecked should add ingredient to checked list`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository, mockFavoritesRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -207,7 +240,7 @@ class RecipeDetailViewModelTest {
         fun `toggleIngredientChecked should remove ingredient from checked list`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository, mockFavoritesRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -230,7 +263,7 @@ class RecipeDetailViewModelTest {
         fun `checkAllIngredients should check all ingredients`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository, mockFavoritesRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -251,7 +284,7 @@ class RecipeDetailViewModelTest {
         fun `uncheckAllIngredients should uncheck all ingredients`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository, mockFavoritesRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -279,7 +312,7 @@ class RecipeDetailViewModelTest {
         fun `startCookingMode should emit navigation event`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository, mockFavoritesRepository)
 
             viewModel.navigationEvent.test {
                 viewModel.startCookingMode()
@@ -295,7 +328,7 @@ class RecipeDetailViewModelTest {
         fun `navigateBack should emit back navigation event`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository, mockFavoritesRepository)
 
             viewModel.navigationEvent.test {
                 viewModel.navigateBack()
@@ -310,7 +343,7 @@ class RecipeDetailViewModelTest {
         fun `modifyWithAI should emit chat navigation event`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository, mockFavoritesRepository)
 
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -333,7 +366,7 @@ class RecipeDetailViewModelTest {
         fun `isVegetarian should be true for vegetarian recipe`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository, mockFavoritesRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -350,7 +383,7 @@ class RecipeDetailViewModelTest {
         fun `totalTimeMinutes should return sum of prep and cook time`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository, mockFavoritesRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -367,7 +400,7 @@ class RecipeDetailViewModelTest {
         fun `ingredientCount should return correct count`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository, mockFavoritesRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -389,7 +422,7 @@ class RecipeDetailViewModelTest {
         fun `recipe not found should show error`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(null)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository, mockFavoritesRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -408,7 +441,7 @@ class RecipeDetailViewModelTest {
         fun `clearError should clear error message`() = runTest {
             coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
 
-            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository)
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository, mockFavoritesRepository)
 
             viewModel.uiState.test {
                 awaitItem() // Initial
@@ -418,6 +451,108 @@ class RecipeDetailViewModelTest {
                 val state = awaitItem()
                 assertNull(state.errorMessage)
                 cancelAndIgnoreRemainingEvents()
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Add to Collection")
+    inner class AddToCollection {
+
+        @Test
+        @DisplayName("collections exposes non-default collections from repository")
+        fun `collections exposes non-default collections from repository`() = runTest {
+            coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
+            coEvery { mockFavoritesRepository.getCollections() } returns flowOf(testCollections)
+
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository, mockFavoritesRepository)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals(2, state.collections.size)
+            assertEquals("weeknight-quick", state.collections[0].id)
+            assertEquals("weekend-feasts", state.collections[1].id)
+            assertFalse(state.collections.any { it.isDefault })
+        }
+
+        @Test
+        @DisplayName("addToCollection delegates to favoritesRepository with recipeId and collectionId")
+        fun `addToCollection delegates to favoritesRepository with recipeId and collectionId`() = runTest {
+            coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
+            coEvery {
+                mockFavoritesRepository.addRecipeToCollection(any(), any())
+            } returns Result.success(Unit)
+
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository, mockFavoritesRepository)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.addToCollection("weeknight-quick")
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            coVerify(exactly = 1) {
+                mockFavoritesRepository.addRecipeToCollection("test-recipe-1", "weeknight-quick")
+            }
+        }
+
+        @Test
+        @DisplayName("addToCollection on success sets confirmation feedback")
+        fun `addToCollection on success sets confirmation feedback`() = runTest {
+            coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
+            coEvery { mockFavoritesRepository.getCollections() } returns flowOf(testCollections)
+            coEvery {
+                mockFavoritesRepository.addRecipeToCollection("test-recipe-1", "weeknight-quick")
+            } returns Result.success(Unit)
+
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository, mockFavoritesRepository)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.addToCollection("weeknight-quick")
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertNotNull(state.errorMessage)
+            assertTrue(
+                state.errorMessage?.contains("Weeknight Quick") == true,
+                "Expected feedback to name the collection, got: ${state.errorMessage}"
+            )
+        }
+
+        @Test
+        @DisplayName("addToCollection on failure sets failure feedback")
+        fun `addToCollection on failure sets failure feedback`() = runTest {
+            coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(testRecipe)
+            coEvery { mockFavoritesRepository.getCollections() } returns flowOf(testCollections)
+            coEvery {
+                mockFavoritesRepository.addRecipeToCollection(any(), any())
+            } returns Result.failure(RuntimeException("boom"))
+
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository, mockFavoritesRepository)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.addToCollection("weeknight-quick")
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertNotNull(state.errorMessage)
+            assertTrue(
+                state.errorMessage?.contains("Failed") == true,
+                "Expected failure feedback, got: ${state.errorMessage}"
+            )
+        }
+
+        @Test
+        @DisplayName("addToCollection is a no-op when recipe has not loaded yet")
+        fun `addToCollection is a no-op when recipe has not loaded yet`() = runTest {
+            coEvery { mockRecipeRepository.getRecipeById(any()) } returns flowOf(null)
+
+            val viewModel = RecipeDetailViewModel(savedStateHandle, mockRecipeRepository, mockGroceryRepository, mockFavoritesRepository)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.addToCollection("weeknight-quick")
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            coVerify(exactly = 0) {
+                mockFavoritesRepository.addRecipeToCollection(any(), any())
             }
         }
     }

@@ -186,6 +186,9 @@ object TestTags {
     const val RECIPE_SERVINGS_SELECTOR = "recipe_servings_selector"
     const val RECIPE_INGREDIENTS_LIST = "recipe_ingredients_list"
     const val RECIPE_INSTRUCTIONS_LIST = "recipe_instructions_list"
+    const val RECIPE_ADD_TO_COLLECTION_MENU_ITEM = "recipe_add_to_collection_menu_item"
+    const val RECIPE_COLLECTION_PICKER_SHEET = "recipe_collection_picker_sheet"
+    const val RECIPE_COLLECTION_PICKER_ITEM_PREFIX = "recipe_collection_picker_item_"
 
     // Chat Screen
     const val CHAT_SCREEN = "chat_screen"

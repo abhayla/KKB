@@ -5,10 +5,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rasoiai.app.presentation.navigation.Screen
 import com.rasoiai.domain.model.DietaryTag
+import com.rasoiai.domain.model.FavoriteCollection
 import com.rasoiai.domain.model.Ingredient
 import com.rasoiai.domain.model.Instruction
 import com.rasoiai.domain.model.Nutrition
 import com.rasoiai.domain.model.Recipe
+import com.rasoiai.domain.repository.FavoritesRepository
 import com.rasoiai.domain.repository.GroceryRepository
 import com.rasoiai.domain.repository.RecipeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -59,7 +61,9 @@ data class RecipeDetailUiState(
     /** Cached display tags to avoid recomputation on every access */
     val displayTags: ImmutableList<String> = persistentListOf(),
     /** Cached cuisine display text */
-    val cuisineDisplayText: String = ""
+    val cuisineDisplayText: String = "",
+    /** User-editable collections available from the Add-to-Collection picker (default ones filtered out) */
+    val collections: ImmutableList<FavoriteCollection> = persistentListOf()
 ) {
     /** For backwards compatibility */
     val isLocked: Boolean
@@ -120,7 +124,8 @@ sealed class RecipeDetailNavigationEvent {
 class RecipeDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val recipeRepository: RecipeRepository,
-    private val groceryRepository: GroceryRepository
+    private val groceryRepository: GroceryRepository,
+    private val favoritesRepository: FavoritesRepository
 ) : ViewModel() {
 
     private val recipeId: String = checkNotNull(savedStateHandle[Screen.RecipeDetail.ARG_RECIPE_ID])
@@ -142,6 +147,21 @@ class RecipeDetailViewModel @Inject constructor(
 
     init {
         loadRecipe()
+        observeCollections()
+    }
+
+    private fun observeCollections() {
+        viewModelScope.launch {
+            favoritesRepository.getCollections().collect { collections ->
+                _uiState.update {
+                    it.copy(
+                        collections = collections
+                            .filterNot { c -> c.isDefault }
+                            .toImmutableList()
+                    )
+                }
+            }
+        }
     }
 
     // region Data Loading
@@ -297,6 +317,29 @@ class RecipeDetailViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(errorMessage = "Failed to add to grocery list")
                     }
+                }
+        }
+    }
+
+    fun addToCollection(collectionId: String) {
+        val state = _uiState.value
+        val recipe = state.recipe ?: return
+        val collectionName = state.collections.firstOrNull { it.id == collectionId }?.name
+
+        viewModelScope.launch {
+            favoritesRepository.addRecipeToCollection(recipe.id, collectionId)
+                .onSuccess {
+                    val msg = if (collectionName != null) {
+                        "Added to $collectionName"
+                    } else {
+                        "Added to collection"
+                    }
+                    Timber.i("Added recipe ${recipe.id} to collection $collectionId")
+                    _uiState.update { it.copy(errorMessage = msg) }
+                }
+                .onFailure { e ->
+                    Timber.e(e, "Failed to add recipe to collection")
+                    _uiState.update { it.copy(errorMessage = "Failed to add to collection") }
                 }
         }
     }
