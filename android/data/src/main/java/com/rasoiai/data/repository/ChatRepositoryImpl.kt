@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Base64
+import androidx.core.net.toUri
 import com.rasoiai.data.local.dao.ChatDao
 import com.rasoiai.data.local.mapper.toDomain
 import com.rasoiai.data.local.mapper.toEntity
@@ -96,7 +97,7 @@ class ChatRepositoryImpl @Inject constructor(
 
     override suspend fun sendImageMessage(imageUriString: String): Result<ChatMessage> {
         return try {
-            val imageUri = Uri.parse(imageUriString)
+            val imageUri = imageUriString.toUri()
 
             // 1. Add user message indicating image was sent
             val userMessage = ChatMessage(

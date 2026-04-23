@@ -2,7 +2,6 @@ package com.rasoiai.app.presentation.settings
 
 import android.content.Intent
 import android.content.res.Configuration
-import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -38,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import com.rasoiai.app.presentation.common.TestTags
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rasoiai.app.presentation.settings.components.DarkModeDialog
@@ -90,30 +90,30 @@ fun SettingsScreen(
 
                 // External links — launch intents
                 SettingsNavigationEvent.NavigateToPrivacyPolicy -> {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://rasoiai.com/privacy"))
+                    val intent = Intent(Intent.ACTION_VIEW, "https://rasoiai.com/privacy".toUri())
                     context.startActivity(intent)
                 }
                 SettingsNavigationEvent.NavigateToTermsOfService -> {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://rasoiai.com/terms"))
+                    val intent = Intent(Intent.ACTION_VIEW, "https://rasoiai.com/terms".toUri())
                     context.startActivity(intent)
                 }
                 SettingsNavigationEvent.NavigateToHelpFaq -> {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://rasoiai.com/help"))
+                    val intent = Intent(Intent.ACTION_VIEW, "https://rasoiai.com/help".toUri())
                     context.startActivity(intent)
                 }
                 SettingsNavigationEvent.NavigateToContactUs -> {
                     val intent = Intent(Intent.ACTION_SENDTO).apply {
-                        data = Uri.parse("mailto:support@rasoiai.com")
+                        data = "mailto:support@rasoiai.com".toUri()
                         putExtra(Intent.EXTRA_SUBJECT, "RasoiAI Support")
                     }
                     context.startActivity(intent)
                 }
                 SettingsNavigationEvent.NavigateToRateApp -> {
                     try {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${context.packageName}"))
+                        val intent = Intent(Intent.ACTION_VIEW, "market://details?id=${context.packageName}".toUri())
                         context.startActivity(intent)
                     } catch (_: Exception) {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}"))
+                        val intent = Intent(Intent.ACTION_VIEW, "https://play.google.com/store/apps/details?id=${context.packageName}".toUri())
                         context.startActivity(intent)
                     }
                 }

@@ -2,7 +2,6 @@ package com.rasoiai.app.presentation.auth
 
 import android.app.Activity
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -46,6 +45,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rasoiai.app.R
@@ -109,11 +109,11 @@ fun AuthScreen(
                     }
                 },
                 onTermsClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://rasoiai.com/terms"))
+                    val intent = Intent(Intent.ACTION_VIEW, "https://rasoiai.com/terms".toUri())
                     context.startActivity(intent)
                 },
                 onPrivacyClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://rasoiai.com/privacy"))
+                    val intent = Intent(Intent.ACTION_VIEW, "https://rasoiai.com/privacy".toUri())
                     context.startActivity(intent)
                 }
             )

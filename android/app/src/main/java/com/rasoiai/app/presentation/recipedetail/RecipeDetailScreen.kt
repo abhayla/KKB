@@ -1,7 +1,6 @@
 package com.rasoiai.app.presentation.recipedetail
 
 import android.content.res.Configuration
-import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -57,6 +56,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import com.rasoiai.app.presentation.common.TestTags
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rasoiai.app.presentation.recipedetail.components.IngredientsTab
@@ -221,7 +221,7 @@ internal fun RecipeDetailContent(
                                             append("Describe the issue below:\n\n")
                                         }
                                         val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                            data = Uri.parse("mailto:support@rasoiai.com")
+                                            data = "mailto:support@rasoiai.com".toUri()
                                             putExtra(Intent.EXTRA_SUBJECT, subject)
                                             putExtra(Intent.EXTRA_TEXT, body)
                                         }

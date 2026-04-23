@@ -2,6 +2,7 @@ package com.rasoiai.data.local.datastore
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -59,11 +60,11 @@ class SecureTokenStorage @Inject constructor(
      * @param expiresAt Absolute timestamp (millis since epoch) when the access token expires
      */
     fun saveTokens(accessToken: String, refreshToken: String, expiresAt: Long) {
-        prefs?.edit()
-            ?.putString(KEY_ACCESS_TOKEN, accessToken)
-            ?.putString(KEY_REFRESH_TOKEN, refreshToken)
-            ?.putLong(KEY_EXPIRES_AT, expiresAt)
-            ?.apply()
+        prefs?.edit {
+            putString(KEY_ACCESS_TOKEN, accessToken)
+            putString(KEY_REFRESH_TOKEN, refreshToken)
+            putLong(KEY_EXPIRES_AT, expiresAt)
+        }
     }
 
     /**
@@ -96,6 +97,6 @@ class SecureTokenStorage @Inject constructor(
      * Clear all stored tokens from encrypted storage.
      */
     fun clearTokens() {
-        prefs?.edit()?.clear()?.apply()
+        prefs?.edit { clear() }
     }
 }
