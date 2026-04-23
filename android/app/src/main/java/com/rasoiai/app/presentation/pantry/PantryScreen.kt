@@ -304,7 +304,9 @@ internal fun PantryScreenContent(
                 )
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .testTag(TestTags.PANTRY_LAZY_COLUMN),
                     contentPadding = PaddingValues(vertical = spacing.md)
                 ) {
                     // Camera scan section

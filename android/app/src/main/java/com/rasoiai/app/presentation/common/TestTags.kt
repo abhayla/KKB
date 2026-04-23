@@ -236,6 +236,7 @@ object TestTags {
 
     // Pantry Screen
     const val PANTRY_SCREEN = "pantry_screen"
+    const val PANTRY_LAZY_COLUMN = "pantry_lazy_column"
 
     // Recipe Rules Screen
     const val RECIPE_RULES_SCREEN = "recipe_rules_screen"

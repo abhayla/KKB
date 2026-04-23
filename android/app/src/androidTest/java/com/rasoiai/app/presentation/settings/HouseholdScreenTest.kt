@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.rasoiai.app.presentation.common.TestTags
 import com.rasoiai.app.presentation.settings.screens.HouseholdScreen
@@ -130,7 +131,12 @@ class HouseholdScreenTest {
     @Test
     fun deactivateButton_visibleForOwner() {
         setScreen(HouseholdUiState(householdDetail = testDetail))
-        composeTestRule.onNodeWithTag(TestTags.HOUSEHOLD_DEACTIVATE_BUTTON).assertIsDisplayed()
+        // Deactivate button sits inside HouseholdDetailContent (near the bottom of the
+        // screen's verticalScroll Column) — on compact emulator heights it renders below
+        // the fold, so scroll before asserting visibility.
+        composeTestRule.onNodeWithTag(TestTags.HOUSEHOLD_DEACTIVATE_BUTTON)
+            .performScrollTo()
+            .assertIsDisplayed()
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.rasoiai.app.presentation.stats
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
@@ -11,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.rasoiai.app.presentation.common.TestTags
 import com.rasoiai.app.presentation.theme.RasoiAITheme
@@ -250,6 +252,10 @@ class StatsScreenTest {
             }
         }
 
+        // "45" sits inside MonthlyStatsRow, which is rendered several items down the
+        // stats_lazy_column. Scroll the LazyColumn to compose + reveal it.
+        composeTestRule.onNodeWithTag("stats_lazy_column")
+            .performScrollToNode(hasText("45"))
         composeTestRule.onNodeWithText("45").assertIsDisplayed()
     }
 
@@ -263,7 +269,10 @@ class StatsScreenTest {
             }
         }
 
-        // MonthlyStatsRow shows "THIS MONTH" header
+        // MonthlyStatsRow shows "THIS MONTH" header — rendered after the calendar, so
+        // scroll the stats_lazy_column first.
+        composeTestRule.onNodeWithTag("stats_lazy_column")
+            .performScrollToNode(hasText("THIS MONTH"))
         composeTestRule.onNodeWithText("THIS MONTH").assertIsDisplayed()
     }
 
