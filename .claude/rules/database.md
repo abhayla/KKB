@@ -12,7 +12,7 @@ globs: ["backend/app/models/**/*.py", "backend/app/db/**/*.py", "backend/app/rep
 - `firestore.py` is legacy — do not use, do not delete
 
 ### Alembic Migrations
-8 migrations in `backend/alembic/versions/`: initial schema → meal generation settings → notifications/FCM → recipe rules → AI recipe catalog → recipe rules dedup → email uniqueness → pre-prod hardening. Run `alembic upgrade head` to apply.
+Migrations live in `backend/alembic/versions/` — browse the directory for the current list. Run `alembic upgrade head` to apply. Downgrade discipline is enforced by `.claude/rules/alembic-migration-downgrade-discipline.md`.
 
 ### Model Files
 13 model files in `backend/app/models/` (plus `__init__.py` re-exporting all). Key locations:
@@ -22,22 +22,13 @@ globs: ["backend/app/models/**/*.py", "backend/app/db/**/*.py", "backend/app/rep
 - `UsageLog` → `usage_log.py`
 - `RefreshToken` → `refresh_token.py`
 
-## Room (Android) — Version 11
-- 20 entities, 11 DAOs
-- Migrations in `RasoiDatabase.kt`: MIGRATION_7_8 through MIGRATION_10_11
-- Room stores MealType as uppercase: `BREAKFAST`, `LUNCH`, `DINNER`, `SNACKS`
-- Fresh installs seed `known_ingredients` with 40+ Indian cooking ingredients
-- Room-only entities (no domain model): `KnownIngredientEntity`, `OfflineQueueEntity`, `CookedRecipeEntity`, `RecentlyViewedEntity`
+## Room (Android)
+- Current version and entity list live in `android/data/src/main/java/com/rasoiai/data/local/RasoiDatabase.kt` — source of truth, do not duplicate here.
+- Migration chain: `MIGRATION_7_8` through the latest `MIGRATION_N_N+1` are all defined in `RasoiDatabase.kt` under `companion object`. Adding a new migration MUST extend from the current head; MUST NOT reuse a prior number.
+- Room stores MealType as uppercase: `BREAKFAST`, `LUNCH`, `DINNER`, `SNACKS`.
+- Fresh installs seed `known_ingredients` with 40+ Indian cooking ingredients.
+- Room-only entities (no domain model): `KnownIngredientEntity`, `OfflineQueueEntity`, `CookedRecipeEntity`, `RecentlyViewedEntity`.
 
 ### Room Patterns
 - Use `@Upsert` for insert-or-update operations instead of `@Insert(onConflict=REPLACE)` + `@Update` pairs. `@Upsert` is atomic (Room 2.5+); the separate pair has a race window.
 - Every `@TypeConverter` MUST have a unit test with boundary cases (empty list, null, special characters). Incorrect converters cause silent data loss at runtime, not compile time.
-
-### Room DAOs
-MealPlan, Recipe, Grocery, Favorite, Collection, Pantry, Stats, RecipeRules, Chat, Notification, OfflineQueue.
-
-### Room Migration History
-- `MIGRATION_7_8`: notifications + offline queue
-- `MIGRATION_8_9`: recipe rules refactor + cooked recipes
-- `MIGRATION_9_10`: known ingredients
-- `MIGRATION_10_11`: recreate `meal_plan_items` with proper `id` PK instead of composite PK
