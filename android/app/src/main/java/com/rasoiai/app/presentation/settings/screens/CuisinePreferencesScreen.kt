@@ -125,11 +125,28 @@ fun CuisinePreferencesScreen(
     viewModel: CuisinePreferencesViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.saveSuccess) {
         if (uiState.saveSuccess) onNavigateBack()
     }
+
+    CuisinePreferencesScreenContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onToggleCuisine = viewModel::toggleCuisine,
+        onSave = viewModel::save
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun CuisinePreferencesScreenContent(
+    uiState: CuisinePreferencesUiState,
+    onNavigateBack: () -> Unit = {},
+    onToggleCuisine: (CuisineType) -> Unit = {},
+    onSave: () -> Unit = {}
+) {
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { snackbarHostState.showSnackbar(it) }
@@ -179,14 +196,14 @@ fun CuisinePreferencesScreen(
                         CuisineCard(
                             cuisine = CuisineType.NORTH,
                             isSelected = CuisineType.NORTH in uiState.selectedCuisines,
-                            onClick = { viewModel.toggleCuisine(CuisineType.NORTH) },
+                            onClick = { onToggleCuisine(CuisineType.NORTH) },
                             modifier = Modifier.weight(1f),
                             description = "Punjabi, Mughlai"
                         )
                         CuisineCard(
                             cuisine = CuisineType.SOUTH,
                             isSelected = CuisineType.SOUTH in uiState.selectedCuisines,
-                            onClick = { viewModel.toggleCuisine(CuisineType.SOUTH) },
+                            onClick = { onToggleCuisine(CuisineType.SOUTH) },
                             modifier = Modifier.weight(1f),
                             description = "Tamil, Kerala"
                         )
@@ -195,14 +212,14 @@ fun CuisinePreferencesScreen(
                         CuisineCard(
                             cuisine = CuisineType.EAST,
                             isSelected = CuisineType.EAST in uiState.selectedCuisines,
-                            onClick = { viewModel.toggleCuisine(CuisineType.EAST) },
+                            onClick = { onToggleCuisine(CuisineType.EAST) },
                             modifier = Modifier.weight(1f),
                             description = "Bengali, Odia"
                         )
                         CuisineCard(
                             cuisine = CuisineType.WEST,
                             isSelected = CuisineType.WEST in uiState.selectedCuisines,
-                            onClick = { viewModel.toggleCuisine(CuisineType.WEST) },
+                            onClick = { onToggleCuisine(CuisineType.WEST) },
                             modifier = Modifier.weight(1f),
                             description = "Gujarati, Maharashtrian"
                         )
@@ -211,7 +228,7 @@ fun CuisinePreferencesScreen(
             }
 
             Button(
-                onClick = viewModel::save,
+                onClick = onSave,
                 enabled = !uiState.isSaving && uiState.selectedCuisines.isNotEmpty(),
                 modifier = Modifier
                     .fillMaxWidth()

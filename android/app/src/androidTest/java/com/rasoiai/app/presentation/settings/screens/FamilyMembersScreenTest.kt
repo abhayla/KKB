@@ -9,10 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.rasoiai.app.presentation.theme.RasoiAITheme
 import com.rasoiai.domain.model.FamilyMember
 import com.rasoiai.domain.model.MemberType
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.verify
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.rasoiai.domain.model.SpecialDietaryNeed
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -47,83 +44,84 @@ class FamilyMembersScreenTest {
         )
     )
 
-    private fun setupScreen(uiState: FamilyMembersUiState): FamilyMembersViewModel {
-        val mockViewModel = mockk<FamilyMembersViewModel>(relaxed = true)
-        every { mockViewModel.uiState } returns MutableStateFlow(uiState)
-        composeTestRule.setContent {
-            RasoiAITheme {
-                FamilyMembersScreen(onNavigateBack = {}, viewModel = mockViewModel)
-            }
-        }
-        return mockViewModel
-    }
-
     @Test
     fun screen_displaysTitle() {
-        setupScreen(
-            FamilyMembersUiState(
-                isLoading = false,
-                familyMembers = emptyList(),
-                showAddEditSheet = false,
-                editingMember = null,
-                showDeleteDialog = false,
-                deletingMemberId = null,
-                errorMessage = null
-            )
-        )
-
+        composeTestRule.setContent {
+            RasoiAITheme {
+                FamilyMembersTestContent(
+                    uiState = FamilyMembersUiState(
+                        isLoading = false,
+                        familyMembers = emptyList(),
+                        showAddEditSheet = false,
+                        editingMember = null,
+                        showDeleteDialog = false,
+                        deletingMemberId = null,
+                        errorMessage = null
+                    )
+                )
+            }
+        }
         composeTestRule.onNodeWithText("Family Members").assertIsDisplayed()
     }
 
     @Test
     fun screen_displaysAddButton() {
-        setupScreen(
-            FamilyMembersUiState(
-                isLoading = false,
-                familyMembers = emptyList(),
-                showAddEditSheet = false,
-                editingMember = null,
-                showDeleteDialog = false,
-                deletingMemberId = null,
-                errorMessage = null
-            )
-        )
-
+        composeTestRule.setContent {
+            RasoiAITheme {
+                FamilyMembersTestContent(
+                    uiState = FamilyMembersUiState(
+                        isLoading = false,
+                        familyMembers = emptyList(),
+                        showAddEditSheet = false,
+                        editingMember = null,
+                        showDeleteDialog = false,
+                        deletingMemberId = null,
+                        errorMessage = null
+                    )
+                )
+            }
+        }
         composeTestRule.onNodeWithContentDescription("Add", substring = true).assertIsDisplayed()
     }
 
     @Test
     fun loadingState_showsContent() {
-        setupScreen(
-            FamilyMembersUiState(
-                isLoading = true,
-                familyMembers = emptyList(),
-                showAddEditSheet = false,
-                editingMember = null,
-                showDeleteDialog = false,
-                deletingMemberId = null,
-                errorMessage = null
-            )
-        )
-
+        composeTestRule.setContent {
+            RasoiAITheme {
+                FamilyMembersTestContent(
+                    uiState = FamilyMembersUiState(
+                        isLoading = true,
+                        familyMembers = emptyList(),
+                        showAddEditSheet = false,
+                        editingMember = null,
+                        showDeleteDialog = false,
+                        deletingMemberId = null,
+                        errorMessage = null
+                    )
+                )
+            }
+        }
         // Loading state should still show the title and empty state
         composeTestRule.onNodeWithText("Family Members").assertIsDisplayed()
     }
 
     @Test
     fun familyMembers_displayedWhenListNonEmpty() {
-        setupScreen(
-            FamilyMembersUiState(
-                isLoading = false,
-                familyMembers = sampleMembers,
-                showAddEditSheet = false,
-                editingMember = null,
-                showDeleteDialog = false,
-                deletingMemberId = null,
-                errorMessage = null
-            )
-        )
-
+        composeTestRule.setContent {
+            RasoiAITheme {
+                FamilyMembersTestContent(
+                    uiState = FamilyMembersUiState(
+                        isLoading = false,
+                        familyMembers = sampleMembers,
+                        showAddEditSheet = false,
+                        editingMember = null,
+                        showDeleteDialog = false,
+                        deletingMemberId = null,
+                        errorMessage = null
+                    )
+                )
+            }
+        }
         composeTestRule.onNodeWithText("Aarav").assertIsDisplayed()
         composeTestRule.onNodeWithText("Priya").assertIsDisplayed()
         composeTestRule.onNodeWithText("Dadaji").assertIsDisplayed()
@@ -131,18 +129,21 @@ class FamilyMembersScreenTest {
 
     @Test
     fun memberNames_shownCorrectly() {
-        setupScreen(
-            FamilyMembersUiState(
-                isLoading = false,
-                familyMembers = sampleMembers,
-                showAddEditSheet = false,
-                editingMember = null,
-                showDeleteDialog = false,
-                deletingMemberId = null,
-                errorMessage = null
-            )
-        )
-
+        composeTestRule.setContent {
+            RasoiAITheme {
+                FamilyMembersTestContent(
+                    uiState = FamilyMembersUiState(
+                        isLoading = false,
+                        familyMembers = sampleMembers,
+                        showAddEditSheet = false,
+                        editingMember = null,
+                        showDeleteDialog = false,
+                        deletingMemberId = null,
+                        errorMessage = null
+                    )
+                )
+            }
+        }
         sampleMembers.forEach { member ->
             composeTestRule.onNodeWithText(member.name).assertIsDisplayed()
         }
@@ -150,37 +151,69 @@ class FamilyMembersScreenTest {
 
     @Test
     fun emptyState_showsAppropriateMessage() {
-        setupScreen(
-            FamilyMembersUiState(
-                isLoading = false,
-                familyMembers = emptyList(),
-                showAddEditSheet = false,
-                editingMember = null,
-                showDeleteDialog = false,
-                deletingMemberId = null,
-                errorMessage = null
-            )
-        )
-
+        composeTestRule.setContent {
+            RasoiAITheme {
+                FamilyMembersTestContent(
+                    uiState = FamilyMembersUiState(
+                        isLoading = false,
+                        familyMembers = emptyList(),
+                        showAddEditSheet = false,
+                        editingMember = null,
+                        showDeleteDialog = false,
+                        deletingMemberId = null,
+                        errorMessage = null
+                    )
+                )
+            }
+        }
         composeTestRule.onNodeWithText("No family members", substring = true).assertIsDisplayed()
     }
 
     @Test
-    fun addButton_callsViewModelShowAddSheet() {
-        val mockViewModel = setupScreen(
-            FamilyMembersUiState(
-                isLoading = false,
-                familyMembers = emptyList(),
-                showAddEditSheet = false,
-                editingMember = null,
-                showDeleteDialog = false,
-                deletingMemberId = null,
-                errorMessage = null
-            )
-        )
-
+    fun addButton_callsOnShowAddSheet() {
+        var showAddSheetCalled = false
+        composeTestRule.setContent {
+            RasoiAITheme {
+                FamilyMembersTestContent(
+                    uiState = FamilyMembersUiState(
+                        isLoading = false,
+                        familyMembers = emptyList(),
+                        showAddEditSheet = false,
+                        editingMember = null,
+                        showDeleteDialog = false,
+                        deletingMemberId = null,
+                        errorMessage = null
+                    ),
+                    onShowAddSheet = { showAddSheetCalled = true }
+                )
+            }
+        }
         composeTestRule.onNodeWithContentDescription("Add", substring = true).performClick()
-
-        verify { mockViewModel.showAddSheet() }
+        assert(showAddSheetCalled) { "onShowAddSheet callback was not triggered" }
     }
+}
+
+@androidx.compose.runtime.Composable
+private fun FamilyMembersTestContent(
+    uiState: FamilyMembersUiState,
+    onNavigateBack: () -> Unit = {},
+    onShowAddSheet: () -> Unit = {},
+    onShowEditSheet: (FamilyMember) -> Unit = {},
+    onShowDeleteDialog: (String) -> Unit = {},
+    onDismissSheet: () -> Unit = {},
+    onSaveMember: (String, MemberType, Int?, List<SpecialDietaryNeed>) -> Unit = { _, _, _, _ -> },
+    onDismissDeleteDialog: () -> Unit = {},
+    onDeleteMember: () -> Unit = {}
+) {
+    FamilyMembersScreenContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onShowAddSheet = onShowAddSheet,
+        onShowEditSheet = onShowEditSheet,
+        onShowDeleteDialog = onShowDeleteDialog,
+        onDismissSheet = onDismissSheet,
+        onSaveMember = onSaveMember,
+        onDismissDeleteDialog = onDismissDeleteDialog,
+        onDeleteMember = onDeleteMember
+    )
 }

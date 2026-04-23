@@ -93,6 +93,15 @@ fun FriendsLeaderboardScreen(
     viewModel: FriendsLeaderboardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    FriendsLeaderboardScreenContent(uiState = uiState, onNavigateBack = onNavigateBack)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun FriendsLeaderboardScreenContent(
+    uiState: FriendsLeaderboardUiState,
+    onNavigateBack: () -> Unit = {}
+) {
     val context = LocalContext.current
 
     Scaffold(

@@ -115,11 +115,28 @@ fun SpiceLevelScreen(
     viewModel: SpiceLevelViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.saveSuccess) {
         if (uiState.saveSuccess) onNavigateBack()
     }
+
+    SpiceLevelScreenContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onUpdateSpiceLevel = viewModel::updateSpiceLevel,
+        onSave = viewModel::save
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun SpiceLevelScreenContent(
+    uiState: SpiceLevelUiState,
+    onNavigateBack: () -> Unit = {},
+    onUpdateSpiceLevel: (SpiceLevel) -> Unit = {},
+    onSave: () -> Unit = {}
+) {
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { snackbarHostState.showSnackbar(it) }
@@ -195,7 +212,7 @@ fun SpiceLevelScreen(
                             DropdownMenuItem(
                                 text = { Text(level.displayName) },
                                 onClick = {
-                                    viewModel.updateSpiceLevel(level)
+                                    onUpdateSpiceLevel(level)
                                     expanded = false
                                 }
                             )
@@ -205,7 +222,7 @@ fun SpiceLevelScreen(
             }
 
             Button(
-                onClick = viewModel::save,
+                onClick = onSave,
                 enabled = !uiState.isSaving,
                 modifier = Modifier
                     .fillMaxWidth()

@@ -54,7 +54,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -135,11 +134,30 @@ fun DietaryRestrictionsScreen(
     viewModel: DietaryRestrictionsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.saveSuccess) {
         if (uiState.saveSuccess) onNavigateBack()
     }
+
+    DietaryRestrictionsScreenContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onUpdatePrimaryDiet = viewModel::updatePrimaryDiet,
+        onToggleDietaryRestriction = viewModel::toggleDietaryRestriction,
+        onSave = viewModel::save
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun DietaryRestrictionsScreenContent(
+    uiState: DietaryRestrictionsUiState,
+    onNavigateBack: () -> Unit = {},
+    onUpdatePrimaryDiet: (PrimaryDiet) -> Unit = {},
+    onToggleDietaryRestriction: (DietaryRestriction) -> Unit = {},
+    onSave: () -> Unit = {}
+) {
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { snackbarHostState.showSnackbar(it) }
@@ -190,7 +208,7 @@ fun DietaryRestrictionsScreen(
                         DietOptionCard(
                             diet = diet,
                             isSelected = diet == uiState.primaryDiet,
-                            onClick = { viewModel.updatePrimaryDiet(diet) }
+                            onClick = { onUpdatePrimaryDiet(diet) }
                         )
                         Spacer(modifier = Modifier.height(spacing.sm))
                     }
@@ -210,13 +228,13 @@ fun DietaryRestrictionsScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { viewModel.toggleDietaryRestriction(restriction) }
+                            .clickable { onToggleDietaryRestriction(restriction) }
                             .padding(vertical = spacing.xs),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Checkbox(
                             checked = restriction in uiState.dietaryRestrictions,
-                            onCheckedChange = { viewModel.toggleDietaryRestriction(restriction) }
+                            onCheckedChange = { onToggleDietaryRestriction(restriction) }
                         )
                         Spacer(modifier = Modifier.width(spacing.sm))
                         Text(
@@ -228,7 +246,7 @@ fun DietaryRestrictionsScreen(
             }
 
             Button(
-                onClick = viewModel::save,
+                onClick = onSave,
                 enabled = !uiState.isSaving,
                 modifier = Modifier
                     .fillMaxWidth()
