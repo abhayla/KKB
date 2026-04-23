@@ -114,9 +114,12 @@ jobs:
         # emulator would fail at the first HTTP call. Local dev and manual
         # test runs still use ./gradlew :app:connectedDebugAndroidTest (no
         # filter) against a running backend.
+        #
+        # API 34 matches local dev (android/CLAUDE.md recommends API 34) and
+        # avoids the chronically backed-up API 29 hosted-runner queue.
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 29
+          api-level: 34
           arch: x86_64
           working-directory: android
           script: ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.notPackage=com.rasoiai.app.e2e
