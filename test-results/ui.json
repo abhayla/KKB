@@ -1,0 +1,1 @@
+{"result": "SKIP", "reason": "EMPTY_QUEUE", "lane": "ui", "note": "No UI-framework tests in backend suite; Android app out of scope for this run per user directive"}

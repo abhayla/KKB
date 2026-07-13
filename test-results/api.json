@@ -1,0 +1,23 @@
+{
+  "gate": "FAILED",
+  "lane": "api",
+  "manifest_total": 550,
+  "executed_count": 550,
+  "executed": "see test-results/api.jsonl",
+  "unexercised": [],
+  "passed": 549,
+  "failed": 1,
+  "skipped_by_test": 0,
+  "summary": "550/550 api-lane tests executed; 549 passed, 1 failed (test_health.py::test_health_check expected 200 got 503). Contract-test skipped: no pact/openapi contract files found in project.",
+  "artifacts": {
+    "junit": "test-results/api.junit.xml",
+    "jsonl": "test-results/api.jsonl"
+  },
+  "failures": [
+    {
+      "test_id": "backend/tests/api/test_health.py::test_health_check",
+      "message": "assert 503 == 200",
+      "log_excerpt": "async def test_health_check(client: AsyncClient):\n    \"\"\"Test health check endpoint.\"\"\"\n    response = await client.get(\"/health\")\n>   assert response.status_code == 200\nE   assert 503 == 200\nE    +  where 503 = <Response [503 Service Unavailable]>.status_code"
+    }
+  ]
+}

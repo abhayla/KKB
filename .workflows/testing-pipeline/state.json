@@ -1,0 +1,49 @@
+{
+  "schema_version": "2.0.0",
+  "run_id": "2026-07-13T03-13-08Z_fb299b8",
+  "started_at": "2026-07-13T03:13:08Z",
+  "mode": "Full",
+  "config_source": "bundled-default (plugins/cbp-build-test-workflows/skills/test-pipeline/test-pipeline.default.yml) \u00e2\u20ac\u201d no project .claude/config/test-pipeline.yml",
+  "scope_note": "backend only per user args; Android lane marked SKIPPED (out of scope)",
+  "flags": {
+    "capture_proof": true,
+    "skip_fix": false,
+    "allow_gaps": false,
+    "fix_pr_mode": false,
+    "update_baselines": false,
+    "full_suite_before_success": false
+  },
+  "queues": {
+    "functional": [],
+    "api": [],
+    "ui": []
+  },
+  "tracks_required_per_test": {},
+  "step_status": {
+    "INIT": "done",
+    "SCOUT": "done",
+    "WAVE1": "done",
+    "WAVE2": "skipped",
+    "JOIN": "done",
+    "TRIAGE": "done",
+    "VERIFY_AFFECTED": "done (1 infra retry, still failing)",
+    "FINAL_SUITE": "skipped (no fixes applied)",
+    "COMMIT_REPORT": "done"
+  },
+  "dispatches_used": 4,
+  "wall_clock_started_at": "2026-07-13T03:13:08Z",
+  "global_retries_remaining": 14,
+  "registry_probe": {
+    "ts": "2026-07-13T03:13:08Z",
+    "method": "session-registry-listing",
+    "verified": [
+      "cbp-build-test-workflows:test-scout-agent",
+      "cbp-build-test-workflows:tester-agent",
+      "cbp-python-stack:fastapi-api-tester-agent",
+      "cbp-build-test-workflows:visual-inspector-agent",
+      "cbp-build-test-workflows:test-failure-analyzer-agent",
+      "cbp-build-test-workflows:github-issue-manager-agent"
+    ]
+  },
+  "wave1_topology": "parallel"
+}

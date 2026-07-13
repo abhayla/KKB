@@ -1,0 +1,17 @@
+{"ts": "2026-07-13T03:13:08Z", "event": "INIT", "run_id": "2026-07-13T03-13-08Z_fb299b8", "mode": "Full", "config_source": "bundled-default"}
+{"ts": "2026-07-13T03:13:08Z", "event": "LOCK_ACQUIRED", "run_id": "2026-07-13T03-13-08Z_fb299b8"}
+{"ts": "2026-07-13T03:13:08Z", "event": "WORKER_REGISTRY_PROBE", "method": "session-registry-listing", "verdict": "PASSED"}
+{"ts": "2026-07-13T03:15:00Z", "event": "SCOUT_DONE", "gate": "PASSED", "test_count": 862, "queues": {"functional": 862, "api": 550, "ui": 0}}
+{"ts": "2026-07-13T03:16:00Z", "event": "WAVE1_DISPATCH_FUNCTIONAL", "dispatched_at": "2026-07-13T03:16:00Z"}
+{"ts": "2026-07-13T03:16:00Z", "event": "WAVE1_DISPATCH_API", "dispatched_at": "2026-07-13T03:16:00Z"}
+{"ts": "2026-07-13T03:16:00Z", "event": "WAVE1_LANE_UI_SKIP", "reason": "EMPTY_QUEUE"}
+{"ts": "2026-07-13T03:31:00Z", "event": "WAVE1_DONE", "functional": "FAILED(1)", "api": "FAILED(1)"}
+{"ts": "2026-07-13T03:31:30Z", "event": "WAVE2_SKIP", "reason": "NO_UI_LANE_SCREENSHOTS"}
+{"ts": "2026-07-13T03:33:00Z", "event": "JOIN_DONE", "result": "FAILED", "unexercised_total": 0, "ledger_match": true}
+{"ts": "2026-07-13T03:34:00Z", "event": "TRIAGE_BUDGET_CHECK", "used": 3, "would_use": 4, "cap": 100, "verdict": "PROCEED"}
+{"ts": "2026-07-13T03:34:00Z", "event": "TRIAGE_ANALYZER_CHUNK_1_DISPATCH", "failures": 1}
+{"ts": "2026-07-13T03:35:00Z", "event": "TRIAGE_ANALYZER_CHUNK_1_DONE", "category": "INFRASTRUCTURE", "recommended_action": "RETRY_INFRA"}
+{"ts": "2026-07-13T03:40:00Z", "event": "VERIFY_AFFECTED_ITERATION_1_DISPATCH", "subset": ["backend/tests/api/test_health.py::test_health_check"], "note": "RETRY_INFRA re-run at T0"}
+{"ts": "2026-07-13T03:41:00Z", "event": "VERIFY_AFFECTED_DONE", "outcome": "identical failure \u2014 deterministic infra gap, retries stopped"}
+{"ts": "2026-07-13T03:47:00Z", "event": "PIPELINE_DONE", "result": "FAILED", "ci_gate": "FAILED"}
+{"ts": "2026-07-13T03:47:00Z", "event": "LOCK_RELEASED"}

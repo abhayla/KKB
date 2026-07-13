@@ -1,0 +1,43 @@
+{
+  "schema_version": "3.0.0",
+  "run_id": "2026-07-13T03-13-08Z_fb299b8",
+  "result": "FAILED",
+  "ci_gate": "FAILED",
+  "result_reasons": ["TEST_FAILURE:backend/tests/api/test_health.py::test_health_check (INFRASTRUCTURE — documented known issue, not a regression)"],
+  "manifest_total_unique_tests": 862,
+  "executed_unique_tests": 862,
+  "unexercised_total": 0,
+  "lane_summaries": {
+    "functional": {"manifest": 862, "executed": 862, "unexercised": 0, "passed": 861, "failed": 1},
+    "api":        {"manifest": 550, "executed": 550, "unexercised": 0, "passed": 549, "failed": 1},
+    "ui":         {"manifest": 0, "executed": 0, "unexercised": 0, "result": "SKIP", "reason": "EMPTY_QUEUE (backend-only run; Android out of scope)"}
+  },
+  "strict_mode": true,
+  "allow_gaps": false,
+  "flaky_detected": false,
+  "failures": [
+    {
+      "test_id": "backend/tests/api/test_health.py::test_health_check",
+      "lanes": ["functional", "api"],
+      "message": "assert 503 == 200 — GET /health returned 503 Service Unavailable",
+      "category": "INFRASTRUCTURE",
+      "confidence": "HIGH",
+      "recommended_action": "RETRY_INFRA",
+      "retries": 1,
+      "retry_outcome": "identical failure (deterministic)",
+      "known_issue_ref": "backend/tests/CLAUDE.md:70 — 'Health check returns 503 because tests use SQLite, not real PostgreSQL. Not a regression.'"
+    }
+  ],
+  "triage": {
+    "analyses": 1,
+    "issues_created": 0,
+    "issues_skipped_reason": "recommended_action=RETRY_INFRA fires neither issue-manager nor fixer per dispatch matrix",
+    "fixes_applied": 0,
+    "fixes_skipped_reason": "INFRASTRUCTURE category is not AUTO_HEAL; repo docs classify failure as expected environment limitation — code change would contradict backend/tests/CLAUDE.md"
+  },
+  "commit": {"performed": false, "reason": "NO_FIXES_APPLIED — nothing to commit; report-only outcome"},
+  "budget": {"dispatches_used": 4, "max_total_dispatches": 100, "global_retries_remaining": 14, "wall_clock_minutes_approx": 32, "max_wall_clock_minutes": 90},
+  "scope": {"backend": "FULL SUITE RUN", "android": "SKIPPED (out of scope per user directive)"},
+  "config_source": "bundled plugin default (cbp-build-test-workflows/skills/test-pipeline/test-pipeline.default.yml); project had no .claude/config/test-pipeline.yml",
+  "finalized_at": "2026-07-13T03:47:00Z"
+}
